@@ -699,7 +699,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   box-shadow: 0 1px 0 #f1e8d4, 0 2px 0 #e6dac0, 0 3px 0 #dacbab, 0 4px 0 var(--foil), 0 5px 0 #8a6a33; }
 .leaf { position: relative; min-width: 0; padding: var(--s-8) calc(var(--s-8) + 6px) var(--s-8); display: flex; flex-direction: column; gap: var(--s-4); }
 .leaf > *:not(.page-frame) { position: relative; z-index: 1; }
-.verso { border-radius: 4px 0 0 4px;
+.verso { border-radius: 4px 0 0 4px; position: sticky; top: var(--s-4); align-self: start; min-height: 100%;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
     linear-gradient(90deg, var(--leaf) 0%, var(--leaf-2) 84%, #ece2cd 95%, var(--gutter) 100%); }
 .recto { border-radius: 0 4px 4px 0; padding-left: calc(var(--s-10) + 6px);
@@ -739,6 +739,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 .verso .input input { font-family: var(--font-story); font-size: 17px; }
 .verso .input:focus-within { box-shadow: none; border-bottom-color: var(--pen); }
 .verso details summary { cursor: pointer; font-family: var(--font-story); font-size: 17px; color: var(--ink); list-style: none; display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.verso details.more { display: flex; flex-direction: column; gap: var(--s-4); }
+.verso details.more > summary { font-size: 15px; color: var(--ink-soft); font-style: italic; border-top: 1px solid var(--foil-soft); border-bottom: 1px solid var(--foil-soft); padding: 6px 0; }
+.verso details.more > summary::after { content: "add"; }
+.verso details.more[open] > summary::after { content: "done"; }
+.verso details.more[open] > summary { font-style: normal; color: var(--ink); }
 .verso details summary::-webkit-details-marker { display: none; }
 .verso details summary::after { content: "change"; margin-left: auto; font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; }
 .verso details[open] summary::after { content: "done"; }
@@ -763,7 +768,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .verso-foot small b { color: var(--ink-soft); font-weight: 600; }
 .verso-foot small a { color: var(--ochre); }
 /* the recto: the words */
-.wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 500; font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -0.012em; line-height: 1.15; color: var(--pen); padding: 0; outline: 0; margin-top: var(--s-2); }
+.wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 500; font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -0.012em; line-height: 1.2; color: var(--pen); padding: 0; outline: 0; margin-top: var(--s-2); resize: none; overflow: hidden; display: block; }
 .wtitle::placeholder { color: #AAA391; font-weight: 400; font-style: italic; }
 .wbody { width: 100%; flex: 1; min-height: 420px; border: 0; outline: 0; resize: none; padding: 0; margin: 0;
   font-family: var(--font-story); font-size: 21px; line-height: 36px; color: var(--pen); caret-color: var(--accent);

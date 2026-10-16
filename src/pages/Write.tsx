@@ -81,6 +81,7 @@ export default function Write() {
   const qid = params.get("q");
   const editId = params.get("edit");
   const wantsPhoto = params.get("photo") === "1";
+  const wantsDetails = params.get("details") === "1" || wantsPhoto;
   const unlimited = isPaid(user?.plan ?? "free");
   const email = user?.email || "";
 
@@ -110,9 +111,11 @@ export default function Write() {
   const [counted, setCounted] = useState(false);
   const [focus, setFocus] = useState(false);
   const [pressed, setPressed] = useState(false);
+  const [keptNumber, setKeptNumber] = useState<number | null>(null);
   const [draftState, setDraftState] = useState<"" | "saving" | "saved">("");
   const fileRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const sealRef = useRef<HTMLButtonElement>(null);
   const spreadRef = useRef<HTMLElement>(null);
 
@@ -157,7 +160,7 @@ export default function Write() {
     if (wantsPhoto) setTimeout(() => fileRef.current?.click(), 300);
   }, [wantsPhoto]);
 
-  // The page grows with the words, in whole ruled lines.
+  // The page grows with the words, in whole ruled lines; the title line grows too.
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
@@ -165,6 +168,12 @@ export default function Write() {
     const lines = Math.ceil(el.scrollHeight / 36);
     el.style.height = `${Math.max(focus ? 14 : 11, lines) * 36}px`;
   }, [d.body, focus, dictation.interim]);
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [d.title, focus]);
 
   // Focus mode: only the recto; Esc leaves.
   useEffect(() => {
@@ -207,7 +216,7 @@ export default function Write() {
   const starters = startersFor(question, own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
   const bookName = story.lastName ? `The ${story.lastName} book` : own ? "Your book" : `${story.name}'s book`;
-  const periodYear = parseYear(d.period);
+  const periodYear = /^\s*\d{4}\s*$/.test(d.period) ? parseYear(d.period) : null;
 
   const insertStarter = (s: string) => {
     set({ body: d.body.trimEnd() ? `${d.body.trimEnd()}\n\n${s}` : s });
@@ -301,6 +310,7 @@ export default function Write() {
       if (question) track("question_answered", { question_id: question.id, mode: "write" });
       // The seal presses, the ink stamp lands, then the page confirms.
       setPressed(true);
+      setKeptNumber(number);
       const seal = sealRef.current?.querySelector(".seal") as HTMLElement | null;
       if (seal && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         gsap.fromTo(seal, { scale: 2.4, rotation: -40, opacity: 0 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.42, ease: "back.out(1.4)" });
@@ -335,11 +345,11 @@ export default function Write() {
         hero={
           <>
             <p className="label" data-rise>
-              Kept in {bookName.toLowerCase()}
+              Kept in {bookName}
             </p>
             <h1 className="story-title">{saved.title}</h1>
             <p className="meta" data-rise style={{ marginTop: "var(--s-3)" }}>
-              Memory No. {number} · {era}
+              Memory No. {keptNumber ?? number} · {era}
               {saved.period ? ` · ${saved.period}` : ""}
               {saved.photos.length ? ` · ${saved.photos.length} ${saved.photos.length === 1 ? "photograph" : "photographs"}` : ""}
             </p>
@@ -368,6 +378,9 @@ export default function Write() {
               )}
               <ButtonLink to={`/archive/${saved.id}`} variant="outline">
                 Read it
+              </ButtonLink>
+              <ButtonLink to={`/write?edit=${saved.id}&details=1`} variant="quiet" onClick={() => setSaved(null)}>
+                {saved.photos.length || saved.period ? "Add to it" : "Add when it was, or a photograph"}
               </ButtonLink>
               <ButtonLink to="/" variant="quiet">
                 Home
@@ -421,6 +434,10 @@ export default function Write() {
                 )}
                 {question && (noteFor(question) || question.hint) && <p className="meta" style={{ fontSize: 14 }}>{noteFor(question) || question.hint}</p>}
 
+                <details className="more" open={wantsDetails || Boolean(editing) || undefined}>
+                  <summary>
+                    {d.period || d.photos.length || d.era ? [d.period, d.era, d.photos.length ? `${d.photos.length} ${d.photos.length === 1 ? "photograph" : "photographs"}` : ""].filter(Boolean).join(" · ") : "When it was, the chapter, a photograph"}
+                  </summary>
                 <div className="block">
                   <span>When was this</span>
                   <div className="chiprow">
@@ -476,6 +493,7 @@ export default function Write() {
                   )}
                 </div>
 
+                </details>
                 <footer className="verso-foot">
                   <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "photo" || busy === "save" || !d.body.trim()}>
                     <span className="seal" aria-hidden="true">
@@ -502,7 +520,21 @@ export default function Write() {
                   <i>✦</i>
                   <span>{d.period || todayLine}</span>
                 </p>
-                <input className="wtitle" placeholder="A title, if one comes to mind" value={d.title} onChange={(e) => set({ title: e.target.value })} aria-label="Title" onKeyDown={onKey} />
+                <textarea
+                  ref={titleRef}
+                  className="wtitle"
+                  rows={1}
+                  placeholder="A title, if one comes to mind"
+                  value={d.title}
+                  onChange={(e) => set({ title: e.target.value.split(String.fromCharCode(10)).join(" ") })}
+                  aria-label="Title"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !(e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      bodyRef.current?.focus();
+                    } else onKey(e);
+                  }}
+                />
                 <textarea
                   ref={bodyRef}
                   className="wbody"
