@@ -20,6 +20,8 @@ window.ASTORY_MARK="<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 
     // ?theme=dark forces the dark tokens
     var t = new URLSearchParams(location.search).get('theme');
     if (t) document.documentElement.setAttribute('data-theme', t);
+    // ?chrome=0 hides the mockup-only state switcher (used for the full-page screenshots)
+    if (new URLSearchParams(location.search).get('chrome') === '0') document.querySelectorAll('.states').forEach(function(el){ el.style.display = 'none'; });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
 })();

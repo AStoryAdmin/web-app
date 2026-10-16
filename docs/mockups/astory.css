@@ -165,7 +165,9 @@ ul { margin: 0; padding: 0; list-style: none; }
 .wave i { display: block; width: 3px; border-radius: 2px; background: currentColor; opacity: .28; height: var(--h, 20%); }
 
 /* ───────────────────────── 4. Shell: rail / top bar / tab bar ───────────────────────── */
-.shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 100vh; }
+.shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 100vh;
+  /* the chocolate column runs the full document height behind the sticky rail (a hard-edged fill, not a gradient) */
+  background: linear-gradient(90deg, var(--chocolate) var(--rail-w), var(--page) var(--rail-w)); }
 
 .rail {
   position: sticky; top: 0; height: 100vh; background: var(--chocolate); color: var(--on-chocolate);
@@ -386,6 +388,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 @media (max-width: 760px) {
+  .shell { background: var(--page); }
   :root { --gutter: 16px; --t-h1: 32px; --t-h2: 26px; }
   .shell { display: block; }
   .rail { display: none; }

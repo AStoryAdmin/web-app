@@ -26,7 +26,7 @@
   .told { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-6); }
   .told img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
   .story h2 { font-family: var(--font-ui); font-size: var(--t-lead); margin: var(--s-8) 0 var(--s-3); }
-  .story p + p { margin-top: var(--s-5); }
+  .story > :not(h2) + p { margin-top: var(--s-5); }
   .player { margin: var(--s-8) 0; }
   .voices { margin-top: var(--s-10); }
   .voices h2 { font-size: var(--t-lead); margin-bottom: var(--s-4); }

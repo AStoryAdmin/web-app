@@ -86,6 +86,8 @@ export const FILES = [
   // Saving and sessions.
   "lib/saveErrors.js",
   "lib/sessionCheck.js",
+  // What an analytics event may carry (never words).
+  "lib/analyticsEvents.js",
   // Importing what people already wrote.
   "lib/importers.js",
   "lib/whatsapp.js",
