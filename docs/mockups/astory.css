@@ -292,7 +292,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .qcard { background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-1); padding: var(--s-6) var(--s-6) 0; position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 .qcard .label { margin-bottom: var(--s-2); }
 .qcard .q { font-size: 26px; margin-bottom: var(--s-5); }
-.qcard .acts { display: flex; gap: var(--s-4); align-items: center; flex-wrap: wrap; padding-bottom: var(--s-6); }
+.qcard .acts { display: flex; gap: var(--s-3); align-items: center; flex-wrap: wrap; padding-bottom: var(--s-6); }
+.qcard .acts .btn { padding: 0 22px; }
 .qcard .art { align-self: end; width: 300px; margin-right: calc(-1 * var(--s-6)); }
 .qcard .art svg { display: block; width: 100%; height: auto; }
 

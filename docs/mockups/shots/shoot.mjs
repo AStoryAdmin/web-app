@@ -1,4 +1,4 @@
-// Screenshots every mockup at 1440×900 and 390×844.
+// Screenshots every mockup at 1440×900 and 390×844 (viewport); `full` also writes *-full.png full-page captures.
 // Run from landing-page-publish (where Playwright is installed):
 //   node "../web-app/docs/mockups/shots/shoot.mjs" [only=02] [full]
 import { chromium } from 'playwright';
@@ -34,7 +34,8 @@ for (const [name, states] of pages) {
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(400);
       const out = path.join(here, `${name}${st ? '-' + st : ''}-${tag}.png`);
-      await page.screenshot({ path: out, fullPage: full });
+      await page.screenshot({ path: out, fullPage: false });
+      if (full) await page.screenshot({ path: out.replace(/.png$/, '-full.png'), fullPage: true });
       const sw = await page.evaluate(() => document.documentElement.scrollWidth);
       console.log(`${path.basename(out)}  scrollWidth=${sw}${sw > w ? '  <-- OVERFLOW' : ''}`);
     }

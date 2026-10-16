@@ -50,7 +50,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
           });
           if (effectsFor.current !== session.user.id) {
             effectsFor.current = session.user.id;
-            afterSignIn()
+            afterSignIn(session.user.id)
               .then((e) => live && setEffects(e))
               .catch(() => {});
           }

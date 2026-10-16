@@ -1,5 +1,6 @@
 /**
- * The signed-in person's stories, loaded once per sign-in and kept current.
+ * The signed-in person's stories and family, loaded once per sign-in and
+ * kept current.
  *
  * Writes go to the server first and the local copy second, so what the
  * screen shows as saved is saved. A write that fails stays visible as
@@ -7,30 +8,39 @@
  * memory that did not reach the server must never look saved (the app's
  * rule, and this product holds recordings that exist nowhere else).
  *
- * Reloads on return to the tab, as the app does on return to the
- * foreground, so a relative's additions appear without a refresh.
+ * On return to the tab it re-runs the sign-in links (invites, claims) and
+ * reloads only if one landed, as the app does on return to the foreground.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./authContext";
 import { AccountContext, type SaveFailure } from "./accountContext";
 import { loadAccount, type Account, type Memory, type Story } from "../data/stories";
-import { deleteMemory, saveMemory as saveMemoryRemote, saveStory, setActiveStory } from "../data/memories";
+import { loadFamily, type Family } from "../data/family";
+import { deleteMemory, newStory, saveMemory as saveMemoryRemote, saveStory, setActiveStory } from "../data/memories";
+import { refreshShared } from "../data/session";
+import { getSupabase } from "../lib/supabase";
+import { myOwnStory } from "../app-core/lib/familyStories.js";
 
-const RELOAD_AFTER_HIDDEN_MS = 60 * 1000;
+const REFRESH_AFTER_HIDDEN_MS = 60 * 1000;
 
 export default function AccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
+  const firstName = user?.firstName ?? "";
+  const lastName = user?.lastName ?? "";
   const [account, setAccount] = useState<Account | null | undefined>(undefined);
+  const [family, setFamily] = useState<Family | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveFailure, setSaveFailure] = useState<SaveFailure | null>(null);
   const hiddenAt = useRef<number | null>(null);
+  const ensuring = useRef<Promise<Story | null> | null>(null);
 
   const reload = useCallback(async () => {
     if (!userId) return;
     try {
-      const loaded = await loadAccount(userId);
+      const [loaded, tree] = await Promise.all([loadAccount(userId), loadFamily()]);
       setAccount(loaded);
+      setFamily(tree);
       setLoadError(null);
     } catch (err) {
       const message = (err as Error)?.message || "Couldn't reach your stories.";
@@ -45,6 +55,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     if (!userId) {
       queueMicrotask(() => {
         setAccount(undefined);
+        setFamily(null);
         setLoadError(null);
         setSaveFailure(null);
       });
@@ -55,15 +66,19 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     });
   }, [userId, reload]);
 
-  // Back to the tab after a while away: a relative may have added something.
+  // Back to the tab after a while away: a relative may have added something,
+  // or an invitation may have landed.
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
         hiddenAt.current = Date.now();
-      } else if (hiddenAt.current && Date.now() - hiddenAt.current > RELOAD_AFTER_HIDDEN_MS) {
-        hiddenAt.current = null;
-        reload();
+        return;
       }
+      if (!hiddenAt.current || Date.now() - hiddenAt.current < REFRESH_AFTER_HIDDEN_MS) return;
+      hiddenAt.current = null;
+      refreshShared()
+        .then(() => reload())
+        .catch(() => {});
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
@@ -138,6 +153,35 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     [attempt, userId],
   );
 
+  // The person's own story, made on first need. Their place in the tree is
+  // bound to it with link_person_story (people_permissions.sql), so the
+  // tree and the story agree on who they are.
+  const ensureMyStory = useCallback(async (): Promise<Story | null> => {
+    if (!userId || !account) return null;
+    const have = myOwnStory(account, userId) as Story | null;
+    if (have) return have;
+    if (ensuring.current) return ensuring.current;
+    const made = (async () => {
+      const story = await addStory(
+        newStory({ ownerId: userId, name: firstName.trim() || "Me", lastName: lastName.trim(), relationship: "Myself" }),
+      );
+      const me = family?.people.find((p) => p.userId === userId && !p.storyId);
+      if (me) {
+        const sb = getSupabase();
+        const { error } = sb ? await sb.rpc("link_person_story", { pid: me.id, sid: story.id }) : { error: null };
+        if (error) console.warn("link_person_story:", error.message || error);
+        else setFamily((f) => (f ? { ...f, people: f.people.map((p) => (p.id === me.id ? { ...p, storyId: story.id } : p)) } : f));
+      }
+      return story;
+    })();
+    ensuring.current = made;
+    try {
+      return await made;
+    } finally {
+      ensuring.current = null;
+    }
+  }, [userId, account, family, addStory, firstName, lastName]);
+
   const stories = useMemo(() => account?.stories ?? [], [account]);
   const activeStory = useMemo(() => {
     if (!account) return null;
@@ -150,6 +194,8 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
       loadError,
       stories,
       activeStory,
+      family,
+      ensureMyStory,
       reload,
       chooseStory,
       saveMemory,
@@ -158,7 +204,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
       saveFailure,
       clearSaveFailure: () => setSaveFailure(null),
     }),
-    [account, loadError, stories, activeStory, reload, chooseStory, saveMemory, removeMemory, addStory, saveFailure],
+    [account, loadError, stories, activeStory, family, ensureMyStory, reload, chooseStory, saveMemory, removeMemory, addStory, saveFailure],
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;

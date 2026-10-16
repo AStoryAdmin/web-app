@@ -18,7 +18,7 @@
   .stats div { padding: 0 var(--s-5); border-left: 1px solid var(--line); }
   .stats div:first-child { border-left: 0; }
   .stats b { display: block; font-size: var(--t-h3); color: var(--heading); line-height: 1.1; }
-  .stats span { font-size: var(--t-small); color: var(--ink-soft); font-weight: 600; }
+  .stats span { display: block; font-size: var(--t-small); color: var(--ink-soft); font-weight: 600; line-height: 1.25; margin-top: 4px; }
 
   .book { display: grid; grid-template-columns: 128px 1fr; gap: var(--s-6); padding: var(--s-6); align-items: center; position: relative; }
   .book img { width: 128px; filter: drop-shadow(0 10px 18px rgba(43,33,22,.25)); }
@@ -47,6 +47,7 @@
   .rec { display: grid; grid-template-columns: 120px 1fr auto; gap: var(--s-4); align-items: center; padding: var(--s-4); border-radius: var(--r-card); background: var(--card); box-shadow: var(--shadow-1); text-decoration: none; color: inherit; }
   .rec img { width: 120px; aspect-ratio: 1; object-fit: cover; border-radius: 14px; }
   .rec h3 { font-family: var(--font-story); font-weight: 600; font-size: 24px; margin: 4px 0; }
+  .rec .avatars img { width: 36px; height: 36px; aspect-ratio: auto; border-radius: 50%; }
   .rec .dot { display: inline-flex; align-items: center; gap: 6px; }
   .rec .dot::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: .3; } }
@@ -57,8 +58,9 @@
     .top { gap: var(--s-4); }
     .profile { grid-template-columns: 64px 1fr auto; gap: var(--s-3); padding: var(--s-4); }
     .profile img { width: 64px; height: 64px; }
-    .stats div { padding: 0 var(--s-3); } .stats b { font-size: var(--t-lead); } .stats span { font-size: 13px; }
-    .book { grid-template-columns: 84px 1fr; gap: var(--s-4); padding: var(--s-4); } .book img { width: 84px; } .book .n { font-size: 32px; }
+    .stats div { padding: 0 var(--s-2) 0 var(--s-3); } .stats b { font-size: 19px; white-space: nowrap; } .stats span { font-size: 13px; }
+    .profile .meta { font-size: 15px; }
+    .book { grid-template-columns: 84px 1fr; gap: var(--s-4); padding: var(--s-4); } .book img { width: 84px; } .book .n { font-size: 32px; } .book .n small { display: block; margin: 4px 0 0; }
     .archive-body { display: block; margin: var(--s-6) calc(-1 * var(--gutter)) 0; padding: var(--s-5) var(--gutter) 0; background: var(--sheet); border-radius: var(--r-sheet) var(--r-sheet) 0 0; }
     .decades { display: none; }
     .decade-row { display: flex; margin: var(--s-3) 0 var(--s-2); }
@@ -102,7 +104,7 @@
       <div class="top">
         <section class="card profile" aria-label="Storyteller">
           <img src="../../../landing-page-publish/public/mission/31-640.webp" alt="">
-          <div><h2>Rose Hartley</h2><p class="meta">Born 1938 · your mother · <span class="chip accent" style="vertical-align:middle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 1-3s0 3 2 3c1-3-1-6 2-11z"/></svg>12-week streak</span></p></div>
+          <div><h2>Rose Hartley</h2><p class="meta">Born 1938 · your mother <span class="chip accent" style="vertical-align:middle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 1-3s0 3 2 3c1-3-1-6 2-11z"/></svg>12-week streak</span></p></div>
           <a class="iconbtn mobile-only" href="#share" aria-label="Family QR code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h3v3M20 20h-3"/></svg></a>
           <div class="stats">
             <div><b>14</b><span>Memories</span></div>

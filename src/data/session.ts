@@ -29,11 +29,39 @@ async function rpcQuietly(name: string): Promise<unknown> {
 
 export type SignInEffects = { invitesAccepted: number; placesClaimed: number };
 
-export async function afterSignIn(): Promise<SignInEffects> {
+const ACTIVE_STAMP = "astory-active-stamp";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** profiles.last_active_at, at most once a day per account, as the app rations it. */
+function touchIfDue(userId: string) {
+  const key = `${ACTIVE_STAMP}:${userId}`;
+  try {
+    const last = Number(localStorage.getItem(key) || 0);
+    if (Date.now() - last < DAY_MS) return;
+    localStorage.setItem(key, String(Date.now()));
+  } catch {
+    /* storage blocked: stamp anyway */
+  }
+  void rpcQuietly("touch_active");
+}
+
+export async function afterSignIn(userId: string): Promise<SignInEffects> {
   const [invites, places] = await Promise.all([
     rpcQuietly("accept_story_invites"),
     rpcQuietly("claim_people"),
   ]);
-  void rpcQuietly("touch_active");
+  touchIfDue(userId);
   return { invitesAccepted: Number(invites) || 0, placesClaimed: Number(places) || 0 };
+}
+
+/**
+ * On return to the tab: the same two links again, cheaply. Returns true when
+ * either landed, so the caller reloads the stories only then.
+ */
+export async function refreshShared(): Promise<boolean> {
+  const [invites, places] = await Promise.all([
+    rpcQuietly("accept_story_invites"),
+    rpcQuietly("claim_people"),
+  ]);
+  return (Number(invites) || 0) + (Number(places) || 0) > 0;
 }

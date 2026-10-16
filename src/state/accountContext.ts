@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type { Account, Memory, Story } from "../data/stories";
+import type { Family } from "../data/family";
 
 export type SaveFailure = { message: string; retry: () => Promise<void> };
 
@@ -9,6 +10,14 @@ export type AccountState = {
   loadError: string | null;
   stories: Story[];
   activeStory: Story | null;
+  /** The family tree, or null when the database has none (or the tables are absent). */
+  family: Family | null;
+  /**
+   * The signed-in person's own story ("Myself"), made if they have none: a
+   * relative who joined by code or invitation still needs somewhere for
+   * what they remember (the app's ensureMyStory).
+   */
+  ensureMyStory: () => Promise<Story | null>;
   /** Re-reads everything from the server (after a sign-in, a relative's edit, a return to the tab). */
   reload: () => Promise<void>;
   /** The chosen storyteller, remembered on the account (profiles.active_story_id). */

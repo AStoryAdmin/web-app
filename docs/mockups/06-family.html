@@ -24,8 +24,13 @@
   .node span { font-size: var(--t-caption); color: var(--ink-soft); font-weight: 600; }
   .node .tag { position: absolute; top: -10px; right: 10px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
   .node.add .avatar { background: var(--sheet); color: var(--ink-soft); font-size: 30px; box-shadow: 0 0 0 2px var(--line); border-style: dashed; }
-  .links { position: absolute; inset: 0; pointer-events: none; }
-  .links path { stroke: var(--line-strong); stroke-width: 2; fill: none; }
+  /* connectors: a bar between a couple, a stem down to the next row, a short arm to the child */
+  .tree { --av: 84px; --half: 82px; --gap: 56px; }
+  .gen.couple::before { content: ""; position: absolute; top: calc(var(--av) / 2 - 1px); left: calc(50% - var(--half)); right: calc(50% - var(--half)); height: 2px; background: var(--line-strong); }
+  .gen.parents::after { content: ""; position: absolute; top: calc(var(--av) / 2); bottom: calc(-1 * var(--gap)); left: calc(50% - 1px); width: 2px; background: var(--line-strong); }
+  .node.child::after { content: ""; position: absolute; top: -1px; left: 50%; width: var(--half); height: 2px; background: var(--line-strong); z-index: -1; }
+  .node { z-index: 1; }
+  .gen { z-index: 1; }
   .ring { display: inline-flex; align-items: center; gap: 6px; }
 
   /* invite */
@@ -58,6 +63,7 @@
   @media (max-width: 1100px) { .fam { grid-template-columns: 1fr; gap: var(--s-6); } }
   @media (max-width: 760px) {
     .tree { padding: var(--s-4) var(--s-2) var(--s-6); }
+    .tree { --av: 68px; --half: 54px; --gap: 44px; }
     .gen { gap: var(--s-3); } .gen + .gen { margin-top: 44px; }
     .node { width: 96px; } .node img, .node .avatar { width: 68px; height: 68px; } .node strong { font-size: 14px; } .node span { font-size: 12px; }
     .invite { padding: var(--s-5) var(--s-4); }
@@ -102,21 +108,16 @@
           <!-- the tree -->
           <section class="card tree" aria-label="Family tree">
             <h2>Three generations, so far</h2>
-            <svg class="links" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 100 100">
-              <path d="M38 22 H62" vector-effect="non-scaling-stroke"/>
-              <path d="M50 22 V40 H30 V48 M50 40 H70 V48" vector-effect="non-scaling-stroke"/>
-              <path d="M38 62 H62 M50 62 V82" vector-effect="non-scaling-stroke"/>
-            </svg>
-            <div class="gen">
+            <div class="gen couple parents">
               <a class="node teller" href="#rose"><span class="tag">Storyteller</span><img src="../../../landing-page-publish/public/mission/31-640.webp" alt=""><strong>Rose Hartley</strong><span>born 1938 · 14 memories</span></a>
               <a class="node" href="#walt"><span class="avatar ph" style="font-size:28px">W</span><strong>Walt Hartley</strong><span>1936–2011 · in 9 memories</span></a>
             </div>
-            <div class="gen">
-              <a class="node" href="#dan"><span class="avatar ph" style="font-size:28px">D</span><strong>Dan Hartley</strong><span>you · organiser</span></a>
+            <div class="gen couple parents">
+              <a class="node child" href="#dan"><span class="avatar ph" style="font-size:28px">D</span><strong>Dan Hartley</strong><span>you · organiser</span></a>
               <a class="node" href="#sarah"><img src="../../../landing-page-publish/public/mission/42-640.webp" alt=""><strong>Sarah Hartley</strong><span>Dan's wife · 4 notes</span></a>
             </div>
             <div class="gen">
-              <a class="node" href="#mia"><img src="../../../landing-page-publish/public/mission/50-640.webp" alt=""><strong>Mia Hartley</strong><span>granddaughter · 11 photos</span></a>
+              <a class="node child" href="#mia"><img src="../../../landing-page-publish/public/mission/50-640.webp" alt=""><strong>Mia Hartley</strong><span>granddaughter · 11 photos</span></a>
               <a class="node add" href="#add"><span class="avatar">+</span><strong>Add a person</strong><span>a sibling, a cousin, a friend</span></a>
             </div>
           </section>

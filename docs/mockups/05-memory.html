@@ -10,11 +10,11 @@
 <link rel="stylesheet" href="astory.css">
 <style>
   /* Desktop: an open book. Photographs on the left page, the words on the right. */
-  .spread { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-12); align-items: start; }
+  .spread { display: grid; grid-template-columns: minmax(0, 5.5fr) minmax(0, 6.5fr); gap: var(--s-10); align-items: start; }
   .left { position: sticky; top: var(--s-6); display: grid; gap: var(--s-8); }
   .hero { border-radius: var(--r-card); overflow: hidden; aspect-ratio: 4 / 3; }
   .hero img { width: 100%; height: 100%; object-fit: cover; }
-  .polaroids { display: flex; gap: var(--s-4); padding: var(--s-2) var(--s-2) var(--s-4); }
+  .polaroids { display: flex; gap: var(--s-3); padding: var(--s-2) 0 var(--s-4); }
   .polaroids .polaroid { flex: 1; --w: auto; }
   .addphoto { display: grid; place-items: center; gap: var(--s-2); min-height: 120px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-card); color: var(--heading); font-weight: 600; text-decoration: none; }
   .addphoto svg { width: 26px; height: 26px; }
