@@ -1,14 +1,15 @@
 /**
- * The writing desk. The question (if one brought them here) sits on the
- * cloth; the page is one wide sheet in the serif: a title, the words, the
- * photographs. While the page is empty, a few sentence starters wait under
- * it. Beside the page, a quiet rail: when this was, the chapter, the
- * photographs, and Keep it. Focus mode hides everything but the page (Esc
- * leaves it). Speak instead of typing where the browser can listen.
+ * Writing a memory in the family book itself. The book lies open on the
+ * desk: the verso holds the memory's number, when it was, the question as
+ * an epigraph, the chapter, the photographs and the wax seal that keeps
+ * it; the recto is ruled for the words, with a title line, sentence
+ * starters while it is empty, and the storyteller's sign-off. Focus mode
+ * keeps only the recto (Esc leaves it). Speak instead of typing where the
+ * browser can listen.
  *
  * The draft autosaves to this browser; nothing is lost to a closed tab.
- * Ctrl/Cmd+Enter keeps it. Keeping confirms in place and offers the next
- * question; it never dumps the person in the Archive.
+ * Ctrl/Cmd+Enter keeps it. Keeping presses the seal and confirms in place
+ * with the next question; it never dumps the person in the Archive.
  *
  * Walls (Free): the daily questions are counted when a question is CHOSEN,
  * the weekly photos when the picker opens; never at Keep. Writing in your
@@ -16,9 +17,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
+import gsap from "gsap";
 import Shell from "../components/Shell";
 import { Button, ButtonLink, Problem } from "../components/ui";
-import { CloseIcon, ExpandIcon, MicIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
+import { CheckIcon, CloseIcon, ExpandIcon, MicIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { newMemory, uploadMemoryPhoto } from "../data/memories";
@@ -50,24 +52,23 @@ function readDraft(key: string): Partial<Draft> | null {
 
 /** Sentence starters for an empty page: the question's own hint first, then the ones that work for anything. */
 function startersFor(question: Prompt | null, own: boolean): string[] {
-  const they = own ? "I" : "they";
   const generic = own
     ? ["It was the year ", "We were living in ", "I remember the smell of ", "The first thing I'd tell you is "]
-    : [`${they} were living in `, "It was the year ", "The way it was told to me, ", "What I remember most is "];
+    : ["They were living in ", "It was the year ", "The way it was told to me, ", "What I remember most is "];
   const fromQ = question?.hint ? [question.hint.replace(/[.?!]\s*$/, "") + " "] : [];
   return [...fromQ, ...generic].slice(0, 4);
 }
 
-const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
 const countWords = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
 
-function Photo({ url, onRemove }: { url: string; onRemove: () => void }) {
+function Photo({ url, tilt, onRemove }: { url: string; tilt: number; onRemove: () => void }) {
   const src = usePhotoUrl(url);
   return (
-    <figure className="wphoto">
+    <figure className="wphoto" style={{ ["--tilt" as string]: `${tilt}deg` }}>
       {src ? <img src={src} alt="" /> : <span className="ph" />}
       <button type="button" className="x" onClick={onRemove} aria-label="Remove this photograph">
-        <CloseIcon width={16} height={16} />
+        <CloseIcon />
       </button>
     </figure>
   );
@@ -108,10 +109,12 @@ export default function Write() {
   const [undo, setUndo] = useState<string | null>(null);
   const [counted, setCounted] = useState(false);
   const [focus, setFocus] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const [draftState, setDraftState] = useState<"" | "saving" | "saved">("");
   const fileRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
-  const keepRef = useRef<HTMLButtonElement>(null);
+  const sealRef = useRef<HTMLButtonElement>(null);
+  const spreadRef = useRef<HTMLElement>(null);
 
   const set = useCallback((patch: Partial<Draft>) => setD((prev) => ({ ...prev, ...patch })), []);
 
@@ -154,15 +157,16 @@ export default function Write() {
     if (wantsPhoto) setTimeout(() => fileRef.current?.click(), 300);
   }, [wantsPhoto]);
 
-  // Autosize the page as they write.
+  // The page grows with the words, in whole ruled lines.
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.max(focus ? 420 : 280, el.scrollHeight)}px`;
+    const lines = Math.ceil(el.scrollHeight / 36);
+    el.style.height = `${Math.max(focus ? 14 : 11, lines) * 36}px`;
   }, [d.body, focus, dictation.interim]);
 
-  // Focus mode: only the page; Esc leaves.
+  // Focus mode: only the recto; Esc leaves.
   useEffect(() => {
     document.body.classList.toggle("writing-focus", focus);
     if (!focus) return;
@@ -175,6 +179,23 @@ export default function Write() {
     };
   }, [focus]);
 
+  // The book settles on the desk, then the running heads and the sign-off are inked in with the pen.
+  useEffect(() => {
+    const el = spreadRef.current;
+    if (!el) return;
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const blank = { clipPath: "inset(-30% 100% -30% 0)" };
+      const inked = { clipPath: "inset(-30% 0% -30% 0)", ease: "power2.inOut", clearProps: "clipPath" };
+      gsap
+        .timeline()
+        .fromTo(el, { y: 16, rotation: -0.6, opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.6, ease: "power3.out", clearProps: "transform,opacity" })
+        .fromTo(el.querySelectorAll(".folio-top, .running-head"), blank, { ...inked, duration: 0.7, stagger: 0.1 }, "-=0.2")
+        .fromTo(el.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.8 }, "-=0.3");
+    });
+    return () => mm.revert();
+  }, [saved]);
+
   if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
   if (!story) return <Navigate to="/start" replace />;
 
@@ -184,6 +205,9 @@ export default function Write() {
   const yearsHint = suggestYearsForEra(story, era) as { from: number; to: number; ages: [number, number] } | null;
   const words = countWords(d.body);
   const starters = startersFor(question, own);
+  const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
+  const bookName = story.lastName ? `The ${story.lastName} book` : own ? "Your book" : `${story.name}'s book`;
+  const periodYear = parseYear(d.period);
 
   const insertStarter = (s: string) => {
     set({ body: d.body.trimEnd() ? `${d.body.trimEnd()}\n\n${s}` : s });
@@ -275,13 +299,19 @@ export default function Write() {
       }
       track("memory_saved", { mode: 1, chapter: era, has_photo: d.photos.length > 0, from_question: Boolean(question) });
       if (question) track("question_answered", { question_id: question.id, mode: "write" });
-      const r = keepRef.current?.getBoundingClientRect();
-      if (r) inkStamp(r.left + r.width / 2, r.top + r.height / 2);
+      // The seal presses, the ink stamp lands, then the page confirms.
+      setPressed(true);
+      const seal = sealRef.current?.querySelector(".seal") as HTMLElement | null;
+      if (seal && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        gsap.fromTo(seal, { scale: 2.4, rotation: -40, opacity: 0 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.42, ease: "back.out(1.4)" });
+        const r = seal.getBoundingClientRect();
+        setTimeout(() => inkStamp(r.left + r.width / 2 + 120, r.top + r.height / 2), 260);
+      }
       setFocus(false);
       setTimeout(() => {
         setSaved(memory);
         window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 520);
+      }, 1100);
     } catch (err) {
       setError(`This memory hasn't been kept yet (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
       setBusy("");
@@ -305,11 +335,11 @@ export default function Write() {
         hero={
           <>
             <p className="label" data-rise>
-              Kept in {own ? "your" : `${story.name}'s`} story
+              Kept in {bookName.toLowerCase()}
             </p>
             <h1 className="story-title">{saved.title}</h1>
             <p className="meta" data-rise style={{ marginTop: "var(--s-3)" }}>
-              {era}
+              Memory No. {number} · {era}
               {saved.period ? ` · ${saved.period}` : ""}
               {saved.photos.length ? ` · ${saved.photos.length} ${saved.photos.length === 1 ? "photograph" : "photographs"}` : ""}
             </p>
@@ -320,8 +350,8 @@ export default function Write() {
           <div className="savedbox">
             {next && !editing ? (
               <>
-                <p className="label">{unlimited ? "There's time for another." : `There's time for another. ${remaining} more ${remaining === 1 ? "question" : "questions"} waiting today.`}</p>
-                <p className="story-q" style={{ fontSize: 28, margin: "var(--s-3) 0 0", maxWidth: "24ch" }}>
+                <span className="pill gold">{unlimited ? "There's time for another" : `${remaining} more ${remaining === 1 ? "question" : "questions"} waiting today`}</span>
+                <p className="story-q" style={{ fontSize: 28, margin: "var(--s-4) 0 0", maxWidth: "24ch" }}>
                   {next.question}
                 </p>
               </>
@@ -349,197 +379,219 @@ export default function Write() {
     );
   }
 
-  const hero = question ? (
-    <>
-      <p className="label" data-rise>
-        {own ? "A question for you" : `A question for ${story.name}`}
-      </p>
-      <h1 className="story-title" style={{ maxWidth: "22ch", fontSize: "clamp(28px, 3vw, 40px)", lineHeight: 1.18 }}>
-        {question.question}
-      </h1>
-      {(noteFor(question) || question.hint) && (
-        <p className="meta" data-rise style={{ marginTop: "var(--s-3)", maxWidth: "60ch" }}>
-          {noteFor(question) || question.hint}
-        </p>
-      )}
-    </>
-  ) : (
-    <>
-      <p className="label" data-rise>
-        {editing ? "Editing" : "In your own words"}
-      </p>
-      <h1 className="hero-title">{editing ? "Edit this memory" : own ? "A memory for your story" : `A memory for ${story.name}'s story`}</h1>
-    </>
-  );
-
-  const keepLabel = editing ? "Keep the changes" : own ? "Keep it" : `Keep it in ${story.name}'s story`;
+  const keepLabel = editing ? "Keep the changes" : "Keep it";
+  const todayLine = longDate();
 
   return (
-    <Shell compact back={true} hero={hero}>
+    <Shell compact back={true} title={editing ? "Edit this memory" : own ? "A memory for your story" : `A memory for ${story.name}'s story`}>
       <div className="page">
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
         {dictation.problem && <Problem message={dictation.problem} onDismiss={() => {}} />}
 
-        <div className="desk">
-          <div className="pageside">
-            <div className="runhead">
-              <span className="date">
-                {longDate()} · {own ? "Your story" : `${story.name}'s story`}
-              </span>
-              <div className="tools">
-                <button type="button" className="iconbtn" aria-pressed={focus} aria-label={focus ? "Leave focus mode" : "Focus mode: only the page"} title={focus ? "Leave focus (Esc)" : "Focus mode"} onClick={() => setFocus((f) => !f)}>
+        <div className="bookdesk">
+          <div className="cover">
+            <article className="spread" ref={spreadRef}>
+              <section className="leaf verso" aria-label="About this memory">
+                <p className="folio-top">
+                  <span>{bookName}</span>
+                  <span>Memory No. {number}</span>
+                </p>
+                <header className="masthead">
+                  <span className="big" aria-hidden="true">
+                    {number}
+                  </span>
+                  <div>
+                    <h2>{periodYear ? String(periodYear) : d.period || "When was this?"}</h2>
+                    <p>{era}</p>
+                  </div>
+                </header>
+                <p className="ornament" aria-hidden="true">
+                  <span>✦</span>
+                </p>
+                {question ? (
+                  <blockquote className="epigraph">
+                    <p>{question.question}</p>
+                    <cite>{own ? "Today's question" : `A question for ${story.name}`}</cite>
+                  </blockquote>
+                ) : (
+                  <blockquote className="epigraph">
+                    <p>Anything at all. A kitchen, a road, a song on the radio.</p>
+                    <cite>In your own words</cite>
+                  </blockquote>
+                )}
+                {question && (noteFor(question) || question.hint) && <p className="meta" style={{ fontSize: 14 }}>{noteFor(question) || question.hint}</p>}
+
+                <div className="block">
+                  <span>When was this</span>
+                  <div className="chiprow">
+                    {decades.map((dec) => (
+                      <button key={dec} type="button" className="chip big" aria-pressed={d.period === formatDecade(dec)} onClick={() => set({ period: d.period === formatDecade(dec) ? "" : (formatDecade(dec) as string) })}>
+                        {(formatDecade(dec) as string).replace(/^the /, "")}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="field" style={{ margin: "var(--s-3) 0 0", maxWidth: 300 }}>
+                    <span className="sr-only">Or the date in your words</span>
+                    <span className="input">
+                      <input placeholder="or June 1975, Summer of '68…" value={d.period} onChange={(e) => set({ period: e.target.value })} />
+                    </span>
+                  </label>
+                  {yearsHint && (
+                    <p className="meta" style={{ fontSize: 13, marginTop: 6 }}>
+                      {own ? "You" : story.name} would have been {yearsHint.ages[0]} to {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
+                    </p>
+                  )}
+                </div>
+
+                <div className="block">
+                  <span>Chapter</span>
+                  <details>
+                    <summary>
+                      {era}
+                      {d.era ? "" : <span className="meta" style={{ fontSize: 13 }}> · chosen for you</span>}
+                    </summary>
+                    <div className="chiprow" style={{ marginTop: "var(--s-2)" }}>
+                      {(ERAS as string[]).map((e) => (
+                        <button key={e} type="button" className="chip big" aria-pressed={era === e} onClick={() => set({ era: e })}>
+                          {e}
+                          {e === FAITH_CHAPTER && !unlimited ? " · always open" : ""}
+                        </button>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+
+                <div className="block">
+                  <span>Photographs</span>
+                  <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
+                  <button type="button" className="attach" onClick={() => fileRef.current?.click()} disabled={busy === "photo"}>
+                    <PhotoIcon /> {busy === "photo" ? "One moment…" : d.photos.length ? "Add another photograph" : "Attach a photograph"}
+                  </button>
+                  {d.photos.length > 0 && (
+                    <div className="wphotos">
+                      {d.photos.map((u, i) => (
+                        <Photo key={u} url={u} tilt={[-3, 2, -1, 3][i % 4]} onRemove={() => set({ photos: d.photos.filter((x) => x !== u) })} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <footer className="verso-foot">
+                  <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "photo" || busy === "save" || !d.body.trim()}>
+                    <span className="seal" aria-hidden="true">
+                      <CheckIcon />
+                    </span>
+                    {busy === "save" ? "Keeping…" : keepLabel}
+                  </button>
+                  <small>
+                    <b>Ctrl+Enter</b> keeps it · <Link to="/">Not now</Link>
+                  </small>
+                </footer>
+                <p className="page-no" aria-hidden="true">
+                  {number * 2 - 1}
+                </p>
+                <span className="page-frame" aria-hidden="true" />
+              </section>
+
+              <section className="leaf recto">
+                <button type="button" className="focusbtn" aria-pressed={focus} aria-label={focus ? "Leave focus mode" : "Focus mode: only the page"} title={focus ? "Leave focus (Esc)" : "Focus mode"} onClick={() => setFocus((f) => !f)}>
                   {focus ? <ShrinkIcon /> : <ExpandIcon />}
                 </button>
-              </div>
-            </div>
-
-            <input className="wtitle" placeholder="A title, if one comes to mind" value={d.title} onChange={(e) => set({ title: e.target.value })} aria-label="Title" onKeyDown={onKey} />
-            <textarea
-              ref={bodyRef}
-              className="wbody"
-              placeholder={question ? "Start anywhere. A room, a smell, who was there." : "What would you like to keep today?"}
-              value={d.body}
-              onChange={(e) => set({ body: e.target.value })}
-              onKeyDown={onKey}
-              aria-label="The memory"
-              autoFocus={!wantsPhoto}
-            />
-            {dictation.listening && <p className="heard" aria-live="polite">{dictation.interim || "Listening…"}</p>}
-
-            {!d.body.trim() && !dictation.listening && (
-              <div className="starters" aria-label="Ways to begin">
-                <span className="label">Ways to begin</span>
-                {starters.map((s) => (
-                  <button key={s} type="button" onClick={() => insertStarter(s)}>
-                    {s.trim()}…
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {d.photos.length > 0 && (
-              <div className="wphotos">
-                {d.photos.map((u) => (
-                  <Photo key={u} url={u} onRemove={() => set({ photos: d.photos.filter((x) => x !== u) })} />
-                ))}
-              </div>
-            )}
-
-            <div className="helprow">
-              <span className="label">Help</span>
-              {dictation.available && (
-                <Button variant="outline" small icon={<MicIcon />} className={dictation.listening ? "listening" : ""} onClick={dictation.toggle} aria-pressed={dictation.listening}>
-                  {dictation.listening ? "Stop listening" : "Speak instead"}
-                </Button>
-              )}
-              <Button variant="outline" small icon={<SparkIcon />} loading={busy === "tidy"} onClick={() => help("tidy")} disabled={!d.body.trim()}>
-                Tidy my words
-              </Button>
-              <Button variant="outline" small loading={busy === "title"} onClick={() => help("title")} disabled={!d.body.trim()}>
-                Suggest a title
-              </Button>
-              <Button variant="outline" small loading={busy === "ask"} onClick={() => help("ask")} disabled={!d.body.trim()}>
-                What am I not saying?
-              </Button>
-              {undo && (
-                <Button
-                  variant="quiet"
-                  small
-                  onClick={() => {
-                    set({ body: undo });
-                    setUndo(null);
-                  }}
-                >
-                  Keep mine
-                </Button>
-              )}
-            </div>
-            {asks.length > 0 && (
-              <div className="asks">
-                {asks.map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    className="chip big"
-                    onClick={() => {
-                      set({ body: `${d.body.trimEnd()}\n\n` });
-                      setAsks([]);
-                      bodyRef.current?.focus();
-                    }}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className="folio">
-              <span>
-                {words} {words === 1 ? "word" : "words"}
-              </span>
-              <span>{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : "Nothing written yet"}</span>
-            </p>
+                <p className="running-head" aria-hidden="true">
+                  <span>{era}</span>
+                  <i>✦</i>
+                  <span>{d.period || todayLine}</span>
+                </p>
+                <input className="wtitle" placeholder="A title, if one comes to mind" value={d.title} onChange={(e) => set({ title: e.target.value })} aria-label="Title" onKeyDown={onKey} />
+                <textarea
+                  ref={bodyRef}
+                  className="wbody"
+                  placeholder={question ? "Start anywhere. A room, a smell, who was there." : "What would you like to keep today?"}
+                  value={d.body}
+                  onChange={(e) => set({ body: e.target.value })}
+                  onKeyDown={onKey}
+                  aria-label="The memory"
+                  autoFocus={!wantsPhoto}
+                />
+                {dictation.listening && <p className="heard" aria-live="polite">{dictation.interim || "Listening…"}</p>}
+                {!d.body.trim() && !dictation.listening && (
+                  <div className="starters" aria-label="Ways to begin">
+                    <span className="label">Ways to begin</span>
+                    {starters.map((s) => (
+                      <button key={s} type="button" onClick={() => insertStarter(s)}>
+                        {s.trim()}…
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="signoff" aria-hidden="true">
+                  {own ? "Yours," : "As told by"}
+                  <span>{story.name}</span>
+                </p>
+                <p className="folio">
+                  <span>
+                    {words} {words === 1 ? "word" : "words"}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : "Nothing written yet"}</span>
+                </p>
+                <p className="page-no" aria-hidden="true">
+                  {number * 2}
+                </p>
+                <span className="page-frame" aria-hidden="true" />
+              </section>
+            </article>
           </div>
-
-          <aside className="rail" aria-label="About this memory">
-            <section className="keep keepbar">
-              <Button ref={keepRef} loading={busy === "save"} onClick={save} disabled={busy === "photo"} block>
-                {keepLabel}
-              </Button>
-              <p className="status">
-                <b>Ctrl+Enter</b> keeps it · <Link to="/">Not now</Link>
-              </p>
-            </section>
-
-            <section>
-              <h2>When was this?</h2>
-              <p className="meta" style={{ marginBottom: "var(--s-3)" }}>
-                Only the year matters, and a decade will do.{yearsHint ? ` ${own ? "You" : story.name} would have been ${yearsHint.ages[0]} to ${yearsHint.ages[1]}, so ${yearsHint.from}–${yearsHint.to}.` : ""}
-              </p>
-              <div className="chiprow">
-                {decades.map((dec) => (
-                  <button key={dec} type="button" className="chip big" aria-pressed={d.period === formatDecade(dec)} onClick={() => set({ period: d.period === formatDecade(dec) ? "" : (formatDecade(dec) as string) })}>
-                    {formatDecade(dec) as string}
-                  </button>
-                ))}
-              </div>
-              <label className="field" style={{ marginTop: "var(--s-4)", marginBottom: 0 }}>
-                <span>Or in your words</span>
-                <span className="input">
-                  <input placeholder="June 1975, or Summer of '68" value={d.period} onChange={(e) => set({ period: e.target.value })} />
-                </span>
-              </label>
-            </section>
-
-            <section>
-              <h2>Chapter</h2>
-              <details>
-                <summary>
-                  <b>{era}</b>
-                  {d.era ? "" : <span className="meta"> · chosen for you</span>}
-                </summary>
-                <div className="chiprow" style={{ marginTop: "var(--s-3)" }}>
-                  {(ERAS as string[]).map((e) => (
-                    <button key={e} type="button" className="chip big" aria-pressed={era === e} onClick={() => set({ era: e })}>
-                      {e}
-                      {e === FAITH_CHAPTER && !unlimited ? " · always open" : ""}
-                    </button>
-                  ))}
-                </div>
-              </details>
-            </section>
-
-            <section>
-              <h2>Photographs</h2>
-              <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
-              <Button variant="outline" small icon={<PhotoIcon />} loading={busy === "photo"} onClick={() => fileRef.current?.click()}>
-                {d.photos.length ? "Add another" : "Add a photograph"}
-              </Button>
-              <p className="meta" style={{ marginTop: "var(--s-3)" }}>
-                {d.photos.length ? `${d.photos.length} with this memory.` : "The first one becomes its cover in the book."}
-              </p>
-            </section>
-          </aside>
+          <span className="ribbon" aria-hidden="true" />
         </div>
+
+        <div className="helprow">
+          <span className="label">Help</span>
+          {dictation.available && (
+            <Button variant="outline" small icon={<MicIcon />} className={dictation.listening ? "listening" : ""} onClick={dictation.toggle} aria-pressed={dictation.listening}>
+              {dictation.listening ? "Stop listening" : "Speak instead"}
+            </Button>
+          )}
+          <Button variant="outline" small icon={<SparkIcon />} loading={busy === "tidy"} onClick={() => help("tidy")} disabled={!d.body.trim()}>
+            Tidy my words
+          </Button>
+          <Button variant="outline" small loading={busy === "title"} onClick={() => help("title")} disabled={!d.body.trim()}>
+            Suggest a title
+          </Button>
+          <Button variant="outline" small loading={busy === "ask"} onClick={() => help("ask")} disabled={!d.body.trim()}>
+            What am I not saying?
+          </Button>
+          {undo && (
+            <Button
+              variant="quiet"
+              small
+              onClick={() => {
+                set({ body: undo });
+                setUndo(null);
+              }}
+            >
+              Keep mine
+            </Button>
+          )}
+        </div>
+        {asks.length > 0 && (
+          <div className="asks">
+            {asks.map((a) => (
+              <button
+                key={a}
+                type="button"
+                className="chip big"
+                onClick={() => {
+                  set({ body: `${d.body.trimEnd()}\n\n` });
+                  setAsks([]);
+                  bodyRef.current?.focus();
+                }}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </Shell>
   );
