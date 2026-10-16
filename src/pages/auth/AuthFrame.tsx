@@ -29,6 +29,7 @@ export default function AuthFrame({ children, line = 0 }: { children: ReactNode;
 
   return (
     <div className="auth on-dark" ref={ground}>
+      <span className="lamp" aria-hidden="true" />
       <ClothStamp ground={ground} />
       <Leaf ground={ground} />
       <Link className="brand" to="/welcome" aria-label="A Story">

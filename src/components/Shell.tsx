@@ -1,27 +1,30 @@
 /**
- * The signed-in frame: the chocolate rail on a laptop (the book's spine),
- * the curved top bar and bottom tabs on a phone. Four places and one Add
- * button; the storyteller switcher at the top because every place is about
- * one person; Account behind the avatar at the foot.
+ * The signed-in frame, the bookbinder's bench: the top of every page is
+ * the book's cloth, in the brand's chocolate, carrying the lockup, the four
+ * places, whose story this is, Add, and the page's own hero in cream. The
+ * work happens on a sheet of ivory paper that rises over the cloth. On a
+ * phone the places move to a floating tab bar at the bottom. The pointer
+ * is a soft light over the cloth; each page arrives once (lib/arrive).
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { Lockup, Mark } from "./Brand";
+import { Lockup } from "./Brand";
 import { Avatar, Button } from "./ui";
 import { ArchiveIcon, BookIcon, ChevronDown, ChevronLeft, CloseIcon, FamilyIcon, HomeIcon, MicIcon, PenIcon, PhotoIcon, PlusIcon } from "./icons";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { storySubtitle } from "../app-core/lib/social.js";
 import { storyLine } from "../lib/storyLine";
+import { arrive } from "../lib/arrive";
+import { useLight } from "./delight/Light";
 
 const NAV = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
   { to: "/archive", label: "Archive", Icon: ArchiveIcon },
   { to: "/family", label: "Family", Icon: FamilyIcon },
-  { to: "/book", label: "The Book", Icon: BookIcon },
+  { to: "/book", label: "Book", Icon: BookIcon },
 ];
-
 
 function TellerButton({ onClick, compact = false }: { onClick: () => void; compact?: boolean }) {
   const { activeStory, stories } = useAccount();
@@ -37,12 +40,12 @@ function TellerButton({ onClick, compact = false }: { onClick: () => void; compa
       aria-label={`Storyteller: ${storyLine(activeStory)}${many ? ". Change storyteller" : ""}`}
       style={many ? undefined : { cursor: "default" }}
     >
-      {!compact && <Avatar src={photo} name={activeStory.name} size={44} />}
+      {!compact && <Avatar src={photo} name={activeStory.name} size={28} />}
       <span>
         {!compact && <small>Storyteller</small>}
         <strong>{compact ? storyLine(activeStory) : `${activeStory.name} ${activeStory.lastName}`.trim()}</strong>
       </span>
-      {many && <ChevronDown width={20} height={20} />}
+      {many && <ChevronDown width={16} height={16} />}
     </button>
   );
 }
@@ -78,7 +81,7 @@ function TellerSheet({ onClose }: { onClose: () => void }) {
                   onClose();
                 }}
               >
-                <Avatar name={s.name} size={52} />
+                <Avatar name={s.name} size={48} />
                 <span>
                   <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
                   <span className="meta">
@@ -145,56 +148,77 @@ function AddSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function Shell({ children, title, back }: { children: ReactNode; title?: string; back?: string | true }) {
+type ShellProps = {
+  children: ReactNode;
+  /** What this page puts on the cloth: its title and whatever belongs beside it. Without one, the title alone. */
+  hero?: ReactNode;
+  title?: string;
+  back?: string | true;
+  /** A short cloth band (for writing, reading, settings) instead of the full hero. */
+  compact?: boolean;
+  /** The Book page wears the book's own teal cloth; everything else the brand's chocolate. */
+  tone?: "teal";
+};
+
+export default function Shell({ children, hero, title, back, compact, tone }: ShellProps) {
   const { user } = useAuth();
   const [teller, setTeller] = useState(false);
   const [add, setAdd] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const root = useRef<HTMLDivElement>(null);
+  const cloth = useRef<HTMLDivElement>(null);
   const name = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || user?.email || "";
 
-  return (
-    <div className="shell">
-      <aside className="rail on-dark">
-        <div className="brand">
-          <NavLink to="/" aria-label="Home">
-            <Lockup height={40} className="wide" />
-            <Mark height={34} className="narrow" />
-          </NavLink>
-        </div>
-        <TellerButton onClick={() => setTeller(true)} />
-        <nav aria-label="Main">
-          {NAV.map(({ to, label, Icon, end }) => (
-            <NavLink key={to} to={to} end={end}>
-              <Icon />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-        <button type="button" className="btn add" onClick={() => setAdd(true)}>
-          <PlusIcon />
-          <span>Add a memory</span>
-        </button>
-        <div className="rail-foot">
-          <NavLink className="me" to="/account">
-            <Avatar src={user?.avatarUrl} name={name} size={40} />
-            <span>
-              <strong>{name}</strong>
-              <small>Account &amp; settings</small>
-            </span>
-          </NavLink>
-        </div>
-      </aside>
+  useLight(cloth);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    return arrive(el);
+  }, [location.pathname]);
 
-      <main className="content" id="main">
-        <header className="topbar on-dark">
-          {back && (
-            <button type="button" className="back" aria-label="Back" onClick={() => (back === true ? navigate(-1) : navigate(back))}>
-              <ChevronLeft />
-            </button>
-          )}
-          <div className="row">{title ? <h1>{title}</h1> : <Lockup height={36} />}</div>
+  return (
+    <div className="shell" ref={root} key={location.pathname}>
+      <div className={`cloth on-dark${compact ? " compact" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
+        <span className="lamp" aria-hidden="true" />
+        <header className="top">
+          <div className="top-in">
+            <NavLink className="brand" to="/" aria-label="Home">
+              <Lockup height={28} />
+            </NavLink>
+            <nav className="pillnav" aria-label="Main">
+              {NAV.map(({ to, label, Icon, end }) => (
+                <NavLink key={to} to={to} end={end}>
+                  <Icon />
+                  {label}
+                </NavLink>
+              ))}
+            </nav>
+            <div className="top-right">
+              <TellerButton onClick={() => setTeller(true)} />
+              <button type="button" className="btn add" onClick={() => setAdd(true)} aria-label="Add a memory">
+                <PlusIcon />
+                <span>Add</span>
+              </button>
+              <NavLink className="me" to="/account" aria-label="Account and settings">
+                <Avatar src={user?.avatarUrl} name={name} size={32} />
+              </NavLink>
+            </div>
+          </div>
         </header>
+        <div className="hero">
+          <div className="hero-in">
+            {back && (
+              <button type="button" className="back" aria-label="Back" onClick={() => (back === true ? navigate(-1) : navigate(back))}>
+                <ChevronLeft />
+              </button>
+            )}
+            {hero ?? (title ? <h1 className="hero-title">{title}</h1> : null)}
+          </div>
+        </div>
+      </div>
+
+      <main className="sheet-page" id="main">
         {children}
       </main>
 

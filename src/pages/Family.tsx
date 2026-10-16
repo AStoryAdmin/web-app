@@ -170,21 +170,24 @@ export default function Family() {
   };
 
   return (
-    <Shell title={title}>
-      <div className="page">
-        {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
-        {error && <Problem message={error} onDismiss={() => setError(null)} />}
-        <div className="pagehead desk-only">
-          <div className="grow">
-            <p className="label">Family &amp; friends</p>
-            <h1>{title}</h1>
-          </div>
-          <div className="tools">
-            <Button small icon={<PlusIcon />} onClick={() => setInvite({ anchor: null })}>
+    <Shell
+      hero={
+        <>
+          <p className="label" data-rise>
+            Family &amp; friends
+          </p>
+          <h1>{title}</h1>
+          <div data-rise style={{ marginTop: "var(--s-6)" }}>
+            <Button icon={<PlusIcon />} onClick={() => setInvite({ anchor: null })}>
               Invite someone
             </Button>
           </div>
-        </div>
+        </>
+      }
+    >
+      <div className="page">
+        {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
+        {error && <Problem message={error} onDismiss={() => setError(null)} />}
 
         <div className="fam">
           <div className="col">

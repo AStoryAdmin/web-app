@@ -24,6 +24,19 @@ let client: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient | null {
   if (!isConfigured) return null;
   client ??= createClient(url!, key!, {
+    // In development, say which request the server refused; production stays quiet.
+    global: import.meta.env.DEV
+      ? {
+          fetch: async (input, init) => {
+            const res = await fetch(input, init);
+            if (res.status >= 400) {
+              const u = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+              console.warn(`supabase ${res.status}: ${init?.method || "GET"} ${u.replace(url!, "")}`, await res.clone().text().catch(() => ""));
+            }
+            return res;
+          },
+        }
+      : undefined,
     auth: {
       storageKey: AUTH_STORAGE_KEY,
       persistSession: true,

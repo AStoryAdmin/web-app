@@ -75,7 +75,7 @@ export default function Plans() {
   }, [current]);
 
   return (
-    <Shell title="Plans" back="/account">
+    <Shell compact title="Plans" back="/account">
       <div className="page plans-page">
         <div className="pagehead">
           <div className="grow">

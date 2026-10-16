@@ -15,12 +15,12 @@ export default function Talk() {
   const { account, activeStory: story } = useAccount();
   const [params] = useSearchParams();
   const qid = params.get("q");
-  if (account === undefined) return <Shell><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
   if (!story) return <Navigate to="/start" replace />;
   const question = qid ? todaysDeck(story, { unlimited: true }).find((p) => p.id === qid) : null;
   track("talk_wall_shown", { reason: "browser_not_yet" });
   return (
-    <Shell title="Talk" back="/">
+    <Shell compact title="Talk" back="/">
       <div className="page" style={{ maxWidth: 720 }}>
         <div className="savedbox rise">
           <p className="label">Talking with A Story</p>

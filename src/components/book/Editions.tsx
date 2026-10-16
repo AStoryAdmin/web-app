@@ -35,6 +35,13 @@ export default function Editions({ storyId, memories, onPrintAtHome, printing }:
 
   useEffect(() => {
     let live = true;
+    if (memories === 0) {
+      // Nothing to print yet: the server would only say so. Show the catalog.
+      queueMicrotask(() => live && setOffer(null));
+      return () => {
+        live = false;
+      };
+    }
     checkBookOrder(storyId)
       .then((o) => live && setOffer(o))
       .catch(() => {
@@ -45,7 +52,7 @@ export default function Editions({ storyId, memories, onPrintAtHome, printing }:
     return () => {
       live = false;
     };
-  }, [storyId]);
+  }, [storyId, memories]);
 
   const editions = offer?.editions ?? CATALOG;
   const loading = offer === undefined;

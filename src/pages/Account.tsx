@@ -582,7 +582,7 @@ export default function Account() {
   const navigate = useNavigate();
   const [leaving, setLeaving] = useState(false);
 
-  if (user === undefined || account === undefined) return <Shell title="Account"><div className="page" aria-busy="true" /></Shell>;
+  if (user === undefined || account === undefined) return <Shell compact title="Account"><div className="page" aria-busy="true" /></Shell>;
   if (!user) return null; // RequireAuth sends them to sign in
 
   const recordedBy = `${user.firstName} ${user.lastName}`.trim();
@@ -593,17 +593,23 @@ export default function Account() {
   };
 
   return (
-    <Shell title="Account">
-      <div className="page acct-page">
-        <div className="pagehead">
-          <div className="grow">
-            <p className="label">Account &amp; settings</p>
-            <h1 style={{ fontSize: "var(--t-h2)" }}>{`${user.firstName} ${user.lastName}`.trim() || user.email}</h1>
+    <Shell
+      hero={
+        <>
+          <p className="label" data-rise>
+            Account &amp; settings
+          </p>
+          <h1>{`${user.firstName} ${user.lastName}`.trim() || user.email}</h1>
+          <div data-rise style={{ marginTop: "var(--s-5)", display: "flex", alignItems: "center", gap: "var(--s-5)", flexWrap: "wrap" }}>
+            <span className="meta">{user.email}</span>
+            <Button variant="outline" small onClick={leave} loading={leaving}>
+              Sign out
+            </Button>
           </div>
-          <Button variant="outline" small onClick={leave} loading={leaving}>
-            Sign out
-          </Button>
-        </div>
+        </>
+      }
+    >
+      <div className="page acct-page">
         {loadError && <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />}
 
         <div className="acct-grid">

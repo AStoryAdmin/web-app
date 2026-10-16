@@ -36,7 +36,7 @@ function findMemory(id: string | undefined, active: Story | null, stories: Story
 
 function Missing() {
   return (
-    <Shell title="Memory" back="/archive">
+    <Shell compact title="Memory" back="/archive">
       <div className="page">
         <div className="mp-missing">
           <h1>That memory isn't here.</h1>
@@ -77,7 +77,7 @@ export default function MemoryPage() {
   const words = useRef<HTMLDivElement>(null);
   useArrive(words, memory?.id);
 
-  if (account === undefined) return <Shell title="Memory" back="/archive"><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined) return <Shell compact title="Memory" back="/archive"><div className="page" aria-busy="true" /></Shell>;
   if (!story || !memory) return <Missing />;
 
   const own = story.relationship === "Myself";
@@ -125,7 +125,7 @@ export default function MemoryPage() {
   };
 
   return (
-    <Shell title={own ? "Your story" : `${story.name}'s story`} back="/archive">
+    <Shell compact title={own ? "Your story" : `${story.name}'s story`} back="/archive">
       <div className="page mp-page">
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
         <nav className="mp-crumbs" aria-label="Breadcrumb">

@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
+import BookObject from "../components/BookObject";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { BookIcon, PenIcon, PrintIcon } from "../components/icons";
 import BookSpread from "../components/book/BookSpread";
@@ -43,10 +44,10 @@ export default function Book() {
   const recordedBy = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const book = useMemo(() => (story ? buildBook(story, { contributions, recordedBy }) : null), [story, contributions, recordedBy]);
 
-  if (account === undefined) return <Shell title="The Book"><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined) return <Shell compact title="The Book"><div className="page" aria-busy="true" /></Shell>;
   if (account === null && loadError) {
     return (
-      <Shell title="The Book">
+      <Shell compact title="The Book">
         <div className="page">
           <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />
         </div>
@@ -75,38 +76,30 @@ export default function Book() {
   const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 
   return (
-    <Shell title="The Book">
-      <div className="page book-page">
-        <div className="pagehead">
-          <div className="grow">
-            <p className="label">The book</p>
-            <span className="desk-only">
-              <h1 style={{ fontSize: "var(--t-h2)" }}>{story.name}'s book</h1>
-            </span>
-            <span className="mobile-only">
-              <TellerPick />
-            </span>
-          </div>
-        </div>
-
-        {problem && <Problem message={problem} onDismiss={() => setProblem(null)} />}
-
-        <section className="bookhero card" aria-label="How the book is coming along">
-          <div className="bookhero-cloth" aria-hidden="true">
-            <img src="/book/closed-1200.webp" srcSet="/book/closed-640.webp 640w, /book/closed-1200.webp 1200w" sizes="(max-width: 760px) 60vw, 380px" alt="" width={380} height={480} />
-          </div>
+    <Shell
+      tone="teal"
+      hero={
+        <div className="hero-grid">
           <div className="bookhero-body">
-            <h2 className="bookhero-title story-title">{book.title}</h2>
-            <p className="bookhero-sub">{book.title === book.fullName ? book.subtitle : book.fullName}</p>
-            <p className="bookhero-headline">{progress.headline}</p>
-            <div className="progress" style={{ ["--pct" as string]: `${Math.max(6, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
+            <p className="label" data-rise>
+              The book
+              <span className="mobile-only">
+                {" "}
+                <TellerPick />
+              </span>
+            </p>
+
+            <h1 className="story-title bookhero-title">{book.title}</h1>
+            <p className="bookhero-sub" data-rise>{book.title === book.fullName ? book.subtitle : book.fullName}</p>
+            <p className="bookhero-headline" data-rise>{progress.headline}</p>
+            <div data-rise className="progress" style={{ ["--pct" as string]: `${Math.max(6, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
               <div className="bar">{pct >= 20 ? `${pct}%` : ""}</div>
               <div className="mark" />
               <div className="comb" />
               <div className="end">First edition</div>
             </div>
-            <p className="meta bookhero-line">{bookLine(book)}</p>
-            <div className="bookhero-acts">
+            <p className="meta bookhero-line" data-rise>{bookLine(book)}</p>
+            <div className="bookhero-acts" data-rise>
               <Button icon={<BookIcon />} onClick={() => scrollTo(readRef.current)} disabled={empty}>
                 Read it
               </Button>
@@ -117,9 +110,16 @@ export default function Book() {
                 Printed editions
               </Button>
             </div>
-            <p className="meta bookhero-hint">Print at home opens the whole book in a new window; choose "Save as PDF" there to keep a copy.</p>
+            <p className="meta bookhero-hint" data-rise>Print at home opens the whole book in a new window; choose "Save as PDF" there to keep a copy.</p>
           </div>
-        </section>
+          <BookObject width={260} />
+        </div>
+      }
+    >
+      <div className="page book-page">
+
+        {problem && <Problem message={problem} onDismiss={() => setProblem(null)} />}
+
 
         <div ref={readRef} className="book-anchor" id="read" />
         {empty ? (

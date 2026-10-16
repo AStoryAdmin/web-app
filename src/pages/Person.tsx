@@ -66,11 +66,11 @@ export default function Person() {
     return personMemories(person, stories, { relationIn }) as Res;
   }, [person, stories, family, index]);
 
-  if (account === undefined) return <Shell back="/family"><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined) return <Shell compact back="/family"><div className="page" aria-busy="true" /></Shell>;
   if (!story) return <Navigate to="/start" replace />;
   if (!person || !res) {
     return (
-      <Shell title="Family" back="/family">
+      <Shell compact title="Family" back="/family">
         <div className="page">
           <div className="card empty">
             <h2 className="story-title">This person isn't in the family tree.</h2>
@@ -158,7 +158,7 @@ export default function Person() {
   };
 
   return (
-    <Shell title={name} back="/family">
+    <Shell compact title={name} back="/family">
       <div className="page person-page">
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
 

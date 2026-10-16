@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
-import Shell from "../components/Shell";
+import Shell, { TellerPick } from "../components/Shell";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
 import ProfileCard from "../components/archive/ProfileCard";
@@ -142,10 +142,10 @@ export default function Archive() {
     setParams(next, { replace: true });
   };
 
-  if (account === undefined) return <Shell title="The Archive"><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined) return <Shell compact title="The Archive"><div className="page" aria-busy="true" /></Shell>;
   if (account === null && loadError) {
     return (
-      <Shell title="The Archive">
+      <Shell compact title="The Archive">
         <div className="page">
           <Problem message={`We couldn't reach the archive. ${loadError}`} onRetry={reload} />
           <p className="meta">It's kept safe on our side. Check the connection and try again.</p>
@@ -161,15 +161,26 @@ export default function Archive() {
   const nothingAtAll = memories.length === 0;
 
   return (
-    <Shell title="The Archive">
+    <Shell
+      hero={
+        <>
+          <p className="label" data-rise>
+            {`${story.name} ${story.lastName}`.trim()}
+            <span className="mobile-only">
+              {" "}
+              <TellerPick />
+            </span>
+          </p>
+          <h1>The Archive</h1>
+          <p className="meta" data-rise style={{ marginTop: "var(--s-4)" }}>
+            {memories.length} {memories.length === 1 ? "memory" : "memories"}
+            {story.memories.length !== memories.length ? ` of ${story.memories.length}` : ""} · {own ? "your own story" : `${story.name}'s story`}
+          </p>
+        </>
+      }
+    >
       <div className="page">
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
-        <div className="pagehead desk-only">
-          <div className="grow">
-            <p className="label">{`${story.name} ${story.lastName}`.trim()}</p>
-            <h1>The Archive</h1>
-          </div>
-        </div>
 
         <div ref={topRef}>
           <div className="arc-top">

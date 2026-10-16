@@ -128,7 +128,7 @@ export default function Write() {
 
   const set = useCallback((patch: Partial<Draft>) => setD((prev) => ({ ...prev, ...patch })), []);
 
-  if (account === undefined) return <Shell><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
   if (!story) return <Navigate to="/start" replace />;
 
   const decades = decadesForLife(story) as number[];
@@ -228,7 +228,7 @@ export default function Write() {
     const remaining = deck.filter((p) => p.id !== question?.id).length;
     const next = deck.find((p) => p.id !== question?.id) || null;
     return (
-      <Shell title="Saved" back="/">
+      <Shell compact title="Saved" back="/">
         <div className="page">
           <div className="savedbox rise">
             <p className="label">Saved to {story.name}'s story</p>
@@ -254,7 +254,7 @@ export default function Write() {
   }
 
   return (
-    <Shell title={editing ? "Edit memory" : "Write a memory"} back={true}>
+    <Shell compact title={editing ? "Edit memory" : "Write a memory"} back={true}>
       <div className="page writer">
         <div className="pagehead desk-only">
           <h1 className="grow" style={{ fontSize: "var(--t-h2)" }}>{editing ? "Edit this memory" : `A memory for ${story.name}'s story`}</h1>
