@@ -124,3 +124,11 @@ exists; the page says "Tell me when printing opens" and records the interest.
 - The Book page in v1: the teal book with progress, then every chapter as page spreads in the print book's type, print at home, editions and prices.
 - Memory papers: a card takes its chapter's tint unless the family chose a paper; no mood chips.
 - Create account: email only (no phone sign-in exists); the code field is a family or referral code and promises nothing.
+
+## 12. Design latitude (founder, 16 Oct 2026)
+
+"Figma is a base; redesign as much as you want; effects and transitions are
+allowed; easy to use." Motion is used where it carries meaning (a page
+arriving, a memory landing when saved, the book's pages turning, the family
+tree drawing itself) and never for decoration; everything respects
+prefers-reduced-motion and nothing slides sideways.
