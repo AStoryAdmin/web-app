@@ -174,6 +174,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   display: flex; flex-direction: column; padding: var(--s-8) var(--s-5) var(--s-6);
 }
 .rail .brand { padding: 0 var(--s-3); margin-bottom: var(--s-8); }
+.rail .brand .narrow { display: none; }
 .rail .teller { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-field);
   background: rgba(243,235,221,0.08); border: 1px solid rgba(243,235,221,0.14); color: inherit; text-align: left; width: 100%; cursor: pointer; }
 .rail .teller small { display: block; font-size: var(--t-caption); letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass); font-weight: 700; }
@@ -379,7 +380,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 @media (max-width: 1100px) {
   :root { --rail-w: 96px; --gutter: 28px; }
   .rail { padding: var(--s-6) var(--s-3); }
-  .rail .brand { display: flex; justify-content: center; --lockup-h: 30px; }
+  .rail .brand { display: flex; justify-content: center; padding: 0; }
+  .rail .brand .wide { display: none; }
+  .rail .brand .narrow { display: block; }
+  .rail .add { width: 56px; height: 56px; min-height: 0; padding: 0; margin-left: auto; margin-right: auto; border-radius: 50%; }
+  .rail .add span { display: none; }
   .rail .teller strong, .rail .teller small, .rail .teller svg, .rail nav a span, .rail .me strong, .rail .me small { display: none; }
   .rail .teller { justify-content: center; padding: var(--s-2); }
   .rail nav a { justify-content: center; padding: 0; }

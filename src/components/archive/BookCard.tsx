@@ -30,10 +30,10 @@ export default function BookCard({ story }: { story: Story }) {
           <small>{p.headline}</small>
         </p>
         <div className="progress" style={{ ["--pct" as string]: `${Math.max(6, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
-          <div className="bar">{pct}%</div>
+          <div className="bar">{pct >= 20 ? `${pct}%` : ""}</div>
           <div className="mark" />
           <div className="comb" />
-          <div className="end">100%</div>
+          <div className="end">First edition</div>
         </div>
         <p className="meta" style={{ marginTop: 8 }}>{line}</p>
         <div className="acts">

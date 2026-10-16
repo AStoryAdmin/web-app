@@ -100,10 +100,10 @@ export default function Book() {
             <p className="bookhero-sub">{book.title === book.fullName ? book.subtitle : book.fullName}</p>
             <p className="bookhero-headline">{progress.headline}</p>
             <div className="progress" style={{ ["--pct" as string]: `${Math.max(6, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
-              <div className="bar">{pct}%</div>
+              <div className="bar">{pct >= 20 ? `${pct}%` : ""}</div>
               <div className="mark" />
               <div className="comb" />
-              <div className="end">100%</div>
+              <div className="end">First edition</div>
             </div>
             <p className="meta bookhero-line">{bookLine(book)}</p>
             <div className="bookhero-acts">

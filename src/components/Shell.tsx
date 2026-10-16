@@ -8,7 +8,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { Lockup } from "./Brand";
+import { Lockup, Mark } from "./Brand";
 import { Avatar, Button } from "./ui";
 import { ArchiveIcon, BookIcon, ChevronDown, ChevronLeft, CloseIcon, FamilyIcon, HomeIcon, MicIcon, PenIcon, PhotoIcon, PlusIcon } from "./icons";
 import { usePhotoUrl } from "../lib/photoUrls";
@@ -158,7 +158,8 @@ export default function Shell({ children, title, back }: { children: ReactNode; 
       <aside className="rail on-dark">
         <div className="brand">
           <NavLink to="/" aria-label="Home">
-            <Lockup height={40} />
+            <Lockup height={40} className="wide" />
+            <Mark height={34} className="narrow" />
           </NavLink>
         </div>
         <TellerButton onClick={() => setTeller(true)} />

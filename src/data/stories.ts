@@ -128,6 +128,12 @@ export function rowToMemory(row: Row): Memory {
   };
 }
 
+/** A birth year the archive can count with; anything else (the app lets people type freely) is left blank. */
+export function yearOnly(v: unknown): string {
+  const t = String(v ?? "").trim();
+  return /^\d{4}$/.test(t) ? t : "";
+}
+
 export function rowToStory(row: Row): Story {
   const memories = (row.memories || [])
     .slice()
@@ -145,7 +151,7 @@ export function rowToStory(row: Row): Story {
     directory: row.directory || null,
     birthDay: row.birth_day || "",
     birthMonth: row.birth_month || "",
-    birthYear: row.birth_year || "",
+    birthYear: yearOnly(row.birth_year),
     hasAccount: row.has_account || null,
     connectedEmail: row.connected_email || "",
     photo: row.photo_url || null,
