@@ -35,7 +35,7 @@ for (const [name, states] of pages) {
       await page.waitForTimeout(400);
       const out = path.join(here, `${name}${st ? '-' + st : ''}-${tag}.png`);
       await page.screenshot({ path: out, fullPage: false });
-      if (full) await page.screenshot({ path: out.replace(/.png$/, '-full.png'), fullPage: true });
+      if (full) await page.screenshot({ path: out.replace(/.png$/, "-full.png"), fullPage: true });
       const sw = await page.evaluate(() => document.documentElement.scrollWidth);
       console.log(`${path.basename(out)}  scrollWidth=${sw}${sw > w ? '  <-- OVERFLOW' : ''}`);
     }
