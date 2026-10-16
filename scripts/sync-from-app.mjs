@@ -78,8 +78,9 @@ export const FILES = [
   // Money. subscriptions.js and callUsage.js read RevenueCat and Supabase
   // directly, so the web has its own typed plan logic in src/lib instead.
   "lib/firstCall.js",
-  // Saving.
+  // Saving and sessions.
   "lib/saveErrors.js",
+  "lib/sessionCheck.js",
   // Importing what people already wrote.
   "lib/importers.js",
   "lib/whatsapp.js",

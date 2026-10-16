@@ -40,7 +40,7 @@
   @media (max-width: 760px) {
     .home { display: block; }
     .aside { position: static; margin-top: var(--s-6); }
-    .teller-pick { font-size: var(--t-lead); }
+    .teller-pick { font-size: 16px; white-space: nowrap; max-width: 100%; } .teller-pick > span { overflow: hidden; text-overflow: ellipsis; } .greet { min-width: 0; } .greet > div { min-width: 0; }
     .phone-sheet { margin: var(--s-6) calc(-1 * var(--gutter)) 0; padding: var(--s-4) var(--gutter) var(--s-8); }
     .mobile-only { display: block; }
     .desk-only { display: none; }
@@ -90,7 +90,7 @@
           </div>
         </div>
         <div class="tools">
-          <button class="iconbtn" type="button" aria-label="Search memories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+          <button class="iconbtn desk-only" type="button" aria-label="Search memories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
           <button class="iconbtn mobile-only" type="button" aria-label="My account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></button>
         </div>
       </div>

@@ -168,7 +168,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .rail .teller { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-field);
   background: rgba(243,235,221,0.08); border: 1px solid rgba(243,235,221,0.14); color: inherit; text-align: left; width: 100%; cursor: pointer; }
 .rail .teller small { display: block; font-size: var(--t-caption); letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass); font-weight: 700; }
-.rail .teller strong { display: block; font-size: var(--t-body); font-weight: 600; }
+.rail .teller strong { display: block; font-size: 17px; font-weight: 600; line-height: 1.2; }
 .rail .teller svg { margin-left: auto; flex: none; }
 .rail nav { margin-top: var(--s-8); display: flex; flex-direction: column; gap: var(--s-1); }
 .rail nav a {
@@ -381,9 +381,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   .shell { display: block; }
   .rail { display: none; }
   .page { padding: var(--s-4) var(--gutter) 120px; }
-  .topbar { display: block; background: var(--chocolate); color: var(--on-chocolate); padding: 18px var(--gutter) 34px; position: relative; text-align: center; }
+  .topbar { display: block; background: var(--chocolate); color: var(--on-chocolate); padding: 18px var(--gutter) 34px; position: relative; text-align: center; overflow: hidden; }
   .topbar::after { /* the Figma's curved bottom edge */
-    content: ""; position: absolute; left: -10%; right: -10%; bottom: -1px; height: 28px; background: var(--page); border-radius: 100% 100% 0 0 / 100% 100% 0 0;
+    content: ""; position: absolute; left: -6%; right: -6%; bottom: -1px; height: 28px; background: var(--page); border-radius: 100% 100% 0 0 / 100% 100% 0 0;
   }
   .topbar .row { display: flex; align-items: center; justify-content: center; gap: var(--s-3); min-height: 44px; }
   .topbar .back { position: absolute; left: var(--gutter); top: 18px; width: 44px; height: 44px; border-radius: 50%; background: rgba(243,235,221,0.14); border: 0; color: inherit; display: grid; place-items: center; }
@@ -397,16 +397,17 @@ ul { margin: 0; padding: 0; list-style: none; }
   .tabbar .fab { width: 64px; height: 64px; border-radius: 50%; background: var(--chocolate); color: var(--on-chocolate); display: grid; place-items: center; border: 0; box-shadow: var(--shadow-float); flex: none; }
   .tabbar .fab svg { width: 28px; height: 28px; }
   .pagehead { margin-bottom: var(--s-5); }
-  .iconbtn { width: 48px; height: 48px; }
+  .iconbtn { width: 46px; height: 46px; } .tools { gap: var(--s-2); }
   .week { gap: 4px; } .week button .d { width: 46px; height: 46px; font-size: var(--t-small); } .week button { font-size: 14px; }
   .qcard { grid-template-columns: 1fr; padding: var(--s-5) var(--s-5) 0; }
   .qcard .q { font-size: 22px; }
   .qcard .acts { padding-bottom: var(--s-4); }
   .qcard .art { width: 230px; justify-self: end; margin-right: calc(-1 * var(--s-5)); margin-top: -36px; }
   .tiles { gap: var(--s-3); }
-  .tile { min-height: 96px; padding: var(--s-4); font-size: var(--t-small); }
-  .mem { grid-template-columns: 128px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); }
-  .mem h3 { font-size: 22px; }
+  .tile { min-height: 96px; padding: var(--s-4) var(--s-3); font-size: 15px; text-align: center; }
+  .mem { grid-template-columns: 116px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); }
+  .mem h3 { font-size: 20px; }
+  .mem .chips .chip { font-size: 13px; min-height: 28px; padding: 0 10px; }
   .mem .excerpt { font-size: var(--t-small); }
   .mem .chips { justify-content: flex-start; }
   .avatars img, .avatars span { width: 30px; height: 30px; }

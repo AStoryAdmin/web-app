@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · A Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="astory.css">
+<style>
+  /* Three states on one page: signin · create · code. data-state on <body>. */
+  body { min-height: 100vh; }
+  .auth { display: grid; grid-template-columns: minmax(380px, 46%) minmax(0, 1fr); min-height: 100vh; }
+
+  /* the chocolate half: the splash, grown up */
+  .hero { background: var(--chocolate); color: var(--on-chocolate); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: var(--s-10); }
+  .hero .mark-wrap { position: relative; display: grid; place-items: center; margin: auto 0; }
+  .hero .wave { position: absolute; left: -40px; right: -40px; top: 50%; transform: translateY(-50%); color: var(--on-chocolate); height: 140px; gap: 7px; }
+  .hero .wave i { width: 3px; }
+  .hero [data-mark] { position: relative; --mark-h: 220px; }
+  .hero .tag { font-family: var(--font-story); font-size: 30px; line-height: 1.25; color: var(--on-chocolate); max-width: 20ch; }
+  .hero .tag b { color: var(--brass); font-weight: 600; }
+  .hero .foot { display: flex; align-items: center; gap: var(--s-3); }
+  .hero .foot img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+  .hero .foot p { font-size: var(--t-small); color: var(--on-chocolate-soft); line-height: 1.35; }
+  .hero .top { display: flex; align-items: center; justify-content: space-between; }
+  .hero .help { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid rgba(243,235,221,.4); display: grid; place-items: center; color: inherit; text-decoration: none; font-weight: 700; }
+
+  /* the cream half: the form */
+  .form-side { display: flex; flex-direction: column; padding: var(--s-10) var(--gutter); min-width: 0; }
+  .form { width: 100%; max-width: 460px; margin: auto; min-width: 0; }
+  .form h1 { text-align: center; margin-bottom: var(--s-8); }
+  .form .sub { text-align: center; color: var(--ink-soft); margin: calc(-1 * var(--s-6)) 0 var(--s-8); }
+  .form .sub b { color: var(--accent); font-weight: 600; }
+  .form .forgot { display: block; text-align: right; margin: calc(-1 * var(--s-2)) 0 var(--s-6); color: var(--accent); font-weight: 600; }
+  .or { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-4); color: var(--ink-soft); font-size: var(--t-small); margin: var(--s-8) 0 var(--s-5); }
+  .or::before, .or::after { content: ""; height: 1px; background: var(--line-strong); }
+  .social { display: flex; justify-content: center; gap: var(--s-5); }
+  .social a { width: 64px; height: 64px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow-1); display: grid; place-items: center; color: var(--ink); }
+  .social a svg { width: 28px; height: 28px; }
+  .switch { text-align: center; margin-top: var(--s-10); color: var(--ink-soft); font-size: var(--t-small); }
+  .switch a { color: var(--accent); font-weight: 700; }
+  .legal { text-align: center; font-size: var(--t-small); color: var(--ink-soft); margin-top: var(--s-6); }
+  .legal a { color: var(--accent); }
+  .resend { text-align: center; margin: var(--s-6) 0; color: var(--ink-soft); font-size: var(--t-small); }
+  .resend a { display: block; color: var(--heading); font-weight: 700; margin-top: 4px; }
+  .referral { display: none; }
+  .form.create .check.on ~ .referral { display: block; }
+
+  /* state switching */
+  [data-panel] { display: none; }
+  body[data-state="signin"] [data-panel="signin"],
+  body[data-state="create"] [data-panel="create"],
+  body[data-state="code"]   [data-panel="code"] { display: block; animation: rise var(--dur-sheet) var(--ease-out) both; }
+
+  /* mockup-only state switcher */
+  .states { position: fixed; right: 12px; top: 12px; z-index: 30; display: flex; gap: 4px; background: rgba(43,33,22,.86); padding: 6px; border-radius: 999px; }
+  .states button { border: 0; background: transparent; color: #F3EBDD; font: 600 13px var(--font-ui); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+  .states button:hover { background: rgba(243,235,221,.14); }
+
+  .mobile-only { display: none; }
+  @media (max-width: 760px) {
+    .auth { display: block; }
+    .hero { padding: var(--s-5) var(--gutter) 0; min-height: 300px; justify-content: flex-start; }
+    .hero .mark-wrap { margin: var(--s-5) 0 var(--s-6); }
+    .hero [data-mark] { --mark-h: 130px; }
+    .hero .wave { height: 170px; gap: 6px; }
+    .hero .tag, .hero .foot { display: none; }
+    .hero::after { content: ""; display: block; height: 28px; margin: 0 calc(-1 * var(--gutter)); background: var(--chocolate-deep); border-radius: 36px 36px 0 0; }
+    .form-side { display: block; margin-top: -14px; background: var(--page); border-radius: 36px 36px 0 0; padding: var(--s-8) var(--gutter) var(--s-12); position: relative; }
+    .form { max-width: none; }
+    .form h1 { margin-bottom: var(--s-6); font-size: 30px; }
+    .form .sub { margin: calc(-1 * var(--s-4)) 0 var(--s-6); font-size: var(--t-small); }
+    .social a { width: 60px; height: 60px; }
+    .mobile-only { display: block; }
+    .states { top: auto; bottom: 12px; }
+  }
+</style>
+</head>
+<body data-state="signin" data-states>
+<div class="states" aria-label="Mockup states (not part of the product)">
+  <button type="button" data-set-state="signin">Sign in</button>
+  <button type="button" data-set-state="create">Create</button>
+  <button type="button" data-set-state="code">Code</button>
+</div>
+
+<div class="auth">
+  <section class="hero on-dark" aria-label="A Story">
+    <div class="top">
+      <a class="help" href="#back" aria-label="Back" style="border:0;background:rgba(243,235,221,.14)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></a>
+      <a class="help" href="#help" aria-label="Help">?</a>
+    </div>
+    <div class="mark-wrap">
+      <div class="wave" aria-hidden="true">
+        <i style="--h:12%"></i><i style="--h:30%"></i><i style="--h:18%"></i><i style="--h:44%"></i><i style="--h:26%"></i><i style="--h:60%"></i><i style="--h:38%"></i><i style="--h:22%"></i><i style="--h:70%"></i><i style="--h:48%"></i><i style="--h:30%"></i><i style="--h:82%"></i><i style="--h:56%"></i><i style="--h:36%"></i><i style="--h:92%"></i><i style="--h:64%"></i><i style="--h:40%"></i><i style="--h:100%"></i><i style="--h:72%"></i><i style="--h:52%"></i><i style="--h:86%"></i><i style="--h:60%"></i><i style="--h:100%"></i><i style="--h:68%"></i><i style="--h:44%"></i><i style="--h:90%"></i><i style="--h:58%"></i><i style="--h:34%"></i><i style="--h:76%"></i><i style="--h:50%"></i><i style="--h:28%"></i><i style="--h:66%"></i><i style="--h:42%"></i><i style="--h:20%"></i><i style="--h:54%"></i><i style="--h:32%"></i><i style="--h:16%"></i><i style="--h:40%"></i><i style="--h:24%"></i><i style="--h:12%"></i>
+      </div>
+      <div data-mark></div>
+    </div>
+    <div>
+      <p class="tag">Share your life story. <b>Leave a legacy.</b></p>
+      <div class="foot" style="margin-top:var(--s-8)">
+        <img src="../../../landing-page-publish/public/mission/33-640.webp" alt="">
+        <p>One phone call a week. Your family adds the photographs. It becomes a book.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-side">
+    <!-- ───── State 1: sign in ───── -->
+    <form class="form" data-panel="signin" onsubmit="return false">
+      <h1>Sign in</h1>
+      <label class="field"><span>Email or phone number</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="sep"></span><input type="text" placeholder="you@example.com" autocomplete="username"></div>
+      </label>
+      <label class="field"><span>Password</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span class="sep"></span><input type="password" placeholder="Your password" autocomplete="current-password"><button class="show" type="button">Show</button></div>
+      </label>
+      <a class="forgot" href="#forgot">Forgot password?</a>
+      <button class="btn primary block" type="submit">Sign in</button>
+      <div class="or">Or sign in with</div>
+      <div class="social">
+        <a href="#apple" aria-label="Sign in with Apple"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.4 1.2 0 1.6-.8 3-.8s1.8.8 3 .8 2-1.1 2.8-2.3c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.4 5.8c.6-.8 1.1-1.9.9-3-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z"/></svg></a>
+        <a href="#google" aria-label="Sign in with Google"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4c-.2 1.2-.9 2.3-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6C4.8 19.8 8.1 22 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1C2.4 8.8 2 10.4 2 12s.4 3.2 1.1 4.6L6.4 14z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17 2.9 14.7 2 12 2 8.1 2 4.8 4.2 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg></a>
+        <a href="#facebook" aria-label="Sign in with Facebook"><svg viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg></a>
+      </div>
+      <p class="switch">Don't have an account? <a href="#create" data-set-state="create">Join us</a></p>
+    </form>
+
+    <!-- ───── State 2: create account ───── -->
+    <form class="form create" data-panel="create" onsubmit="return false">
+      <h1>Create account</h1>
+      <label class="field"><span>Name</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 18.5c1.2-2 3.2-3 5.5-3s4.3 1 5.5 3"/></svg><span class="sep"></span><input type="text" placeholder="Ex. Dan Hartley" autocomplete="name"></div>
+      </label>
+      <label class="field"><span>Email or phone number</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="sep"></span><input type="text" placeholder="you@example.com" autocomplete="username"></div>
+      </label>
+      <label class="field"><span>Password</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span class="sep"></span><input type="password" placeholder="At least 8 characters" autocomplete="new-password"><button class="show" type="button">Show</button></div>
+      </label>
+      <label class="field"><span>Confirm your password</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span class="sep"></span><input type="password" placeholder="Type it once more" autocomplete="new-password"><button class="show" type="button">Show</button></div>
+      </label>
+      <label class="check on" style="margin-bottom:var(--s-5)"><i><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></i>I have a referral code</label>
+      <label class="field referral"><span>Referral code</span>
+        <div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M8 10v4"/></svg><span class="sep"></span><input type="text" value="A673HDB" style="letter-spacing:.08em;font-weight:600"></div>
+        <p class="hint" style="margin-top:8px;color:var(--green);font-weight:600">Code applied. Your first month is free.</p>
+      </label>
+      <button class="btn primary block" type="submit" data-set-state="code">Begin your journey</button>
+      <div class="or">Or sign up with</div>
+      <div class="social">
+        <a href="#apple" aria-label="Sign up with Apple"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.7 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.4 1.2 0 1.6-.8 3-.8s1.8.8 3 .8 2-1.1 2.8-2.3c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.4 5.8c.6-.8 1.1-1.9.9-3-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z"/></svg></a>
+        <a href="#google" aria-label="Sign up with Google"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4c-.2 1.2-.9 2.3-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6C4.8 19.8 8.1 22 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1C2.4 8.8 2 10.4 2 12s.4 3.2 1.1 4.6L6.4 14z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17 2.9 14.7 2 12 2 8.1 2 4.8 4.2 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg></a>
+        <a href="#facebook" aria-label="Sign up with Facebook"><svg viewBox="0 0 24 24" fill="#1877F2"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg></a>
+      </div>
+      <p class="legal">By creating an account you agree to our <a href="#terms">Terms and Privacy Policy</a>.</p>
+      <p class="switch">Already have an account? <a href="#signin" data-set-state="signin">Sign in</a></p>
+    </form>
+
+    <!-- ───── State 3: verify code ───── -->
+    <form class="form" data-panel="code" onsubmit="return false">
+      <h1>Check your email</h1>
+      <p class="sub">We sent a six-digit code to <b>dan@example.com</b>. Type it below.</p>
+      <div class="code" role="group" aria-label="Verification code">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 1" value="4"><input inputmode="numeric" maxlength="1" aria-label="Digit 2" value="8"><input inputmode="numeric" maxlength="1" aria-label="Digit 3" value="1"><input inputmode="numeric" maxlength="1" aria-label="Digit 4"><input inputmode="numeric" maxlength="1" aria-label="Digit 5"><input inputmode="numeric" maxlength="1" aria-label="Digit 6">
+      </div>
+      <p class="resend">Didn't get it? <a href="#resend">Send the code again (45s)</a></p>
+      <button class="btn primary block" type="submit">Verify</button>
+      <p class="switch">Wrong address? <a href="#create" data-set-state="create">Go back</a></p>
+    </form>
+  </section>
+</div>
+<script src="astory.js"></script>
+</body>
+</html>
