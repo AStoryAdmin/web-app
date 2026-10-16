@@ -698,8 +698,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 .spread { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); border-radius: 4px; color: var(--ink);
   box-shadow: 0 1px 0 #f1e8d4, 0 2px 0 #e6dac0, 0 3px 0 #dacbab, 0 4px 0 var(--foil), 0 5px 0 #8a6a33; }
 .leaf { position: relative; min-width: 0; padding: var(--s-8) calc(var(--s-8) + 6px) var(--s-8); display: flex; flex-direction: column; gap: var(--s-4); }
+.verso-in { position: sticky; top: var(--s-6); display: flex; flex-direction: column; gap: var(--s-4); min-height: min(100vh - var(--s-12), 100%); }
+.verso > .verso-in { z-index: 1; }
 .leaf > *:not(.page-frame) { position: relative; z-index: 1; }
-.verso { border-radius: 4px 0 0 4px; position: sticky; top: var(--s-4); align-self: start; min-height: 100%;
+.verso { border-radius: 4px 0 0 4px;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
     linear-gradient(90deg, var(--leaf) 0%, var(--leaf-2) 84%, #ece2cd 95%, var(--gutter) 100%); }
 .recto { border-radius: 0 4px 4px 0; padding-left: calc(var(--s-10) + 6px);
@@ -770,7 +772,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* the recto: the words */
 .wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 500; font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -0.012em; line-height: 1.2; color: var(--pen); padding: 0; outline: 0; margin-top: var(--s-2); resize: none; overflow: hidden; display: block; }
 .wtitle::placeholder { color: #AAA391; font-weight: 400; font-style: italic; }
-.wbody { width: 100%; flex: 1; min-height: 420px; border: 0; outline: 0; resize: none; padding: 0; margin: 0;
+.wbody { width: 100%; flex: none; min-height: 420px; border: 0; outline: 0; resize: none; overflow: hidden; padding: 0; margin: 0;
   font-family: var(--font-story); font-size: 21px; line-height: 36px; color: var(--pen); caret-color: var(--accent);
   background-color: transparent; background-image: linear-gradient(transparent 35px, var(--foil-soft) 35px, var(--foil-soft) 36px, transparent 36px); background-size: 100% 36px; background-position: 0 0; background-attachment: local;
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M3 29 L7 17 L21 3 L29 11 L15 25 Z' fill='%233A2A1F' stroke='white' stroke-width='1.6' stroke-linejoin='round'/><path d='M3 29 L11 21' stroke='white' stroke-width='1.3'/><circle cx='11.5' cy='20.5' r='1.8' fill='white'/></svg>") 3 29, text; }

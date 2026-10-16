@@ -165,7 +165,7 @@ export default function Write() {
     const el = bodyRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const lines = Math.ceil(el.scrollHeight / 36);
+    const lines = Math.ceil(el.scrollHeight / 36) + 1;
     el.style.height = `${Math.max(focus ? 14 : 11, lines) * 36}px`;
   }, [d.body, focus, dictation.interim]);
   useEffect(() => {
@@ -405,6 +405,7 @@ export default function Write() {
           <div className="cover">
             <article className="spread" ref={spreadRef}>
               <section className="leaf verso" aria-label="About this memory">
+                <div className="verso-in">
                 <p className="folio-top">
                   <span>{bookName}</span>
                   <span>Memory No. {number}</span>
@@ -505,6 +506,7 @@ export default function Write() {
                     <b>Ctrl+Enter</b> keeps it · <Link to="/">Not now</Link>
                   </small>
                 </footer>
+                </div>
                 <p className="page-no" aria-hidden="true">
                   {number * 2 - 1}
                 </p>
