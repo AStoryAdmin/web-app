@@ -200,11 +200,11 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-              <div className="progress" style={{ ["--pct" as string]: `${Math.max(6, Math.round(progress.ratio * 100))}%`, marginTop: "var(--s-4)" }} role="img" aria-label={`${Math.round(progress.ratio * 100)}% of the way to a first edition`}>
-                <div className="bar">{Math.round(progress.ratio * 100)}%</div>
+              <div className="progress" style={{ ["--pct" as string]: `${Math.max(4, Math.round(progress.ratio * 100))}%`, marginTop: "var(--s-4)" }} role="img" aria-label={`${Math.round(progress.ratio * 100)}% of the way to a first edition`}>
+                <div className="bar">{progress.ratio >= 0.2 ? `${Math.round(progress.ratio * 100)}%` : ""}</div>
                 <div className="mark" />
                 <div className="comb" />
-                <div className="end">100%</div>
+                <div className="end">First edition</div>
               </div>
               <ButtonLink to="/book" variant="outline" small block style={{ marginTop: "var(--s-4)" }}>
                 Open the book
