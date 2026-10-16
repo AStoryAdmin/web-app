@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live conversation · A Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="astory.css">
+<style>
+  /* The call is a dark room in both themes: not a page being read, a room somebody is talking in. */
+  body { background: var(--chocolate-ink); color: var(--on-chocolate); min-height: 100vh; }
+  .room { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) 420px; }
+  .stage { display: grid; grid-template-rows: auto 1fr auto; padding: var(--s-6) var(--s-10) var(--s-8); position: relative; overflow: hidden; }
+  .glow { position: absolute; left: 50%; top: 58%; width: 720px; height: 720px; transform: translate(-50%, -50%); border-radius: 50%;
+    background: radial-gradient(circle, rgba(234,198,104,.22) 0%, rgba(184,83,39,.26) 32%, rgba(184,83,39,0) 68%); pointer-events: none; transition: opacity 600ms var(--ease-out); }
+  .head { display: flex; align-items: center; justify-content: space-between; position: relative; }
+  .head .who { display: flex; align-items: center; gap: var(--s-3); }
+  .head .who img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+  .head .who small { display: block; font-size: var(--t-caption); letter-spacing: .08em; text-transform: uppercase; color: var(--brass); font-weight: 700; }
+  .head .who strong { font-size: var(--t-small); }
+  .head time { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--on-chocolate-soft); }
+  .centre { display: grid; justify-items: center; align-content: center; text-align: center; gap: var(--s-6); position: relative; }
+  .centre .q { font-family: var(--font-story); font-size: 38px; line-height: 1.25; max-width: 22ch; color: var(--on-chocolate); font-weight: 500; }
+  .centre .status { font-size: var(--t-body); font-weight: 600; color: var(--on-chocolate-soft); min-height: 28px; }
+  .orb { width: 168px; height: 168px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+  .orb::before, .orb::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid rgba(243,235,221,.16); }
+  .orb::after { inset: -22px; border-color: rgba(243,235,221,.08); }
+  .orb [data-mark] { --mark-h: 84px; --logo-a: var(--on-chocolate); --logo-heart: var(--brass); position: relative; }
+  .orb .bars { position: absolute; left: -70px; right: -70px; top: 50%; height: 60px; transform: translateY(-50%); display: flex; align-items: center; gap: 4px; justify-content: space-between; }
+  .orb .bars i { width: 3px; border-radius: 2px; background: var(--brass); height: var(--h, 20%); opacity: .7; transform-origin: center; animation: talk 1.1s ease-in-out infinite; animation-delay: calc(var(--i) * 70ms); }
+  @keyframes talk { 50% { transform: scaleY(0.35); } }
+  .controls { display: flex; justify-content: center; gap: var(--s-5); position: relative; }
+  .ctl { display: grid; justify-items: center; gap: var(--s-2); background: none; border: 0; color: var(--on-chocolate); font-size: var(--t-small); font-weight: 600; cursor: pointer; }
+  .ctl i { width: 68px; height: 68px; border-radius: 50%; background: rgba(243,235,221,.08); border: 1.5px solid rgba(243,235,221,.16); display: grid; place-items: center; transition: transform var(--dur-press) var(--ease-out); }
+  .ctl:active i { transform: scale(.95); }
+  .ctl i svg { width: 28px; height: 28px; }
+  .ctl.end i { background: var(--on-chocolate); color: var(--chocolate-ink); border-color: transparent; }
+
+  /* the transcript, on an opaque sheet so it can actually be read */
+  .script { background: var(--chocolate-deep); padding: var(--s-6); display: grid; grid-template-rows: auto 1fr auto; gap: var(--s-4); border-left: 1px solid rgba(243,235,221,.08); }
+  .script h2 { font-size: var(--t-caption); letter-spacing: .08em; text-transform: uppercase; color: var(--on-chocolate-soft); }
+  .lines { display: grid; gap: var(--s-4); align-content: end; overflow: hidden; }
+  .line { display: grid; gap: 4px; }
+  .line small { font-size: var(--t-caption); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--brass); }
+  .line.rose small { color: var(--on-chocolate-soft); }
+  .line p { font-family: var(--font-story); font-size: var(--t-story); line-height: 1.45; color: rgba(243,235,221,.72); }
+  .line.now p { color: var(--on-chocolate); font-size: 23px; }
+  .line.typing p::after { content: ""; display: inline-block; width: 10px; height: 10px; margin-left: 8px; border-radius: 50%; background: var(--brass); animation: pulse 1.2s ease-in-out infinite; vertical-align: middle; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .script .tip { font-size: var(--t-small); color: var(--on-chocolate-soft); border-top: 1px solid rgba(243,235,221,.1); padding-top: var(--s-4); }
+
+  /* ended: what we'll keep */
+  .keep { display: none; }
+  .keep .sheet-card { background: var(--sheet); color: var(--ink); border-radius: var(--r-sheet); padding: var(--s-8); max-width: 720px; width: 100%; box-shadow: var(--shadow-float); }
+  .keep .pre { font-size: var(--t-caption); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .keep h1 { font-family: var(--font-story); font-weight: 600; font-size: 36px; margin: var(--s-2) 0 var(--s-4); }
+  .keep .pull { display: grid; gap: var(--s-3); margin: var(--s-5) 0; }
+  .keep .pull p { font-family: var(--font-story); font-size: var(--t-story); padding-left: var(--s-4); border-left: 3px solid var(--gold); color: var(--ink); }
+  .keep .acts { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-6); }
+  .keep .note { margin-top: var(--s-5); font-size: var(--t-small); color: var(--ink-soft); }
+
+  /* states */
+  [data-state="speaking"] .status::before { content: "A Story is speaking"; }
+  [data-state="listening"] .status::before { content: "Listening to Rose…"; }
+  [data-state="listening"] .orb .bars i { background: var(--on-chocolate); animation-duration: .7s; }
+  [data-state="listening"] .glow { opacity: .55; }
+  [data-state="ended"] .stage, [data-state="ended"] .script { display: none; }
+  [data-state="ended"] .room { grid-template-columns: 1fr; }
+  [data-state="ended"] .keep { display: grid; place-items: center; padding: var(--s-10) var(--gutter); min-height: 100vh; }
+
+  .states { position: fixed; right: 12px; top: 12px; z-index: 30; display: flex; gap: 4px; background: rgba(243,235,221,.12); padding: 6px; border-radius: 999px; }
+  .states button { border: 0; background: transparent; color: #F3EBDD; font: 600 13px var(--font-ui); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+  .states button:hover { background: rgba(243,235,221,.14); }
+
+  @media (max-width: 1100px) { .room { grid-template-columns: minmax(0,1fr) 340px; } .centre .q { font-size: 30px; } }
+  @media (max-width: 760px) {
+    .room { display: block; min-height: 100vh; }
+    .stage { min-height: 100vh; padding: var(--s-5) var(--gutter) var(--s-6); grid-template-rows: auto 1fr auto auto; gap: var(--s-5); }
+    .glow { width: 480px; height: 480px; top: 46%; }
+    .centre .q { font-size: 26px; }
+    .orb { width: 132px; height: 132px; } .orb [data-mark] { --mark-h: 66px; } .orb .bars { left: -44px; right: -44px; }
+    .script { border-left: 0; border-top: 1px solid rgba(243,235,221,.08); padding: var(--s-5) var(--gutter); }
+    .script .tip { display: none; }
+    .line p { font-size: var(--t-body); } .line.now p { font-size: 20px; }
+    .ctl i { width: 60px; height: 60px; } .controls { gap: var(--s-4); }
+    .keep .sheet-card { padding: var(--s-6) var(--s-5); } .keep h1 { font-size: 28px; }
+    .states { top: auto; bottom: 12px; }
+  }
+</style>
+</head>
+<body data-state="speaking" data-states>
+<div class="states" aria-label="Mockup states (not part of the product)">
+  <button type="button" data-set-state="speaking">Speaking</button>
+  <button type="button" data-set-state="listening">Listening</button>
+  <button type="button" data-set-state="ended">Ended</button>
+</div>
+
+<div class="room on-dark">
+  <section class="stage" aria-label="The call">
+    <div class="glow" aria-hidden="true"></div>
+    <header class="head">
+      <div class="who"><img src="../../../landing-page-publish/public/mission/31-640.webp" alt=""><div><small>Live conversation</small><strong>Rose Hartley</strong></div></div>
+      <time datetime="PT4M12S">4:12</time>
+    </header>
+
+    <div class="centre">
+      <div class="orb" aria-hidden="true">
+        <div class="bars">
+          <i style="--h:20%;--i:0"></i><i style="--h:50%;--i:1"></i><i style="--h:35%;--i:2"></i><i style="--h:80%;--i:3"></i><i style="--h:55%;--i:4"></i><i style="--h:100%;--i:5"></i><i style="--h:60%;--i:6"></i>
+          <span style="width:160px"></span>
+          <i style="--h:60%;--i:6"></i><i style="--h:100%;--i:5"></i><i style="--h:55%;--i:4"></i><i style="--h:80%;--i:3"></i><i style="--h:35%;--i:2"></i><i style="--h:50%;--i:1"></i><i style="--h:20%;--i:0"></i>
+        </div>
+        <div data-mark></div>
+      </div>
+      <p class="status" aria-live="polite"></p>
+      <p class="q">What is a moment from high school that always brings a smile to your face?</p>
+    </div>
+
+    <div class="controls">
+      <button class="ctl" type="button"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></i>Mute</button>
+      <button class="ctl" type="button"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" style="display:none"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></i>Pause</button>
+      <button class="ctl" type="button"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0M4 12v4M20 12v4M7 20l5-8 5 8"/></svg></i>Ask me another</button>
+      <button class="ctl end" type="button" data-set-state="ended"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c5-5 13-5 18 0l-2.5 2.5c-1.2-.8-2.6-1.3-4-1.5l-.7-2.5c-1.2-.3-2.4-.3-3.6 0L9.5 13c-1.4.2-2.8.7-4 1.5z"/></svg></i>End</button>
+    </div>
+  </section>
+
+  <aside class="script" aria-label="Transcript">
+    <h2>What's been said</h2>
+    <div class="lines">
+      <div class="line"><small>A Story</small><p>Good evening, Rose. Dan said you were a bit under the weather this week — are you up for a short one?</p></div>
+      <div class="line rose"><small>Rose</small><p>Oh, I'm fine. Fifteen minutes. Go on, then.</p></div>
+      <div class="line"><small>A Story</small><p>What is a moment from high school that always brings a smile to your face?</p></div>
+      <div class="line rose now typing"><small>Rose</small><p>Well, there was the spring dance in fifty-five. Walt wasn't my date, you know. He was somebody else's</p></div>
+    </div>
+    <p class="tip">Rose can take her time. Pauses are fine; A Story waits.</p>
+  </aside>
+
+  <!-- ended: what we'll keep -->
+  <section class="keep" aria-label="What we'll keep">
+    <div class="sheet-card">
+      <p class="pre">That was 6 minutes · we'll keep this</p>
+      <h1>The spring dance, 1955</h1>
+      <div class="chiprow"><span class="chip accent">Growing up</span><span class="chip green">Love &amp; family</span><span class="chip">Walt</span></div>
+      <div class="pull">
+        <p>“Walt wasn't my date. He was somebody else's, and he spent the whole evening being very polite to her and looking at me.”</p>
+        <p>“My mother had taken the hem up twice and it was still too long. I danced on it all night.”</p>
+        <p>“He walked the other girl home first. Then he came back. That's the part that makes me smile.”</p>
+      </div>
+      <p class="meta">A Story is writing the whole memory up now. It'll be in Rose's archive in a few minutes, and Dan will see it in Family news.</p>
+      <div class="acts">
+        <a class="btn primary" href="04-archive.html">Keep it</a>
+        <a class="btn outline" href="#listen">Listen back</a>
+        <a class="btn quiet" href="#discard" style="color:var(--danger)">Don't keep this one</a>
+      </div>
+      <p class="note">Rose can change or remove anything later. Nothing is shared outside the family.</p>
+    </div>
+  </section>
+</div>
+<script src="astory.js"></script>
+</body>
+</html>

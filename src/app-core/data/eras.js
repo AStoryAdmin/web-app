@@ -3,7 +3,7 @@
 // Its own module, with no imports, because the pure logic that reasons about
 // chapters (lib/bookProgress.js, lib/timeline.js) shouldn't have to drag the
 // Supabase client in behind it — and neither should the tests that cover that
-// logic. data/store.js re-exports these, so the many `from "../data/store"`
+// logic. data/store.js re-exports these, so the many `from "../data/store.js"`
 // call sites keep working.
 //
 // Two things shaped this list. The archive reads years now, so chapters no

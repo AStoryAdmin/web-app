@@ -15,7 +15,7 @@
 // src/app-core/ (lib/ and data/). Every copied file's imports are scanned;
 // an import of a file not on the list, or of react-native/expo, fails the
 // sync, so nothing impure gets in by accident.
-import { copyFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,6 +31,10 @@ export const FILES = [
   "data/eras.js",
   "data/interview.js",
   "data/languages.js",
+  // The row shapes a story and a memory take in the database, and the
+  // save-diff. Shared so both products write the same columns.
+  "data/rows.js",
+  "lib/photoRefs.js",
   // Dates and the archive.
   "lib/timeline.js",
   "lib/spokenDate.js",
@@ -116,18 +120,26 @@ for (const rel of FILES) {
   for (const spec of importsOf(source)) {
     if (BANNED.test(spec)) throw new Error(`${rel} imports ${spec}: not pure, cannot be copied`);
     if (spec.startsWith(".")) {
+      // Metro resolves "./eras" to eras.js; Vite needs the extension written,
+      // so the copy is rewritten below. Both spellings must be on the list.
       const target = resolve(dirname(from), spec);
-      if (!allowed.has(target)) throw new Error(`${rel} imports ${spec}, which is not on the list`);
+      const withExt = /\.(m?js)$/.test(target) ? target : `${target}.js`;
+      if (!allowed.has(withExt)) throw new Error(`${rel} imports ${spec}, which is not on the list`);
     }
   }
+  // Give extensionless relative imports their ".js" for the browser (Metro
+  // resolves "./eras"; Vite needs "./eras.js"). The only change made to a copy.
+  const fixed = source.replace(/(from\s*["'])(\.{1,2}\/[^"']+?)(["'])/g, (m, a, p, b) =>
+    /\.(m?js|json)$/.test(p) ? m : `${a}${p}.js${b}`,
+  );
   if (check) {
-    if (!existsSync(to) || readFileSync(to, "utf8") !== source) {
+    if (!existsSync(to) || readFileSync(to, "utf8") !== fixed) {
       console.error(`drifted: src/app-core/${rel}`);
       drift++;
     }
   } else {
     mkdirSync(dirname(to), { recursive: true });
-    copyFileSync(from, to);
+    writeFileSync(to, fixed);
   }
 }
 for (const [from, to] of EXTRA) {

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The lake · A Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="astory.css">
+<style>
+  /* Desktop: an open book. Photographs on the left page, the words on the right. */
+  .spread { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-12); align-items: start; }
+  .left { position: sticky; top: var(--s-6); display: grid; gap: var(--s-8); }
+  .hero { border-radius: var(--r-card); overflow: hidden; aspect-ratio: 4 / 3; }
+  .hero img { width: 100%; height: 100%; object-fit: cover; }
+  .polaroids { display: flex; gap: var(--s-4); padding: var(--s-2) var(--s-2) var(--s-4); }
+  .polaroids .polaroid { flex: 1; --w: auto; }
+  .addphoto { display: grid; place-items: center; gap: var(--s-2); min-height: 120px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-card); color: var(--heading); font-weight: 600; text-decoration: none; }
+  .addphoto svg { width: 26px; height: 26px; }
+
+  .right { max-width: 640px; }
+  .meta-row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-5); }
+  .weather { width: 44px; height: 44px; }
+  .right h1 { font-family: var(--font-story); font-weight: 600; font-size: 44px; line-height: 1.1; margin-bottom: var(--s-4); }
+  .told { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-6); }
+  .told img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+  .story h2 { font-family: var(--font-ui); font-size: var(--t-lead); margin: var(--s-8) 0 var(--s-3); }
+  .story p + p { margin-top: var(--s-5); }
+  .player { margin: var(--s-8) 0; }
+  .voices { margin-top: var(--s-10); }
+  .voices h2 { font-size: var(--t-lead); margin-bottom: var(--s-4); }
+  .voice { display: grid; grid-template-columns: 48px 1fr; gap: var(--s-4); padding: var(--s-5); border-radius: var(--r-card); background: var(--card); box-shadow: var(--shadow-1); margin-bottom: var(--s-3); }
+  .voice img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+  .voice .who { font-weight: 700; color: var(--heading); }
+  .voice .who span { font-weight: 500; color: var(--ink-soft); font-size: var(--t-small); margin-left: 6px; }
+  .voice p.story { font-size: var(--t-body); margin-top: 4px; }
+  .voice .pics { display: flex; gap: var(--s-2); margin-top: var(--s-3); }
+  .voice .pics img { width: 88px; height: 88px; border-radius: 12px; }
+  .addvoice { display: grid; grid-template-columns: 48px 1fr auto; gap: var(--s-4); align-items: center; padding: var(--s-4) var(--s-5); border-radius: var(--r-card); border: 1.5px dashed var(--line-strong); }
+  .addvoice .input { min-height: 52px; }
+  .actions { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-10); padding-top: var(--s-6); border-top: 1px solid var(--line); }
+  .crumbs { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-6); font-size: var(--t-small); font-weight: 600; }
+  .crumbs a { color: var(--teal); text-decoration: none; }
+  .mobile-only { display: none; }
+  .dock { display: none; }
+
+  @media (max-width: 1100px) { .spread { grid-template-columns: minmax(0,1fr) minmax(0,1.3fr); gap: var(--s-8); } .right h1 { font-size: 36px; } }
+  @media (max-width: 760px) {
+    .page { padding-top: 0; padding-bottom: 170px; }
+    .spread { display: block; }
+    .left { position: static; display: block; }
+    .hero { margin: 0 calc(-1 * var(--gutter)); border-radius: 0; aspect-ratio: 4 / 3.2; position: relative; }
+    .hero .back { position: absolute; left: var(--gutter); top: var(--s-4); width: 44px; height: 44px; border-radius: 50%; background: rgba(43,33,22,.5); color: #fff; display: grid; place-items: center; }
+    .polaroids, .addphoto, .crumbs { display: none; }
+    .right { background: var(--sheet); margin: -28px calc(-1 * var(--gutter)) 0; padding: var(--s-6) var(--gutter) var(--s-8); border-radius: var(--r-sheet) var(--r-sheet) 0 0; position: relative; max-width: none; }
+    .right h1 { font-size: 32px; text-align: center; }
+    .told { justify-content: center; }
+    .meta-row { padding-bottom: var(--s-4); border-bottom: 1px solid var(--line); }
+    .m-polaroids { display: flex; gap: var(--s-4); justify-content: center; margin: var(--s-6) 0; }
+    .m-polaroids .polaroid { --w: 46%; }
+    .m-stack { margin: var(--s-6) auto; max-width: 300px; }
+    .actions { display: none; }
+    .mobile-only { display: block; }
+    .dock { display: flex; position: fixed; left: var(--s-3); right: var(--s-3); bottom: var(--s-3); z-index: 20; flex-direction: column; gap: var(--s-2); }
+    .dock .player { background: var(--card); box-shadow: var(--shadow-2); margin: 0; }
+    .dock .row { display: flex; justify-content: space-between; }
+    .dock .row button { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--card); box-shadow: var(--shadow-1); color: var(--heading); display: grid; place-items: center; }
+    .dock .row button svg { width: 22px; height: 22px; }
+    .dock .row button.danger { color: var(--danger); }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail on-dark">
+    <div class="brand" data-lockup style="--lockup-h:40px"></div>
+    <button class="teller" type="button" aria-label="Storyteller: Rose Hartley, your mother. Change storyteller">
+      <img class="avatar" src="../../../landing-page-publish/public/mission/31-640.webp" alt="" width="44" height="44">
+      <span><small>Storyteller</small><strong>Rose Hartley</strong></span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <nav aria-label="Main">
+      <a href="02-home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+      <a href="04-archive.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></svg><span>Archive</span></a>
+      <a href="04-archive.html#book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h11"/></svg><span>The Book</span></a>
+      <a href="06-family.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="10" r="2.6"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15.5 15.2c2.6.3 4.5 2.3 4.5 4.8"/></svg><span>Family</span></a>
+    </nav>
+    <div class="rail-foot"><a class="me" href="#account"><span class="avatar ph" style="width:40px;height:40px;background:rgba(243,235,221,.16);color:var(--on-chocolate)">D</span><span><strong>Dan Hartley</strong><small>Account &amp; settings</small></span></a></div>
+  </aside>
+
+  <main class="content">
+    <div class="page">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="04-archive.html">Archive</a><span aria-hidden="true">›</span><a href="04-archive.html#y1970">1975</a><span aria-hidden="true">›</span><span>The lake</span></nav>
+
+      <article class="spread">
+        <!-- left page: the photographs -->
+        <div class="left">
+          <figure class="hero">
+            <a class="back mobile-only" href="04-archive.html" aria-label="Back to the archive"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></a>
+            <img src="../../../landing-page-publish/public/mission/30-1200.webp" alt="Walt in the shallows with his arms out, a boy in the water, Rose on a folding chair at the edge.">
+          </figure>
+          <div class="polaroids">
+            <figure class="polaroid" style="--tilt:-3deg"><img src="../../../landing-page-publish/public/mission/32-640.webp" alt=""><figcaption>The road in, 1970</figcaption></figure>
+            <figure class="polaroid" style="--tilt:2.5deg"><img src="../../../landing-page-publish/public/mission/07-640.webp" alt=""><figcaption>Dan, car window</figcaption></figure>
+          </div>
+          <a class="addphoto" href="#add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 16 5-5 4 4 3-3 6 6M15 9h.01"/></svg>Add a photograph to this memory</a>
+        </div>
+
+        <!-- right page: the words -->
+        <div class="right">
+          <div class="meta-row">
+            <svg class="weather" viewBox="0 0 48 48" aria-label="Warm and bright"><circle cx="24" cy="24" r="10" fill="#F5D06A"/><g stroke="#F5D06A" stroke-width="3" stroke-linecap="round"><path d="M24 4v6M24 38v6M4 24h6M38 24h6M9.9 9.9l4.2 4.2M33.9 33.9l4.2 4.2M38.1 9.9l-4.2 4.2M14.1 33.9l-4.2 4.2"/></g></svg>
+            <div><p style="font-weight:600;color:var(--heading)">Thursday, 12 June 1975</p><div class="chiprow" style="margin-top:4px"><span class="chip accent">Where we come from</span><span class="chip green">Childhood</span><span class="chip">Walt</span><span class="chip">The lake</span></div></div>
+          </div>
+          <h1>The lake, the summer Dad learned to swim</h1>
+          <p class="told"><img src="../../../landing-page-publish/public/mission/31-640.webp" alt=""><span class="meta">Told by <b>Rose</b> on a call, Thursday 8 October · 6 minutes</span></p>
+
+          <div class="story">
+            <p>Your father was forty years old and had never once put his head under water. He grew up on a farm, there was no lake, and by the time there was one he had decided it was too late. So that summer we rented the cabin on Green Lake, and Walt stood in the shallows every single morning with his arms out, like he was catching a child, and the whole beach watched.</p>
+            <h2>The children</h2>
+            <div class="m-polaroids mobile-only">
+              <figure class="polaroid" style="--tilt:-3deg"><img src="../../../landing-page-publish/public/mission/32-640.webp" alt=""><figcaption>The road in, 1970</figcaption></figure>
+              <figure class="polaroid" style="--tilt:2.5deg"><img src="../../../landing-page-publish/public/mission/07-640.webp" alt=""><figcaption>Dan, car window</figcaption></figure>
+            </div>
+            <p>Dan was six and could already swim like a fish, and that was the trouble. He would not leave his father alone. "Just put your face in, Dad. Just your face." Walt would go red to the ears. I sat in the folding chair with my book and pretended not to look, which is what you do.</p>
+            <p>On the Thursday, with nobody near, he did it. Face in, then the whole head, then he came up spluttering and shouting and Dan was already running down the dock. I have never heard your father laugh like that before or since. The water was so cold it took your breath away, and neither of them cared.</p>
+            <div class="stack m-stack mobile-only" aria-label="42 photographs">
+              <img src="../../../landing-page-publish/public/mission/16-640.webp" alt=""><img src="../../../landing-page-publish/public/mission/32-640.webp" alt=""><img src="../../../landing-page-publish/public/mission/30-640.webp" alt=""><span class="count">42 photos</span>
+            </div>
+            <p>He swam every summer after that. Not well. But every summer.</p>
+          </div>
+
+          <div class="player desk-only" aria-label="Rose's recording">
+            <button class="play" type="button" aria-label="Play Rose's recording"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+            <div class="bars" aria-hidden="true"><i class="on" style="--h:30%"></i><i class="on" style="--h:60%"></i><i class="on" style="--h:45%"></i><i class="on" style="--h:80%"></i><i class="on" style="--h:55%"></i><i class="on" style="--h:35%"></i><i class="on" style="--h:70%"></i><i class="on" style="--h:90%"></i><i class="on" style="--h:50%"></i><i class="on" style="--h:40%"></i><i style="--h:65%"></i><i style="--h:85%"></i><i style="--h:45%"></i><i style="--h:30%"></i><i style="--h:60%"></i><i style="--h:75%"></i><i style="--h:50%"></i><i style="--h:35%"></i><i style="--h:80%"></i><i style="--h:55%"></i><i style="--h:40%"></i><i style="--h:70%"></i><i style="--h:45%"></i><i style="--h:60%"></i><i style="--h:30%"></i><i style="--h:85%"></i><i style="--h:50%"></i><i style="--h:65%"></i><i style="--h:40%"></i><i style="--h:55%"></i><i style="--h:75%"></i><i style="--h:35%"></i><i style="--h:60%"></i><i style="--h:45%"></i><i style="--h:80%"></i><i style="--h:50%"></i><i style="--h:30%"></i><i style="--h:65%"></i><i style="--h:40%"></i><i style="--h:55%"></i></div>
+            <time>2:14 / 6:02</time>
+          </div>
+
+          <section class="voices" aria-label="The family's additions">
+            <h2>What the family remembers</h2>
+            <div class="voice">
+              <img src="../../../landing-page-publish/public/mission/42-640.webp" alt="">
+              <div><p class="who">Sarah <span>Dan's wife · added Tuesday</span></p><p class="story">Dan still tells this at every barbecue. The "just your face, Dad" part is word for word.</p></div>
+            </div>
+            <div class="voice">
+              <img src="../../../landing-page-publish/public/mission/50-640.webp" alt="">
+              <div><p class="who">Mia <span>granddaughter · added yesterday</span></p><p class="story">Found these in Grandpa's shoebox. I think the second one is the same summer.</p>
+                <div class="pics"><img src="../../../landing-page-publish/public/mission/16-640.webp" alt=""><img src="../../../landing-page-publish/public/mission/32-640.webp" alt=""></div></div>
+            </div>
+            <form class="addvoice" onsubmit="return false">
+              <span class="avatar ph" style="width:48px;height:48px">D</span>
+              <label class="input"><span class="sr-only">Add what you remember</span><input type="text" placeholder="Add what you remember, Dan"></label>
+              <button class="btn primary sm" type="submit">Add</button>
+            </form>
+          </section>
+
+          <div class="actions">
+            <a class="btn outline sm" href="#edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16zM13 7l4 4"/></svg>Edit the words</a>
+            <a class="btn outline sm" href="#share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>Share with the family</a>
+            <a class="btn outline sm" href="#book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17a3 3 0 0 1 3-3h11"/></svg>In the book · chapter 2</a>
+            <a class="btn quiet sm" href="#remove" style="color:var(--danger);margin-left:auto">Remove</a>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- phone: sticky player + actions -->
+    <div class="dock">
+      <div class="player" aria-label="Rose's recording">
+        <img src="../../../landing-page-publish/public/mission/31-640.webp" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+        <button class="play" type="button" aria-label="Play Rose's recording" style="width:44px;height:44px"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="bars" aria-hidden="true"><i class="on" style="--h:30%"></i><i class="on" style="--h:60%"></i><i class="on" style="--h:45%"></i><i class="on" style="--h:80%"></i><i class="on" style="--h:55%"></i><i style="--h:35%"></i><i style="--h:70%"></i><i style="--h:90%"></i><i style="--h:50%"></i><i style="--h:40%"></i><i style="--h:65%"></i><i style="--h:85%"></i><i style="--h:45%"></i><i style="--h:30%"></i><i style="--h:60%"></i><i style="--h:75%"></i><i style="--h:50%"></i><i style="--h:35%"></i><i style="--h:80%"></i><i style="--h:55%"></i></div>
+        <time>6:02</time>
+      </div>
+      <div class="row">
+        <button type="button" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+        <button type="button" aria-label="Edit the words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16zM13 7l4 4"/></svg></button>
+        <button type="button" aria-label="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>
+        <button type="button" class="danger" aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+        <button type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="astory.js"></script>
+</body>
+</html>
