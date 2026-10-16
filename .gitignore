@@ -1,0 +1,17 @@
+node_modules
+dist
+*.local
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Local environment: never commit real keys
+.env
+.env.*
+!.env.example
+
+# Test and screenshot output
+test-results/
+playwright-report/
+docs/mockups/shots/*.png
