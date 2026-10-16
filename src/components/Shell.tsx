@@ -183,12 +183,12 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
         <span className="lamp" aria-hidden="true" />
         <header className="top">
           <div className="top-in">
-            <NavLink className="brand" to="/" aria-label="Home">
+            <NavLink className="brand" to="/" aria-label="Home" viewTransition>
               <Lockup height={28} />
             </NavLink>
             <nav className="pillnav" aria-label="Main">
               {NAV.map(({ to, label, Icon, end }) => (
-                <NavLink key={to} to={to} end={end}>
+                <NavLink key={to} to={to} end={end} viewTransition>
                   <Icon />
                   {label}
                 </NavLink>
@@ -200,7 +200,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
                 <PlusIcon />
                 <span>Add</span>
               </button>
-              <NavLink className="me" to="/account" aria-label="Account and settings">
+              <NavLink className="me" to="/account" aria-label="Account and settings" viewTransition>
                 <Avatar src={user?.avatarUrl} name={name} size={32} />
               </NavLink>
             </div>
@@ -225,7 +225,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
       <nav className="tabbar" aria-label="Main">
         <div className="tabs">
           {NAV.map(({ to, label, Icon, end }) => (
-            <NavLink key={to} to={to} end={end}>
+            <NavLink key={to} to={to} end={end} viewTransition>
               <Icon />
               {label}
             </NavLink>

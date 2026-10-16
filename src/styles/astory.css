@@ -453,6 +453,17 @@ ul { margin: 0; padding: 0; list-style: none; }
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
 
+/* Between pages (react-router's viewTransition on the places): the old page dims and sinks a little, the new one
+   is drawn by its own arrival; the bar across the top is the same element on both sides and stays still. */
+.top { view-transition-name: top; }
+.tabbar { view-transition-name: tabbar; }
+::view-transition-old(root) { animation: 260ms var(--ease-out) both leave; }
+::view-transition-new(root) { animation: 320ms var(--ease-out) both come; }
+::view-transition-old(top), ::view-transition-new(top), ::view-transition-old(tabbar), ::view-transition-new(tabbar) { animation: none; mix-blend-mode: normal; }
+@keyframes leave { to { opacity: 0; transform: translateY(8px) scale(0.995); } }
+@keyframes come { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 1ms; } }
+
 /* ───────────────────────── 16. Responsive: tablet & phone ───────────────────────── */
 @media (max-width: 1100px) {
   :root { --gutter: 28px; }
@@ -547,9 +558,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   background:
     radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,0.10), transparent 60%),
     radial-gradient(90% 80% at 85% 100%, rgba(0,0,0,0.28), transparent 60%),
-    linear-gradient(rgba(15,74,88,0.42), rgba(15,74,88,0.42)),
+    linear-gradient(rgba(74,51,39,0.38), rgba(74,51,39,0.38)),
     url("/book/bookcloth.jpg") 0 0 / 300px 300px,
-    var(--cloth, #0F4A58);
+    var(--chocolate);
   background-blend-mode: normal, normal, normal, overlay, normal; }
 .auth .brand { position: absolute; top: var(--s-8); left: var(--gutter); display: inline-flex; width: fit-content; z-index: 1; }
 .auth .said { position: relative; z-index: 1; justify-self: end; max-width: 30ch; padding-right: var(--s-6); animation: rise 700ms var(--ease-out) 180ms both; }
