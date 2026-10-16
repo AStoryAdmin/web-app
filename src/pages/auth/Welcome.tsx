@@ -8,7 +8,7 @@ export default function Welcome() {
   const { user } = useAuth();
   if (user) return <Navigate to="/" replace />;
   return (
-    <AuthFrame photo="/photos/27-1200.webp">
+    <AuthFrame>
       <div className="form">
         <h1>Welcome to A Story</h1>
         <p className="sub">Where a family keeps what its people say.</p>

@@ -40,7 +40,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <AuthFrame photo="/photos/18-1200.webp">
+    <AuthFrame line={2}>
       {!sent ? (
         <form className="form" onSubmit={send} noValidate>
           <h1>Forgot your password?</h1>

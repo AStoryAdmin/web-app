@@ -43,7 +43,7 @@ export default function CreateAccount() {
   };
 
   return (
-    <AuthFrame photo="/photos/33-1200.webp">
+    <AuthFrame line={1}>
       <form className="form" onSubmit={submit} noValidate>
         <h1>Create your account</h1>
         <p className="sub">Free to start. No card.</p>

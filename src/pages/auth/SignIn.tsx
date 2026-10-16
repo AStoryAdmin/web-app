@@ -64,7 +64,7 @@ export default function SignIn() {
         <p className="switch">
           New here? <Link to={`/create-account?next=${encodeURIComponent(next)}`}>Create an account</Link>
         </p>
-        <p className="legal">Same account as the A Story app on your phone.</p>
+        <p className="legal">Same account as the app on your phone.</p>
       </form>
     </AuthFrame>
   );

@@ -48,7 +48,7 @@ export default function Verify() {
   };
 
   return (
-    <AuthFrame photo="/photos/33-1200.webp">
+    <AuthFrame line={1}>
       <form className="form" onSubmit={submit} noValidate>
         <h1>Check your email</h1>
         <p className="sub">
