@@ -662,28 +662,87 @@ ul { margin: 0; padding: 0; list-style: none; }
 .mem .pic.nopic .story-q { font-size: 56px; }
 .week .d.has::after { opacity: var(--dot, 1); }
 
-/* ───────────────────────── 20. The writer ───────────────────────── */
-.writer { max-width: 860px; }
-.qline { margin-bottom: var(--s-5); padding: var(--s-5); border-radius: var(--r-card); background: var(--sheet); display: grid; gap: 6px; }
-.paper { background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-1); padding: var(--s-6); }
-.wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 600; font-size: 30px; color: var(--heading); padding: 0 0 var(--s-3); border-bottom: 1px solid var(--line); outline: 0; }
+/* ───────────────────────── 20. The writer: the writing desk ───────────────────────── */
+/* The question sits on the cloth; the page is one wide sheet in the serif. Beside it, a quiet rail holds when
+   this was, the chapter, the photographs, and Keep it. Focus mode (Esc to leave) hides everything but the page. */
+.desk { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s-12); align-items: start; }
+.desk .pageside { min-width: 0; max-width: 720px; }
+.runhead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); font-size: var(--t-caption); color: var(--ink-faint); font-weight: 500; letter-spacing: 0.02em; margin-bottom: var(--s-5); }
+.runhead .tools { gap: var(--s-1); }
+.runhead .iconbtn { width: 36px; height: 36px; border-color: transparent; background: transparent; color: var(--ink-soft); }
+.runhead .iconbtn:hover { background: var(--sheet); color: var(--ink); }
+.runhead .iconbtn[aria-pressed="true"] { background: var(--chocolate); color: var(--on-chocolate); }
+.wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 500; font-size: 34px; letter-spacing: -0.015em; line-height: 1.15; color: var(--heading); padding: 0 0 var(--s-3); outline: 0; }
 .wtitle::placeholder { color: var(--ink-faint); font-weight: 400; }
-.wbody { width: 100%; border: 0; background: transparent; resize: none; outline: 0; padding: var(--s-5) 0 var(--s-4); min-height: 240px; font-size: 21px; line-height: 1.65; }
+.wbody { width: 100%; border: 0; background: transparent; resize: none; outline: 0; padding: var(--s-3) 0 var(--s-2); min-height: 280px; font-family: var(--font-story); font-size: 21px; line-height: 1.7; color: var(--ink); caret-color: var(--accent); }
 .wbody::placeholder { color: var(--ink-faint); font-style: italic; }
-.wphotos { display: flex; gap: var(--s-3); flex-wrap: wrap; margin: var(--s-3) 0 var(--s-4); }
-.wphoto { position: relative; margin: 0; width: 140px; height: 140px; border-radius: 14px; overflow: hidden; background: var(--support-soft); }
-.wphoto img { width: 100%; height: 100%; object-fit: cover; }
-.wphoto .x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(43,33,22,.72); color: #fff; display: grid; place-items: center; cursor: pointer; }
-.wtools { display: flex; gap: var(--s-2); flex-wrap: wrap; padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.wbody::selection { background: var(--accent-100); }
+.heard { font-family: var(--font-story); font-size: 21px; line-height: 1.7; color: var(--ink-faint); font-style: italic; min-height: 1.7em; }
+.starters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-2); }
+.starters .label { width: 100%; margin-bottom: 2px; }
+.starters button { font-family: var(--font-story); font-size: var(--t-body); color: var(--ink-soft); background: transparent; border: 1px dashed var(--line-strong); border-radius: var(--r-pill); padding: 8px 14px; cursor: pointer; min-height: 40px; transition: color var(--dur-ui), border-color var(--dur-ui), background var(--dur-ui); }
+.starters button:hover { color: var(--ink); border-color: var(--ink-soft); background: var(--card); }
+.wphotos { display: flex; gap: var(--s-3); flex-wrap: wrap; margin: var(--s-5) 0 0; }
+.wphoto { position: relative; margin: 0; width: 132px; height: 132px; border-radius: 12px; overflow: hidden; background: var(--sheet); box-shadow: var(--shadow-2); }
+.wphoto img { width: 100%; height: 100%; object-fit: cover; animation: develop 1.6s var(--ease-out) both; }
+@keyframes develop { from { filter: brightness(1.9) contrast(0.4) saturate(0.2); opacity: 0.6; } }
+.wphoto .x { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(42,35,32,0.72); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.helprow { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; margin-top: var(--s-6); padding-top: var(--s-5); border-top: 1px solid var(--line); }
+.helprow .label { margin-right: var(--s-2); }
+.helprow .btn.sm { min-height: 36px; font-size: 13px; }
+.helprow .listening { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+.helprow .listening svg { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.18); opacity: 0.6; } }
 .asks { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
-.asks .chip { white-space: normal; text-align: left; min-height: 52px; font-family: var(--font-story); font-size: var(--t-body); font-weight: 400; }
-.when { margin-top: var(--s-6); padding: var(--s-6); border-radius: var(--r-card); background: var(--sheet); }
-.when details.chapter { margin-top: var(--s-5); }
-.when summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; gap: 6px; }
-.savebar { position: sticky; bottom: 0; display: flex; align-items: center; padding: var(--s-4) 0; margin-top: var(--s-6); background: linear-gradient(180deg, transparent, var(--page) 30%); }
-.savedbox { background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-1); padding: var(--s-8); max-width: 720px; }
+.asks .chip { white-space: normal; text-align: left; min-height: 48px; font-family: var(--font-story); font-size: var(--t-body); font-weight: 400; }
+.folio { margin-top: var(--s-5); font-size: var(--t-caption); color: var(--ink-faint); display: flex; gap: var(--s-3); }
+
+/* the rail: about this memory */
+.rail { position: sticky; top: var(--s-6); display: grid; gap: var(--s-6); }
+.rail section { padding-top: var(--s-5); border-top: 1px solid var(--line); }
+.rail section:first-child { border-top: 0; padding-top: 0; }
+.rail h2 { font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-soft); margin-bottom: var(--s-3); }
+.rail .meta { font-size: var(--t-caption); }
+.rail .chiprow { gap: 6px; }
+.rail .chip.big { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.rail .input { min-height: 44px; }
+.rail .input input { font-size: var(--t-small); }
+.rail details summary { cursor: pointer; font-size: var(--t-small); color: var(--ink); min-height: 40px; display: flex; align-items: center; gap: 6px; list-style: none; }
+.rail details summary::-webkit-details-marker { display: none; }
+.rail details summary::after { content: "›"; margin-left: auto; color: var(--ink-faint); transition: transform var(--dur-ui); }
+.rail details[open] summary::after { transform: rotate(90deg); }
+.keep { display: grid; gap: var(--s-3); }
+.keep .btn { min-height: 52px; font-size: var(--t-body); }
+.keep .status { font-size: var(--t-caption); color: var(--ink-faint); text-align: center; }
+.keep .status b { color: var(--ink-soft); font-weight: 500; }
+
+/* focus mode: only the page */
+body.writing-focus .cloth, body.writing-focus .rail, body.writing-focus .tabbar, body.writing-focus .helprow, body.writing-focus .runhead .date { display: none; }
+body.writing-focus .sheet-page { margin-top: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
+body.writing-focus .desk { grid-template-columns: 1fr; justify-items: center; }
+body.writing-focus .desk .pageside { width: 100%; max-width: 760px; padding-top: var(--s-10); }
+body.writing-focus .wbody { min-height: 60vh; font-size: 23px; line-height: 1.75; }
+body.writing-focus .keepbar { position: fixed; right: var(--s-8); bottom: var(--s-8); }
+
+/* the saved page */
+.savedbox { max-width: 720px; }
 .savedbox h1 { font-size: 34px; margin-top: var(--s-2); }
-@media (max-width: 760px) { .paper, .when { padding: var(--s-4); } .wtitle { font-size: 24px; } .wbody { font-size: 19px; } .savebar { bottom: 96px; } .savedbox { padding: var(--s-5); } .savedbox h1 { font-size: 28px; } }
+.savedbox .acts { margin-top: var(--s-6); }
+
+/* the ink stamp (lib/stamp) */
+.ink-stamp { position: fixed; z-index: 90; pointer-events: none; font-family: var(--font-ui); font-weight: 700; font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+  padding: 6px 14px; border: 3px solid var(--accent); border-radius: 8px; mix-blend-mode: multiply; }
+.ink-stamp i { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+@media (max-width: 1100px) {
+  .desk { grid-template-columns: 1fr; gap: var(--s-8); }
+  .rail { position: static; }
+}
+@media (max-width: 760px) {
+  .wtitle { font-size: 26px; } .wbody { font-size: 19px; min-height: 220px; }
+  .keepbar { position: sticky; bottom: 84px; background: linear-gradient(180deg, transparent, var(--page) 30%); padding-top: var(--s-4); }
+  .savedbox h1 { font-size: 28px; }
+}
 
 /* ── 21. Archive & memory (agent) ── */
 /* The Archive: the storyteller, the book, then a life by year with a decade rail beside it. */

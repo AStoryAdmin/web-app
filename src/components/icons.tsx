@@ -60,3 +60,5 @@ export const SettingsIcon = (p: P) => <svg {...base(p)}><circle cx="12" cy="12" 
 export const ShareIcon = (p: P) => <svg {...base(p)}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" /></svg>;
 export const SunIcon = (p: P) => <svg {...base(p)}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
 export const ArrowRight = (p: P) => <svg {...base({ strokeWidth: 2, ...p })}><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
+export const ExpandIcon = (p: P) => <svg {...base(p)}><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>;
+export const ShrinkIcon = (p: P) => <svg {...base(p)}><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M10 14l-7 7" /></svg>;
