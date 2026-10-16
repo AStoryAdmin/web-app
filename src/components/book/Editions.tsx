@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "../ui";
 import { PrintIcon } from "../icons";
-import { CATALOG, checkBookOrder, orderBook, type BookOffer, type Edition, type EditionId } from "../../data/book";
+import { CATALOG, checkBookOrder, orderBook, type BookOffer, type EditionId } from "../../data/book";
 import { track } from "../../lib/analytics";
 
 // The same prices as the catalog in src/data/book.ts (proposals until
