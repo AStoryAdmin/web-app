@@ -404,20 +404,32 @@ ul { margin: 0; padding: 0; list-style: none; }
 .tile.light { background: var(--card); color: var(--ink); }
 
 /* ───────────────────────── 9. Memory card ───────────────────────── */
-.mem { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: var(--s-5); padding: var(--s-4); border-radius: var(--r-card); background: var(--card); border: 1px solid transparent; text-decoration: none; color: inherit; transition: transform var(--dur-ui) var(--ease-out), border-color var(--dur-ui); }
-.mem:hover { transform: translateY(-2px); border-color: var(--line-strong); }
-.mem .pic { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; }
-.mem .pic.nopic { display: grid; place-items: center; background: rgba(42,35,32,0.05); }
-.mem .pic.nopic .story-q { font-size: 44px; color: var(--ink-faint); }
-.mem .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.mem .chips { display: flex; gap: var(--s-2); justify-content: space-between; flex-wrap: wrap; }
-.mem h3 { font-family: var(--font-story); font-weight: 500; font-size: 24px; letter-spacing: -0.01em; }
-.mem .meta { color: var(--ink-soft); }
-.mem .excerpt { font-family: var(--font-story); font-size: var(--t-body); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.mem .foot { margin-top: auto; display: flex; justify-content: flex-end; align-items: center; gap: var(--s-3); padding-top: var(--s-2); }
-.mem.blush { background: var(--paper-blush); border-color: transparent; } .mem.periwinkle { background: var(--paper-periwinkle); border-color: transparent; }
-.mem.sage { background: var(--paper-sage); border-color: transparent; } .mem.lilac { background: var(--paper-lilac); border-color: transparent; }
-.mem.apricot { background: var(--paper-apricot); border-color: transparent; } .mem.butter { background: var(--paper-butter); border-color: transparent; } .mem.sea { background: var(--paper-sea); border-color: transparent; }
+/* The deck's card: cream, no border, the photograph warm and large on the left, the chapter as a yellow
+   pill, the title in the serif, the date in ochre, two lines of the words, who told it and whether it is
+   private. Without a photograph the card is the words alone, opened by a large ochre quotation mark. */
+.mem { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--s-6); padding: var(--s-5); border-radius: var(--r-card); background: var(--card); text-decoration: none; color: inherit;
+  transition: transform var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out); }
+.mem:hover { transform: translateY(-3px); box-shadow: 0 24px 44px -28px rgba(42, 35, 32, 0.45); }
+.mem .pic { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; background: var(--tint, #EAE0CF); }
+.mem.text { grid-template-columns: 44px minmax(0, 1fr); gap: var(--s-4); }
+.mem .glyph { font-family: var(--font-story); font-size: 84px; line-height: 0.7; color: var(--ochre); opacity: 0.55; padding-top: 6px; }
+.mem .body { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+.mem .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 2px; }
+.mem h3 { font-family: var(--font-story); font-weight: 600; font-size: 26px; line-height: 1.2; letter-spacing: -0.01em; color: var(--heading); }
+.mem .date { font-size: 13px; font-weight: 700; color: var(--ochre); letter-spacing: 0.02em; }
+.mem .excerpt { font-family: var(--font-story); font-size: 18px; line-height: 1.55; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
+.mem.text .excerpt { -webkit-line-clamp: 3; }
+.mem .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding-top: var(--s-3); font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.mem .lock { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-faint); }
+.mem .lock svg { width: 13px; height: 13px; }
+@media (max-width: 760px) {
+  .mem { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); }
+  .mem .pic { aspect-ratio: 16 / 10; border-radius: 14px; }
+  .mem.text { grid-template-columns: 28px minmax(0, 1fr); }
+  .mem .glyph { font-size: 56px; }
+  .mem h3 { font-size: 22px; }
+  .mem .excerpt { font-size: 16px; }
+}
 
 /* ───────────────────────── 10. Progress: a thin line toward the first edition ───────────────────────── */
 .progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); }
@@ -683,31 +695,21 @@ ul { margin: 0; padding: 0; list-style: none; }
 .mem .pic.nopic .story-q { font-size: 56px; }
 .week .d.has::after { opacity: var(--dot, 1); }
 
-/* ───────────────────────── 20. The writer: the family book, open on the desk ───────────────────────── */
-/* The memory is written in the book itself. A teal cloth cover, two facing leaves of cream paper with gold
-   frames and corner ornaments, a spine gutter, a ribbon. The verso holds the memory's number, when it was,
-   the question as an epigraph, the chapter, the photographs and the wax seal that keeps it; the recto is
-   ruled for the words, signed by the storyteller, with a word count in the folio. Focus mode (Esc) keeps
-   only the recto. (The structure follows the founder's Project Reboot journal.) */
-.bookdesk { --foil: #C9A15A; --foil-soft: rgba(201, 161, 90, 0.35); --leaf: #FBF6EA; --leaf-2: #F4ECDA; --gutter: #D9CBB0; --pen: #3A2A1F;
-  position: relative; max-width: 1120px; margin: 0 auto; }
-.cover { position: relative; z-index: 1; padding: 16px; border-radius: 10px;
-  background: linear-gradient(rgba(15,74,88,0.42), rgba(15,74,88,0.42)), url("/book/bookcloth.jpg") 0 0 / 280px 280px, var(--teal);
-  background-blend-mode: normal, overlay, normal;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 0 #0b3540, 0 30px 60px -24px rgba(0,0,0,0.55); }
-.spread { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); border-radius: 4px; color: var(--ink);
-  box-shadow: 0 1px 0 #f1e8d4, 0 2px 0 #e6dac0, 0 3px 0 #dacbab, 0 4px 0 var(--foil), 0 5px 0 #8a6a33; }
-.leaf { position: relative; min-width: 0; padding: var(--s-8) calc(var(--s-8) + 6px) var(--s-8); display: flex; flex-direction: column; gap: var(--s-4); }
-.verso-in { position: sticky; top: var(--s-6); display: flex; flex-direction: column; gap: var(--s-4); min-height: min(100vh - var(--s-12), 100%); }
-.verso > .verso-in { z-index: 1; }
-.leaf > *:not(.page-frame) { position: relative; z-index: 1; }
-.verso { border-radius: 4px 0 0 4px;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
-    linear-gradient(90deg, var(--leaf) 0%, var(--leaf-2) 84%, #ece2cd 95%, var(--gutter) 100%); }
-.recto { border-radius: 0 4px 4px 0; padding-left: calc(var(--s-10) + 6px);
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
-    linear-gradient(90deg, var(--gutter) 0%, #ebe1cb 4%, var(--leaf) 13%, var(--leaf) 100%); }
-.recto::before { content: ""; position: absolute; inset: 0 auto 0 -1px; width: 2px; background: linear-gradient(#0000, #0000002e 12%, #0000002e 88%, #0000); pointer-events: none; }
+/* ───────────────────────── 20. The writer: the question on the cloth, one page of the book below ───────────────────────── */
+/* Two steps that never share a screen. First the words: the question sits on the cloth, large, where the
+   eye lands; under it one leaf of the family book, cream paper with a printed gold frame, a running head,
+   a title line, ruled lines, the storyteller's sign-off, the word count in the folio. The wax seal under the
+   page keeps it; the help sits beside the seal. Then, afterwards, when it was, the chapter and a photograph
+   as their own card. Focus mode (Esc) keeps only the page. */
+.whero { max-width: 760px; }
+.whero .pill { margin-bottom: var(--s-4); }
+.hero .wq { font-size: clamp(30px, 3.6vw, 48px); line-height: 1.15; color: #FBF6EC; text-wrap: balance; margin: 0; font-weight: 500; letter-spacing: -0.01em; }
+.hero .wmeta { margin-top: var(--s-4); max-width: 56ch; font-size: var(--t-body); }
+.desk { --foil: #C9A15A; --foil-soft: rgba(201, 161, 90, 0.35); --leaf: #FBF7EE; --pen: #3A2A1F; max-width: 880px; }
+.leaf-one { position: relative; display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-10) var(--s-12) var(--s-8); border-radius: 6px; color: var(--ink);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"), var(--leaf);
+  box-shadow: 0 1px 0 #f1e8d4, 0 2px 0 #e6dac0, 0 3px 0 #dacbab, 0 18px 40px -22px rgba(42, 35, 32, 0.4); }
+.leaf-one > *:not(.page-frame) { position: relative; z-index: 1; }
 /* printed frame with corner ornaments */
 .page-frame { position: absolute; inset: 14px; pointer-events: none; border: 1px solid var(--foil-soft); outline: 0.5px solid rgba(201,161,90,0.22); outline-offset: -5px;
   background:
@@ -715,124 +717,102 @@ ul { margin: 0; padding: 0; list-style: none; }
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1' transform='translate(32 0) scale(-1 1)'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") top right / 26px no-repeat,
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1' transform='translate(0 32) scale(1 -1)'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") bottom left / 26px no-repeat,
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1' transform='translate(32 32) scale(-1 -1)'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") bottom right / 26px no-repeat; }
-.folio-top, .running-head, .folio { display: flex; justify-content: space-between; gap: var(--s-3); margin: 0; font-family: var(--font-ui); font-size: 11px; line-height: 1; letter-spacing: 0.16em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; }
-.running-head { justify-content: center; gap: var(--s-3); }
+.running-head, .folio { display: flex; justify-content: center; gap: var(--s-3); margin: 0; font-family: var(--font-ui); font-size: 11px; line-height: 1; letter-spacing: 0.16em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; }
 .running-head i { font-style: normal; color: var(--foil); }
-.folio { justify-content: center; color: #A99D84; margin-top: auto; padding-top: var(--s-5); font-variant-numeric: tabular-nums; }
-.page-no { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; font-family: var(--font-story); font-size: 13px; color: #A99D84; margin: 0; }
-.page-no::before, .page-no::after { content: " — "; color: var(--foil-soft); }
-/* the masthead: the memory's number, large */
-.masthead { display: flex; align-items: flex-end; gap: var(--s-4); margin-top: var(--s-2); }
-.masthead .big { font-family: var(--font-story); font-weight: 500; font-size: 96px; line-height: 0.8; color: var(--pen); letter-spacing: -0.03em; font-variant-numeric: lining-nums; }
-.masthead h2 { font-family: var(--font-story); font-weight: 500; font-size: 30px; line-height: 1.05; color: var(--ink); letter-spacing: -0.01em; }
-.masthead p { margin-top: 8px; font-size: 11px; line-height: 1.3; letter-spacing: 0.12em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; }
-.ornament { display: flex; align-items: center; gap: var(--s-3); margin: 0; color: var(--foil); font-size: 12px; }
-.ornament::before, .ornament::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--foil)); }
-.ornament::after { background: linear-gradient(90deg, var(--foil), transparent); }
-.epigraph { margin: 0; padding-left: var(--s-6); position: relative; }
-.epigraph::before { content: "“"; position: absolute; left: 0; top: -6px; font-family: var(--font-story); font-size: 40px; color: var(--foil); line-height: 1; }
-.epigraph p { font-family: var(--font-story); font-style: italic; font-size: 22px; line-height: 1.35; color: var(--ink); }
-.epigraph cite { display: block; margin-top: var(--s-2); font-style: normal; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; }
-.verso .block > span:first-child { display: block; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; margin-bottom: var(--s-2); }
-.verso .chiprow { gap: 6px; }
-.verso .chip.big { min-height: 34px; padding: 0 11px; font-size: 13px; background: transparent; border: 1px solid var(--foil-soft); color: var(--ink); font-family: var(--font-story); font-weight: 400; font-size: 15px; }
-.verso .chip.big[aria-pressed="true"] { background: var(--pen); color: var(--leaf); border-color: var(--pen); }
-.verso .input { min-height: 40px; background: transparent; border: 0; border-bottom: 1px solid var(--foil-soft); border-radius: 0; padding: 0; }
-.verso .input input { font-family: var(--font-story); font-size: 17px; }
-.verso .input:focus-within { box-shadow: none; border-bottom-color: var(--pen); }
-.verso details summary { cursor: pointer; font-family: var(--font-story); font-size: 17px; color: var(--ink); list-style: none; display: flex; align-items: center; gap: 6px; min-height: 36px; }
-.verso details.more { display: flex; flex-direction: column; gap: var(--s-4); }
-.verso details.more > summary { font-size: 15px; color: var(--ink-soft); font-style: italic; border-top: 1px solid var(--foil-soft); border-bottom: 1px solid var(--foil-soft); padding: 6px 0; }
-.verso details.more > summary::after { content: "add"; }
-.verso details.more[open] > summary::after { content: "done"; }
-.verso details.more[open] > summary { font-style: normal; color: var(--ink); }
-.verso details summary::-webkit-details-marker { display: none; }
-.verso details summary::after { content: "change"; margin-left: auto; font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9A7B3C; font-weight: 600; }
-.verso details[open] summary::after { content: "done"; }
-.wphotos { display: flex; gap: var(--s-2); flex-wrap: wrap; margin: var(--s-2) 0 0; }
-.wphoto { position: relative; margin: 0; width: 84px; height: 84px; background: #FFFDF8; padding: 4px 4px 12px; box-shadow: 0 6px 14px -6px rgba(0,0,0,0.35); transform: rotate(var(--tilt, -2deg)); }
-.wphoto img { width: 100%; height: 100%; object-fit: cover; animation: develop 1.6s var(--ease-out) both; }
-@keyframes develop { from { filter: brightness(1.9) contrast(0.4) saturate(0.2); opacity: 0.6; } }
-.wphoto .x { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--pen); color: #fff; display: grid; place-items: center; cursor: pointer; }
-.wphoto .x svg { width: 12px; height: 12px; }
-.attach { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--pen); background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--foil); text-underline-offset: 4px; }
-.attach svg { width: 16px; height: 16px; }
-/* the wax seal that keeps it */
-.verso-foot { margin-top: auto; padding-top: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
-.seal-button { display: inline-flex; align-items: center; gap: var(--s-3); padding: 4px; border: 0; background: transparent; font: 700 15px var(--font-ui); color: var(--accent); cursor: pointer; }
-.seal-button .seal { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; border: 1.5px dashed var(--accent-border); color: var(--accent); transition: transform var(--dur-ui) var(--ease-out), background var(--dur-ui); }
-.seal-button .seal svg { width: 22px; height: 22px; }
-.seal-button:not(:disabled):hover .seal { background: var(--accent-soft); transform: rotate(-8deg) scale(1.06); }
-.seal-button:disabled { color: var(--ink-faint); cursor: default; }
-.seal-button:disabled .seal { border-color: var(--line-strong); color: var(--ink-faint); }
-.seal-button.pressed .seal { background: var(--accent); color: #fff; border: 0; outline: 1.5px solid var(--brass); outline-offset: -5px; box-shadow: 0 2px 6px rgba(184,81,38,0.35), inset 0 -2px 0 rgba(0,0,0,0.2); transform: rotate(-8deg); }
-.verso-foot small { font-size: 12px; color: var(--ink-faint); }
-.verso-foot small b { color: var(--ink-soft); font-weight: 600; }
-.verso-foot small a { color: var(--ochre); }
-/* the recto: the words */
-.wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 500; font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -0.012em; line-height: 1.2; color: var(--pen); padding: 0; outline: 0; margin-top: var(--s-2); resize: none; overflow: hidden; display: block; }
+.folio { color: #A99D84; padding-top: var(--s-4); font-variant-numeric: tabular-nums; }
+.focusbtn { position: absolute; right: 22px; top: 22px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: #9A7B3C; display: grid; place-items: center; cursor: pointer; }
+.focusbtn svg { width: 18px; height: 18px; }
+.focusbtn:hover { background: rgba(201,161,90,0.15); }
+/* the words */
+.wtitle { width: 100%; border: 0; background: transparent; font-family: var(--font-story); font-weight: 500; font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -0.012em; line-height: 1.2; color: var(--pen); padding: 0; outline: 0; margin-top: var(--s-4); resize: none; overflow: hidden; display: block; }
 .wtitle::placeholder { color: #AAA391; font-weight: 400; font-style: italic; }
-.wbody { width: 100%; flex: none; min-height: 420px; border: 0; outline: 0; resize: none; overflow: hidden; padding: 0; margin: 0;
+.wbody { width: 100%; flex: none; min-height: 432px; border: 0; outline: 0; resize: none; overflow: hidden; padding: 0; margin: 0;
   font-family: var(--font-story); font-size: 21px; line-height: 36px; color: var(--pen); caret-color: var(--accent);
   background-color: transparent; background-image: linear-gradient(transparent 35px, var(--foil-soft) 35px, var(--foil-soft) 36px, transparent 36px); background-size: 100% 36px; background-position: 0 0; background-attachment: local;
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M3 29 L7 17 L21 3 L29 11 L15 25 Z' fill='%233A2A1F' stroke='white' stroke-width='1.6' stroke-linejoin='round'/><path d='M3 29 L11 21' stroke='white' stroke-width='1.3'/><circle cx='11.5' cy='20.5' r='1.8' fill='white'/></svg>") 3 29, text; }
 .wbody::placeholder { color: #AAA391; font-style: italic; }
 .wbody::selection { background: var(--accent-100); }
 .heard { font-family: var(--font-story); font-size: 21px; line-height: 36px; color: #AAA391; font-style: italic; min-height: 36px; }
-.starters { display: flex; flex-wrap: wrap; gap: 6px; }
+.starters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .starters .label { width: 100%; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9A7B3C; margin-bottom: 2px; }
-.starters button { font-family: var(--font-story); font-size: 16px; color: var(--ink-soft); background: transparent; border: 1px dashed var(--foil-soft); border-radius: var(--r-pill); padding: 6px 12px; cursor: pointer; min-height: 36px; transition: color var(--dur-ui), border-color var(--dur-ui); }
+.starters button { font-family: var(--font-story); font-size: 17px; color: var(--ink-soft); background: transparent; border: 1px dashed var(--foil-soft); border-radius: var(--r-pill); padding: 6px 14px; cursor: pointer; min-height: 38px; transition: color var(--dur-ui), border-color var(--dur-ui); }
 .starters button:hover { color: var(--pen); border-color: var(--foil); }
 .signoff { text-align: right; margin: var(--s-4) 0 0; font-family: var(--font-story); font-style: italic; font-size: 18px; color: var(--ink-soft); }
 .signoff span { display: block; font-size: 26px; color: var(--pen); margin-top: 2px; }
-.ribbon { position: absolute; z-index: 0; left: calc(47% + 16px); bottom: -44px; width: 20px; height: 64px; background: linear-gradient(90deg, #7A1B26, #B03A2E 45%, #7A1B26); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%); box-shadow: 0 6px 10px rgba(0,0,0,0.4); transform-origin: 50% 0; animation: ribbon-sway 6s ease-in-out infinite; }
-@keyframes ribbon-sway { 50% { transform: rotate(1.6deg); } }
-/* below the book: the help */
-.helprow { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; margin-top: var(--s-12); }
-.helprow .label { margin-right: var(--s-2); }
-.helprow .btn.sm { min-height: 38px; font-size: 13px; }
-.helprow .listening { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
-.helprow .listening svg { animation: pulse 1.4s ease-in-out infinite; }
+/* under the page: the seal and the help */
+.keeprow { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-6); flex-wrap: wrap; margin-top: var(--s-8); }
+.keeprow .keep { display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-start; }
+.keeprow .helps { display: flex; gap: var(--s-2); flex-wrap: wrap; justify-content: flex-end; align-items: center; max-width: 560px; }
+.keeprow .helps .btn.sm { min-height: 40px; font-size: 13px; }
+.keeprow .listening { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+.keeprow .listening svg { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.18); opacity: 0.6; } }
-.asks { display: grid; gap: var(--s-2); margin-top: var(--s-4); max-width: 720px; }
+.seal-button { display: inline-flex; align-items: center; gap: var(--s-3); padding: 4px; border: 0; background: transparent; font: 700 17px var(--font-ui); color: var(--accent); cursor: pointer; }
+.seal-button .seal { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; border: 1.5px dashed var(--accent-border); color: var(--accent); transition: transform var(--dur-ui) var(--ease-out), background var(--dur-ui); }
+.seal-button .seal svg { width: 24px; height: 24px; }
+.seal-button:not(:disabled):hover .seal { background: var(--accent-soft); transform: rotate(-8deg) scale(1.06); }
+.seal-button:disabled { color: var(--ink-faint); cursor: default; }
+.seal-button:disabled .seal { border-color: var(--line-strong); color: var(--ink-faint); }
+.seal-button.pressed .seal { background: var(--accent); color: #fff; border: 0; outline: 1.5px solid var(--brass); outline-offset: -5px; box-shadow: 0 2px 6px rgba(184,81,38,0.35), inset 0 -2px 0 rgba(0,0,0,0.2); transform: rotate(-8deg); }
+.keeprow small { font-size: 12px; color: var(--ink-faint); padding-left: 6px; }
+.keeprow small b { color: var(--ink-soft); font-weight: 600; }
+.keeprow small a { color: var(--ochre); }
+.asks { display: grid; gap: var(--s-2); margin-top: var(--s-5); max-width: 720px; }
 .asks .chip { white-space: normal; text-align: left; min-height: 48px; font-family: var(--font-story); font-size: var(--t-body); font-weight: 400; }
-.focusbtn { position: absolute; right: 22px; top: 22px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 0; background: transparent; color: #9A7B3C; display: grid; place-items: center; cursor: pointer; }
-.focusbtn svg { width: 18px; height: 18px; }
-.focusbtn:hover { background: rgba(201,161,90,0.15); }
-/* focus mode: only the recto */
-body.writing-focus .cloth, body.writing-focus .tabbar, body.writing-focus .verso, body.writing-focus .helprow, body.writing-focus .ribbon { display: none; }
+/* afterwards: when, chapter, photographs, then what's next */
+.after { display: grid; gap: var(--s-10); }
+.after-card { padding: var(--s-8); }
+.after-head { display: flex; justify-content: space-between; gap: var(--s-6); align-items: flex-start; margin-bottom: var(--s-6); }
+.after-head .pill { margin-bottom: var(--s-3); }
+.after-head h2 { font-size: var(--t-h2); margin-bottom: var(--s-2); }
+.after-head .meta { max-width: 52ch; }
+.after-state { flex: none; font-size: 13px; font-weight: 700; color: var(--green); min-width: 7ch; text-align: right; }
+.after-state.saving { color: var(--ink-faint); }
+.after-grid { display: grid; gap: var(--s-8); }
+.after-grid .block > span:first-child { display: block; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9A7B3C; font-weight: 700; margin-bottom: var(--s-3); }
+.after-grid .chiprow { gap: 8px; }
+.after-grid .chip.big { min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink); font-family: var(--font-story); font-weight: 400; font-size: 16px; }
+.after-grid .chip.big[aria-pressed="true"] { background: var(--chocolate); color: var(--on-chocolate); border-color: var(--chocolate); }
+.after-grid .input { min-height: 44px; background: transparent; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; padding: 0; }
+.after-grid .input input { font-family: var(--font-story); font-size: 18px; }
+.after-grid .input:focus-within { box-shadow: none; border-bottom-color: var(--chocolate); }
+.wphotos { display: flex; gap: var(--s-3); flex-wrap: wrap; margin: 0 0 var(--s-3); }
+.wphoto { position: relative; margin: 0; width: 104px; height: 104px; background: #FFFDF8; padding: 5px 5px 14px; box-shadow: 0 6px 14px -6px rgba(0,0,0,0.35); transform: rotate(var(--tilt, -2deg)); }
+.wphoto img { width: 100%; height: 100%; object-fit: cover; animation: develop 1.6s var(--ease-out) both; }
+@keyframes develop { from { filter: brightness(1.9) contrast(0.4) saturate(0.2); opacity: 0.6; } }
+.wphoto .x { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--chocolate); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.wphoto .x svg { width: 12px; height: 12px; }
+.attach { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--heading); background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--foil); text-underline-offset: 4px; }
+.attach svg { width: 18px; height: 18px; }
+.after-next { padding-top: var(--s-6); border-top: 1px solid var(--line); }
+.after-next .nextq { font-size: clamp(24px, 2.6vw, 32px); margin: var(--s-4) 0 var(--s-6); max-width: 26ch; text-wrap: balance; }
+.after-next .acts { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
+/* focus mode: only the page */
+body.writing-focus .cloth, body.writing-focus .tabbar, body.writing-focus .keeprow .helps, body.writing-focus .asks { display: none; }
 body.writing-focus .sheet-page { margin-top: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
-body.writing-focus .spread { grid-template-columns: minmax(0, 1fr); }
-body.writing-focus .recto { border-radius: 4px; background: var(--leaf); }
-body.writing-focus .recto::before { display: none; }
-body.writing-focus .bookdesk { max-width: 860px; }
 body.writing-focus .wbody { min-height: 60vh; }
-/* the saved page */
-.savedbox { max-width: 720px; }
-.savedbox .acts { margin-top: var(--s-6); }
 /* the ink stamp (lib/stamp) */
 .ink-stamp { position: fixed; z-index: 90; pointer-events: none; font-family: var(--font-ui); font-weight: 700; font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
   padding: 6px 14px; border: 3px solid var(--accent); border-radius: 8px; mix-blend-mode: multiply; }
 .ink-stamp i { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 
 @media (max-width: 1100px) {
-  .leaf { padding: var(--s-6) var(--s-5); } .recto { padding-left: var(--s-6); }
-  .masthead .big { font-size: 72px; } .masthead h2 { font-size: 24px; }
+  .leaf-one { padding: var(--s-8) var(--s-8) var(--s-6); }
   .wtitle { font-size: 24px; } .wbody, .heard { font-size: 19px; }
 }
 @media (max-width: 760px) {
-  .cover { padding: 10px; border-radius: 8px; }
-  .spread { grid-template-columns: minmax(0, 1fr); }
-  .recto { order: -1; border-radius: 4px 4px 0 0; padding: var(--s-5) var(--s-4); background: var(--leaf); }
-  .recto::before { display: none; }
-  .verso { border-radius: 0 0 4px 4px; padding: var(--s-5) var(--s-4); background: linear-gradient(180deg, #E8DDC6, var(--leaf-2) 18px, var(--leaf-2)); }
+  .leaf-one { padding: var(--s-6) var(--s-5) var(--s-5); border-radius: 4px; }
   .page-frame { inset: 8px; }
   .wbody { min-height: 300px; font-size: 19px; }
-  .wtitle { font-size: 24px; }
-  .ribbon { left: auto; right: 18%; }
-  .helprow { margin-top: var(--s-8); }
+  .wtitle { font-size: 22px; }
+  .focusbtn { display: none; }
+  .keeprow { flex-direction: column; }
+  .keeprow .helps { justify-content: flex-start; }
+  .after-card { padding: var(--s-5); }
+  .after-head { flex-direction: column; gap: var(--s-2); }
+  .after-state { text-align: left; }
 }
-@media (prefers-reduced-motion: reduce) { .ribbon { animation: none; } .wphoto img { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wphoto img { animation: none; } }
 
 /* ── 21. Archive & memory (agent) ── */
 /* The Archive: the storyteller, the book, then a life by year with a decade rail beside it. */
@@ -1391,3 +1371,229 @@ body.writing-focus .wbody { min-height: 60vh; }
   .acct-two { grid-template-columns: 1fr; }
   .acct-row .btn { width: 100%; }
 }
+
+/* ───────────────────────── 24. Reading a memory, the wall, the front door (17 Oct) ───────────────────────── */
+/* Reading one memory: its title on the cloth, then one reading column on the sheet, the photographs first,
+   the words in the serif with a drop cap, the family's side, and a quiet footer where it can be made
+   private, edited, shared or removed. */
+.read { max-width: 780px; }
+.rd-photos { margin-bottom: var(--s-10); }
+.rd-hero { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: var(--r-card); background: var(--tint, #EAE0CF); box-shadow: 0 30px 50px -30px rgba(42, 35, 32, 0.45); }
+.rd-strip { display: flex; gap: var(--s-4); flex-wrap: wrap; margin-top: var(--s-6); }
+.rd-strip button { border: 0; padding: 6px 6px 18px; background: #FFFDF8; box-shadow: var(--shadow-2); transform: rotate(var(--tilt, -2deg)); cursor: pointer; width: 112px; transition: transform var(--dur-ui) var(--ease-out); }
+.rd-strip button img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.rd-strip button[aria-pressed="true"] { outline: 2px solid var(--ochre); outline-offset: 2px; }
+@media (hover: hover) { .rd-strip button:hover { transform: rotate(var(--tilt, -2deg)) translateY(-4px); } }
+.rd-story { font-family: var(--font-story); font-size: 21px; line-height: 1.75; color: var(--ink); }
+.rd-story p + p { margin-top: var(--s-5); }
+.rd-story p:first-child::first-letter { font-size: 74px; line-height: 0.78; float: left; padding: 8px 10px 0 0; color: var(--ochre); font-weight: 600; }
+.rd-story .quiet { font-style: italic; color: var(--ink-soft); }
+.rd-story .quiet::first-letter { font-size: inherit; float: none; padding: 0; color: inherit; font-weight: inherit; }
+.rd-side { display: flex; gap: var(--s-5); flex-wrap: wrap; align-items: center; margin-top: var(--s-6); }
+.rd-foot { margin-top: var(--s-12); padding-top: var(--s-6); border-top: 1px solid var(--line); display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
+.rd-foot .danger { color: var(--danger); margin-left: auto; }
+.rd-privacy { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px 0 10px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); background: var(--card); color: var(--ink); font: 600 13px var(--font-ui); cursor: pointer; transition: border-color var(--dur-ui); }
+.rd-privacy:hover { border-color: var(--chocolate); }
+.rd-privacy svg { width: 16px; height: 16px; color: var(--ink-soft); }
+.rd-privacy .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.rd-privacy.private .dot { background: var(--ink-faint); }
+.rd-privacy small { color: var(--ink-soft); font-weight: 500; }
+.hero .rd-told { display: flex; align-items: center; gap: var(--s-3); margin-top: var(--s-5); }
+.hero .rd-told .meta { font-weight: 600; color: var(--on-chocolate); }
+.hero .rd-told small { display: block; font-weight: 500; color: var(--on-chocolate-soft); }
+.hero .rd-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--s-4); }
+.hero .rd-chips .pill.cream { background: rgba(246, 240, 230, 0.14); color: var(--on-chocolate); }
+.hero .rd-chips a.pill { text-decoration: none; }
+@media (max-width: 760px) {
+  .rd-hero { aspect-ratio: 4 / 3; border-radius: 18px; }
+  .rd-story { font-size: 19px; line-height: 1.7; }
+  .rd-story p:first-child::first-letter { font-size: 60px; }
+  .rd-foot .danger { margin-left: 0; }
+}
+
+/* The wall: one person's story, the way the family sends it round. Anyone with the link. The same cloth,
+   their name and a line about them, then every memory they chose to show, chapter by chapter. */
+.wall { min-height: 100vh; background: var(--page); display: flex; flex-direction: column; }
+.wall-cloth { position: relative; isolation: isolate; color: var(--on-chocolate); overflow: hidden; padding-bottom: calc(var(--s-12) + 28px);
+  background:
+    radial-gradient(900px 480px at 18% 0%, rgba(255, 236, 210, 0.10), transparent 60%),
+    radial-gradient(700px 500px at 100% 100%, rgba(0, 0, 0, 0.30), transparent 60%),
+    linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)),
+    url("/book/bookcloth.jpg") 0 0 / 300px 300px,
+    var(--chocolate);
+  background-blend-mode: normal, normal, normal, overlay, normal; }
+.wall-cloth > * { position: relative; z-index: 1; }
+.wall-cloth > .lamp { z-index: 0; }
+.wall-top { max-width: var(--content-max); margin: 0 auto; padding: var(--s-6) var(--gutter) 0; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.wall-top a { color: var(--on-chocolate); text-decoration: none; font-weight: 600; font-size: 14px; }
+.wall-top .brand { display: inline-flex; }
+.wall-hero { max-width: var(--content-max); margin: 0 auto; padding: var(--s-12) var(--gutter) 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-8); align-items: center; }
+.wall-hero .avatar { width: 128px; height: 128px; border-radius: 50%; object-fit: cover; box-shadow: 0 20px 40px -20px rgba(0,0,0,0.6); border: 3px solid rgba(246, 240, 230, 0.25); }
+.wall-hero .avatar.ph { display: grid; place-items: center; background: rgba(246, 240, 230, 0.14); font: 500 48px var(--font-story); color: var(--on-chocolate); }
+.wall-hero h1 { font-size: var(--t-display); font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; color: var(--on-chocolate); }
+.wall-hero h1 .hl { color: var(--brass); }
+.wall-hero .intro { font-family: var(--font-story); font-size: var(--t-lead); line-height: 1.5; color: #F6EFE3; margin-top: var(--s-4); max-width: 56ch; }
+.wall-hero .counts { margin-top: var(--s-5); font-size: 13px; font-weight: 700; color: var(--on-chocolate-soft); letter-spacing: 0.04em; text-transform: uppercase; }
+.wall-sheet { position: relative; z-index: 2; flex: 1; margin-top: -28px; background: var(--page); border-radius: 22px 22px 0 0; box-shadow: 0 -24px 60px -24px rgba(0, 0, 0, 0.55); }
+.wall-sheet .page { display: grid; gap: var(--s-10); }
+.wall-chapter { display: grid; gap: var(--s-4); }
+.wall-chapter > h2 { font-size: var(--t-h2); font-weight: 700; display: flex; align-items: baseline; gap: var(--s-3); }
+.wall-chapter > h2 span { font-size: 13px; font-weight: 700; color: var(--ochre); letter-spacing: 0.04em; text-transform: uppercase; }
+.wall-mem { padding: var(--s-6); border-radius: var(--r-card); background: var(--card); display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: var(--s-6); }
+.wall-mem.nopic { grid-template-columns: minmax(0, 1fr); }
+.wall-mem h3 { font-family: var(--font-story); font-weight: 600; font-size: 26px; line-height: 1.2; color: var(--heading); margin: var(--s-2) 0 2px; }
+.wall-mem .date { font-size: 13px; font-weight: 700; color: var(--ochre); }
+.wall-mem .words { font-family: var(--font-story); font-size: 18px; line-height: 1.6; margin-top: var(--s-3); }
+.wall-mem .words p + p { margin-top: var(--s-4); }
+.wall-mem .words.closed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wall-mem .more { margin-top: var(--s-3); background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.wall-mem img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 16px; background: var(--tint, #EAE0CF); }
+.wall-family { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-4); }
+.wall-family blockquote { margin: 0; padding: var(--s-6); border-radius: var(--r-card); }
+.wall-family blockquote p { font-family: var(--font-story); font-size: 18px; line-height: 1.5; }
+.wall-family blockquote footer { margin-top: var(--s-4); font-size: 13px; font-weight: 700; }
+.wall-foot { padding: var(--s-10) var(--gutter) var(--s-16); text-align: center; color: var(--ink-soft); font-size: var(--t-small); }
+.wall-foot a { color: var(--heading); font-weight: 700; }
+.wall-empty { max-width: 560px; margin: var(--s-20) auto; text-align: center; display: grid; gap: var(--s-4); justify-items: center; }
+@media (max-width: 760px) {
+  .wall-hero { grid-template-columns: 1fr; padding-top: var(--s-8); gap: var(--s-5); }
+  .wall-hero .avatar { width: 88px; height: 88px; }
+  .wall-mem { grid-template-columns: minmax(0, 1fr); padding: var(--s-4); }
+  .wall-mem img { aspect-ratio: 16 / 10; order: -1; }
+}
+
+/* The front door: the cloth, a bold two-tone line, two buttons; then on the sheet the book itself as a
+   sample you can turn, the covers and papers it comes in, and the three things A Story does. */
+.land { min-height: 100vh; background: var(--page); display: flex; flex-direction: column; }
+.land .wall-cloth { padding-bottom: calc(var(--s-16) + 28px); }
+.land-hero { max-width: var(--content-max); margin: 0 auto; padding: var(--s-16) var(--gutter) 0; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-12); align-items: center; }
+.land-hero h1 { font-size: clamp(40px, 5vw, 68px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.02; color: var(--on-chocolate); text-wrap: balance; }
+.land-hero h1 .hl { color: var(--brass); }
+.land-hero .lead { font-family: var(--font-story); font-size: clamp(19px, 1.7vw, 23px); line-height: 1.5; color: #F6EFE3; margin-top: var(--s-6); max-width: 46ch; }
+.land-hero .acts { display: flex; gap: var(--s-3); flex-wrap: wrap; margin-top: var(--s-8); }
+.land-hero .acts .btn { min-height: 54px; padding: 0 var(--s-8); }
+.land-hero .said { justify-self: end; max-width: 34ch; padding: var(--s-8); border-radius: var(--r-card); background: rgba(0, 0, 0, 0.18); border: 1px solid rgba(246, 240, 230, 0.12); }
+.land-hero .said .q { font-family: var(--font-story); font-size: 24px; line-height: 1.35; color: #F6EFE3; }
+.land-hero .said .q::before { content: "“"; } .land-hero .said .q::after { content: "”"; }
+.land-hero .said .who { margin-top: var(--s-4); font-size: 13px; font-weight: 600; color: var(--on-chocolate-soft); }
+.land-hero .said .who::before { content: ""; display: inline-block; width: 22px; height: 1.5px; margin: 0 10px 4px 0; background: var(--gold); }
+.land-sheet { position: relative; z-index: 2; flex: 1; margin-top: -28px; background: var(--page); border-radius: 22px 22px 0 0; box-shadow: 0 -24px 60px -24px rgba(0, 0, 0, 0.55); }
+.land-sheet .page { display: grid; gap: var(--s-20); }
+.land-sec > .sechead { margin: 0 0 var(--s-8); display: block; }
+.land-sec .sechead .pill { margin-bottom: var(--s-4); }
+.land-sec .sechead h2 { font-size: var(--t-h1); font-weight: 700; letter-spacing: -0.02em; max-width: 22ch; text-wrap: balance; }
+.land-sec .sechead h2 .hl { color: var(--ochre); }
+.land-sec .sechead p { margin-top: var(--s-3); color: var(--ink-soft); max-width: 60ch; font-size: var(--t-body); }
+.land-sec .bk-reader { margin-bottom: 0; }
+.land-sec .bk-stage { background: var(--card); }
+.covers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-5); }
+.cover-tile { display: grid; gap: var(--s-3); text-align: center; }
+.cover-tile .book { position: relative; aspect-ratio: 1 / 1.38; border-radius: 3px 10px 10px 3px; background: var(--board, #4A3327); color: var(--foil, #D9B45A); display: grid; place-items: center; padding: 14% 12%;
+  box-shadow: inset 6px 0 10px -6px rgba(0,0,0,0.45), inset -1px 0 0 rgba(255,255,255,0.08), 0 20px 30px -18px rgba(42,35,32,0.6); transition: transform var(--dur-ui) var(--ease-out); }
+.cover-tile .book::before { content: ""; position: absolute; left: 7%; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.22); }
+.cover-tile .book .frame { position: absolute; inset: 9% 10%; border: 1px solid currentColor; opacity: 0.5; }
+.cover-tile .book .name { font-family: var(--font-story); font-size: clamp(13px, 1.3vw, 18px); line-height: 1.2; letter-spacing: 0.04em; text-transform: uppercase; }
+.cover-tile .book .name small { display: block; margin-top: 6px; font-size: 0.72em; text-transform: none; letter-spacing: 0.02em; font-style: italic; opacity: 0.85; }
+.cover-tile .book.photo { background: linear-gradient(rgba(20,12,6,0.15), rgba(20,12,6,0.6)), var(--board); }
+.cover-tile .book.tipped .plate { position: absolute; inset: 12% 14% 36%; background: linear-gradient(160deg, #C9B79F, #8A7362); border: 4px solid #fff; }
+.cover-tile .book.tipped .name { align-self: end; }
+@media (hover: hover) { .cover-tile:hover .book { transform: translateY(-6px) rotate(-1.5deg); } }
+.cover-tile b { font-size: 14px; font-weight: 700; color: var(--heading); }
+.cover-tile small { display: block; color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
+.papers { display: flex; gap: var(--s-4); flex-wrap: wrap; margin-top: var(--s-8); }
+.paper-chip { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: var(--r-pill); background: var(--card); font-size: 14px; font-weight: 600; color: var(--heading); }
+.paper-chip i { width: 28px; height: 28px; border-radius: 50%; background: var(--swatch); box-shadow: inset 0 0 0 1px rgba(42,35,32,0.12); }
+.paper-chip small { color: var(--ink-soft); font-weight: 500; }
+.hows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); }
+.hows .card { padding: var(--s-8); }
+.hows .card .n { font-size: 44px; font-weight: 700; color: var(--ochre); line-height: 1; letter-spacing: -0.02em; }
+.hows .card h3 { font-size: var(--t-h3); margin: var(--s-4) 0 var(--s-2); }
+.hows .card p { color: var(--ink-soft); }
+.land-cta { padding: var(--s-12); border-radius: var(--r-card); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-8); align-items: center; }
+.land-cta h2 { font-size: var(--t-h1); font-weight: 700; letter-spacing: -0.02em; }
+.land-cta p { margin-top: var(--s-2); }
+.land-cta .acts { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+.land-foot { padding: var(--s-10) var(--gutter) var(--s-16); text-align: center; color: var(--ink-soft); font-size: var(--t-small); }
+.land-foot a { color: var(--heading); font-weight: 600; }
+@media (max-width: 1100px) {
+  .land-hero { grid-template-columns: 1fr; }
+  .land-hero .said { justify-self: start; }
+  .covers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hows { grid-template-columns: 1fr; }
+  .land-cta { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .land-hero { padding-top: var(--s-10); }
+  .land-hero .said { display: none; }
+  .covers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+  .land-sheet .page { gap: var(--s-12); }
+  .land-cta { padding: var(--s-6); }
+}
+/* the wall switch on Account, and the one line on the Archive */
+.acct-wall { display: grid; gap: var(--s-3); }
+.acct-wall-link { display: flex; gap: var(--s-3); align-items: center; flex-wrap: wrap; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--sheet); }
+.acct-wall-link a { font-weight: 600; color: var(--heading); word-break: break-all; }
+.hero .arc-wall { margin-top: var(--s-3); }
+.hero .arc-wall a { color: var(--brass); font-weight: 600; }
+
+/* ───────────────────────── 25. The minor elements, quiet (17 Oct) ───────────────────────── */
+/* The big pieces were right; the small ones were loud. Shiori and Kiyo are the reference: small type in
+   sentence case and a soft grey, one weight down, hairlines instead of fills, arrows instead of chevrons,
+   nothing in uppercase but a running head. Every rule here lowers something. */
+.label { font-size: 13px; font-weight: 600; letter-spacing: 0.01em; color: var(--ink-soft); }
+.hero .label { font-weight: 500; color: var(--on-chocolate-soft); }
+.meta { font-size: 14px; line-height: 1.5; }
+.pill { min-height: 26px; padding: 0 11px; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
+.pill.gold { background: var(--pill-gold); color: var(--chocolate); }
+.pill.cream { background: transparent; color: var(--ink-soft); border: 1px solid var(--line-strong); }
+.hero .pill.cream, .hero .rd-chips .pill.cream { background: transparent; color: var(--on-chocolate); border-color: rgba(246, 240, 230, 0.28); }
+.hero .rd-chips a.pill:hover { border-color: rgba(246, 240, 230, 0.6); }
+.card { border-color: rgba(42, 35, 32, 0.06); }
+.card.teal, .card.gold { border-color: transparent; }
+.more { font-weight: 600; gap: 6px; }
+.more::after { content: "→"; font-size: 1em; }
+.more:hover::after { transform: translateX(3px); }
+.chip { font-weight: 500; }
+.chip.big { font-weight: 500; border-color: var(--line); }
+.btn { font-weight: 600; letter-spacing: 0; }
+.btn.outline { border-color: var(--line-strong); }
+.btn.sm { font-size: 13.5px; }
+.week button { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; }
+.week button .d { font-weight: 500; }
+.trio .card h3 { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+.sechead h2 { letter-spacing: -0.015em; }
+.hero-stats span { font-weight: 500; }
+.hero-stats b { font-weight: 600; }
+/* the writer's small print: sentence case, grey, no tracking */
+.running-head, .folio, .starters .label, .after-grid .block > span:first-child { text-transform: none; letter-spacing: 0.01em; font-size: 12px; font-weight: 500; color: var(--ink-faint); }
+.running-head { color: var(--ink-soft); }
+.after-grid .block > span:first-child { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.starters button { font-size: 16px; border-color: var(--line-strong); }
+.keeprow small { font-size: 12.5px; }
+.seal-button { font-weight: 600; font-size: 16px; }
+/* reading: a calmer drop cap, and the small links under the words */
+.rd-story p:first-child::first-letter { font-weight: 500; color: var(--heading); font-size: 66px; padding-top: 6px; }
+.rd-side .more { font-size: 14px; }
+.rd-privacy { font-weight: 600; }
+.rd-foot .btn.quiet.danger { background: transparent; color: var(--danger); }
+/* the memory card's small lines */
+.mem .date { font-weight: 600; letter-spacing: 0; }
+.mem .foot { font-weight: 500; }
+/* the archive: when there is no decade rail, the list takes the whole width */
+.arc-body > :only-child { grid-column: 1 / -1; }
+.arc-decades h3 { text-transform: none; letter-spacing: 0.01em; font-size: 13px; font-weight: 600; }
+.arc-year span { font-weight: 500; }
+/* the wall and the front door: the same small print */
+.wall-hero .counts, .wall-chapter > h2 span { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; }
+.wall-mem .date { font-weight: 600; }
+.cover-tile b { font-weight: 600; }
+.hows .card .n { font-weight: 600; }
+.hows .card p { font-size: 15px; line-height: 1.55; }
+.land-sec .sechead p { font-size: 16px; line-height: 1.55; }
+.land-hero .said .who, .auth .said .who { font-weight: 500; }
+/* buttons and small print on the front door's cloth */
+.land-hero .btn.primary { background: var(--on-chocolate); color: var(--chocolate); }
+.land-hero .btn.primary:hover { background: #fff; }
+.land-hero .btn.outline { background: transparent; color: var(--on-chocolate); border-color: rgba(246, 240, 230, 0.36); }
+.land-hero .meta { color: var(--on-chocolate-soft); }
+.land-cta .btn.quiet { color: var(--ink-soft); }

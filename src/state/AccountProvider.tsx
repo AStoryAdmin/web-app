@@ -126,6 +126,15 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     [attempt, patchStory],
   );
 
+  const updateStory = useCallback(
+    async (story: Story) => {
+      if (!userId) throw new Error("Not signed in");
+      await attempt("That change wasn't saved.", () => saveStory(story, userId));
+      patchStory(story.id, (s) => ({ ...s, ...story, memories: s.memories }));
+    },
+    [attempt, patchStory, userId],
+  );
+
   const chooseStory = useCallback(
     async (storyId: string) => {
       if (!userId) return;
@@ -200,11 +209,12 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
       chooseStory,
       saveMemory,
       removeMemory,
+      updateStory,
       addStory,
       saveFailure,
       clearSaveFailure: () => setSaveFailure(null),
     }),
-    [account, loadError, stories, activeStory, family, ensureMyStory, reload, chooseStory, saveMemory, removeMemory, addStory, saveFailure],
+    [account, loadError, stories, activeStory, family, ensureMyStory, reload, chooseStory, saveMemory, removeMemory, updateStory, addStory, saveFailure],
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;

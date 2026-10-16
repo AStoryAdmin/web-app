@@ -25,6 +25,8 @@ export type AccountState = {
   /** Saves a memory into a story and updates the local copy; throws if the server refused. */
   saveMemory: (memory: Memory, storyId: string) => Promise<void>;
   removeMemory: (memoryId: string, storyId: string) => Promise<void>;
+  /** Saves changes to a story the account keeps (its wall, its intro) and updates the local copy. */
+  updateStory: (story: Story) => Promise<void>;
   /** A new storyteller, saved and made active. */
   addStory: (story: Story) => Promise<Story>;
   /** The last write that did not land, with a way to try it again. */

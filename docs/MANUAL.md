@@ -69,6 +69,16 @@ This part is for the son, daughter or grandchild setting things up.
 4. It asks **Whose story is this?** Press **Someone in my family**, then their name and how they are related to you.
 5. You are on Home. Write one thing you remember about them. That is the first memory. It takes a minute.
 
+### Three different things, and which one you want
+
+Read this before you press anything on **Family**. Getting it wrong makes two copies of the same person, and the phone app lets you.
+
+1. **Your own story.** About you, in your words. You have one.
+2. **A story you keep for someone who is not on A Story.** Your mother, your late grandfather. You do the typing; it is kept in their name, "as told to you". If they join A Story later, you can hand the story over to them.
+3. **Joining the story of someone who is already on A Story.** Do **not** start a story about them. Ask them (or whoever keeps their story) for the six-letter code on their Family page, or the link. Then you read what they chose to share and add what *you* remember, under your own name. They approve it. You never write as them.
+
+On **Whose story is this?** the third choice says exactly this: **Someone who is already on A Story**. Choose it, type the code, and you are in theirs.
+
 ### Get them in
 
 Your storyteller needs their own way in. Two ways:
@@ -81,6 +91,16 @@ Your storyteller needs their own way in. Two ways:
 Same button. Anyone you add can read what your storyteller said and add their own version. Free for them, on every plan.
 
 For a relative who does not want an account, press **Share a link**. The link opens a page where they can send a memory, a note or a photograph with no sign-in. You approve it before it appears.
+
+### Adding people to the family, and when they see it
+
+When you add a person on **Family**, only your family sees them, marked **not on A Story yet**. Send them an invite and it says **invited**. When they accept with the code or the link, it says **on A Story**, and from then on they see your family and you see theirs. Until they accept, nothing you typed appears on their side. If you add someone by email who is already there, A Story uses the person who is there instead of making a second one.
+
+### Public, private, and the wall
+
+Every memory is **Public** or **Private**. Public means the family on A Story can read it. Private means only you and whoever keeps the story. The switch is at the bottom of the memory page.
+
+The **wall** is one page for one story that anyone with the link can read: the public memories and what the family added, nothing private, nothing still being written up. It is off until you turn it on in **Account → The wall**. Copy the link there and send it to a cousin or put it in the family group. Turn it off and the link shows nothing.
 
 ### Review what the family sends
 

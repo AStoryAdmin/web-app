@@ -9,7 +9,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, ButtonLink, CodeInput, Field, Problem } from "../components/ui";
-import { ChevronRight, LockIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
+import { ChevronRight, LinkIcon, LockIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { changePassword, confirmEmailChange, requestEmailChange, updateProfile, updateSettings, CODE_LEN, MIN_PASSWORD, type Settings, type User } from "../data/auth";
@@ -348,6 +348,86 @@ function Privacy({ user, refresh }: { user: User; refresh: () => Promise<unknown
   );
 }
 
+
+/* ── The wall ────────────────────────────────────────────────────────── */
+
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+const WALL_BASE = (import.meta.env.VITE_PUBLIC_BASE as string | undefined) || window.location.origin;
+
+/** One story's wall: the page anyone with the link can read (get_public_story shows only what is public). */
+function WallSwitch({ story }: { story: Story }) {
+  const { updateStory } = useAccount();
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<Note>(null);
+  const [copied, setCopied] = useState(false);
+  const own = story.relationship === "Myself";
+  const url = story.publicSlug ? `${WALL_BASE}/p/${story.publicSlug}` : "";
+  const shown = story.memories.filter((m) => m.privacy !== "private" && m.status !== "in_progress").length;
+
+  const flip = async (on: boolean) => {
+    setBusy(true);
+    setNote(null);
+    const slug = story.publicSlug || `${slugify(`${story.name} ${story.lastName}`.trim()) || "story"}-${Math.random().toString(36).slice(2, 6)}`;
+    try {
+      await updateStory({ ...story, isPublic: on, publicSlug: slug });
+      setNote({ ok: on ? "The wall is on. Anyone with the link can read what is public." : "The wall is off. The link shows nothing now." });
+    } catch (err) {
+      setNote({ error: (err as Error)?.message || "That didn't save." });
+    }
+    setBusy(false);
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setNote({ error: "Copy the link from the address below." });
+    }
+  };
+
+  return (
+    <div className="acct-wall">
+      <Switch on={story.isPublic} label={own ? "Your wall" : `${story.name}'s wall`} hint={story.isPublic ? `${shown} of ${story.memories.length} ${story.memories.length === 1 ? "memory" : "memories"} shown. Private ones never are.` : "Off. Nobody can open the link."} onChange={flip} busy={busy} />
+      {story.isPublic && url && (
+        <div className="acct-wall-link">
+          <a href={url} target="_blank" rel="noreferrer">
+            {url.replace(/^https?:\/\//, "")}
+          </a>
+          <Button variant="outline" small icon={<LinkIcon />} onClick={copy}>
+            {copied ? "Copied" : "Copy the link"}
+          </Button>
+        </div>
+      )}
+      <NoteLine note={note} />
+    </div>
+  );
+}
+
+function Walls() {
+  const { stories } = useAccount();
+  const mine = stories.filter((s) => s.memories.length > 0 || s.isPublic);
+  if (!mine.length) return null;
+  return (
+    <Section title="The wall" lead="A page anyone with the link can read: the memories that are public, and what the family added. Send it to a cousin, put it in the family group. Turn it off any time." id="wall">
+      <div className="acct-switches">
+        {mine.map((s) => (
+          <WallSwitch key={s.id} story={s} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 /* ── Who looks after this if I can't ─────────────────────────────────── */
 
 type Heir = { user_id: string | null; name: string | null; email: string | null; how: string | null };
@@ -618,6 +698,7 @@ export default function Account() {
             <Storytellers stories={stories} active={activeStory} chooseStory={chooseStory} />
             <PlanCard user={user} />
             <Privacy user={user} refresh={refresh} />
+            <Walls />
           </div>
           <div className="acct-col">
             <Email user={user} refresh={refresh} />

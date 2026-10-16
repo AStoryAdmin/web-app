@@ -20,10 +20,11 @@ export default function Start() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const another = params.get("another") === "1";
-  const [who, setWho] = useState<"self" | "other" | null>(null);
+  const [who, setWho] = useState<"self" | "other" | "join" | null>(null);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [relationship, setRelationship] = useState("Mother");
+  const [code, setCode] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +77,10 @@ export default function Start() {
                 <span className="big">My own story</span>
                 <span className="meta">In your own words, at your own pace.</span>
               </button>
+              <button type="button" className="choice-card quiet" onClick={() => setWho("join")} aria-expanded={false}>
+                <span className="big">Someone who is already on A Story</span>
+                <span className="meta">Don't start a second story about them. Join theirs: they give you their family code or link, and you add what you remember under your own name.</span>
+              </button>
             </div>
           </section>
         ) : (
@@ -83,7 +88,16 @@ export default function Start() {
             <button type="button" className="btn quiet sm" onClick={() => setWho(null)} style={{ marginBottom: "var(--s-4)", paddingLeft: 0 }}>
               ← Back
             </button>
-            <h1>{who === "self" ? "About you" : "About them"}</h1>
+            <h1>{who === "self" ? "About you" : who === "join" ? "Join their story" : "About them"}</h1>
+            {who === "join" && (
+              <>
+                <p className="sub">Ask them (or whoever keeps their story) for the six-letter family code on their Family page, or the link. Nothing is written in their name: you read what they chose to share and add your own side, and they approve it.</p>
+                <Field label="Their family code" placeholder="ABC123" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))} autoFocus />
+                <Button type="button" onClick={() => code && navigate(`/join/${code}`)} disabled={!code}>
+                  Open it
+                </Button>
+              </>
+            )}
             {error && <Problem message={error} onDismiss={() => setError(null)} />}
             {who === "other" && (
               <>
@@ -101,11 +115,16 @@ export default function Start() {
               </>
             )}
             {who === "self" && !user?.firstName && <Field label="Your first name" placeholder="Rose" value={name} onChange={(e) => setName(e.target.value)} autoFocus required />}
-            <Field label="Last name" placeholder="Hartley" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            <Field label="Year of birth (if you know it)" inputMode="numeric" placeholder="1945" value={birthYear} onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} hint="It lets the archive say how old they were." />
-            <Button type="submit" block loading={busy}>
-              {who === "self" ? "Begin" : `Begin ${name.trim() || "their"}${name.trim() ? "'s" : ""} story`}
-            </Button>
+            {who !== "join" && (
+              <>
+                {who === "other" && <p className="meta" style={{ margin: "calc(-1 * var(--s-2)) 0 var(--s-5)" }}>This is for someone who is not on A Story, or who would rather you did the typing. What you write is kept in their name, as told to you. If they join later, you can hand the story to them.</p>}
+                <Field label="Last name" placeholder="Hartley" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <Field label="Year of birth (if you know it)" inputMode="numeric" placeholder="1945" value={birthYear} onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} hint="It lets the archive say how old they were." />
+                <Button type="submit" block loading={busy}>
+                  {who === "self" ? "Begin" : `Begin ${name.trim() || "their"}${name.trim() ? "'s" : ""} story`}
+                </Button>
+              </>
+            )}
           </form>
         )}
       </main>

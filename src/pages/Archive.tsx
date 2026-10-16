@@ -173,6 +173,17 @@ export default function Archive() {
             </span>
           </p>
           <h1>The Archive</h1>
+          <p className="meta arc-wall" data-rise>
+            {story.isPublic ? (
+              <>
+                The wall is on. <Link to="/account#wall">Share the link</Link>
+              </>
+            ) : (
+              <>
+                Only the family sees this. <Link to="/account#wall">Turn on the wall</Link> to share it by link.
+              </>
+            )}
+          </p>
           <dl className="hero-stats" data-rise>
             <div>
               <b>{stats.memories}</b>

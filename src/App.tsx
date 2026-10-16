@@ -40,7 +40,7 @@ const router = createBrowserRouter([
   { path: "/reset-password", element: <ForgotPassword /> },
   { path: "/join/:code", element: lazyPage(() => import("./pages/Join")) },
   { path: "/c/:slug", element: lazyPage(() => import("./pages/Contribute")) },
-  { path: "/p/:slug", element: page("A story") },
+  { path: "/p/:slug", element: lazyPage(() => import("./pages/Wall")) },
   {
     element: <RequireAuth />,
     children: [
