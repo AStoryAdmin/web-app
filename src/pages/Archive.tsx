@@ -6,9 +6,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
+import { archiveStats } from "../app-core/lib/timeline.js";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
-import ProfileCard from "../components/archive/ProfileCard";
 import BookCard from "../components/archive/BookCard";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
 import { InProgressGroup, UndatedGroup, YearGroup, type YearGroupT } from "../components/archive/ArchiveGroups";
@@ -156,6 +156,7 @@ export default function Archive() {
   if (!story) return <Navigate to="/start" replace />;
 
   const own = story.relationship === "Myself";
+  const stats = archiveStats(story) as { memories: number; chapters: number; span: { from: number; to: number } | null };
   const whose = own ? "your" : `${story.name}'s`;
   const filtering = Boolean(q || chapter || day);
   const nothingAtAll = memories.length === 0;
@@ -172,10 +173,20 @@ export default function Archive() {
             </span>
           </p>
           <h1>The Archive</h1>
-          <p className="meta" data-rise style={{ marginTop: "var(--s-4)" }}>
-            {memories.length} {memories.length === 1 ? "memory" : "memories"}
-            {story.memories.length !== memories.length ? ` of ${story.memories.length}` : ""} · {own ? "your own story" : `${story.name}'s story`}
-          </p>
+          <dl className="hero-stats" data-rise>
+            <div>
+              <b>{stats.memories}</b>
+              <span>{stats.memories === 1 ? "Memory" : "Memories"}</span>
+            </div>
+            <div>
+              <b>{stats.span ? (stats.span.from === stats.span.to ? String(stats.span.from) : `${stats.span.from}–${stats.span.to}`) : "—"}</b>
+              <span>Years covered</span>
+            </div>
+            <div>
+              <b>{stats.chapters}</b>
+              <span>{stats.chapters === 1 ? "Chapter" : "Chapters"}</span>
+            </div>
+          </dl>
         </>
       }
     >
@@ -184,7 +195,6 @@ export default function Archive() {
 
         <div ref={topRef}>
           <div className="arc-top">
-            <ProfileCard story={story} />
             <BookCard story={story} />
           </div>
 

@@ -6,9 +6,9 @@
 /* ───────────────────────── 1. Tokens ───────────────────────── */
 :root {
   /* grounds (light) */
-  --page: #F6F0E5;          /* ivory: the paper sheet (brand ivory, a touch lighter) */
-  --sheet: #EDE5D8;         /* a tinted section or a pressed state */
-  --card: #FFFFFF;          /* a tile */
+  --page: #F3EBDD;          /* the deck's cream: the paper sheet (brand ivory) */
+  --sheet: #EAE0CF;         /* a tinted section or a pressed state */
+  --card: #FBF7EE;          /* a soft cream card, the deck's; separated by tone, never by a border */
   --card-soft: #FCFBF8;
   --support: #E9E2D8;       /* avatar placeholders, dividers that need weight */
   --support-soft: #F1ECE4;
@@ -36,7 +36,10 @@
   --accent-100: #F3D9CB;
   --accent-border: #E8B9A2;
   --gold: #E0A03F;
-  --brass: #EBC86A;
+  --ochre: #BF7F1A;         /* the deck's highlight: the key phrase of a headline, links that act */
+  --brass: #EFC75E;         /* gold on teal or chocolate */
+  --pill-gold: #F2D27A;     /* the deck's yellow tag */
+  --teal-slate: #2E566A;    /* the deck's callout panel */
   --gold-soft: rgba(217, 162, 74, 0.16);
   --teal: #0F4A58;          /* the book cloth */
   --teal-soft: rgba(15, 74, 88, 0.08);
@@ -128,14 +131,15 @@ body {
   font-family: var(--font-ui); font-size: var(--t-body); line-height: 1.55;
   font-weight: 400; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
-h1, h2, h3, h4 { margin: 0; color: var(--heading); font-weight: 500; line-height: 1.1; overflow-wrap: anywhere; min-width: 0; }
-h1 { font-size: var(--t-h1); letter-spacing: -0.025em; }
+h1, h2, h3, h4 { margin: 0; color: var(--heading); font-weight: 700; line-height: 1.12; overflow-wrap: anywhere; min-width: 0; }
+.hl { color: var(--ochre); }
+h1 { font-size: var(--t-h1); letter-spacing: -0.02em; }
 h2 { font-size: var(--t-h2); letter-spacing: -0.02em; }
 h3 { font-size: var(--t-h3); letter-spacing: -0.01em; line-height: 1.2; }
 h4 { font-size: var(--t-lead); line-height: 1.25; }
-.display { font-size: var(--t-display); font-weight: 500; letter-spacing: -0.03em; line-height: 1.02; }
+.display { font-size: var(--t-display); font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; }
 p { margin: 0; }
-a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a { color: var(--ochre); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 b, strong { font-weight: 600; }
 img { display: block; max-width: 100%; }
 button { font: inherit; color: inherit; }
@@ -149,7 +153,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 .story-q { font-family: var(--font-story); font-weight: 400; line-height: 1.22; color: var(--heading); letter-spacing: -0.012em; }
 
 /* labels: small, sentence case, quiet */
-.label { font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--ink-soft); }
+.label { font-size: var(--t-caption); font-weight: 700; letter-spacing: 0.02em; text-transform: none; color: var(--ink-soft); }
+/* the deck's tags */
+.pill { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 12px; border-radius: var(--r-pill); font-size: 13px; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap; }
+.pill.gold { background: var(--pill-gold); color: var(--chocolate); }
+.pill.teal { background: var(--teal-slate); color: #F6EFE3; }
+.pill.cream { background: var(--card); color: var(--heading); }
 .label.quiet { color: var(--ink-faint); }
 .meta { font-size: var(--t-small); color: var(--ink-soft); font-weight: 400; }
 .meta b { color: var(--ink); font-weight: 600; }
@@ -220,7 +229,9 @@ ul { margin: 0; padding: 0; list-style: none; }
 .hero { padding-top: var(--s-8); }
 .hero-in { max-width: var(--content-max); margin: 0 auto; padding: 0 var(--gutter); position: relative; }
 .hero .label { color: var(--on-chocolate-soft); }
-.hero h1 { color: var(--on-chocolate); font-size: var(--t-display); font-weight: 400; letter-spacing: -0.035em; line-height: 1; }
+.hero h1 { color: var(--on-chocolate); font-size: var(--t-display); font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; }
+.hero .hl { color: var(--brass); }
+.hero .pill.gold { margin-bottom: var(--s-4); }
 .hero .hero-title { font-size: var(--t-h1); }
 .hero .line { overflow: hidden; }
 .hero .meta { color: var(--on-chocolate-soft); }
@@ -235,6 +246,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 .hero .teller-pick { color: var(--on-chocolate); }
 .hero .teller-pick svg { color: var(--on-chocolate-soft); }
 .hero .label .teller-pick { font-size: inherit; font-weight: 600; }
+.hero-stats { display: flex; gap: var(--s-10); margin: var(--s-6) 0 0; flex-wrap: wrap; }
+.hero-stats div { display: grid; gap: 2px; }
+.hero-stats b { font-size: 30px; font-weight: 700; color: var(--brass); line-height: 1; letter-spacing: -0.02em; }
+.hero-stats span { font-size: 13px; font-weight: 600; color: var(--on-chocolate-soft); }
 /* the book's own hero on the cloth */
 .hero .bookhero-body { max-width: 640px; }
 .hero .bookhero-title { font-family: var(--font-story); font-weight: 500; letter-spacing: -0.015em; }
@@ -283,7 +298,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* ───────────────────────── 5. Buttons & fields ───────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 48px; padding: 0 var(--s-6);
-  border-radius: var(--r-pill); border: 1px solid transparent; font-weight: 500; font-size: var(--t-small); cursor: pointer; text-decoration: none;
+  border-radius: var(--r-pill); border: 1px solid transparent; font-weight: 600; font-size: var(--t-small); cursor: pointer; text-decoration: none;
   letter-spacing: 0.005em; transition: transform var(--dur-press) var(--ease-out), background var(--dur-ui) var(--ease-out), border-color var(--dur-ui) var(--ease-out);
   white-space: nowrap; color: var(--ink);
 }
@@ -302,7 +317,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn.sm { min-height: 40px; padding: 0 var(--s-4); font-size: 14px; }
 .btn[disabled] { opacity: .45; cursor: default; }
 /* a text link that acts: "Open the book ›" */
-.more { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); text-decoration: none; font-weight: 500; font-size: var(--t-small); }
+.more { display: inline-flex; align-items: center; gap: 4px; color: var(--ochre); text-decoration: none; font-weight: 700; font-size: var(--t-small); }
 .more::after { content: "›"; font-size: 1.2em; line-height: 1; transition: transform var(--dur-ui) var(--ease-out); }
 .more:hover::after { transform: translateX(2px); }
 
@@ -331,7 +346,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 .check.on i { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
 
 /* ───────────────────────── 6. Cards, sheets, chips, avatars ───────────────────────── */
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: none; }
+.card { background: var(--card); border: 1px solid transparent; border-radius: var(--r-card); box-shadow: none; }
+.card.teal { background: var(--teal-slate); color: #F6EFE3; border-color: transparent; }
+.card.teal h2, .card.teal h3, .card.teal h4 { color: #F6EFE3; }
+.card.teal .meta, .card.teal p { color: rgba(246, 239, 227, 0.82); }
+.card.teal .hl, .card.teal .more { color: var(--brass); }
+.card.gold { background: #FBF0D6; border: 1.5px solid var(--gold); }
 .card.pad { padding: var(--s-6); }
 .card.tint { background: var(--sheet); border-color: transparent; }
 .sheet { background: var(--sheet); border-radius: var(--r-sheet) var(--r-sheet) 0 0; position: relative; }
@@ -343,7 +363,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .chip.gold { background: var(--gold-soft); color: var(--accent-deep); }
 .chip.accent { background: var(--accent-soft); color: var(--accent); }
 .chip.outline { background: transparent; border: 1px solid var(--line-strong); }
-.chip.big { min-height: 40px; padding: 0 var(--s-4); font-size: var(--t-small); background: var(--card); border: 1px solid var(--line-strong); color: var(--ink); cursor: pointer; }
+.chip.big { min-height: 40px; padding: 0 var(--s-4); font-size: var(--t-small); font-weight: 600; background: var(--card); border: 1px solid transparent; color: var(--ink); cursor: pointer; }
 .chip.big:hover { border-color: var(--ink-soft); }
 .chip.big[aria-pressed="true"] { border-color: var(--chocolate); color: var(--on-chocolate); background: var(--chocolate); }
 .chiprow { display: flex; gap: var(--s-2); flex-wrap: wrap; }
@@ -360,7 +380,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* ───────────────────────── 7. Week strip ───────────────────────── */
 .week { display: inline-grid; grid-template-columns: repeat(7, auto); gap: var(--s-2); }
 .week button { background: none; border: 0; padding: 0; cursor: pointer; display: grid; justify-items: center; gap: 6px; color: var(--ink-faint); font-weight: 500; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-.week button .d { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; color: var(--ink); font-size: var(--t-small); font-weight: 500; position: relative; transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-ui); }
+.week button .d { width: 40px; height: 40px; border-radius: 50%; border: 1px solid transparent; background: var(--card); display: grid; place-items: center; color: var(--ink); font-size: var(--t-small); font-weight: 500; position: relative; transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-ui); }
 .week button:hover .d { border-color: var(--line-strong); }
 .week button:active .d { transform: scale(0.95); }
 .week button[aria-pressed="true"] .d { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
@@ -376,7 +396,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .ask .note { margin-top: var(--s-4); }
 
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
-.tile { display: grid; justify-items: center; gap: var(--s-3); min-height: 104px; padding: var(--s-5); border-radius: var(--r-card); text-decoration: none; font-weight: 500; font-size: var(--t-small); cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-ui); }
+.tile { display: grid; justify-items: center; gap: var(--s-3); min-height: 104px; padding: var(--s-5); border-radius: var(--r-card); text-decoration: none; font-weight: 600; font-size: var(--t-small); cursor: pointer; border: 1px solid transparent; background: var(--card); color: var(--ink); transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-ui); }
 .tile:hover { border-color: var(--line-strong); }
 .tile:active { transform: scale(0.98); }
 .tile svg { width: 26px; height: 26px; }
@@ -384,7 +404,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .tile.light { background: var(--card); color: var(--ink); }
 
 /* ───────────────────────── 9. Memory card ───────────────────────── */
-.mem { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: var(--s-5); padding: var(--s-4); border-radius: var(--r-card); background: var(--card); border: 1px solid var(--line); text-decoration: none; color: inherit; transition: transform var(--dur-ui) var(--ease-out), border-color var(--dur-ui); }
+.mem { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: var(--s-5); padding: var(--s-4); border-radius: var(--r-card); background: var(--card); border: 1px solid transparent; text-decoration: none; color: inherit; transition: transform var(--dur-ui) var(--ease-out), border-color var(--dur-ui); }
 .mem:hover { transform: translateY(-2px); border-color: var(--line-strong); }
 .mem .pic { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; }
 .mem .pic.nopic { display: grid; place-items: center; background: rgba(42,35,32,0.05); }
@@ -443,7 +463,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ───────────────────────── 14. Section heads ───────────────────────── */
 .sechead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-12) 0 var(--s-5); }
-.sechead h2 { font-size: var(--t-h3); letter-spacing: -0.01em; text-transform: none; font-weight: 500; }
+.sechead h2 { font-size: var(--t-h3); letter-spacing: -0.01em; text-transform: none; font-weight: 700; }
 .sechead a { font-weight: 500; font-size: var(--t-small); text-decoration: none; }
 
 /* ───────────────────────── 15. Motion ───────────────────────── */
@@ -531,13 +551,14 @@ ul { margin: 0; padding: 0; list-style: none; }
 .weekrow .label { margin-right: var(--s-2); }
 .trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); }
 .trio .card { padding: var(--s-6); display: flex; flex-direction: column; }
-.trio .card h3 { font-size: var(--t-caption); font-weight: 600; color: var(--ink-soft); margin-bottom: var(--s-4); letter-spacing: 0.02em; }
+.trio .card h3 { font-size: var(--t-small); font-weight: 700; color: var(--heading); margin-bottom: var(--s-4); letter-spacing: 0; }
+.trio .card.teal h3 { color: #F6EFE3; }
 .trio .card .more { margin-top: auto; padding-top: var(--s-4); }
 .recent { display: grid; gap: var(--s-4); }
 @media (max-width: 1100px) { .trio { grid-template-columns: 1fr; } }
 .bookmini { display: flex; gap: var(--s-4); align-items: center; }
 .bookmini img { width: 56px; height: auto; filter: drop-shadow(0 6px 10px rgba(42,35,32,0.22)); }
-.bookmini .n { font-size: 34px; font-weight: 400; color: var(--heading); line-height: 1; letter-spacing: -0.03em; }
+.bookmini .n { font-size: 36px; font-weight: 700; color: var(--ochre); line-height: 1; letter-spacing: -0.02em; }
 .bookmini .n small { display: block; font-size: var(--t-caption); color: var(--ink-soft); font-weight: 500; margin-top: 6px; letter-spacing: 0; }
 .news { display: grid; gap: var(--s-3); }
 .news .item { display: flex; gap: var(--s-3); align-items: flex-start; padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); font-size: var(--t-small); }
@@ -746,7 +767,7 @@ body.writing-focus .keepbar { position: fixed; right: var(--s-8); bottom: var(--
 
 /* ── 21. Archive & memory (agent) ── */
 /* The Archive: the storyteller, the book, then a life by year with a decade rail beside it. */
-.arc-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-5); align-items: stretch; }
+.arc-top { display: grid; grid-template-columns: 1fr; gap: var(--s-5); }
 .arc-profile { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--s-5); align-items: center; padding: var(--s-6); }
 .arc-profile .avatar { width: 96px; height: 96px; }
 .arc-profile h2 { font-size: var(--t-h3); }
@@ -760,7 +781,7 @@ body.writing-focus .keepbar { position: fixed; right: var(--s-8); bottom: var(--
 .arc-book img { width: 128px; height: auto; filter: drop-shadow(0 10px 18px rgba(43, 33, 22, 0.25)); }
 .arc-book h2 { font-size: var(--t-h3); }
 .arc-book .n { font-size: 40px; font-weight: 700; color: var(--heading); line-height: 1; margin: var(--s-2) 0; }
-.arc-book .n small { font-size: var(--t-small); color: var(--green); font-weight: 600; margin-left: 6px; }
+.arc-book .n small { font-size: var(--t-small); color: var(--ochre); font-weight: 700; margin-left: 6px; }
 .arc-book .acts { display: flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap; }
 .arc-banner { margin-top: var(--s-5); }
 .arc-body { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--s-10); margin-top: var(--s-8); align-items: start; }

@@ -72,9 +72,14 @@ export default function Home() {
             <TellerPick />
           </span>
         </p>
-        <h1>{greeting(user?.firstName || "")}.</h1>
+        <h1>
+          {greeting("")}, <span className="hl">{user?.firstName || "friend"}</span>.
+        </h1>
         <span className="foil" data-rise />
         <div className="ask">
+          <span className="pill gold" data-rise>
+            {own ? "A little question for today" : `A little question for ${story.name}`}
+          </span>
           {question ? (
             <>
               <p className="story-q q" data-rise>
@@ -187,9 +192,11 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="card" data-rise>
+          <div className="card teal" data-rise>
             <h3>Calls</h3>
-            <p className="meta">A Story calls on the phone at the hour you choose. Talking here in the browser is coming.</p>
+            <p className="meta">
+              A Story calls on the phone at the hour you choose. <span className="hl">Talking here in the browser is coming.</span>
+            </p>
             <Link className="more" to="/talk">
               How calls work
             </Link>
