@@ -1,16 +1,18 @@
 /**
- * The signed-out frame: one sheet of the book's paper lying on its cloth.
- * The cloth carries the lockup and one thing a person actually said, in the
- * serif, because that is the whole promise; the form lives on the paper
- * under the foil-stamped mark. The pointer is a soft light over both
- * (components/delight/Light); pressing the cloth leaves the binder's blind
+ * The signed-out frame: one sheet of the book's paper lying on its cloth,
+ * with the family dog resting its chin on the sheet's top edge
+ * (components/delight/Companion). The cloth carries the lockup and one
+ * thing a person actually said, in the serif, because that is the whole
+ * promise. The pointer is a soft light over the cloth (Light); a pressed
+ * leaf drifts after it (Leaf); pressing the cloth leaves the binder's blind
  * deboss of the mark (ClothStamp). On a phone the quote sits above the
  * sheet and both fill the width.
  */
 import { useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Lockup, Mark } from "../../components/Brand";
+import { Lockup } from "../../components/Brand";
 import ClothStamp from "../../components/delight/ClothStamp";
+import Companion from "../../components/delight/Companion";
 import Leaf from "../../components/delight/Leaf";
 import { useLight } from "../../components/delight/Light";
 
@@ -24,6 +26,7 @@ const SAID: { q: string; who: string }[] = [
 export default function AuthFrame({ children, line = 0 }: { children: ReactNode; line?: number }) {
   const said = SAID[line % SAID.length];
   const ground = useRef<HTMLDivElement>(null);
+  const paper = useRef<HTMLElement>(null);
   useLight(ground);
 
   return (
@@ -37,13 +40,12 @@ export default function AuthFrame({ children, line = 0 }: { children: ReactNode;
         <p className="q">{said.q}</p>
         <p className="who">{said.who}</p>
       </aside>
-      <main className="paper">
-        <div className="mark foil">
-          <Mark height={44} />
-          <Mark height={44} className="glint" />
-        </div>
-        {children}
-      </main>
+      <div className="sheet-wrap">
+        <Companion sheet={paper} />
+        <main className="paper" ref={paper}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
