@@ -25,7 +25,7 @@ export type BookOffer = {
 
 // The catalog's own prices, shown when the server is from before editions
 // (supabase/functions/_shared/bookCatalog.js; prices are proposals, deploy §3a).
-const CATALOG: Edition[] = [
+export const CATALOG: Edition[] = [
   { id: "home", priceCents: 0 },
   { id: "digital", priceCents: 1900 },
   { id: "softcover", priceCents: 3900, extraCents: 2900 },
