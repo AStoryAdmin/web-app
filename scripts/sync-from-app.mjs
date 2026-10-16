@@ -34,6 +34,7 @@ export const FILES = [
   // The row shapes a story and a memory take in the database, and the
   // save-diff. Shared so both products write the same columns.
   "data/rows.js",
+  "data/familyRows.js",
   "lib/photoRefs.js",
   // Dates and the archive.
   "lib/timeline.js",

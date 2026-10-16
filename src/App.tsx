@@ -6,6 +6,7 @@
  */
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import AuthProvider from "./state/AuthProvider";
+import AccountProvider from "./state/AccountProvider";
 import RequireAuth from "./state/RequireAuth";
 import Placeholder from "./pages/Placeholder";
 
@@ -46,7 +47,9 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <AccountProvider>
+        <RouterProvider router={router} />
+      </AccountProvider>
     </AuthProvider>
   );
 }

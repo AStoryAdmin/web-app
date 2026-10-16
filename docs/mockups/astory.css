@@ -1,6 +1,6 @@
 /* Hallmark · pre-emit critique: P5 H4 E4 S5 R4 V4
  * A Story — web design system, mockup edition.
- * Grounds, ink and accents are the app's brand tokens (phone-app/src/theme/index.js);
+ * Colours are the designer's Figma ramps (web-app/docs/figma/TOKENS.md) with brand.json as the canonical terracotta/chocolate;
  * the serif for the storyteller's words comes from astoryapp.com (Source Serif 4).
  * Every colour and font below is a token; pages never write a raw hex. */
 
@@ -11,34 +11,39 @@
   --sheet: #FAF7F2;         /* ivory — raised sheet */
   --card: #FFFFFF;          /* card — lighter again */
   --card-soft: #FDFBF8;
-  --support: #E4DACB;       /* the two-tone edge behind a sheet */
-  --field-border: #E3DBD1;
+  --support: #D5CDC6;       /* secondary-100: the two-tone edge behind a sheet */
+  --support-soft: #EEEBE8;  /* secondary-50 */
+  --field-border: #E3E3E3;  /* the Figma input hairline */
 
   /* brand surfaces */
   --chocolate: #4A3327;     /* app bar, rail, primary buttons */
-  --chocolate-deep: #3B2A1E;
+  --chocolate-deep: #3B291D; /* secondary-900 */
   --chocolate-ink: #2B2116; /* the live-conversation room */
-  --on-chocolate: #F3EBDD;
-  --on-chocolate-soft: #CBBBA8;
+  --on-chocolate: #F1EADC;  /* logo "A" on chocolate */
+  --on-chocolate-soft: #DBD2C5; /* the slogan colour */
 
   /* ink */
-  --ink: #2A2019;           /* body — warm near-black, 13:1 on sand */
-  --ink-soft: #5E5047;      /* secondary — 6.9:1 */
-  --ink-faint: #8A7A6E;     /* only ≥18px, never for essentials */
+  --ink: #333333;           /* neutral-700: body, as the Figma sets it (11.4:1 on sand) */
+  --ink-soft: #4D4D4D;      /* neutral-500: secondary text (8.2:1) */
+  --ink-faint: #87715D;     /* secondary-400: placeholders only, ≥18px (4.6:1 on white) */
   --heading: #4A3327;
 
   /* accents */
-  --accent: #B85126;        /* terracotta — labels, the one coloured action */
-  --accent-deep: #9A4220;
-  --accent-soft: rgba(184, 81, 38, 0.10);
-  --accent-border: rgba(184, 81, 38, 0.34);
+  --accent: #B85126;        /* terracotta (brand.json; Figma primary-900 #B85327) */
+  --accent-deep: #9A4220;   /* hover/pressed */
+  --accent-800: #D25E2C;    /* primary-800: small marks, the Recording badge */
+  --accent-500: #FA7337;    /* primary-500: the warm end of the progress ramp */
+  --accent-soft: #F9EBE9;   /* primary-50 */
+  --accent-100: #FCD2C2;
+  --accent-border: #FBB69B; /* primary-200 */
   --gold: #E0A03F;
   --brass: #EBC86A;
   --gold-soft: rgba(224, 160, 63, 0.18);
   --teal: #0F4A58;          /* links, the book cloth */
   --teal-soft: rgba(15, 74, 88, 0.10);
-  --green: #0E9154;
-  --green-soft: #DFF2E5;
+  --green: #0E9154;         /* success-700 */
+  --green-soft: #EEFAF5;    /* success-50 */
+  --ring: #50B7BE;          /* focus ring, outside 3px; inside 2px white */
   --danger: #B03A2E;
 
   /* memory papers (the Figma pastel cards) */
@@ -53,12 +58,14 @@
   /* logo colours per ground */
   --logo-a: var(--chocolate);
   --logo-story: var(--accent);
+  --logo-gold: #EAC668;     /* heart + wordmark on chocolate */
   --logo-heart: var(--gold);
 
   /* lines & shadow */
   --line: rgba(74, 51, 39, 0.12);
   --line-strong: rgba(74, 51, 39, 0.24);
-  --shadow-1: 0 1px 2px rgba(74, 51, 39, 0.06), 0 4px 12px rgba(74, 51, 39, 0.07);
+  --shadow-xs: 1px 2px 4px rgba(16, 24, 40, 0.08);   /* the Figma shadow */
+  --shadow-1: 1px 2px 4px rgba(16, 24, 40, 0.08), 0 4px 12px rgba(74, 51, 39, 0.06);
   --shadow-2: 0 2px 6px rgba(74, 51, 39, 0.08), 0 12px 32px rgba(74, 51, 39, 0.12);
   --shadow-float: 0 8px 24px rgba(43, 33, 22, 0.22);
 
@@ -80,7 +87,7 @@
   --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px;
 
   /* radii */
-  --r-chip: 10px; --r-field: 16px; --r-card: 20px; --r-sheet: 28px; --r-pill: 999px;
+  --r-sm: 8px; --r-md: 12px; --r-chip: 8px; --r-field: 16px; --r-card: 16px; --r-sheet: 40px; --r-pill: 999px;
 
   /* motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -106,7 +113,7 @@
   --green: #7FBF95; --green-soft: rgba(127,191,149,0.16); --danger: #E4796A;
   --paper-blush: #432C32; --paper-periwinkle: #2E3444; --paper-sage: #2C3A2E;
   --paper-lilac: #382E45; --paper-apricot: #463325; --paper-butter: #443C25; --paper-sea: #293A39;
-  --logo-a: #F3EBDD; --logo-story: #EBC86A;
+  --logo-a: #F1EADC; --logo-story: #EAC668; --accent-800: #E1652F; --accent-500: #FA8554; --accent-soft: rgba(224,160,63,0.12); --accent-100: rgba(224,160,63,0.2); --support-soft: rgba(243,235,222,0.08);
   --line: rgba(243,235,221,0.10); --line-strong: rgba(243,235,221,0.18);
   --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.3);
   --shadow-2: 0 2px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.45);
@@ -132,7 +139,7 @@ a { color: var(--teal); text-underline-offset: 3px; }
 img { display: block; max-width: 100%; }
 button { font: inherit; color: inherit; }
 ul { margin: 0; padding: 0; list-style: none; }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; box-shadow: 0 0 0 2px #FFFFFF; border-radius: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* the storyteller's voice: serif */
@@ -151,7 +158,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 [data-lockup] svg { height: var(--lockup-h, 36px); width: auto; display: block; }
 [data-mark] { display: inline-flex; line-height: 0; }
 [data-mark] svg { height: var(--mark-h, 48px); width: auto; display: block; }
-.on-dark { --logo-a: var(--on-chocolate); --logo-story: var(--brass); --logo-heart: var(--brass); }
+.on-dark { --logo-a: #F1EADC; --logo-story: var(--logo-gold); --logo-heart: var(--logo-gold); }
 
 /* the sound-wave band behind the mark (splash / auth) */
 .wave { display: flex; align-items: center; justify-content: center; gap: 5px; height: 110px; }
@@ -178,6 +185,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .rail nav a svg { width: 26px; height: 26px; flex: none; }
 @media (hover:hover) and (pointer:fine) { .rail nav a:hover { background: rgba(243,235,221,0.08); } }
 .rail nav a[aria-current="page"] { background: var(--sheet); color: var(--heading); }
+.rail .add { margin-top: var(--s-6); background: var(--sheet); color: var(--heading); }
 .rail .rail-foot { margin-top: auto; }
 .rail .me { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-field); color: inherit; text-decoration: none; }
 .rail .me small { display: block; font-size: var(--t-caption); color: var(--on-chocolate-soft); }
@@ -251,7 +259,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: var(--r-pill);
-  background: var(--sheet); color: var(--ink); font-size: var(--t-caption); font-weight: 600; white-space: nowrap; }
+  background: var(--support-soft); color: var(--ink); font-size: var(--t-caption); font-weight: 600; white-space: nowrap; }
 .chip svg { width: 16px; height: 16px; }
 .chip.green { background: var(--green-soft); color: var(--green); }
 .chip.gold { background: var(--gold-soft); color: var(--accent-deep); }
