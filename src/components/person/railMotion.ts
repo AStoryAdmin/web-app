@@ -21,11 +21,11 @@ export function useRail(ref: RefObject<HTMLElement | null>, key: unknown) {
       if (!items.length) return;
       const dots = items.map((it) => it.querySelector<HTMLElement>(".pp-dot")).filter((d): d is HTMLElement => !!d);
       gsap.set(items, { y: 16, opacity: 0 });
-      gsap.set(dots, { scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(dots, { scale: 0.5, opacity: 0, transformOrigin: "50% 50%" });
       const stop = onEnter(items, (batch) => {
         riseIn(batch);
         const inked = batch.map((it) => it.querySelector<HTMLElement>(".pp-dot")).filter((d): d is HTMLElement => !!d);
-        gsap.to(inked, { scale: 1, duration: 0.55, ease: "back.out(2.2)", stagger: 0.06, delay: 0.15, clearProps: "transform", overwrite: "auto" });
+        gsap.to(inked, { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(2.2)", stagger: 0.06, delay: 0.15, clearProps: "transform,opacity", overwrite: "auto" });
       });
       return () => stop();
     });

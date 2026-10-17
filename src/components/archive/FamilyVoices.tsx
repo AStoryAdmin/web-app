@@ -213,8 +213,8 @@ export default function FamilyVoices({
         </form>
       ) : (
         <div className="fv-closed">
-          <button type="button" className="more" onClick={() => onOpenChange?.(true)}>
-            Add what you remember
+          <button type="button" className="fv-open" onClick={() => onOpenChange?.(true)}>
+            Add what you remember <span aria-hidden="true">→</span>
           </button>
           {sent && (
             <span className="done" role="status">
