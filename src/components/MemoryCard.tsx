@@ -1,45 +1,48 @@
 /**
- * One memory as a card, in the deck's language: the photograph warm and
- * large, the chapter as a yellow pill, a serif title, the date in ochre,
- * two lines of the words, who told it, and a small lock when it is
- * private. Without a photograph the card is the words alone, opened by a
- * large quotation mark.
+ * One memory as a card: the memory's page as the samples print it
+ * (astoryapp.com/samples). A tracked kicker for the chapter in the book's
+ * sage, the title in the book's display face, the dateline in terracotta
+ * ("1966 · age 6"), the words as the italic summary in a soft panel, the
+ * photograph as a white-bordered print, and in the folio line who told
+ * it, or "Live conversation · 16 min", and a lock when it is private.
  */
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
 import { cardMeta } from "../app-core/lib/memoryCard.js";
 import { usePhotoUrl } from "../lib/photoUrls";
-import { LockIcon, MicIcon } from "./icons";
+import { LockIcon } from "./icons";
+import { StarIcon } from "./archive/Treasure";
+import { isTreasured } from "../lib/treasured";
 import type { Memory, Story } from "../data/stories";
 import { toldBy } from "../lib/memoryDisplay";
+
+const minutes = (memory: Memory) => {
+  const s = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
+  return s >= 60 ? `${Math.round(s / 60)} min` : s > 0 ? `${Math.round(s)} sec` : "";
+};
 
 export default function MemoryCard({ memory, story, style }: { memory: Memory; story: Story; style?: CSSProperties }) {
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; quote: string; photo: string | null };
   const photo = usePhotoUrl(meta.photo);
   const text = !meta.photo;
+  const voice = memory.audio?.length > 0;
+  const folio = voice ? `Live conversation${minutes(memory) ? ` · ${minutes(memory)}` : ""}` : toldBy(memory, story);
   return (
     <Link className={`mem${text ? " text" : ""} rise`} to={`/archive/${memory.id}`} style={style}>
-      {text ? (
-        <span className="glyph" aria-hidden="true">
-          “
-        </span>
-      ) : (
-        <img className="pic" src={photo ?? undefined} alt="" loading="lazy" />
-      )}
       <div className="body">
         <div className="chips">
-          <span className="pill gold">{meta.chapter}</span>
-          {memory.audio?.length > 0 && (
-            <span className="pill cream">
-              <MicIcon /> Voice
+          <span className="kicker">{meta.chapter}</span>
+          {isTreasured(memory) && (
+            <span className="kicker treasured">
+              <StarIcon filled width={11} height={11} /> Treasured
             </span>
           )}
         </div>
         <h3>{meta.title}</h3>
-        <p className="date">{meta.date}</p>
+        <p className={`date${meta.date === "No date yet" ? "" : " dated"}`}>{meta.date}</p>
         {meta.quote && <p className="excerpt">{meta.quote}</p>}
         <div className="foot">
-          <span>{toldBy(memory, story)}</span>
+          <span>{folio}</span>
           {memory.privacy === "private" && (
             <span className="lock">
               <LockIcon /> Private
@@ -47,6 +50,11 @@ export default function MemoryCard({ memory, story, style }: { memory: Memory; s
           )}
         </div>
       </div>
+      {!text && (
+        <span className="print" aria-hidden="true">
+          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" />
+        </span>
+      )}
     </Link>
   );
 }

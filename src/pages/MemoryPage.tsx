@@ -13,7 +13,10 @@ import Shell from "../components/Shell";
 import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
 import { LinkIcon, LockIcon, PeopleIcon, PenIcon, PhotoIcon, TrashIcon } from "../components/icons";
 import AudioPlayer from "../components/archive/AudioPlayer";
+import ReadAloud from "../components/archive/ReadAloud";
+import Treasure from "../components/archive/Treasure";
 import FamilyVoices from "../components/archive/FamilyVoices";
+import { smarten } from "../lib/typography";
 import { minutesLabel, orderedPhotos, paragraphsOf } from "../components/archive/photos";
 import { useArrive } from "../components/archive/motion";
 import { useAuth } from "../state/authContext";
@@ -88,6 +91,7 @@ export default function MemoryPage() {
   const [removing, setRemoving] = useState(false);
   const [flipping, setFlipping] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [reading, setReading] = useState<number | null>(null);
   const words = useRef<HTMLDivElement>(null);
   useArrive(words, memory?.id);
 
@@ -105,7 +109,7 @@ export default function MemoryPage() {
   const toldLine = memory.audio?.length ? `${told} on a call${minutesLabel(seconds) ? ` · ${minutesLabel(seconds)}` : ""}` : told;
   const transcript = (memory.audio || []).filter((c) => c.speaker !== "assistant" && c.transcript).map((c) => c.transcript);
   const paragraphs = paragraphsOf(memory.body);
-  const body = paragraphs.length ? paragraphs : transcript.length ? paragraphsOf(transcript.join("\n\n")) : [];
+  const body = (paragraphs.length ? paragraphs : transcript.length ? paragraphsOf(transcript.join("\n\n")) : []).map(smarten);
   const viewerName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || (user?.email || "").split("@")[0] || "Someone";
   const isOwner = !!user && story.ownerId === user.id;
   const title = memory.title?.trim() || "Untitled";
@@ -203,7 +207,7 @@ export default function MemoryPage() {
           <div className="rd-story" data-arrive>
             {body.length ? (
               body.map((p, k) => (
-                <p key={k}>
+                <p key={k} className={reading === k ? "reading" : undefined}>
                   {p.split("\n").map((line, j, arr) => (
                     <span key={j}>
                       {line}
@@ -236,6 +240,8 @@ export default function MemoryPage() {
             )}
           </div>
 
+          {body.length > 0 && <ReadAloud paragraphs={body} label={title} onPosition={setReading} />}
+
           {memory.audio?.length > 0 && <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />}
 
           <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} />
@@ -263,6 +269,7 @@ export default function MemoryPage() {
                 {isPrivate ? "Private" : "Public"}
                 <small>{isPrivate ? "· you and the keepers" : "· the family, and the wall"}</small>
               </button>
+              <Treasure memory={memory} story={story} />
               <ButtonLink to={`/write?edit=${memory.id}`} variant="outline" small icon={<PenIcon />}>
                 Edit the words
               </ButtonLink>

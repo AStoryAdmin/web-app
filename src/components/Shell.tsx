@@ -11,11 +11,12 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { Lockup } from "./Brand";
-import { Avatar, Button } from "./ui";
+import { Avatar } from "./ui";
 import { ArchiveIcon, BookIcon, ChevronDown, ChevronLeft, CloseIcon, FamilyIcon, HomeIcon, MicIcon, PenIcon, PhotoIcon, PlusIcon } from "./icons";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { storySubtitle } from "../app-core/lib/social.js";
 import { storyLine } from "../lib/storyLine";
+import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
 import { useLight } from "./delight/Light";
 
@@ -50,59 +51,74 @@ function TellerButton({ onClick, compact = false }: { onClick: () => void; compa
   );
 }
 
-/** Pick whose story the four places are about. */
+/**
+ * Pick whose story the four places are about. The stories sit under three
+ * headings, never mixed (docs/PRD.md §3.3a): your own, the ones you keep
+ * for someone who is not on A Story, and the ones you've joined (somebody
+ * else's account; you add what you remember under your own name).
+ */
 function TellerSheet({ onClose }: { onClose: () => void }) {
+  const { user } = useAuth();
   const { stories, activeStory, chooseStory } = useAccount();
   const navigate = useNavigate();
+  const groups = storyGroups(stories, user?.id);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  const go = (to: string) => {
+    onClose();
+    navigate(to);
+  };
   return (
     <div className="scrim" onClick={onClose}>
-      <div className="sheetbox" role="dialog" aria-modal="true" aria-label="Whose story" onClick={(e) => e.stopPropagation()}>
+      <div className="sheetbox whose" role="dialog" aria-modal="true" aria-label="Whose story" onClick={(e) => e.stopPropagation()}>
         <div className="sheethead">
           <h2>Whose story?</h2>
           <button type="button" className="iconbtn soft" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
         </div>
-        <ul>
-          {stories.map((s) => (
-            <li key={s.id}>
-              <button
-                type="button"
-                className="person"
-                style={{ width: "100%", background: s.id === activeStory?.id ? "var(--sheet)" : undefined, border: 0, cursor: "pointer", textAlign: "left" }}
-                aria-current={s.id === activeStory?.id ? "true" : undefined}
-                onClick={async () => {
-                  await chooseStory(s.id).catch(() => {});
-                  onClose();
-                }}
-              >
-                <Avatar name={s.name} size={48} />
-                <span>
-                  <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
-                  <span className="meta">
-                    {storySubtitle(s) as string} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <Button
-          variant="outline"
-          block
-          style={{ marginTop: "var(--s-4)" }}
-          onClick={() => {
-            onClose();
-            navigate("/start?another=1");
-          }}
-        >
-          Keep someone else's story
-        </Button>
+        {groups.map((g) => (
+          <section key={g.key} className="whose-group" aria-labelledby={`whose-${g.key}`}>
+            <h3 id={`whose-${g.key}`}>{g.title}</h3>
+            <p className="meta">{g.meaning}</p>
+            <ul>
+              {g.stories.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    className={`person whose-story${s.id === activeStory?.id ? " current" : ""}`}
+                    aria-current={s.id === activeStory?.id ? "true" : undefined}
+                    onClick={async () => {
+                      await chooseStory(s.id).catch(() => {});
+                      onClose();
+                    }}
+                  >
+                    <Avatar name={s.name} size={48} />
+                    <span>
+                      <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
+                      <span className="meta">
+                        {g.key === "joined" ? "their story" : (storySubtitle(s) as string)} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+        <div className="whose-acts">
+          <button type="button" className="whose-act outline" onClick={() => go("/start?another=1")}>
+            <strong>Keep someone else's story</strong>
+            <span className="meta">for someone who isn't on A Story yet</span>
+          </button>
+          <button type="button" className="whose-act quiet" onClick={() => go("/start?another=1&join=1")}>
+            <strong>Join someone's story</strong>
+            <span className="meta">someone who already has an account; you add what you remember</span>
+          </button>
+        </div>
       </div>
     </div>
   );

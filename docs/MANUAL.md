@@ -77,7 +77,9 @@ Read this before you press anything on **Family**. Getting it wrong makes two co
 2. **A story you keep for someone who is not on A Story.** Your mother, your late grandfather. You do the typing; it is kept in their name, "as told to you". If they join A Story later, you can hand the story over to them.
 3. **Joining the story of someone who is already on A Story.** Do **not** start a story about them. Ask them (or whoever keeps their story) for the six-letter code on their Family page, or the link. Then you read what they chose to share and add what *you* remember, under your own name. They approve it. You never write as them.
 
-On **Whose story is this?** the third choice says exactly this: **Someone who is already on A Story**. Choose it, type the code, and you are in theirs.
+On **Whose story is this?** the third choice says exactly this: **Someone who is already on A Story**. Choose it, type the code, and you are in theirs. If their story is already kept in your family, it is listed there too with **Ask to join**; they say yes and you are in.
+
+The storyteller button at the top of every page opens the same three, under three headings: **Your story**, **Stories you keep for someone**, **Stories you've joined**. Under them, **Keep someone else's story** (for someone who isn't on A Story yet) and **Join someone's story**.
 
 ### Get them in
 
@@ -94,7 +96,7 @@ For a relative who does not want an account, press **Share a link**. The link op
 
 ### Adding people to the family, and when they see it
 
-When you add a person on **Family**, only your family sees them, marked **not on A Story yet**. Send them an invite and it says **invited**. When they accept with the code or the link, it says **on A Story**, and from then on they see your family and you see theirs. Until they accept, nothing you typed appears on their side. If you add someone by email who is already there, A Story uses the person who is there instead of making a second one.
+When you add a person on **Family**, only your family sees them, marked **not on A Story yet**. Send them an invite and it says **invited · waiting for them**. When they accept with the code or the link, it says **on A Story**, and from then on they see your family and you see theirs. Until they accept, nothing you typed appears on their side. If you add someone by email who is already there, A Story uses the person who is there instead of making a second one. If you add a name that is already listed, it asks **Is this the same person?** first. If someone is already listed twice, **Family** says so in one line, **Looks like X is listed twice**, and offers to merge them or remove the extra.
 
 ### Public, private, and the wall
 
@@ -104,7 +106,7 @@ The **wall** is one page for one story that anyone with the link can read: the p
 
 ### Review what the family sends
 
-When someone sends something, **Family** shows **waiting for you**. Open it, read it, press **Add to the story** or **Not this one**. Their name stays on what they sent.
+When someone sends something, **Family** shows it under **Waiting for your review**. Read it, press **Add to the archive** or **Not this one**. Their name stays on what they sent. The same place shows when someone **asked to join** a story you keep (yes makes them a keeper, who reads everything and can edit; if you only want them to add what they remember, send the code instead) and when someone **suggests** a change to a person you look after. What you asked of others waits under **Waiting on others** until they answer.
 
 ### You can talk too
 
@@ -126,6 +128,6 @@ Everything above is free except A Story doing the talking. The first ten minutes
 ### If something goes wrong
 
 - **No sound when talking:** check the microphone is allowed in the browser, and that the volume is up.
-- **A relative can't see the story:** on **Family**, check they show as *arrived*. If they show *invited*, send the email again or give them the code.
+- **A relative can't see the story:** on **Family**, check they show as **on A Story**. If they show **invited · waiting for them**, send the email again or give them the code.
 
 That's all there is. Ask one question today.

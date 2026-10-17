@@ -171,7 +171,7 @@ export default function Person() {
             <div className="chiprow" style={{ marginTop: "var(--s-3)" }}>
               {state.key === "joined" && <Chip tone="green">on A Story</Chip>}
               {state.key === "you" && <Chip tone="green">you</Chip>}
-              {state.key === "invited" && <Chip tone="gold">invited · waiting</Chip>}
+              {state.key === "invited" && <Chip tone="gold">invited · waiting for them</Chip>}
               {state.key === "listed" && <Chip tone="outline">not on A Story yet</Chip>}
               {res.total > 0 && <Chip>{res.total} {res.total === 1 ? "memory" : "memories"}</Chip>}
             </div>
@@ -211,12 +211,12 @@ export default function Person() {
                 ) : state.key === "joined" ? (
                   <>
                     <h3>{first} is on A Story</h3>
-                    <p className="meta">They can read what's shared and add what they remember.</p>
+                    <p className="meta">They read what's shared and add what they remember, under their own name. Nobody writes as {story.name}.</p>
                   </>
                 ) : (
                   <>
-                    <h3>{state.key === "invited" ? `${first} hasn't arrived yet` : `${first} isn't on A Story yet`}</h3>
-                    <p className="meta">{person.email ? `Invited at ${person.email}.` : "A code puts them in the family tree. Add an email and we'll send it; or pass it on yourself."}</p>
+                    <h3>{state.key === "invited" ? `${first} is invited · waiting for them` : `${first} isn't on A Story yet`}</h3>
+                    <p className="meta">{person.email ? `Invited at ${person.email}. Until they accept, nothing here reaches them.` : "A code puts them in the family tree. Add an email and we'll send it; or pass it on yourself. Until they accept, nothing here reaches them."}</p>
                     {!person.email && <Field label="Email, if you have it" icon={<MailIcon />} type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Optional" autoComplete="off" />}
                     <Button small loading={busy === "code"} onClick={() => void sendCode(person.email || inviteEmail)}>
                       {state.key === "invited" ? "Send the code again" : inviteEmail.trim() || person.email ? "Send the code" : "Make a code"}

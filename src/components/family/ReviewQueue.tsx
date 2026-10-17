@@ -5,7 +5,7 @@
  * dropped connection never leaves something approved and in nobody's
  * archive. Only keepers can read the queue; everyone else sees nothing.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { Story } from "../../data/stories";
 import { approveContribution, listContributions, memoryFromContribution, rejectContribution, type Contribution } from "../../data/contributions";
@@ -61,7 +61,18 @@ function Item({ item, story, now, busy, onKeep, onSkip }: { item: Contribution; 
   );
 }
 
-export default function ReviewQueue({ story, onKept }: { story: Story; onKept?: () => void }) {
+export default function ReviewQueue({
+  story,
+  onKept,
+  asked,
+  askedCount = 0,
+}: {
+  story: Story;
+  onKept?: () => void;
+  /** What the family asked (to join, to change a detail), shown above what they sent. */
+  asked?: ReactNode;
+  askedCount?: number;
+}) {
   const { saveMemory } = useAccount();
   const [items, setItems] = useState<Contribution[] | null>(null);
   const [now, setNow] = useState(() => new Date(0));
@@ -100,15 +111,23 @@ export default function ReviewQueue({ story, onKept }: { story: Story; onKept?: 
     }
   };
 
-  const count = items?.length ?? 0;
+  const sent = items?.length ?? 0;
+  const count = sent + askedCount;
   return (
     <section className="review" aria-label="Waiting for your review">
       <h2>
         {count > 0 && <span className="n">{count}</span>} Waiting for your review
       </h2>
       <p className="meta">
-        {items === null ? "Looking…" : count ? `What the family adds goes into ${story.name}'s archive once you've had a look.` : `Nothing waiting. What the family sends lands here first.`}
+        {items === null
+          ? "Looking…"
+          : sent
+            ? `What the family adds goes into ${story.name}'s archive under their own name once you've had a look.`
+            : askedCount
+              ? "What the family asks lands here first."
+              : "Nothing waiting. What the family asks or sends lands here first."}
       </p>
+      {asked}
       {error && (
         <p className="meta" role="alert" style={{ color: "var(--danger)" }}>
           {error}

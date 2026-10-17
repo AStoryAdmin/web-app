@@ -161,7 +161,7 @@ export function Avatar({ src, name, size = 44, className = "" }: { src?: string 
   const initial = (name || "?").trim()[0]?.toUpperCase() || "?";
   if (src) return <img className={`avatar ${className}`} src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />;
   return (
-    <span className={`avatar ph ${className}`} aria-hidden="true" style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}>
+    <span className={`avatar ph ${className}`} aria-hidden="true" style={{ width: size, height: size, fontSize: Math.max(13, Math.round(size * 0.42)) }}>
       {initial}
     </span>
   );

@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import MemoryCard from "../components/MemoryCard";
+import FromTheBook from "../components/FromTheBook";
 import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
 import { MicIcon, PenIcon, SearchIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
@@ -132,7 +133,7 @@ export default function Home() {
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
         <div className="weekrow" data-rise>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--s-5)" }}>
+          <div className="weekrow-in">
             <span className="label">This week</span>
             <div className="week" role="group" aria-label="This week">
               {week.map((d) => (
@@ -149,6 +150,8 @@ export default function Home() {
             <SearchIcon />
           </Link>
         </div>
+
+        <FromTheBook story={story} />
 
         <div className="trio">
           <div className="card" data-rise>

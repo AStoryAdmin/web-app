@@ -95,11 +95,26 @@ export function memoriesWith(person: Person, story: Story | null): Memory[] {
 
 const n = (k: number, one: string, many = `${one}s`) => `${k} ${k === 1 ? one : many}`;
 
-/** The one line under a name on the tree and in the list. */
+/* ── The three states, in the product's words (docs/PRD.md §3.3a) ──────── */
+
+/** "not on A Story yet", "invited · waiting for them", "on A Story"; "" for somebody who has passed. */
+export function stateWords(state: LinkState["key"]): string {
+  if (state === "you" || state === "joined") return "on A Story";
+  if (state === "invited") return "invited · waiting for them";
+  if (state === "listed") return "not on A Story yet";
+  return "";
+}
+
+/**
+ * The one line under a name on the tree and in the list. `withState`
+ * (default on) puts the state words in the line; a row that already shows
+ * them as a chip passes false so they are not said twice.
+ */
 export function personLine(
   person: Person,
-  o: { story: Story | null; index: Index; tellerId: string | null; meId: string | null | undefined; organiser: boolean },
+  o: { story: Story | null; index: Index; tellerId: string | null; meId: string | null | undefined; organiser: boolean; withState?: boolean },
 ): string {
+  const withState = o.withState !== false;
   const teller = !!o.story && person.storyId === o.story.id;
   const rel = relationTo(o.index, person.id, o.tellerId);
   if (teller) {
@@ -115,18 +130,47 @@ export function personLine(
   const state = linkState(person, o.meId);
   if (state.key === "you") return ["you", o.organiser ? "organiser" : rel].filter(Boolean).join(" · ");
   const by = memoriesBy(person, o.story).length;
-  if (state.key === "joined") return [rel, by ? n(by, "memory", "memories") : "on A Story"].filter(Boolean).join(" · ");
-  if (state.key === "invited") return [rel, "invited · waiting"].filter(Boolean).join(" · ");
-  return [rel, by ? n(by, "memory", "memories") : "not on A Story yet"].filter(Boolean).join(" · ");
+  const said = by ? n(by, "memory", "memories") : "";
+  return [rel, said, withState ? stateWords(state.key) : ""].filter(Boolean).join(" · ");
 }
 
-/** The chip beside a row: arrived / invited / listed. Nothing for somebody who has passed. */
+/**
+ * The chip beside a row, in the three words the product uses: "on A Story"
+ * (active), "invited · waiting for them" (invited), "not on A Story yet"
+ * (listed). "you" for the viewer. Nothing for somebody who has passed.
+ */
 export function statusChip(person: Person, meId: string | null | undefined): { label: string; tone: "green" | "gold" | "outline" } | null {
   if (person.deathYear) return null;
   const s = linkState(person, meId);
-  if (s.key === "you" || s.key === "joined") return { label: "arrived", tone: "green" };
-  if (s.key === "invited") return { label: "invited", tone: "gold" };
-  return { label: "listed", tone: "outline" };
+  if (s.key === "you") return { label: "you", tone: "green" };
+  if (s.key === "joined") return { label: stateWords("joined"), tone: "green" };
+  if (s.key === "invited") return { label: stateWords("invited"), tone: "gold" };
+  return { label: stateWords("listed"), tone: "outline" };
+}
+
+/* ── Whose story: the three ways to be in one ─────────────────────────── */
+
+export type StoryGroupKey = "own" | "kept" | "joined";
+export type StoryGroup = { key: StoryGroupKey; title: string; meaning: string; stories: Story[] };
+
+/** Which of the three a story is for this account: yours, one you keep for someone, or one you've joined. */
+export function storyGroupOf(story: Story, meId: string | null | undefined): StoryGroupKey {
+  const mine = !story.ownerId || !meId || story.ownerId === meId;
+  if (!mine) return "joined";
+  return story.relationship === "Myself" ? "own" : "kept";
+}
+
+/**
+ * The stories under three headings, never mixed (docs/PRD.md §3.3a). Only
+ * groups with a story in them; the headings and meanings are fixed words.
+ */
+export function storyGroups(stories: Story[], meId: string | null | undefined): StoryGroup[] {
+  const defs: Omit<StoryGroup, "stories">[] = [
+    { key: "own", title: "Your story", meaning: "About you, in your words." },
+    { key: "kept", title: "Stories you keep for someone", meaning: "You do the typing; it's kept in their name, as told to you." },
+    { key: "joined", title: "Stories you've joined", meaning: "Their story, their account. You add what you remember, under your own name." },
+  ];
+  return defs.map((d) => ({ ...d, stories: stories.filter((s) => storyGroupOf(s, meId) === d.key) })).filter((g) => g.stories.length > 0);
 }
 
 /* ── Dates ─────────────────────────────────────────────────────────────── */

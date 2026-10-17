@@ -6,9 +6,13 @@
  * the shape right, placeholders and all), then shows the code, the link
  * and a QR to pass on. A code joins the FAMILY TREE: it never makes anyone
  * a keeper of the story (docs/PRODUCT-DECISIONS.md §6).
+ *
+ * Nobody is listed twice (docs/PRD.md §3.3a): an email already in the
+ * household reuses that person instead of adding one, and a name already
+ * there (not yet on A Story) asks "is this the same person?" first.
  */
 import { useEffect, useMemo, useState } from "react";
-import type { Family, Person } from "../../data/family";
+import { findPersonByEmail, sameNamePeople, type Family, type Person } from "../../data/family";
 import type { Account, Story } from "../../data/stories";
 import { Button, Field } from "../ui";
 import { CheckIcon, CloseIcon, LinkIcon, MailIcon, ShareIcon, UserIcon } from "../icons";
@@ -17,7 +21,7 @@ import { NEW_VIA, RELATIVE_GROUPS, planRelative, relativeKind } from "../../app-
 import { inviteMessage, spacedCode } from "../../app-core/lib/familyCode.js";
 import { uuid } from "../../lib/uuid";
 import { track } from "../../lib/analytics";
-import { joinUrl, personName, qrSvg } from "./familyView";
+import { joinUrl, linkState, personName, qrSvg, stateWords } from "./familyView";
 
 type Need = { step: string; index: number; through: string; candidates: string[]; allowNew: boolean };
 type Plan =
@@ -28,7 +32,7 @@ type Plan =
 type PlanFn = (family: Family, anchorId: string, kind: string, o: { via: string[]; person: Person; newId: () => string; label: string }) => Plan;
 const plan = planRelative as unknown as PlanFn;
 
-type Done = { person: Person; code: string | null; codeError: string | null; emailed: boolean | null; email: string };
+type Done = { person: Person; code: string | null; codeError: string | null; emailed: boolean | null; email: string; reused?: boolean };
 
 const STEP_WORD: Record<string, string> = { up: "Which parent?", down: "Which child?", spouse: "Which partner?", side: "Which brother or sister?" };
 
@@ -132,6 +136,8 @@ export default function InviteSheet({
   const [email, setEmail] = useState("");
   const [via, setVia] = useState<string[]>([]);
   const [need, setNeed] = useState<Need | null>(null);
+  /** Somebody with this name is already listed: ask before making a second one. */
+  const [twin, setTwin] = useState<Person | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
@@ -149,12 +155,49 @@ export default function InviteSheet({
     return p ? personName(p).trim() || "someone not named yet" : "someone not named yet";
   };
 
-  const save = async (viaNow: string[]) => {
+  /**
+   * Somebody already in the tree is the person being added: send them the
+   * code (and record the email) instead of making a second row. Their place
+   * and relations stay as they are.
+   */
+  const reuse = async (person: Person, mail: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (mail && !person.email) await invitePerson(person.id, mail);
+      const code = person.userId ? ({ error: "already" } as const) : await familyCodeFor({ personId: person.id });
+      let emailed: boolean | null = null;
+      if ("code" in code && mail) emailed = await sendInviteEmail({ to: mail, code: code.code, storyName: story.name, senderName });
+      track("invite_sent", { method: mail ? "email" : "code", relation: kindKey || "existing", reused: true });
+      await onSaved();
+      setTwin(null);
+      setDone({ person, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, emailed, email: mail, reused: true });
+    } catch (err) {
+      setError(`That didn't go (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const save = async (viaNow: string[], addAnyway = false) => {
     setError(null);
     const first = given.trim();
     if (!first) return setError("Their first name, at least.");
     if (!kindKey) return setError(`How is ${first} related to ${relatedTo}?`);
     if (kindKey === "other" && !label.trim()) return setError(`What is ${first} to ${relatedTo}? A word or two.`);
+    const mail = email.trim().toLowerCase();
+    // Already listed under this email: never a second row (the database
+    // would silently drop the email from the copy instead).
+    const byMail = findPersonByEmail(family, mail);
+    if (byMail) return reuse(byMail, mail);
+    // Same name, not on A Story: ask once whether it is the same person.
+    if (!addAnyway) {
+      const same = sameNamePeople(family, first, last).find((p) => p.id !== anchor?.id);
+      if (same) {
+        setTwin(same);
+        return;
+      }
+    }
     setBusy(true);
     try {
       const householdId = await householdFor(userId, account, family);
@@ -185,7 +228,6 @@ export default function InviteSheet({
       for (const e of planned.edges) await saveEdge(householdId, e.from, e.to, e.kind, e.label || "");
       const saved = (planned.people.find((p) => p.id === planned.id) || { ...person, id: planned.id }) as Person;
 
-      const mail = email.trim().toLowerCase();
       if (mail) await invitePerson(planned.id, mail);
       const code = await familyCodeFor({ personId: planned.id });
       let emailed: boolean | null = null;
@@ -214,7 +256,7 @@ export default function InviteSheet({
     <div className="scrim" onClick={onClose}>
       <div className="sheetbox invite-sheet" role="dialog" aria-modal="true" aria-label="Invite someone" onClick={(e) => e.stopPropagation()}>
         <div className="sheethead">
-          <h2>{done ? `${done.person.givenName} is in the family` : need ? STEP_WORD[need.step] || "Through whom?" : "Who else was there?"}</h2>
+          <h2>{done ? (done.reused ? `${done.person.givenName} was already in the family` : `${done.person.givenName} is in the family`) : twin ? "Is this the same person?" : need ? STEP_WORD[need.step] || "Through whom?" : "Who else was there?"}</h2>
           <button type="button" className="iconbtn soft" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
@@ -222,6 +264,7 @@ export default function InviteSheet({
 
         {done ? (
           <>
+            {done.reused && <p className="meta" style={{ marginBottom: "var(--s-4)" }}>We used the {done.person.givenName} who was already listed instead of adding a second one.</p>}
             {done.code ? (
               <CodeCard code={done.code} who={done.person.givenName} story={story} senderName={senderName} emailed={done.emailed} email={done.email} />
             ) : (
@@ -249,6 +292,30 @@ export default function InviteSheet({
                 Add someone else
               </Button>
             </div>
+          </>
+        ) : twin ? (
+          <>
+            <p className="meta" style={{ marginBottom: "var(--s-4)" }}>
+              <b>{personName(twin)}</b> is already in the family, {stateWords(linkState(twin, userId).key) || "remembered"}. Adding again would list them twice.
+            </p>
+            <div className="acts">
+              <Button loading={busy} onClick={() => void reuse(twin, email.trim().toLowerCase())}>
+                {email.trim() ? `Yes, send the code to that ${twin.givenName}` : `Yes, that's the same ${twin.givenName}`}
+              </Button>
+              <Button
+                variant="quiet"
+                disabled={busy}
+                onClick={() => {
+                  setTwin(null);
+                  void save(via, true);
+                }}
+              >
+                No, add another {given.trim()}
+              </Button>
+            </div>
+            <Button variant="quiet" small style={{ marginTop: "var(--s-3)", paddingLeft: 0 }} disabled={busy} onClick={() => setTwin(null)}>
+              Back
+            </Button>
           </>
         ) : need ? (
           <>

@@ -1,10 +1,14 @@
 /**
- * Family: who is in it, who has arrived, add someone, review what they
- * sent. The tree on the left with everyone listed under it; on the right
- * the queue of what the family added, the invitation card, and (for the
- * story's owner) who may edit. A code joins the tree, never the keepers.
+ * Family: who is in it, who is on A Story, add someone, review what they
+ * asked and sent. The tree on the left with everyone listed under it, each
+ * in one of three states ("not on A Story yet", "invited · waiting for
+ * them", "on A Story"); on the right what is waiting for your review (join
+ * requests, suggestions, what the family sent), what you are waiting on,
+ * the invitation card, and (for the story's owner) who may edit. A code
+ * joins the tree, never the keepers. Nobody is listed twice (docs/PRD.md
+ * §3.3a); when they are, one line says so and offers a merge.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, Chip, Problem } from "../components/ui";
@@ -13,6 +17,8 @@ import FamilyTree from "../components/family/FamilyTree";
 import InviteSheet from "../components/family/InviteSheet";
 import ReviewQueue from "../components/family/ReviewQueue";
 import Keepers from "../components/family/Keepers";
+import Duplicates from "../components/family/Duplicates";
+import { Asked, WaitingOnOthers } from "../components/family/Waiting";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { usePhotoUrl } from "../lib/photoUrls";
@@ -112,13 +118,15 @@ function MyCodes({ people, version }: { people: Person[]; version: number }) {
 
 export default function Family() {
   const { user } = useAuth();
-  const { account, activeStory: story, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
+  const { account, activeStory: story, stories, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
   const [params] = useSearchParams();
   const [invite, setInvite] = useState<{ anchor: Person | null } | null>(null);
   const [manage, setManage] = useState(false);
   const [codesVersion, setCodesVersion] = useState(0);
+  const [askedCount, setAskedCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
+  const onAskedCount = useCallback((n: number) => setAskedCount(n), []);
 
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
   const people = useMemo(() => realPeople(family), [family]);
@@ -145,7 +153,10 @@ export default function Family() {
   const others = people.filter((p) => p.id !== teller?.id && p.userId !== meId);
   const title = familyTitle(story);
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
-  const lineFor = (p: Person) => personLine(p, { story, index, tellerId: teller?.id || null, meId, organiser });
+  // The roster's chip says the state, so its line leaves it out; the tree's node has no chip and says it.
+  const lineFor = (p: Person) => personLine(p, { story, index, tellerId: teller?.id || null, meId, organiser, withState: false });
+  const own = story.relationship === "Myself" && (!story.ownerId || story.ownerId === meId);
+  const joined = !!story.ownerId && story.ownerId !== meId;
   const generations = (() => {
     const years = people.map((p) => p.birthYear).filter((y): y is number => !!y);
     if (years.length < 2) return people.length > 1 ? "The family, so far" : "";
@@ -174,7 +185,7 @@ export default function Family() {
       hero={
         <>
           <p className="label" data-rise>
-            Family &amp; friends
+            Family &amp; friends · {own ? "your story" : joined ? `${story.name}'s story, which you've joined` : `${story.name}'s story, which you keep`}
           </p>
           <h1>{title}</h1>
           <div data-rise style={{ marginTop: "var(--s-6)" }}>
@@ -193,8 +204,8 @@ export default function Family() {
           <div className="col">
             {others.length === 0 ? (
               <section className="card tree empty-fam" aria-label="Family tree">
-                <h2 className="story-title">{story.relationship === "Myself" ? "It's just you so far. Who else was there?" : `It's you and ${story.name} so far. Who else was there?`}</h2>
-                <p className="meta">A brother, a daughter, the friend who was always at the table. Add them and they can read what's shared and tell their side.</p>
+                <h2 className="story-title">{own ? "It's just you so far. Who else was there?" : `It's you and ${story.name} so far. Who else was there?`}</h2>
+                <p className="meta">A brother, a daughter, the friend who was always at the table. Add them and they can read what's shared and add what they remember, under their own name.</p>
                 <Button icon={<PlusIcon />} onClick={() => setInvite({ anchor: null })}>
                   Add a person
                 </Button>
@@ -205,13 +216,15 @@ export default function Family() {
                   {generations && <h2>{generations}</h2>}
                   {family && <FamilyTree family={family} story={story} meId={meId} organiser={organiser} onAdd={() => setInvite({ anchor: null })} />}
                 </section>
+                <Duplicates people={people} family={family} stories={stories} meId={meId} onChanged={afterWrite} />
                 <section className="card people" aria-label="Everyone">
                   <h2>
-                    Everyone in {story.name}'s story
+                    Everyone in {own ? "your" : `${story.name}'s`} story
                     <Button variant="quiet" small aria-pressed={manage} onClick={() => setManage((v) => !v)}>
                       {manage ? "Done" : "Manage"}
                     </Button>
                   </h2>
+                  <p className="meta states">Each person is in one of three places: not on A Story yet, invited and waiting for them, or on A Story.</p>
                   {people.map((p) => (
                     <PersonRow key={p.id} person={p} line={lineFor(p)} meId={meId} manage={manage} removable={p.id !== teller?.id && p.userId !== meId && canEdit(p, family, meId)} onRemove={() => remove(p)} />
                   ))}
@@ -222,12 +235,14 @@ export default function Family() {
 
           <div className="col">
             <div ref={reviewRef} id="review">
-              <ReviewQueue story={story} />
+              <ReviewQueue story={story} askedCount={askedCount} asked={<Asked story={story} family={family} meId={meId} keeper onCount={onAskedCount} onChanged={afterWrite} />} />
             </div>
 
+            <WaitingOnOthers meId={meId} family={family} />
+
             <section className="card invite" id="invite" aria-label="Invite and connect">
-              <h2>Invite someone to {story.name}'s story</h2>
-              <p className="meta">They join the family tree with a code or a link: they read what's shared and add what they remember.</p>
+              <h2>Invite someone to {own ? "your" : `${story.name}'s`} story</h2>
+              <p className="meta">They join the family tree with a code or a link: they read what's shared and add what they remember, under their own name. Nobody writes as {own ? "you" : story.name}.</p>
               <Button icon={<PlusIcon />} onClick={() => setInvite({ anchor: null })} style={{ marginTop: "var(--s-4)" }}>
                 Invite someone
               </Button>

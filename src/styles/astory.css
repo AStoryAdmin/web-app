@@ -403,32 +403,40 @@ ul { margin: 0; padding: 0; list-style: none; }
 .tile.dark { background: var(--chocolate); color: var(--on-chocolate); border-color: var(--chocolate); }
 .tile.light { background: var(--card); color: var(--ink); }
 
-/* ───────────────────────── 9. Memory card ───────────────────────── */
-/* The deck's card: cream, no border, the photograph warm and large on the left, the chapter as a yellow
-   pill, the title in the serif, the date in ochre, two lines of the words, who told it and whether it is
-   private. Without a photograph the card is the words alone, opened by a large ochre quotation mark. */
-.mem { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--s-6); padding: var(--s-5); border-radius: var(--r-card); background: var(--card); text-decoration: none; color: inherit;
+/* ───────────────────────── 9. Memory card: a page from the book ───────────────────────── */
+/* The card is the memory's page as the samples print it (astoryapp.com/samples): a tracked kicker for the
+   chapter in the sage of the book, the title in the book's display face, the dateline in terracotta
+   ("1966 · age 6"), the words as the italic summary in a soft panel, the photograph as a white-bordered
+   print, and who told it, or "Live conversation · 16 min", in the folio line. Nothing else. */
+:root { --book-display: "Cormorant Garamond", "Source Serif 4", "Iowan Old Style", Georgia, serif; --book-body: "EB Garamond", "Source Serif 4", Georgia, serif;
+  --book-sage: #55745A; --book-sage-bg: #E4E8DC; --book-print: #FFFDF8; }
+.mem { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 176px; gap: var(--s-6); padding: var(--s-6) var(--s-7, 28px) var(--s-5); border-radius: 6px; background: var(--card); color: inherit; text-decoration: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px rgba(42,35,32,0.06), 0 14px 30px -24px rgba(42,35,32,0.35); border: 1px solid rgba(74,51,39,0.08);
   transition: transform var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out); }
-.mem:hover { transform: translateY(-3px); box-shadow: 0 24px 44px -28px rgba(42, 35, 32, 0.45); }
-.mem .pic { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; background: var(--tint, #EAE0CF); }
-.mem.text { grid-template-columns: 44px minmax(0, 1fr); gap: var(--s-4); }
-.mem .glyph { font-family: var(--font-story); font-size: 84px; line-height: 0.7; color: var(--ochre); opacity: 0.55; padding-top: 6px; }
-.mem .body { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
-.mem .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 2px; }
-.mem h3 { font-family: var(--font-story); font-weight: 600; font-size: 26px; line-height: 1.2; letter-spacing: -0.01em; color: var(--heading); }
-.mem .date { font-size: 13px; font-weight: 700; color: var(--ochre); letter-spacing: 0.02em; }
-.mem .excerpt { font-family: var(--font-story); font-size: 18px; line-height: 1.55; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
+.mem:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 4px rgba(42,35,32,0.06), 0 24px 40px -24px rgba(42,35,32,0.4); }
+.mem.text { grid-template-columns: minmax(0, 1fr); }
+.mem .glyph { display: none; }
+.mem .body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mem .chips { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.mem .kicker { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 999px; background: var(--book-sage-bg); color: var(--book-sage); font: 600 10.5px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; }
+.mem .kicker.quiet { background: transparent; color: var(--ink-soft); padding: 0; }
+.mem .kicker.treasured { background: #F7ECCF; color: #8A6A2E; }
+.mem .kicker svg { width: 11px; height: 11px; margin-right: 5px; }
+.mem h3 { font-family: var(--book-display); font-weight: 500; font-size: 30px; line-height: 1.1; letter-spacing: -0.005em; color: var(--ink); margin-top: 2px; }
+.mem .date { font: 600 13px/1 var(--font-ui); color: var(--accent); letter-spacing: 0.04em; }
+.mem .excerpt { margin: 6px 0 0; padding: 14px 16px; border-radius: 8px; background: rgba(243, 235, 221, 0.55); border: 1px solid rgba(74,51,39,0.07);
+  font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mem.text .excerpt { -webkit-line-clamp: 3; }
-.mem .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding-top: var(--s-3); font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-.mem .lock { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-faint); }
-.mem .lock svg { width: 13px; height: 13px; }
+.mem .foot { margin-top: auto; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); font: 600 11px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+.mem .foot .lock { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-faint); }
+.mem .foot .lock svg { width: 12px; height: 12px; }
+.mem .print { align-self: start; padding: 6px 6px 8px; background: var(--book-print); box-shadow: 0 1px 2px rgba(42,35,32,0.12), 0 10px 24px -14px rgba(42,35,32,0.45); transform: rotate(var(--tilt, 0deg)); }
+.mem .print .pic { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 0; background: var(--tint, #EAE0CF); display: block; }
 @media (max-width: 760px) {
-  .mem { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); }
-  .mem .pic { aspect-ratio: 16 / 10; border-radius: 14px; }
-  .mem.text { grid-template-columns: 28px minmax(0, 1fr); }
-  .mem .glyph { font-size: 56px; }
-  .mem h3 { font-size: 22px; }
-  .mem .excerpt { font-size: 16px; }
+  .mem { grid-template-columns: minmax(0, 1fr); padding: var(--s-4); gap: var(--s-4); }
+  .mem .print { order: -1; width: 100%; } .mem .print .pic { aspect-ratio: 16 / 10; }
+  .mem h3 { font-size: 24px; }
+  .mem .excerpt { font-size: 16px; padding: 10px 12px; }
 }
 
 /* ───────────────────────── 10. Progress: a thin line toward the first edition ───────────────────────── */
@@ -1576,9 +1584,6 @@ body.writing-focus .wbody { min-height: 60vh; }
 .rd-side .more { font-size: 14px; }
 .rd-privacy { font-weight: 600; }
 .rd-foot .btn.quiet.danger { background: transparent; color: var(--danger); }
-/* the memory card's small lines */
-.mem .date { font-weight: 600; letter-spacing: 0; }
-.mem .foot { font-weight: 500; }
 /* the archive: when there is no decade rail, the list takes the whole width */
 .arc-body > :only-child { grid-column: 1 / -1; }
 .arc-decades h3 { text-transform: none; letter-spacing: 0.01em; font-size: 13px; font-weight: 600; }
@@ -1597,3 +1602,228 @@ body.writing-focus .wbody { min-height: 60vh; }
 .land-hero .btn.outline { background: transparent; color: var(--on-chocolate); border-color: rgba(246, 240, 230, 0.36); }
 .land-hero .meta { color: var(--on-chocolate-soft); }
 .land-cta .btn.quiet { color: var(--ink-soft); }
+
+/* ── 27. Reading back and resurfacing (agent) ── */
+/* From the book (Home): one earlier memory for the day, in the serif, with where it came from. A cream card,
+   the small line above in grey, the words large, a footer with the title and the way back. */
+.fromthebook { padding: var(--s-8) var(--s-8) var(--s-6); display: grid; gap: var(--s-4); }
+.fromthebook .label { margin: 0; }
+.fromthebook blockquote { margin: 0; }
+.fromthebook .said { font-family: var(--font-story); font-size: clamp(21px, 1.9vw, 26px); line-height: 1.5; color: var(--ink); max-width: 56ch; text-wrap: pretty; }
+.fromthebook footer { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; padding-top: var(--s-3); border-top: 1px solid var(--line); }
+.fromthebook footer .meta { color: var(--ink-soft); }
+.fromthebook footer .meta b { font-weight: 600; color: var(--ink); }
+@media (max-width: 760px) {
+  .fromthebook { padding: var(--s-5); }
+  .fromthebook .said { font-size: 20px; }
+}
+
+/* Read it back to me (the memory page): the recording's player, with the browser's voice in it. The label
+   sits where the avatar would; the bars fill as the reading goes; the time is an estimate. */
+.mp-player.reader .player { background: var(--card); border: 1px solid var(--line); }
+.mp-player.reader .who-reads { display: grid; gap: 2px; min-width: 0; flex: none; }
+.mp-player.reader .who-reads b { font-size: var(--t-small); font-weight: 600; color: var(--heading); white-space: nowrap; }
+.mp-player.reader .who-reads small { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.mp-player.reader .play[aria-pressed="true"] { background: var(--ochre); }
+.mp-player.reader time { min-width: 0; }
+.mp-player + .mp-player { margin-top: calc(-1 * var(--s-4)); }
+/* the paragraph being read: a rule of ochre ink in the margin, nothing moves */
+.rd-story p { position: relative; transition: color var(--dur-ui); }
+.rd-story p.reading::before { content: ""; position: absolute; left: calc(-1 * var(--s-5)); top: 0.35em; bottom: 0.35em; width: 2px; border-radius: 1px; background: var(--ochre); }
+@media (max-width: 760px) {
+  .mp-player.reader .bars { display: none; }
+  .mp-player.reader .who-reads { flex: 1; }
+  .mp-player.reader .who-reads small { white-space: normal; }
+  .rd-story p.reading::before { left: calc(-1 * var(--s-3)); }
+}
+
+/* Treasured: a star in the memory's footer and a chip on its card, the same quiet pill as Public. */
+.rd-treasure { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 12px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); background: var(--card); color: var(--ink); font: 600 13px var(--font-ui); cursor: pointer; transition: border-color var(--dur-ui), color var(--dur-ui); }
+.rd-treasure svg { width: 16px; height: 16px; color: var(--ink-soft); transition: color var(--dur-ui); }
+.rd-treasure:hover { border-color: var(--chocolate); }
+.rd-treasure.on { border-color: var(--ochre); color: var(--heading); }
+.rd-treasure.on svg { color: var(--ochre); }
+.rd-treasure:disabled { opacity: 0.6; cursor: default; }
+.mem .pill.treasured { color: var(--ochre); border-color: color-mix(in srgb, var(--ochre) 45%, transparent); gap: 5px; }
+.mem .pill.treasured svg { width: 12px; height: 12px; }
+
+/* The year's own line in the Archive: how old they were, the chapters it touched, what it carries. */
+.arc-yearnote { font-family: var(--font-story); font-size: 19px; line-height: 1.5; color: var(--ink-soft); margin: calc(-1 * var(--s-2)) 0 var(--s-5); max-width: 60ch; text-wrap: pretty; }
+@media (max-width: 760px) { .arc-yearnote { font-size: 17px; margin-bottom: var(--s-4); } }
+
+/* ── 26. Family and whose-story (agent) ── */
+/* the Whose-story sheet: three headings, never mixed; two quiet actions under them */
+.sheetbox.whose { width: min(560px, 100%); }
+.whose-group + .whose-group { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.whose-group h3 { font-size: var(--t-small); font-weight: 600; color: var(--heading); margin: 0; }
+.whose-group > .meta { margin: 2px 0 var(--s-2); font-size: var(--t-caption); }
+.whose-group ul { list-style: none; margin: 0; padding: 0; }
+.whose-story { width: 100%; border: 0; background: transparent; cursor: pointer; text-align: left; font: inherit; }
+.whose-story.current { background: var(--sheet); }
+.whose-story strong { display: block; color: var(--heading); }
+.whose-story .meta { display: block; }
+.whose-acts { display: grid; gap: var(--s-2); margin-top: var(--s-5); }
+.whose-act { display: grid; gap: 2px; width: 100%; min-height: 56px; padding: var(--s-3) var(--s-4); border-radius: var(--r-field); text-align: left; font: inherit; cursor: pointer; color: var(--ink); background: transparent; border: 1px solid var(--line-strong); }
+.whose-act strong { font-weight: 600; color: var(--heading); }
+.whose-act .meta { font-size: var(--t-caption); }
+.whose-act.quiet { border-color: transparent; background: var(--support-soft); }
+.whose-act:hover { border-color: var(--ink-soft); }
+.whose-act:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* the roster's one line about the three states */
+.people .states { padding: 0 var(--s-5) var(--s-3); margin: 0; }
+
+/* listed twice: one quiet card, a line per name */
+.dupes { padding: var(--s-5) var(--s-6); background: var(--support-soft); box-shadow: none; }
+.dupe + .dupe { margin-top: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.dupe > p { font-size: var(--t-body); color: var(--ink); margin: 0 0 var(--s-2); }
+.dupe > p a { color: var(--heading); font-weight: 600; }
+.dupe .acts a.meta { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 var(--s-2); }
+.dupe .acts a.meta:hover { color: var(--ink); }
+
+/* what the family asked, inside "Waiting for your review" */
+.asked { margin-bottom: var(--s-3); }
+.askrow { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-4); border-radius: var(--r-card); background: var(--card); box-shadow: var(--shadow-1); margin-bottom: var(--s-3); }
+.askrow p { font-size: var(--t-body); line-height: 1.5; margin: 0; }
+.askrow p b { color: var(--heading); font-weight: 600; }
+.askrow p.meta { margin-top: 4px; }
+.askrow .acts { margin-top: var(--s-3); }
+.askrow a { color: var(--heading); font-weight: 600; }
+
+/* what you asked, until they answer */
+.waiting-on { padding: var(--s-5) var(--s-6); }
+.waiting-on h2 { font-size: var(--t-lead); margin-bottom: 2px; }
+.waiting-on ul { list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.waiting-on li { display: flex; justify-content: space-between; gap: var(--s-3); align-items: baseline; flex-wrap: wrap; min-height: 44px; padding: var(--s-2) 0; border-top: 1px solid var(--line); font-size: var(--t-small); }
+.waiting-on li:first-child { border-top: 0; }
+.waiting-on li b { color: var(--heading); font-weight: 600; }
+.waiting-on li a { color: var(--heading); font-weight: 600; }
+
+/* "Ask to join" on the start page's join branch */
+.askjoin { margin-top: var(--s-8); padding-top: var(--s-5); border-top: 1px solid var(--line); }
+.askjoin > .meta { margin: 2px 0 var(--s-3); }
+.askjoin ul { list-style: none; margin: 0; padding: 0; }
+.askjoin li { display: flex; align-items: center; gap: var(--s-3); min-height: 60px; padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+.askjoin li:first-child { border-top: 0; }
+.askjoin li > span:not(.avatar) { flex: 1; min-width: 0; }
+.askjoin li strong { display: block; color: var(--heading); }
+.askjoin li .meta { display: block; }
+
+@media (max-width: 760px) {
+  .dupes, .waiting-on { padding: var(--s-4); }
+  .askrow { padding: var(--s-3); }
+}
+
+/* ── 28. Polish pass (agent) ── */
+/* A QA pass over every page at 1366 and 375, fixing the small things a founder keeps spotting. Every rule here
+   only appends: nothing above is edited. Measurements and the reasoning are in the pass's report. */
+
+/* small print: nothing under 13px, nothing in uppercase, nothing bold under 16px, one grey that passes 4.5:1 */
+small { font-size: 13px; }
+.pill { font-size: 13px; }
+.avatars span { font-size: 13px; }
+.week button { font-size: 13px; color: var(--ink-soft); }
+.week button[aria-pressed="true"] { color: var(--ink); }
+.progress .end { color: var(--ink-soft); }
+.label.quiet { color: var(--ink-soft); }
+.running-head, .folio, .starters .label { font-size: 13px; }
+.folio, .starters .label { color: var(--ink-soft); }
+.keeprow small { font-size: 13px; color: var(--ink-soft); }
+.after-state { font-weight: 600; }
+.next-call .day small { font-size: 13px; letter-spacing: 0; }
+.field-label { text-transform: none; letter-spacing: 0.01em; font-weight: 600; color: var(--ink-soft); }
+.tnode .tag { text-transform: none; letter-spacing: 0.01em; font-size: 13px; font-weight: 600; padding: 3px 10px; }
+.arc-book .n small { font-weight: 600; color: var(--ink-soft); }
+.wall-foot a, .auth .resend button { font-weight: 600; }
+.auth .legal { color: var(--ink-soft); }
+.contrib .more { font-weight: 600; }
+.wall-mem .more { font-weight: 600; font-size: var(--t-small); }
+/* ochre at 13–15px sits at 3:1 on cream; small dates and counts become the quiet grey, ochre stays for the headline phrase */
+/* a link that acts: the words in ink, the arrow in ochre (brass on teal), 44px to press */
+.more { color: var(--heading); min-height: 44px; }
+.more::after { color: var(--ochre); }
+.card.teal .more, .card.teal .more::after { color: var(--brass); }
+.sechead .more { min-height: 0; position: relative; }
+.sechead .more::before { content: ""; position: absolute; inset: -11px -6px; }
+/* links inside small print: ink with a hairline underline, never ochre at 14px */
+.meta a, .hint a, .keeprow small a, .acct-note a, .plans-note a, .wall-foot a, .land-foot a, .auth .legal a { color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.cloth .hero a:not([class]), .card.teal a:not([class]) { color: var(--brass); text-decoration-color: rgba(246, 240, 230, 0.4); }
+/* status chips: a dot carries the colour, the word stays grey (green on its tint was 4.49:1, terracotta 4.25:1) */
+.chip.green, .chip.accent { color: var(--ink-soft); }
+.chip.green::before, .chip.accent::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
+.chip.accent::before { background: var(--accent); }
+
+/* hairlines where a card touches cream: one line token everywhere */
+.card { border-color: var(--line); }
+.card.teal, .card.tint { border-color: transparent; }
+.card.gold { border-color: var(--gold); }
+.arc-rec, .contrib, .mp-voice, .wall-mem, .wall-family blockquote { border: 1px solid var(--line); }
+.wall-mem .date, .wall-chapter > h2 span { color: var(--ink-soft); }
+.tile { border-color: var(--line); }
+.tile.dark { border-color: var(--chocolate); }
+
+/* targets: 44px to press, without the layout moving */
+.btn.sm, .keeprow .helps .btn.sm { min-height: 44px; }
+.chip.big, .after-grid .chip.big { min-height: 44px; }
+.starters button { min-height: 44px; }
+.input .show { min-height: 44px; }
+.focusbtn { width: 44px; height: 44px; right: 18px; top: 18px; }
+.hero .back { width: 44px; height: 44px; }
+.top .add, .top .teller { min-height: 44px; }
+.pillnav a { min-height: 38px; }
+.top .me { padding: 6px; margin: -6px; }
+.teller-pick, .hero .rd-chips a.pill, .wall-top a:not(.brand), .arc-wall a, .mp-crumbs a { position: relative; }
+.teller-pick::before, .hero .rd-chips a.pill::before, .wall-top a:not(.brand)::before, .arc-wall a::before, .mp-crumbs a::before { content: ""; position: absolute; inset: -11px -6px; }
+.wtitle:focus-visible { box-shadow: 0 1px 0 var(--foil); }
+
+/* arrows, not chevrons: row chevrons and "Next ›" / "Open ›" become a quiet → (the proper fix is in the markup) */
+.chev { display: none; }
+.prow:has(> .chev)::after, .banner:has(> .chev)::after { content: "→"; margin-left: auto; color: var(--ink-faint); font-size: 18px; line-height: 1; flex: none; }
+.btn > svg:has(> path[d="m9 6 6 6-6 6"]) { display: none; }
+.btn:has(> svg > path[d="m9 6 6 6-6 6"])::after { content: "→"; font-size: 1.1em; line-height: 1; }
+
+/* headings that wrap: balanced lines */
+h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
+.weekrow .label { white-space: nowrap; }
+
+/* the phone: the tab bar's words at 13px, and nothing wider than the screen */
+@media (max-width: 760px) {
+  .tabbar .tabs a { font-size: 13px; letter-spacing: 0; }
+  .top .add { width: 44px; min-height: 44px; }
+  .week button { font-size: 13px; }
+  .treewrap { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .treewrap::-webkit-scrollbar { display: none; }
+  .acct-row .btn, .bookhero-acts .btn, .edition-act .btn { white-space: normal; height: auto; padding-top: 10px; padding-bottom: 10px; line-height: 1.3; }
+  .acct-value, .acct-person .meta, .acct-wall-link a, .keeperlist li .meta, .codes li .meta { overflow-wrap: anywhere; white-space: normal; }
+}
+@media (max-width: 1100px) {
+  .fam, .acct-grid, .person-grid { grid-template-columns: minmax(0, 1fr); }
+  .fam .col, .acct-col, .person-grid .col { min-width: 0; }
+}
+/* single-column grids on the phone: a bare auto track takes a flex row's summed width (Chromium), so each is bounded */
+@media (max-width: 760px) {
+  .home-sheet, .acct-col, .recent, .arc-cards, .after, .after-grid, .codecard, .wall-sheet .page, .wall-chapter, .choice, .asks, .acct-switches, .acct-delete, .plan-list, .mp-left { grid-template-columns: minmax(0, 1fr); }
+}
+/* rows on the phone: the week strip under its label; a person's status chip under their name; the storyteller's button under theirs */
+@media (max-width: 760px) {
+  .weekrow > div { flex-wrap: wrap; }
+  .people .prow { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; column-gap: var(--s-4); row-gap: 6px; align-items: center; }
+  .people .prow > .avatar { grid-row: 1 / span 2; }
+  .people .prow > span:not(.chip):not(.avatar) { grid-column: 2; grid-row: 1; }
+  .people .prow > .chip { grid-column: 2; grid-row: 2; justify-self: start; }
+  .people .prow:has(> .chev)::after { grid-column: 3; grid-row: 1 / span 2; margin-left: 0; }
+  .acct-list .person { display: grid; grid-template-columns: 52px minmax(0, 1fr); column-gap: var(--s-4); row-gap: var(--s-2); align-items: center; }
+  .acct-list .person > .avatar { grid-row: 1 / span 2; }
+  .acct-list .person > .btn { grid-column: 2; justify-self: start; }
+  .acct-list .person > .btn.quiet { padding-left: 0; }
+}
+/* §9's reworked memory card (landed mid-pass): the kicker and the footer at 13px in sentence case, no tracking, a grey that passes */
+
+/* ───────────────────────── 30. After the agents (lead) ───────────────────────── */
+/* The memory card keeps the printed book's small print on purpose (astoryapp.com/samples): a tracked kicker
+   and folio line at 11px are the book's own, and they are never body text. The dateline is terracotta only
+   when there is a date; "No date yet" stays grey. */
+.mem .date { color: var(--ink-soft); }
+.mem .date.dated { color: var(--accent); }
+.mem .kicker.treasured svg { color: #8A6A2E; }
+.weekrow-in { display: flex; align-items: center; gap: var(--s-5); flex-wrap: wrap; }

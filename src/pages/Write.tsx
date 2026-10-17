@@ -250,9 +250,23 @@ function Afterwards({ story, kept, number, question, editing, unlimited, email, 
 
 /* ── The page ─────────────────────────────────────────────────────────── */
 
+/**
+ * The writer mounts only once the story is loaded, keyed on the story, the
+ * memory being edited and the question, so the draft and the step are read
+ * from a story that exists (opening /write?edit=… in a fresh tab used to
+ * capture an empty draft before the account had arrived).
+ */
 export default function Write() {
+  const { account, activeStory: story } = useAccount();
+  const [params] = useSearchParams();
+  if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
+  if (!story) return <Navigate to="/start" replace />;
+  return <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}`} story={story} />;
+}
+
+function Writer({ story }: { story: Story }) {
   const { user } = useAuth();
-  const { account, activeStory: story, saveMemory } = useAccount();
+  const { saveMemory } = useAccount();
   const [params] = useSearchParams();
   const qid = params.get("q");
   const editId = params.get("edit");
@@ -261,14 +275,14 @@ export default function Write() {
   const unlimited = isPaid(user?.plan ?? "free");
   const email = user?.email || "";
 
-  const editing = useMemo(() => (story && editId ? story.memories.find((m) => m.id === editId) || null : null), [story, editId]);
+  const editing = useMemo(() => (editId ? story.memories.find((m) => m.id === editId) || null : null), [story, editId]);
   const question = useMemo<Prompt | null>(() => {
-    if (!story || !qid) return null;
+    if (!qid) return null;
     const deck = todaysDeck(story, { unlimited: true });
     return deck.find((p) => p.id === qid) || null;
   }, [story, qid]);
 
-  const key = story ? draftKey(story.id, editId) : "";
+  const key = draftKey(story.id, editId);
   const initial = useMemo<Draft>(() => {
     const saved = key ? readDraft(key) : null;
     if (editing) {
@@ -375,9 +389,6 @@ export default function Write() {
     });
     return () => mm.revert();
   }, [kept]);
-
-  if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
-  if (!story) return <Navigate to="/start" replace />;
 
   const own = story.relationship === "Myself";
   const era = d.era || "Anything else";
