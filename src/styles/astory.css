@@ -3218,3 +3218,15 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
   .fa-spouses { grid-template-columns: minmax(0, 1fr); gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .fa-card, .fa-ask { transition: none; } }
+
+/* ───────────────────────── 42. Viewport heights under the zoom steps (lead) ───────────────────────── */
+/* Chromium multiplies viewport units by the html zoom, so on a 4K display every "100vh" page became twice the
+   window: the sign-in's book sat in the lower half, cut off, and short pages trailed a wall of empty paper.
+   The zoom steps now publish their factor and every full-height page divides by it. */
+:root { --zoom: 1; }
+@media (min-width: 1700px) { :root { --zoom: 1.15; } }
+@media (min-width: 2100px) { :root { --zoom: 1.4; } }
+@media (min-width: 2600px) { :root { --zoom: 1.7; } }
+@media (min-width: 3300px) { :root { --zoom: 2.05; } }
+.shell, .auth, .auth.ritual, .auth .spread-wrap, .start, .solo, .wall, .land, body.writing-focus .sheet-page { min-height: calc(100vh / var(--zoom)); }
+.auth .spread-wrap { padding-top: clamp(62px, calc(8vh / var(--zoom)), 96px); padding-bottom: clamp(16px, calc(3vh / var(--zoom)), 40px); }
