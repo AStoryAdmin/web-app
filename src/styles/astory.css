@@ -2222,7 +2222,7 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 .auth .ep-pattern { position: absolute; inset: 0; opacity: 0.085; background: var(--on-chocolate); pointer-events: none;
   -webkit-mask: var(--bk-mark, url("/favicon.svg")) 0 0/8cqw 8.8cqw space; mask: var(--bk-mark, url("/favicon.svg")) 0 0/8cqw 8.8cqw space; }
 .auth .ep-linen { position: absolute; inset: 0; background: url(/book/cloth-chocolate.webp) 0 0/40cqw 40cqw; mix-blend-mode: overlay; opacity: 0.35; pointer-events: none; }
-.auth .endpaper::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(270deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.06) 7cqw, transparent 16cqw); }
+.auth .endpaper::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(270deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.06) 7%, transparent 16%); }
 .auth .ep-how { position: absolute; left: 10cqw; right: 10cqw; bottom: 3.4cqw; margin: 0; z-index: 2; font-family: "EB Garamond", var(--font-story); font-size: max(16px, 2.6cqw); line-height: 1.4; color: var(--on-chocolate); text-align: center; text-wrap: pretty; }
 
 /* the prints, held by black-paper corners */
@@ -2246,10 +2246,13 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 }
 
 /* the right page: the title page, with the bookplate */
-.auth .titlepg { background: #fbf8f1; color: #2b2b2b; display: flex; flex-direction: column; align-items: center; padding: 2.6cqw 6cqw 1.8cqw; }
+/* A page pads itself in percentages of its own width: container units on the page itself would fall back to the
+   viewport (an element is not its own container), which under the large-display zoom ate the whole title page. */
+.auth .titlepg { background: #fbf8f1; color: #2b2b2b; display: flex; flex-direction: column; align-items: center; padding: 2.6% 6% 1.8%; }
 .auth .tp-gutter { position: absolute; left: 0; top: 0; bottom: 0; width: 14cqw; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.05) 45%, transparent); }
 .auth .tp-mark { display: block; width: 4.8cqw; height: 4.8cqw; background: var(--chocolate); -webkit-mask: var(--bk-mark, url("/favicon.svg")) center/contain no-repeat; mask: var(--bk-mark, url("/favicon.svg")) center/contain no-repeat; }
 .auth .promise-line { margin: 1.2cqw 0 0; font-family: "Cormorant Garamond", var(--font-story); font-weight: 600; font-size: max(26px, 5.4cqw); line-height: 1.05; letter-spacing: -0.01em; color: var(--chocolate); text-align: center; max-width: 20ch; text-wrap: balance; }
+.auth .promise-line { overflow-wrap: normal; }
 .auth .promise-line .keep { color: var(--ochre); }
 .auth .tp-rule { display: block; width: 14cqw; height: 1px; margin: 1.6cqw 0 0; background: var(--gold); opacity: 0.85; }
 .auth .plate-wrap { position: relative; width: min(100%, 520px); margin-top: max(30px, 5.5cqw); --pw: min(88cqw, 520px); }
@@ -2298,10 +2301,10 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 @media (max-width: 760px) {
   .auth .spread-wrap { padding: 72px 10px 24px; align-items: start; }
   .auth .spread { aspect-ratio: auto; grid-template-columns: minmax(0, 1fr); }
-  .auth .leaf-r { order: 1; border-radius: 3px 3px 0 0; padding: 8cqw 6cqw 9cqw; }
-  .auth .leaf-l { order: 2; border-radius: 0 0 3px 3px; min-height: 132cqw; }
+  .auth .leaf-r { order: 1; border-radius: 3px 3px 0 0; padding: 8% 6% 9%; }
+  .auth .leaf-l { order: 2; border-radius: 0 0 3px 3px; aspect-ratio: 100 / 132; min-height: 0; }
   .auth .tp-gutter { display: none; }
-  .auth .endpaper::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.05) 6cqw, transparent 14cqw); }
+  .auth .endpaper::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.05) 5%, transparent 11%); }
   .auth .promise-line { font-size: 29px; max-width: none; }
   .auth .plate-wrap { margin-top: 118px; }
   .auth .plate { padding: 0; }
@@ -2321,7 +2324,7 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
   background: url("/book/cloth-chocolate.webp") 0 0 / 512px 512px var(--chocolate); }
 .auth .board-front::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: var(--breath);
   background: radial-gradient(520px circle at var(--lx, 50%) var(--ly, 45%), rgba(255, 244, 220, 0.18), transparent 62%); }
-.auth .board-front::after { content: ""; position: absolute; inset: 5.5cqw; pointer-events: none; border-radius: 4px;
+.auth .board-front::after { content: ""; position: absolute; inset: 5.5%; pointer-events: none; border-radius: 4px;
   border: 1px solid rgba(243, 235, 221, 0.16); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24), inset 0 0 0 6px transparent, inset 0 0 0 7px rgba(243, 235, 221, 0.07); }
 .auth .board-back { transform: rotateY(180deg); background: var(--chocolate); border-radius: 3px 0 0 3px; }
 .auth .board-back .ep-pattern { opacity: 0.085; }
