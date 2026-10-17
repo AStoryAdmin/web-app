@@ -83,3 +83,41 @@ The tokens live in `src/styles/astory.css` (§1); pages never write a raw hex.
 - The memory card (CSS §9) is the printed page in small (astoryapp.com/samples): the photograph as a white-bordered print on the left, the chapter as a tracked sage kicker, the title in Cormorant, the dateline in terracotta, two lines of the person's own words in EB Garamond italic (never the server's third-person summary), the faces of the people in it, who told it in the folio line; paper tinted by the memory's colour or its chapter.
 - The wall (`src/pages/Wall.tsx`, `/p/:slug`) and the front door (`src/pages/auth/Welcome.tsx`): the same cloth and sheet; the front door turns a sample book built with the real functions and shows the five covers and three papers.
 - The minor elements (CSS §25) are quiet: small type in sentence case and a soft grey, one weight down, hairlines not fills, arrows not chevrons, nothing in uppercase. Shiori and Kiyo are the reference for small print; the deck for the big pieces.
+
+## The craft rules (from the taste, Hallmark and design-engineering skills, reconciled with the brand)
+
+Where a skill's house style contradicts the brand (its ban on cream-and-terracotta, on tracked small caps, on hairlines, on a styled accent word), the brand wins: those are the printed book's own language and the founder's deck. Everything else below is binding on every page.
+
+**Type**
+- Two faces on the paper: Cormorant Garamond for display and titles, EB Garamond for what people said and running text. Montserrat only for controls, navigation and small caps. Source Serif is retired on the sheet.
+- Headlines two lines or fewer at every width. A statement set large is a paragraph, 25 words at most.
+- Running text in the full ink, never grey. Grey is for secondary notes only.
+- Two or three sizes do the visible work: one very large, one small. Five sizes on a page is the ceiling.
+- No italic headings. Italic lives in body emphasis and in the book's captions only.
+- No monospace. No index numbering (01 / 02) outside the book's own chapter openers.
+
+**Space and surfaces**
+- Surfaces separate by a step in tone, never by a drop shadow at rest. Shadows only on what truly floats (a menu, a print lifted on hover).
+- No gradients except a scrim under text on a photograph. No glass, no blur panels.
+- The gap between sections is clearly larger than any gap inside one.
+- Each section has a different composition from its neighbours. No rows of identical icon-topped cards.
+- One deliberate rest per page at most; a screen that is mostly empty ground is an underbuilt section.
+- Buttons flat, one fill, fully round (decided once). Pressed: scale 0.97 in 120 ms.
+
+**Imagery**
+- One dominant picture beats six small ones. At least four real pictures on a page that has them to show.
+- Same crop ratio and treatment within a set. The white-bordered print is the treatment for family photographs.
+- Never a borrowed scene presented as the family's own. A memory without a photograph is the person's words on paper.
+- No redrawn chrome (fake phone frames, fake browser bars).
+
+**Motion (Emil's framework)**
+- Ask how often it is seen: a hundred times a day, no animation; tens of times, barely; occasional, standard; first-time, delight.
+- Easings: entering and feedback use a strong ease-out `cubic-bezier(0.23, 1, 0.32, 1)`; on-screen movement `cubic-bezier(0.77, 0, 0.175, 1)`; never ease-in on UI. UI animation under 300 ms; arrival under 1.2 s.
+- Nothing appears from nothing: scale from 0.95 with opacity, never from 0.
+- Transform and opacity only. Reduced motion collapses to a 150 ms crossfade.
+
+**Honesty and the floor**
+- No invented numbers, quotes, logos or reviews. Sample content is labelled as sample.
+- Every control has eight states: default, hover, focus-visible, active, disabled, loading, error, success.
+- Phones: no horizontal scroll (`overflow-x: clip` on html and body), no two-line buttons, grid tracks `minmax(0, 1fr)`, long words wrap.
+- Before shipping, score the page 1 to 5 on philosophy, hierarchy, execution, specificity, restraint, variety; anything under 3 goes back.
