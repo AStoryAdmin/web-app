@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-16",
+  "method": "Built-in image_gen",
+  "prompts": "generated-asset-prompts.json",
+  "resolutionNote": "Native generator output, not 4K. Book photos are 1254 square and 1774x887 wide; cloth tiles are 1254 square, below the requested 2048 square. No upscaling was applied.",
+  "review": "Closed-book wording, blank open-page area, nine-cell family layout, two puppy expressions, transparent PNG alpha and a 2x2 cloth repeat preview were inspected. Cloth edges are visually reviewed, not certified pixel-identical. Family characters are fictional; no image establishes a real family relationship.",
+  "assets": [
+    {
+      "file": "public/book/keepsake-closed.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "alpha": true,
+      "bytes": 2558507
+    },
+    {
+      "file": "public/book/keepsake-closed-bench.jpg",
+      "width": 1254,
+      "height": 1254,
+      "format": "jpeg",
+      "alpha": false,
+      "bytes": 733012
+    },
+    {
+      "file": "public/book/keepsake-open.jpg",
+      "width": 1774,
+      "height": 887,
+      "format": "jpeg",
+      "alpha": false,
+      "bytes": 523359
+    },
+    {
+      "file": "public/book/bookplate.png",
+      "width": 1122,
+      "height": 1402,
+      "format": "png",
+      "alpha": true,
+      "bytes": 2526081
+    },
+    {
+      "file": "public/photos/family-grid.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "alpha": false,
+      "bytes": 2712632
+    },
+    {
+      "file": "public/book/cloth-chocolate.jpg",
+      "width": 1254,
+      "height": 1254,
+      "format": "jpeg",
+      "alpha": false,
+      "bytes": 1216860
+    },
+    {
+      "file": "public/book/cloth-teal.jpg",
+      "width": 1254,
+      "height": 1254,
+      "format": "jpeg",
+      "alpha": false,
+      "bytes": 1539717
+    },
+    {
+      "file": "public/dog/sleep-curious-panels.png",
+      "width": 1774,
+      "height": 887,
+      "format": "png",
+      "alpha": false,
+      "bytes": 1911436
+    }
+  ]
+}

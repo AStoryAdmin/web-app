@@ -2685,8 +2685,12 @@ img.rd-hero.developing, .rd-strip img.developing, img[data-develop].developing {
 .fv-add textarea::placeholder { color: var(--ink-faint); font-style: italic; }
 .fv-add .row, .fv-closed { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }
 .fv-closed { margin-top: var(--s-4); min-height: 44px; }
-.fv-closed .more { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; color: var(--ochre); }
-.fv-closed .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.fv-open { background: none; border: 0; padding: 0; font: 600 15px/1.2 var(--font-ui); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--ochre); transition: color var(--dur-ui) var(--ease-out); }
+.fv-open span { transition: transform var(--dur-ui) var(--ease-out); }
+.fv-open:hover { color: var(--accent-deep); }
+.fv-open:hover span { transform: translateX(3px); }
+.fv-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.fv-open:active { transform: scale(0.97); }
 .fv .done { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--green); font-weight: 600; font-size: 15px; }
 .fv .done svg { width: 20px; height: 20px; }
 
@@ -2809,7 +2813,7 @@ img.rd-hero.developing, .rd-strip img.developing, img[data-develop].developing {
   .phero.has-portrait { grid-template-columns: minmax(0, 1fr); }
   .phero-portrait { width: 72px; height: 72px; }
 }
-@media (prefers-reduced-motion: reduce) { .atile, .ystrip a, .pp-card, .pp-thumb, .lead-person, .mpd-crumbs a { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .atile, .ystrip a, .pp-card, .pp-thumb, .lead-person, .mpd-crumbs a, .fv-open, .fv-open span { transition: none; } }
 
 /* ── 39. The sheet is the book's paper (agent) ── */
 /* Below the cloth, the app is the printed book's paper (astoryapp.com/samples). The founder's words: the cloth was
@@ -3025,6 +3029,9 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
   .sheet-page .bookmini img { width: 64px; }
   .sheet-page .bookmini .n, .sheet-page .arc-book .n { font-size: 40px; }
   .sheet-page .plan-price b { font-size: 36px; }
+  .sheet-page .acct-person > div { min-width: 0; }
+  .sheet-page .acct-person .meta { font-size: 13px; overflow-wrap: anywhere; }
+  .sheet-page .acct-name { font-size: 24px; }
   .sheet-page .sechead { padding-top: var(--s-5); margin-top: var(--s-8); }
   .sheet-page .arc-search .input input { font-size: 18px; }
   .sheet-page :is(.arc-chips, .arc-decaderow) .chip.big { min-height: 40px; }

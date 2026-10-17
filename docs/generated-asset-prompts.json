@@ -1,0 +1,49 @@
+{
+  "method": "Built-in image_gen",
+  "date": "2026-10-16",
+  "prompts": [
+    {
+      "name": "closed-bench",
+      "transparent": false,
+      "prompt": "Use case: product-mockup. Create a premium photorealistic product photograph for a website hero, square 1:1, target 4K detail. Top-down at a slight 15-degree tilt: a square clothbound keepsake book lying CLOSED on a dark chocolate-brown bookcloth surface (#4A3327). Entire book visible with generous clean space around all four edges. Cover: deep navy linen cloth (#1E3962), visible fine cloth weave, title exactly \"MOMENTS & MEMORIES\" in small cream capitals at the top, name exactly \"Carolyn & Dylan\" in fine white script below. Three candid black-and-white fictional family photographs, each with a white print border, overlap on the cover, slightly tilted. The photographs belong to one mid-century American family. Soft window light from upper left, gentle realistic shadow under book, exquisitely tangible binding and page block. No text other than the two specified lines, no people outside the cover photographs, no hands, no props. Make ONE image, not a presentation or montage."
+    },
+    {
+      "name": "bookplate",
+      "transparent": true,
+      "prompt": "Use case: illustration-story. Website asset: a vintage Ex Libris bookplate, portrait 4:5, high resolution. Flat scanned-print look of an antique cream paper plate with very subtle paper texture, sepia engraved ornamental border with fine double rules, restrained small corner flourishes, tiny heart motif at top center. Across the upper inside edge, exact small engraved capital text \"THIS BOOK BELONGS TO\". The large center (about 70 percent of the inner area) is blank cream paper for a sign-in form overlay, with no decoration there. No other words, no illustrations, no shadows, no perspective. Full plate visible, crisp printing. Transparent background outside the paper plate with true alpha; the interior cream paper is opaque."
+    },
+    {
+      "name": "family-grid",
+      "transparent": false,
+      "prompt": "Use case: historical-scene. Create exactly NINE separate candid photographs in one precise 3 by 3 grid, high resolution square canvas. Each cell is a square photograph filling its cell edge to edge, with straight thin WHITE uniform gaps between cells so it can later be cut into nine separate images. No photo borders, no text, no captions, no numerals. A coherent FICTIONAL American family across decades: central grandmother Carolyn is born 1940, daughter of a dark-haired mother born 1918; Carolyn marries Dylan (born 1938) in 1962; their son is born 1965, granddaughter born 1990. Keep facial identity and aging consistent. Row 1 left: 1949, Carolyn age 9 riding a black bicycle, grainy black-and-white. Row 1 middle: 1956, her mother age 38 at a kitchen table with bread, black-and-white. Row 1 right: 1962, Carolyn age 22 and Dylan age 24 dancing at their wedding in a modest church hall, black-and-white. Row 2 left: 1968, Carolyn, Dylan, and their toddler son at a Sunday picnic under a tree, a period-correct Ford Galaxie parked nearby, faded Kodachrome color. Row 2 middle: 1975, Dylan and their ten-year-old son at a workbench, warm 1970s color. Row 2 right: 1984, their lived-in kitchen with radio on windowsill and a dog by the stove, color. Row 3 left: 1991, family canoe trip with Carolyn and Dylan now in their early fifties, slightly washed color print. Row 3 middle: 1998, Carolyn age 58 reading to her eight-year-old granddaughter on a porch, color. Row 3 right: 2019, Carolyn age 79 with the same granddaughter age 29 at a window, modern natural photograph. Period-correct clothing, camera rendering, objects and color grades in each cell. All images should feel like ordinary unposed family snapshots rather than stock photography. Respect the exact row-major order and nine-cell layout."
+    },
+    {
+      "name": "cloth-chocolate",
+      "transparent": false,
+      "prompt": "Use case: product-mockup. A single seamless tileable material texture of fine bookbinding buckram linen cloth, deep chocolate brown (#4A3327). Square 2048 by 2048, high detail, flat orthographic macro view covering the entire canvas. Fine regular interwoven linen fibers, realistic quiet natural variation at thread level. Completely even diffuse lighting. Uniform overall color and texture density throughout, no vignetting, no shadows, no folds, no objects, no perspective, no text. Opposite edges MUST join seamlessly both vertically and horizontally when repeated. This is a repeating website material texture, not a photograph of a piece of cloth on a table."
+    },
+    {
+      "name": "cloth-teal",
+      "transparent": false,
+      "prompt": "Use case: product-mockup. A single seamless tileable material texture of fine bookbinding buckram linen cloth, deep teal (#0F4A58). Square 2048 by 2048, high detail, flat orthographic macro view covering the entire canvas. Fine regular interwoven linen fibers, realistic quiet natural variation at thread level. Completely even diffuse lighting. Uniform overall color and texture density throughout, no vignetting, no shadows, no folds, no objects, no perspective, no text. Opposite edges MUST join seamlessly both vertically and horizontally when repeated. This is a repeating website material texture, not a photograph of a piece of cloth on a table."
+    },
+    {
+      "name": "closed-transparent",
+      "transparent": true,
+      "reference": "keepsake-closed-bench.jpg",
+      "prompt": "Remove only the cloth backdrop and external cast shadow. Preserve the complete closed navy book, angle, dimensions, title \"MOMENTS & MEMORIES\", script \"Carolyn & Dylan\", three photographs, binding and page block. True transparent alpha background, square composition, no checkerboard or floor."
+    },
+    {
+      "name": "open-book",
+      "transparent": false,
+      "reference": "keepsake-closed-bench.jpg",
+      "prompt": "Same physical navy square clothbound book, open on chocolate bookcloth. Top-down 2:1 photograph, soft window light from upper left. Left cream endpaper has faint repeated tiny abstract monograms; right blank cream title page #FBF8F1 with laid-paper texture and gutter shadow. No text, photographs, hands or props."
+    },
+    {
+      "name": "puppy-states",
+      "transparent": false,
+      "reference": "public/dog/source.png",
+      "prompt": "Match the original white Samoyed watercolor puppy, cream paper, warm lighting, fluffy fur, thin brown table-edge line. Two equally sized panels on a 2:1 sheet: asleep with eyes closed and chin low on table; curious looking up and right, ears perked. Same size, baseline and paws; full ears inside panels. No text or extra objects."
+    }
+  ]
+}
