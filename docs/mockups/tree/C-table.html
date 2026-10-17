@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The table · Family · A Story</title>
+<!-- Direction C, "the table": the founder's own draft world, the photographs on the wooden bench. A bird's-eye
+     table with the family's prints laid out by generation, people without a photograph as a cream index card
+     with the name in script, string-and-pin connectors between parents and children (red thread), the
+     storyteller's print largest and centred, a small brass plate at the top. Parallax under the pointer
+     (pointer only, nothing under reduced motion). Tap a print: person.html. "#empty" shows the one-person state.
+     Static; nothing writes. Portraits: cropped from the founder's locked master library (individual masters, no filters).
+     The sample family has one person not placed (Nora); Harold Pell is added only so the tray shows two. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;500&family=Mrs+Saint+Delafield&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap">
+<style>
+:root{
+  --page:#F3EBDD;--sheet:#EAE0CF;--card:#FBF7EE;--support:#E9E2D8;
+  --chocolate:#4A3327;--chocolate-deep:#3B291D;--on-chocolate:#F6F0E6;--on-chocolate-soft:#D9CFC2;
+  --ink:#2A2320;--ink-soft:#6B625B;--ink-faint:#9A8F85;
+  --accent:#B85126;--ochre:#BF7F1A;--gold:#E0A03F;--brass:#EFC75E;--pill-gold:#F2D27A;--teal-slate:#2E566A;--danger:#B03A2E;
+  --book-sage:#55745A;--book-print:#FFFDF8;--paper-butter:#F8F3DF;
+  --line:rgba(42,35,32,.08);--line-strong:rgba(42,35,32,.18);
+  --font-ui:"Montserrat","Segoe UI",system-ui,sans-serif;--font-story:"Source Serif 4",Georgia,serif;
+  --book-display:"Cormorant Garamond","Source Serif 4",Georgia,serif;--book-body:"EB Garamond",Georgia,serif;
+  --script:"Mrs Saint Delafield","Caveat",cursive;
+  --pw:140px;--pwt:222px;--r-sheet:28px;--ease:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:clip}
+body{background:var(--page);color:var(--ink);font:400 17px/1.55 var(--font-ui);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.cloth{position:relative;background:linear-gradient(rgba(74,51,39,.42),rgba(74,51,39,.42)),url(img/bookcloth.webp) 0 0/320px 320px,var(--chocolate);background-blend-mode:normal,overlay,normal;color:var(--on-chocolate);padding:0 0 96px}
+.bar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+.lockup{font:600 26px/1 var(--book-display);color:var(--brass);text-decoration:none}.lockup b{font-weight:600;color:#F3EBDD}
+.places{display:flex;gap:4px;background:rgba(0,0,0,.22);border-radius:999px;padding:4px}
+.places span{padding:8px 16px;border-radius:999px;font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.places span.on{background:var(--page);color:var(--chocolate)}
+.who{font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero{max-width:1120px;margin:28px auto 0;padding:0 40px;display:flex;align-items:end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.hero .k{margin:0;font:500 14px/1.4 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero h1{margin:6px 0 0;font:700 56px/1.05 var(--font-ui);letter-spacing:-.025em;color:#F6F0E6}
+.hero h1 .hl{color:var(--brass)}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px;border-radius:999px;background:var(--page);color:var(--chocolate);font:600 16px/1 var(--font-ui);text-decoration:none}
+.sheet{position:relative;max-width:1120px;margin:-64px auto 0;padding:32px 40px 56px;background:var(--page);border-radius:var(--r-sheet);box-shadow:0 1px 2px rgba(42,35,32,.08),0 24px 60px -20px rgba(42,35,32,.35)}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.head h2{margin:0;font:700 22px/1.2 var(--font-ui);letter-spacing:-.01em}
+.head .toggle{font:500 14px/1.4 var(--font-ui);color:var(--ink-soft)}
+.head .toggle a{color:var(--ochre);text-decoration:none;font-weight:600}
+.head .toggle a.on{color:var(--ink-soft);font-weight:500;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:4px}
+
+/* the bench */
+.bench{position:relative;border-radius:18px;padding:64px 28px 36px;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%,rgba(255,235,200,.14),transparent 55%),
+    radial-gradient(90% 70% at 50% 110%,rgba(0,0,0,.35),transparent 60%),
+    repeating-linear-gradient(93deg,rgba(0,0,0,.09) 0 2px,transparent 2px 9px,rgba(255,255,255,.035) 9px 11px,transparent 11px 26px,rgba(0,0,0,.06) 26px 29px,transparent 29px 44px),
+    repeating-linear-gradient(91.5deg,rgba(0,0,0,.05) 0 60px,rgba(255,255,255,.03) 60px 130px,rgba(0,0,0,.04) 130px 190px),
+    linear-gradient(180deg,#8a6240,#7a5436 50%,#6e4a2f);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.08),inset 0 -40px 80px -40px rgba(0,0,0,.35)}
+.bench::after{content:"";position:absolute;inset:0;pointer-events:none;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .07 0'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>");opacity:.8}
+.plate{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:3;padding:7px 26px;border-radius:4px;
+  background:linear-gradient(180deg,#f0d27f,#c9a24c 55%,#e4c06a);color:#4A3327;font:600 17px/1 var(--book-display);letter-spacing:.14em;text-transform:uppercase;
+  box-shadow:0 1px 1px rgba(255,255,255,.5) inset,0 -1px 1px rgba(0,0,0,.25) inset,0 2px 4px rgba(0,0,0,.4)}
+.plate::before,.plate::after{content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3c4,#8a6a2a);box-shadow:0 1px 1px rgba(0,0,0,.4)}
+.plate::before{left:8px}.plate::after{right:8px}
+.thread{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:0}
+.thread path{fill:none;stroke:#b8362b;stroke-width:1.7;stroke-linecap:round}
+.thread path.shadow{stroke:rgba(0,0,0,.35);stroke-width:2.2;transform:translate(1px,2px)}
+.thread path.ghost{stroke-dasharray:4 6;opacity:.7}
+.gen{position:relative;display:flex;justify-content:center;align-items:flex-start;gap:30px;flex-wrap:wrap;z-index:1;padding:0 4px}
+.gen+.gen{margin-top:70px}
+.gen .lab{width:100%;text-align:left;margin:0 0 2px;font:500 18px/1.2 "Caveat",cursive;color:rgba(255,240,215,.72)}
+.unit{position:relative;display:flex;align-items:flex-start;gap:0}
+.unit.pair .pr+.pr{margin-left:-14px;margin-top:12px}
+/* one print */
+.pr{position:relative;display:block;width:var(--pw);padding:7px 7px 6px;background:var(--book-print);text-decoration:none;color:var(--ink);transform:rotate(var(--rot,0deg)) translate(var(--px,0),var(--py,0));
+  box-shadow:0 1px 1px rgba(0,0,0,.3),0 14px 22px -12px rgba(0,0,0,.65);transition:transform .25s var(--ease),box-shadow .25s var(--ease);z-index:1}
+.pr.teller{width:var(--pwt);padding:10px 10px 8px;z-index:2}
+.pr img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:50% 25%;background:#d9cfc2}
+.pr.teller img{aspect-ratio:5/4}
+.pr .cap{margin:6px 1px 0;font:500 17px/1.15 "Caveat",cursive;color:var(--chocolate);display:grid;gap:1px}
+.pr .cap b{font-weight:500;font-size:19px}
+.pr.teller .cap{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.pr.teller .cap b{font-size:24px}
+.pr .cap i{font-style:normal;font-size:14px;color:var(--ink-soft)}
+.pr .st{margin:0 1px;font:600 11.5px/1.3 var(--font-ui);color:var(--ink-faint)}
+.pr.on .st{color:var(--book-sage)}.pr.invited .st{color:var(--ochre)}
+.pr .tape{position:absolute;left:-10px;top:14px;padding:4px 10px;background:var(--accent);color:var(--on-chocolate);font:700 10px/1 var(--font-ui);letter-spacing:.14em;text-transform:uppercase;transform:rotate(-6deg);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+/* the pin, at the top edge of every print and card */
+.pin{position:absolute;left:50%;top:-5px;width:13px;height:13px;margin-left:-6px;border-radius:50%;z-index:3;background:radial-gradient(circle at 36% 32%,#ffe9a8,#c9962c 55%,#7b5a17);box-shadow:0 2px 3px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.2)}
+.pin.red{background:radial-gradient(circle at 36% 32%,#ff9a8a,#c23a2a 55%,#6e1a10)}
+/* an index card for somebody without a photograph */
+.pr.card{background:var(--paper-butter);min-height:104px;display:grid;align-content:center;justify-items:center;gap:2px;padding:14px 8px 10px;
+  background-image:repeating-linear-gradient(180deg,transparent 0 21px,rgba(42,35,32,.12) 21px 22px);background-position:0 10px}
+.pr.card .nm{font:400 27px/1 var(--script);color:var(--chocolate);transform:rotate(-2deg);white-space:nowrap}
+.pr.card .cap{margin:0;display:block;text-align:center;font-size:15px}
+.pr.card .st{text-align:center}
+.pr.card.ghost{background:rgba(251,247,238,.55);box-shadow:none;border:1.5px dashed rgba(255,255,255,.55);color:var(--on-chocolate)}
+.pr.card.ghost .nm{font:italic 500 18px/1.2 var(--book-body);color:var(--on-chocolate);transform:none}
+.pr.card.ghost .plus{font:400 30px/1 var(--font-ui);color:var(--on-chocolate)}
+@media (hover:hover) and (pointer:fine){
+  .pr:hover{z-index:5;transform:rotate(0) translate(var(--px,0),calc(var(--py,0) - 4px));box-shadow:0 1px 1px rgba(0,0,0,.3),0 26px 36px -16px rgba(0,0,0,.75)}
+  .pr.card.ghost:hover{border-color:var(--brass)}
+}
+.pr:focus-visible{outline:3px solid #3C8FB4;outline-offset:4px}
+/* the tray of people not placed yet */
+.tray{position:relative;margin:56px 0 0;padding:16px 18px 18px;border-radius:10px;background:rgba(243,235,221,.9);box-shadow:0 1px 1px rgba(0,0,0,.3),0 12px 20px -12px rgba(0,0,0,.6);z-index:1}
+.tray p{margin:0 0 10px;font:italic 400 16px/1.3 var(--book-body);color:var(--ink-faint)}
+.tray .row{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-start}
+.tray .pr.card{width:140px;padding:10px}
+.tray .pr.card .nm{font-size:25px}
+.tray .more{font:600 14px/1.3 var(--font-ui);color:var(--ochre);text-decoration:none;align-self:center}
+/* one person */
+.gen.lone{display:none}
+body.empty .gen.full,body.empty .tray,body.empty .meta{display:none}
+body.empty .gen.lone{display:flex;padding:30px 0 20px}
+.lone .col{display:grid;justify-items:center;gap:56px}
+.lone .mid{display:flex;gap:60px;align-items:center}
+
+@media (max-width:760px){
+  :root{--pw:100px;--pwt:144px}
+  .bar{padding:0 16px}.places{display:none}
+  .hero{padding:0 16px;margin-top:16px}.hero h1{font-size:38px}.cloth{padding-bottom:72px}
+  .sheet{margin:-48px 0 0;padding:20px 12px 40px;border-radius:24px 24px 0 0}
+  .head h2{font-size:18px}
+  .bench{padding:58px 10px 24px;border-radius:12px}
+  .plate{font-size:14px;padding:6px 18px}
+  .gen{gap:14px}.gen+.gen{margin-top:52px}
+  .gen .lab{text-align:center;font-size:16px}
+  .unit.pair .pr+.pr{margin-left:-10px;margin-top:10px}
+  .pr.card .nm{font-size:19px}
+  .pr.teller .cap{display:grid}
+  .pr{padding:5px 5px 4px}.pr .cap b{font-size:16px}.pr.teller .cap b{font-size:20px}.pr .cap i{font-size:12px}.pr .st{font-size:10.5px}
+  .pr.card .nm{font-size:28px}
+  .lone .mid{gap:16px}.lone .col{gap:40px}
+  .tray .pr.card{width:110px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="cloth">
+  <div class="bar"><a class="lockup" href="#">A<b>Story</b></a><div class="places"><span>Home</span><span>Archive</span><span class="on">Family</span><span>Book</span></div><span class="who">Bao Vo</span></div>
+  <div class="hero">
+    <div><p class="k">Family &amp; friends · Rose's story</p><h1>The <span class="hl">Hartleys</span></h1></div>
+    <a class="btn" href="#">+ Invite someone</a>
+  </div>
+</div>
+
+<main class="sheet">
+  <div class="head">
+    <h2 id="title">Four generations, so far</h2>
+    <p class="toggle"><a href="#" id="t-full" class="on">Full family</a> · <a href="#empty" id="t-empty">One person</a> <span class="meta">· 16 people, 2 not placed yet</span></p>
+  </div>
+
+  <div class="bench" id="bench">
+    <div class="plate">The Hartleys</div>
+    <svg class="thread" id="thread" aria-hidden="true"></svg>
+
+    <div class="gen full" data-depth="1">
+      <span class="lab">Rose's parents</span>
+      <div class="unit pair">
+        <a class="pr passed" id="walter" href="person.html" style="--rot:-2.2deg"><span class="pin"></span><img src="img/p-walter.webp" alt=""><span class="cap"><b>Walter</b><i>1912 – 1979</i></span></a>
+        <a class="pr passed" id="edith" href="person.html" style="--rot:1.6deg"><span class="pin"></span><img src="img/p-edith.webp" alt=""><span class="cap"><b>Edith</b><i>1915 – 2001</i></span></a>
+      </div>
+    </div>
+
+    <div class="gen full" data-depth="2">
+      <span class="lab">Rose, her husbands, her sister and brother</span>
+      <div class="unit pair">
+        <a class="pr passed" id="frank" href="person.html" style="--rot:-3deg"><span class="pin"></span><img src="img/p-frank.webp" alt=""><span class="cap"><b>Frank</b><i>1938 – 1998</i></span></a>
+        <a class="pr teller on" id="rose" href="person.html" data-parents="walter edith" style="--rot:.6deg"><span class="pin red"></span><span class="tape">Storyteller</span><img src="img/p-rose.webp" alt=""><span class="cap"><b>Rose Hartley</b><i>1941 –</i></span><span class="st">on A Story · 8 memories</span></a>
+        <a class="pr listed card" id="tom" href="person.html" style="--rot:2.4deg"><span class="pin"></span><span class="nm">Tom Whitfield</span><span class="cap"><i>1944 –</i></span><span class="st">not on A Story yet</span></a>
+      </div>
+      <div class="unit pair">
+        <a class="pr invited" id="peggy" href="person.html" data-parents="walter edith" style="--rot:1.8deg"><span class="pin"></span><img src="img/p-peggy.webp" alt=""><span class="cap"><b>Margaret</b><i>1944 –</i></span><span class="st">invited · waiting for them</span></a>
+        <a class="pr on" id="jim" href="person.html" style="--rot:-1.4deg"><span class="pin"></span><img src="img/p-jim.webp" alt=""><span class="cap"><b>Jim</b><i>1940 –</i></span><span class="st">on A Story</span></a>
+      </div>
+      <div class="unit">
+        <a class="pr on" id="arthur" href="person.html" data-parents="walter edith" style="--rot:-2.6deg"><span class="pin"></span><img src="img/p-arthur.webp" alt=""><span class="cap"><b>Arthur</b><i>1947 –</i></span><span class="st">on A Story · remembers 1</span></a>
+      </div>
+    </div>
+
+    <div class="gen full" data-depth="3">
+      <span class="lab">Rose's children</span>
+      <div class="unit">
+        <a class="pr on" id="daniel" href="person.html" data-parents="frank rose" style="--rot:2deg"><span class="pin"></span><img src="img/p-daniel.webp" alt=""><span class="cap"><b>Daniel</b><i>1966 –</i></span><span class="st">on A Story · you · remembers 2</span></a>
+      </div>
+      <div class="unit pair">
+        <a class="pr invited" id="anne" href="person.html" data-parents="frank rose" style="--rot:-1.2deg"><span class="pin"></span><img src="img/p-anne.webp" alt=""><span class="cap"><b>Anne</b><i>1969 –</i></span><span class="st">invited · waiting for them</span></a>
+        <a class="pr listed card" id="mark" href="person.html" style="--rot:2.8deg"><span class="pin"></span><span class="nm">Mark Keller</span><span class="cap"><i>1967 –</i></span><span class="st">not on A Story yet</span></a>
+      </div>
+      <div class="unit">
+        <a class="pr on" id="claire" href="person.html" data-parents="peggy jim" style="--rot:-2.2deg"><span class="pin"></span><img src="img/p-claire.webp" alt=""><span class="cap"><b>Claire</b><i>1972 –</i></span><span class="st">on A Story · remembers 1</span></a>
+      </div>
+    </div>
+
+    <div class="gen full" data-depth="4">
+      <span class="lab">Rose's grandchildren</span>
+      <div class="unit"><a class="pr on" id="maya" href="person.html" data-parents="daniel" style="--rot:-1.6deg"><span class="pin"></span><img src="img/p-maya.webp" alt=""><span class="cap"><b>Maya</b><i>1998 –</i></span><span class="st">on A Story</span></a></div>
+      <div class="unit"><a class="pr listed card" id="leo" href="person.html" data-parents="daniel" style="--rot:2.2deg"><span class="pin"></span><span class="nm">Leo Hartley</span><span class="cap"><i>2002 –</i></span><span class="st">not on A Story yet</span></a></div>
+      <div class="unit"><a class="pr on" id="sam" href="person.html" data-parents="anne mark" style="--rot:1.2deg"><span class="pin"></span><img src="img/p-sam.webp" alt=""><span class="cap"><b>Sam</b><i>2001 –</i></span><span class="st">on A Story</span></a></div>
+      <div class="unit"><a class="pr card ghost" href="#" data-parents="anne mark" style="--rot:-1deg"><span class="pin"></span><span class="plus">+</span><span class="nm">a child of Anne</span></a></div>
+    </div>
+
+    <!-- the one-person state: Rose's print alone, four blank cards pinned around her -->
+    <div class="gen lone" data-depth="2">
+      <div class="col">
+        <a class="pr card ghost" id="g-parent" href="#" style="--rot:-1deg"><span class="pin"></span><span class="plus">+</span><span class="nm">a parent</span></a>
+        <div class="mid">
+          <a class="pr card ghost" id="g-sib" href="#" style="--rot:1.5deg"><span class="pin"></span><span class="plus">+</span><span class="nm">a sister or brother</span></a>
+          <a class="pr teller on" id="rose2" href="person.html" style="--rot:.6deg"><span class="pin red"></span><span class="tape">Storyteller</span><img src="img/p-rose.webp" alt=""><span class="cap"><b>Rose Hartley</b><i>1941 –</i></span><span class="st">on A Story · 8 memories</span></a>
+          <a class="pr card ghost" id="g-spouse" href="#" style="--rot:-1.5deg"><span class="pin"></span><span class="plus">+</span><span class="nm">a husband or wife</span></a>
+        </div>
+        <a class="pr card ghost" id="g-child" href="#" style="--rot:1deg"><span class="pin"></span><span class="plus">+</span><span class="nm">a child</span></a>
+      </div>
+    </div>
+
+    <div class="tray">
+      <p>Not placed yet. Slide a card up to somebody, or say who they are.</p>
+      <div class="row">
+        <a class="pr listed card" href="person.html" style="--rot:-1.5deg"><span class="nm">Nora Pell</span><span class="cap"><i>1943 –</i></span><span class="st">not on A Story yet</span></a><a class="more" href="#">Add as Rose's … →</a>
+        <a class="pr listed card" href="person.html" style="--rot:1.2deg"><span class="nm">Harold Pell</span><span class="cap"><i>1940 –</i></span><span class="st">not on A Story yet</span></a><a class="more" href="#">Add as Rose's … →</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  const bench=document.getElementById('bench'), svg=document.getElementById('thread'), $=id=>document.getElementById(id);
+  const pinOf=el=>{const p=el.querySelector('.pin'), r=p.getBoundingClientRect(), b=bench.getBoundingClientRect();return {x:r.left-b.left+r.width/2,y:r.top-b.top+r.height/2};};
+  const NS='http://www.w3.org/2000/svg';
+  function string(a,b,ghost){
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2+Math.min(40,Math.abs(b.x-a.x)*0.08+10);
+    const d=`M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`;
+    ['shadow',''].forEach(c=>{const p=document.createElementNS(NS,'path');p.setAttribute('d',d);p.setAttribute('class',(c+' '+(ghost?'ghost':'')).trim());svg.appendChild(p);});
+  }
+  function draw(){
+    svg.innerHTML='';const r=bench.getBoundingClientRect();svg.setAttribute('viewBox',`0 0 ${r.width} ${r.height}`);
+    if(document.body.classList.contains('empty')){
+      const rose=pinOf($('rose2'));['g-parent','g-sib','g-spouse','g-child'].forEach(id=>string(rose,pinOf($(id)),true));return;
+    }
+    // couples: a short string between the two pins
+    document.querySelectorAll('.full .unit.pair').forEach(u=>{const ps=[...u.querySelectorAll('.pr')];for(let i=1;i<ps.length;i++)string(pinOf(ps[i-1]),pinOf(ps[i]));});
+    // parents to children
+    document.querySelectorAll('.full [data-parents]').forEach(el=>{
+      const ids=el.dataset.parents.split(' ').map(id=>$(id)).filter(Boolean);if(!ids.length)return;
+      const ps=ids.map(pinOf), a={x:ps.reduce((s,p)=>s+p.x,0)/ps.length,y:ps.reduce((s,p)=>s+p.y,0)/ps.length};
+      string(a,pinOf(el),el.classList.contains('ghost'));
+    });
+  }
+  // parallax under the pointer: the prints slide a little, deeper rows less; nothing on touch, nothing under reduced motion
+  const fine=matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion:reduce)').matches;
+  let raf=0;
+  if(fine){
+    bench.addEventListener('pointermove',e=>{const r=bench.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5;
+      bench.querySelectorAll('.gen').forEach(g=>{const d=(+g.dataset.depth||2);const k=(5-d)*2.2;g.querySelectorAll('.pr').forEach(p=>{p.style.setProperty('--px',(-nx*k*2).toFixed(1)+'px');p.style.setProperty('--py',(-ny*k).toFixed(1)+'px');});});
+      cancelAnimationFrame(raf);raf=requestAnimationFrame(draw);});
+    bench.addEventListener('pointerleave',()=>{bench.querySelectorAll('.pr').forEach(p=>{p.style.removeProperty('--px');p.style.removeProperty('--py');});setTimeout(draw,260);});
+  }
+  function mode(){const e=location.hash==='#empty';document.body.classList.toggle('empty',e);
+    $('t-full').classList.toggle('on',!e);$('t-empty').classList.toggle('on',e);
+    $('title').textContent=e?"It's you and Rose so far. Who else was there?":'Four generations, so far';requestAnimationFrame(draw);}
+  window.addEventListener('hashchange',mode);window.addEventListener('resize',draw);window.addEventListener('load',draw);
+  document.fonts&&document.fonts.ready.then(draw);mode();
+})();
+</script>
+</body>
+</html>

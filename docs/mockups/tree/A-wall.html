@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The wall · Family · A Story</title>
+<!-- Direction A, "the wall": the family as a wall of framed portraits in generations, like the illustrated
+     wall-tree posters people hang. Round portraits in thin gold frames on the ivory sheet, names in Cormorant,
+     grandparents at the top, the storyteller framed larger at the centre, spouses sharing one frame-pair,
+     soft ink branches drawn behind the frames (curved, never elbows), a "+" leaf at the end of each branch.
+     Tap a portrait: person.html. "#empty" in the address shows the one-person state. Static; nothing writes.
+     Portraits: cropped from the founder's locked master library (individual masters, no filters).
+     The sample family has one person not placed (Nora); Harold Pell is added only so the shelf shows two. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap">
+<style>
+:root{
+  --page:#F3EBDD;--sheet:#EAE0CF;--card:#FBF7EE;--support:#E9E2D8;
+  --chocolate:#4A3327;--on-chocolate:#F6F0E6;--on-chocolate-soft:#D9CFC2;
+  --ink:#2A2320;--ink-soft:#6B625B;--ink-faint:#9A8F85;
+  --accent:#B85126;--ochre:#BF7F1A;--gold:#E0A03F;--brass:#EFC75E;--pill-gold:#F2D27A;--teal-slate:#2E566A;
+  --book-sage:#55745A;--book-sage-bg:#E4E8DC;--book-print:#FFFDF8;--paper-apricot:#F9EEE0;
+  --line:rgba(42,35,32,.08);--line-strong:rgba(42,35,32,.18);
+  --shadow-2:0 1px 2px rgba(42,35,32,.06),0 16px 40px -16px rgba(42,35,32,.18);
+  --font-ui:"Montserrat","Segoe UI",system-ui,sans-serif;--font-story:"Source Serif 4",Georgia,serif;
+  --book-display:"Cormorant Garamond","Source Serif 4",Georgia,serif;--book-body:"EB Garamond",Georgia,serif;
+  --d:104px;--dt:160px;--r-sheet:28px;--ease:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:clip}
+body{background:var(--page);color:var(--ink);font:400 17px/1.55 var(--font-ui);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.cloth{position:relative;background:linear-gradient(rgba(74,51,39,.42),rgba(74,51,39,.42)),url(img/bookcloth.webp) 0 0/320px 320px,var(--chocolate);background-blend-mode:normal,overlay,normal;color:var(--on-chocolate);padding:0 0 96px}
+.bar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+.lockup{font:600 26px/1 var(--book-display);color:var(--brass);text-decoration:none}.lockup b{font-weight:600;color:#F3EBDD}
+.places{display:flex;gap:4px;background:rgba(0,0,0,.22);border-radius:999px;padding:4px}
+.places span{padding:8px 16px;border-radius:999px;font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.places span.on{background:var(--page);color:var(--chocolate)}
+.who{font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero{max-width:1120px;margin:28px auto 0;padding:0 40px;display:flex;align-items:end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.hero .k{margin:0;font:500 14px/1.4 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero h1{margin:6px 0 0;font:700 56px/1.05 var(--font-ui);letter-spacing:-.025em;color:#F6F0E6}
+.hero h1 .hl{color:var(--brass)}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px;border-radius:999px;background:var(--page);color:var(--chocolate);font:600 16px/1 var(--font-ui);text-decoration:none}
+.sheet{position:relative;max-width:1120px;margin:-64px auto 0;padding:32px 40px 56px;background:var(--page);border-radius:var(--r-sheet);box-shadow:0 1px 2px rgba(42,35,32,.08),0 24px 60px -20px rgba(42,35,32,.35)}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.head h2{margin:0;font:700 22px/1.2 var(--font-ui);letter-spacing:-.01em}
+.head .toggle{font:500 14px/1.4 var(--font-ui);color:var(--ink-soft)}
+.head .toggle a{color:var(--ochre);text-decoration:none;font-weight:600}
+.head .toggle a.on{color:var(--ink-soft);font-weight:500;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:4px}
+
+/* the wall itself */
+.wall{position:relative;padding:28px 0 8px}
+.ink{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.ink path{fill:none;stroke:#5a4a3f;stroke-width:1.5;stroke-linecap:round;opacity:.55}
+.ink path.ghost{stroke-dasharray:3 7;opacity:.45}
+.ink .leaf{fill:#8aa088;opacity:.5}
+.row{position:relative;display:flex;justify-content:center;align-items:flex-start;gap:24px;flex-wrap:wrap;min-height:60px}
+.row+.row{margin-top:72px}
+.row .lab{width:100%;margin:0 0 6px;font:500 12.5px/1.3 var(--font-ui);color:var(--ink-faint);text-align:left}
+.unit{position:relative;display:flex;align-items:flex-start;gap:0;padding:6px;border-radius:999px}
+.unit.pair{box-shadow:0 0 0 1px rgba(224,160,63,.55);padding:8px 8px}
+.unit.pair .p+.p{margin-left:4px}
+.p{position:relative;display:grid;justify-items:center;gap:0;width:calc(var(--d) + 30px);text-align:center;text-decoration:none}
+.p.teller{width:calc(var(--dt) + 40px)}
+.fr{position:relative;width:var(--d);height:var(--d);border-radius:50%;padding:5px;background:var(--page);box-shadow:0 0 0 1.5px var(--gold);transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
+.p.teller .fr{width:var(--dt);height:var(--dt);padding:7px;box-shadow:0 0 0 2px var(--gold),0 0 0 7px var(--page),0 0 0 8px rgba(224,160,63,.55)}
+.fr img,.fr .ini{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 30%;box-shadow:inset 0 0 0 1px rgba(42,35,32,.12)}
+.fr .ini{display:grid;place-items:center;background:var(--card);font:500 44px/1 "Caveat",cursive;color:var(--chocolate)}
+.p.teller .fr .ini{font-size:64px}
+.p.listed .fr{box-shadow:0 0 0 1.5px transparent;outline:1.5px dashed var(--line-strong);outline-offset:-1px}
+.p.invited .fr{box-shadow:0 0 0 2px transparent;outline:2px dotted var(--ochre);outline-offset:-1px}
+.p .name{margin-top:12px;font:600 20px/1.08 var(--book-display);color:var(--ink);text-wrap:balance}
+.p.teller .name{font-size:26px}
+.p .yrs{margin-top:2px;font:500 13px/1.3 var(--font-ui);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.p .st{font:600 12.5px/1.3 var(--font-ui);color:var(--ink-faint)}
+.p.invited .st{color:var(--ochre)}.p.on .st{color:var(--book-sage)}
+.p .ribbon{margin-top:6px;display:inline-block;padding:4px 10px;border-radius:999px;background:var(--accent);color:var(--on-chocolate);font:700 10.5px/1 var(--font-ui);letter-spacing:.14em;text-transform:uppercase}
+.p .cap{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:5;width:max-content;max-width:240px;padding:7px 11px;border-radius:10px;background:var(--card);color:var(--ink);font:500 13px/1.4 var(--font-ui);box-shadow:var(--shadow-2),0 0 0 1px var(--line);opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}
+.p:focus-visible{outline:3px solid #3C8FB4;outline-offset:6px;border-radius:12px}
+@media (hover:hover) and (pointer:fine){
+  .p:hover{z-index:4}.p:hover .fr{transform:translateY(-3px);box-shadow:0 0 0 1.5px var(--gold),0 14px 26px -14px rgba(42,35,32,.55)}
+  .p.teller:hover .fr{box-shadow:0 0 0 2px var(--gold),0 0 0 7px var(--page),0 0 0 8px rgba(224,160,63,.55),0 18px 30px -14px rgba(42,35,32,.55)}
+  .p:hover .cap,.p:focus-within .cap{opacity:1}
+}
+/* the "+" leaf at the end of a branch */
+.leafp{position:relative;display:grid;justify-items:center;width:calc(var(--d) + 8px);text-decoration:none;align-self:flex-start}
+.leafp .fr{width:calc(var(--d) - 26px);height:calc(var(--d) - 26px);margin-top:13px;padding:0;background:transparent;box-shadow:none;border:1.5px dashed var(--line-strong);display:grid;place-items:center;color:var(--ink-faint);font:500 30px/1 var(--font-ui);border-radius:50% 50% 50% 6px}
+.leafp span{margin-top:12px;font:italic 500 16px/1.2 var(--book-body);color:var(--ink-faint);text-align:center;max-width:110px}
+@media (hover:hover){.leafp:hover .fr{border-color:var(--accent);color:var(--accent)}.leafp:hover span{color:var(--accent)}}
+.leafp.up{position:absolute;left:50%;top:-56px;transform:translateX(-50%);width:auto}
+.leafp.up .fr{width:40px;height:40px;margin:0;font-size:20px}
+.leafp.up span{display:none}
+/* not placed yet */
+.shelf{margin-top:40px;padding-top:20px;border-top:1px solid var(--line)}
+.shelf p.meta{margin:0 0 12px;font:italic 400 17px/1.4 var(--book-body);color:var(--ink-faint)}
+.shelfrow{display:flex;flex-wrap:wrap;gap:12px 40px}
+.si{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;min-height:64px}
+.si .fr{width:56px;height:56px;padding:3px}
+.si .fr .ini{font-size:24px}
+.si .name{font:600 18px/1.1 var(--book-display)}
+.si .st{font:600 12.5px/1.3 var(--font-ui);color:var(--ink-faint)}
+.si .more{font:600 15px/1 var(--font-ui);color:var(--ochre);text-decoration:none;white-space:nowrap}
+/* one person */
+body.empty .row.full,body.empty .shelf,body.empty .head .meta{display:none}
+.row.lone{display:none}
+body.empty .row.lone{display:flex;padding:70px 0 40px;gap:40px}
+body.empty .wall{min-height:520px}
+.ghost{display:grid;justify-items:center;width:calc(var(--d) + 40px);text-decoration:none}
+.ghost .fr{background:transparent;box-shadow:none;border:1.5px dashed var(--line-strong);display:grid;place-items:center;color:var(--ink-faint);font:400 32px/1 var(--font-ui)}
+.ghost span{margin-top:12px;font:italic 500 17px/1.2 var(--book-body);color:var(--ink-faint)}
+@media (hover:hover){.ghost:hover .fr{border-color:var(--accent);color:var(--accent)}}
+.lone .col{display:grid;justify-items:center;gap:40px}
+
+@media (max-width:760px){
+  :root{--d:72px;--dt:104px}
+  .bar{padding:0 16px}.places{display:none}
+  .hero{padding:0 16px;margin-top:16px}.hero h1{font-size:38px}.cloth{padding-bottom:72px}
+  .sheet{margin:-48px 0 0;padding:20px 12px 48px;border-radius:24px 24px 0 0}
+  .head h2{font-size:18px}
+  .row{gap:12px}.row+.row{margin-top:56px}.row .lab{text-align:center}
+  .unit.pair{padding:4px}.unit.pair .p+.p{margin-left:0}
+  .p{width:calc(var(--d) + 18px)}.p.teller{width:calc(var(--dt) + 20px)}
+  .p .name{font-size:17px;margin-top:9px}.p.teller .name{font-size:21px}.p .yrs{font-size:12px}.p .st{font-size:11.5px}
+  .fr .ini{font-size:34px}
+  .leafp{width:calc(var(--d) + 20px)}.leafp span{font-size:14px}
+  .cap{display:none}
+  .si{grid-template-columns:56px minmax(0,1fr) auto;width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="cloth">
+  <div class="bar"><a class="lockup" href="#">A<b>Story</b></a><div class="places"><span>Home</span><span>Archive</span><span class="on">Family</span><span>Book</span></div><span class="who">Bao Vo</span></div>
+  <div class="hero">
+    <div><p class="k">Family &amp; friends · Rose's story</p><h1>The <span class="hl">Hartleys</span></h1></div>
+    <a class="btn" href="#">+ Invite someone</a>
+  </div>
+</div>
+
+<main class="sheet">
+  <div class="head">
+    <h2 id="title">Four generations, so far</h2>
+    <p class="toggle"><a href="#" id="t-full" class="on">Full family</a> · <a href="#empty" id="t-empty">One person</a> <span class="meta">· 16 people, 2 not placed yet</span></p>
+  </div>
+
+  <div class="wall" id="wall">
+    <svg class="ink" id="ink" aria-hidden="true"></svg>
+
+    <!-- grandparents -->
+    <div class="row full">
+      <span class="lab">Rose's parents</span>
+      <div class="unit pair" id="u-we">
+        <a class="p passed" id="walter" href="person.html"><span class="fr"><img src="img/p-walter.webp" alt=""></span><span class="name">Walter Carey</span><span class="yrs">1912 – 1979</span><span class="cap">Rose's father · In 2 memories</span></a>
+        <a class="p passed" id="edith" href="person.html"><span class="fr"><img src="img/p-edith.webp" alt=""></span><span class="name">Edith Carey</span><span class="yrs">1915 – 2001</span><span class="cap">Rose's mother · In 1 memory</span></a>
+        <a class="leafp up" href="#" title="Add Walter's or Edith's parents"><span class="fr">+</span><span>Add their parents</span></a>
+      </div>
+    </div>
+
+    <!-- the storyteller's generation -->
+    <div class="row full">
+      <span class="lab">Rose, her husbands, her sister and brother</span>
+      <div class="unit pair" id="u-rose">
+        <a class="p passed" id="frank" href="person.html"><span class="fr"><img src="img/p-frank.webp" alt=""></span><span class="name">Frank Hartley</span><span class="yrs">1938 – 1998</span><span class="cap">Rose's husband · In 2 memories</span></a>
+        <a class="p teller on" id="rose" href="person.html" data-parents="walter edith"><span class="fr"><img src="img/p-rose.webp" alt=""></span><span class="name">Rose Hartley</span><span class="yrs">1941 –</span><span class="st">on A Story</span><span class="ribbon">Storyteller</span><span class="cap">8 memories · Written 3 of them</span></a>
+        <a class="p listed" id="tom" href="person.html"><span class="fr"><span class="ini">T</span></span><span class="name">Tom Whitfield</span><span class="yrs">1944 –</span><span class="st">not on A Story yet</span><span class="cap">Rose's husband</span></a>
+      </div>
+      <div class="unit pair" id="u-pj">
+        <a class="p invited" id="peggy" href="person.html" data-parents="walter edith"><span class="fr"><img src="img/p-peggy.webp" alt=""></span><span class="name">Margaret Doyle</span><span class="yrs">1944 –</span><span class="st">invited · waiting for them</span><span class="cap">Rose's sister · In 1 memory</span></a>
+        <a class="p on" id="jim" href="person.html"><span class="fr"><img src="img/p-jim.webp" alt=""></span><span class="name">Jim Doyle</span><span class="yrs">1940 –</span><span class="st">on A Story</span><span class="cap">Margaret's husband</span></a>
+      </div>
+      <div class="unit">
+        <a class="p on" id="arthur" href="person.html" data-parents="walter edith"><span class="fr"><img src="img/p-arthur.webp" alt=""></span><span class="name">Arthur Carey</span><span class="yrs">1947 –</span><span class="st">on A Story</span><span class="cap">Rose's brother · What they remember: 1</span></a>
+      </div>
+      <a class="leafp" href="#" data-parents="walter edith"><span class="fr">+</span><span>Add a sister or brother</span></a>
+    </div>
+
+    <!-- children -->
+    <div class="row full">
+      <span class="lab">Rose's children</span>
+      <div class="unit">
+        <a class="p on" id="daniel" href="person.html" data-parents="frank rose"><span class="fr"><img src="img/p-daniel.webp" alt=""></span><span class="name">Daniel Hartley</span><span class="yrs">1966 –</span><span class="st">on A Story</span><span class="cap">Rose's son · you · What they remember: 2</span></a>
+      </div>
+      <div class="unit pair" id="u-am">
+        <a class="p invited" id="anne" href="person.html" data-parents="frank rose"><span class="fr"><img src="img/p-anne.webp" alt=""></span><span class="name">Anne Keller</span><span class="yrs">1969 –</span><span class="st">invited · waiting for them</span><span class="cap">Rose's daughter</span></a>
+        <a class="p listed" id="mark" href="person.html"><span class="fr"><span class="ini">M</span></span><span class="name">Mark Keller</span><span class="yrs">1967 –</span><span class="st">not on A Story yet</span><span class="cap">Anne's husband</span></a>
+      </div>
+      <div class="unit">
+        <a class="p on" id="claire" href="person.html" data-parents="peggy jim"><span class="fr"><img src="img/p-claire.webp" alt=""></span><span class="name">Claire Doyle</span><span class="yrs">1972 –</span><span class="st">on A Story</span><span class="cap">Rose's niece · What they remember: 1</span></a>
+      </div>
+      <a class="leafp" href="#" data-parents="frank rose"><span class="fr">+</span><span>Add a child of Rose</span></a>
+    </div>
+
+    <!-- grandchildren -->
+    <div class="row full">
+      <span class="lab">Rose's grandchildren</span>
+      <div class="unit">
+        <a class="p on" id="maya" href="person.html" data-parents="daniel"><span class="fr"><img src="img/p-maya.webp" alt=""></span><span class="name">Maya Hartley</span><span class="yrs">1998 –</span><span class="st">on A Story</span><span class="cap">Rose's granddaughter</span></a>
+      </div>
+      <div class="unit">
+        <a class="p listed" id="leo" href="person.html" data-parents="daniel"><span class="fr"><span class="ini">L</span></span><span class="name">Leo Hartley</span><span class="yrs">2002 –</span><span class="st">not on A Story yet</span><span class="cap">Rose's grandson</span></a>
+      </div>
+      <div class="unit">
+        <a class="p on" id="sam" href="person.html" data-parents="anne mark"><span class="fr"><img src="img/p-sam.webp" alt=""></span><span class="name">Sam Keller</span><span class="yrs">2001 –</span><span class="st">on A Story</span><span class="cap">Rose's grandson</span></a>
+      </div>
+      <a class="leafp" href="#" data-parents="anne mark"><span class="fr">+</span><span>Add a child of Anne</span></a>
+    </div>
+
+    <!-- the one-person state: the storyteller alone, four places that invite -->
+    <div class="row lone">
+      <div class="col">
+        <a class="ghost" id="g-parent" href="#"><span class="fr">+</span><span>a parent</span></a>
+        <div style="display:flex;gap:40px;align-items:center">
+          <a class="ghost" id="g-sib" href="#"><span class="fr">+</span><span>a sister or brother</span></a>
+          <a class="p teller on" id="rose2" href="person.html"><span class="fr"><img src="img/p-rose.webp" alt=""></span><span class="name">Rose Hartley</span><span class="yrs">1941 –</span><span class="st">on A Story</span><span class="ribbon">Storyteller</span></a>
+          <a class="ghost" id="g-spouse" href="#"><span class="fr">+</span><span>a husband or wife</span></a>
+        </div>
+        <a class="ghost" id="g-child" href="#"><span class="fr">+</span><span>a child</span></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="shelf">
+    <p class="meta">Not placed yet. Drag one onto the wall, or say who they are.</p>
+    <div class="shelfrow">
+      <div class="si"><span class="fr"><span class="ini">N</span></span><div><div class="name">Nora Pell</div><div class="st">1943 – · not on A Story yet</div></div><a class="more" href="#">Add as Rose's … →</a></div>
+      <div class="si"><span class="fr"><span class="ini">H</span></span><div><div class="name">Harold Pell</div><div class="st">1940 – · not on A Story yet</div></div><a class="more" href="#">Add as Rose's … →</a></div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  const wall=document.getElementById('wall'), svg=document.getElementById('ink');
+  const $=id=>document.getElementById(id);
+  const centre=el=>{const f=el.querySelector('.fr'), r=f.getBoundingClientRect(), b=el.getBoundingClientRect(), w=wall.getBoundingClientRect();
+    return {x:r.left-w.left+r.width/2, top:r.top-w.top, bottom:b.top-w.top+b.height+6};};
+  function path(a,b,ghost){
+    const dy=Math.max(28,(b.top-a.bottom)*0.55), bend=(b.x-a.x)*0.08;
+    const d=`M ${a.x} ${a.bottom} C ${a.x+bend} ${a.bottom+dy}, ${b.x-bend} ${b.top-dy}, ${b.x} ${b.top-2}`;
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); if(ghost)p.setAttribute('class','ghost'); return p;
+  }
+  function leaf(x,y,angle){
+    const e=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    e.setAttribute('cx',x);e.setAttribute('cy',y);e.setAttribute('rx',7);e.setAttribute('ry',3.2);e.setAttribute('class','leaf');e.setAttribute('transform',`rotate(${angle} ${x} ${y})`);return e;
+  }
+  function draw(){
+    svg.innerHTML='';
+    const r=wall.getBoundingClientRect(); svg.setAttribute('viewBox',`0 0 ${r.width} ${r.height}`);
+    if(document.body.classList.contains('empty')){
+      const rose=centre($('rose2'));
+      [['g-parent',true],['g-child',false]].forEach(([id,up])=>{const g=centre($(id)); svg.appendChild(path(up?g:rose, up?rose:g, true));});
+      [['g-sib'],['g-spouse']].forEach(([id])=>{const g=centre($(id)); const m=(rose.top+rose.bottom)/2;
+        const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+        p.setAttribute('d',`M ${rose.x} ${m} C ${(rose.x+g.x)/2} ${m-24}, ${(rose.x+g.x)/2} ${m-24}, ${g.x} ${(g.top+g.bottom)/2}`);p.setAttribute('class','ghost');svg.appendChild(p);});
+      return;
+    }
+    document.querySelectorAll('.full [data-parents]').forEach(el=>{
+      const ids=el.dataset.parents.split(' ').map(id=>$(id)).filter(Boolean);
+      if(!ids.length||!el.offsetParent)return;
+      const cs=ids.map(centre), a={x:cs.reduce((s,c)=>s+c.x,0)/cs.length, bottom:Math.max(...cs.map(c=>c.bottom))};
+      const b=centre(el), ghost=el.classList.contains('leafp');
+      svg.appendChild(path(a,b,ghost));
+      if(!ghost){svg.appendChild(leaf(b.x-9,b.top-14,-35));}
+    });
+  }
+  function mode(){document.body.classList.toggle('empty',location.hash==='#empty');
+    $('t-full').classList.toggle('on',location.hash!=='#empty');$('t-empty').classList.toggle('on',location.hash==='#empty');
+    $('title').textContent=location.hash==='#empty'?"It's you and Rose so far. Who else was there?":'Four generations, so far';
+    requestAnimationFrame(draw);}
+  window.addEventListener('hashchange',mode);window.addEventListener('resize',draw);window.addEventListener('load',draw);
+  document.fonts&&document.fonts.ready.then(draw);mode();
+})();
+</script>
+</body>
+</html>

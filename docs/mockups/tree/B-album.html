@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The album · Family · A Story</title>
+<!-- Direction B, "the album": no chart at all. Generations as rows of photo cards hanging off the founder's
+     terracotta rail with dots (the "Living timeline" language), the storyteller's row first with the "Family layer"
+     (one big photograph, a quote, "From family" as faces with quoted lines, two filled tiles), a quiet heading per
+     row ("Rose's parents", "Rose's children"), the decades on the rail. Relationships are implied by grouping:
+     a couple shares one card-group. This is the Remento/Storyworth way and the strongest on a phone.
+     Tap a card: person.html. "#empty" shows the one-person state. Static; nothing writes.
+     Portraits: cropped from the founder's locked master library (individual masters, no filters).
+     The sample family has one person not placed (Nora); Harold Pell is added only so the shelf shows two. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap">
+<style>
+:root{
+  --page:#F3EBDD;--sheet:#EAE0CF;--card:#FBF7EE;--support:#E9E2D8;
+  --chocolate:#4A3327;--on-chocolate:#F6F0E6;--on-chocolate-soft:#D9CFC2;
+  --ink:#2A2320;--ink-soft:#6B625B;--ink-faint:#9A8F85;
+  --accent:#B85126;--ochre:#BF7F1A;--gold:#E0A03F;--brass:#EFC75E;--pill-gold:#F2D27A;--teal-slate:#2E566A;
+  --book-sage:#55745A;--book-sage-bg:#E4E8DC;--book-print:#FFFDF8;--paper-apricot:#F9EEE0;--paper-sage:#E7EFE3;--paper-blush:#F8ECEC;--paper-butter:#F8F3DF;
+  --line:rgba(42,35,32,.08);--line-strong:rgba(42,35,32,.18);
+  --shadow-2:0 1px 2px rgba(42,35,32,.06),0 16px 40px -16px rgba(42,35,32,.18);
+  --font-ui:"Montserrat","Segoe UI",system-ui,sans-serif;--font-story:"Source Serif 4",Georgia,serif;
+  --book-display:"Cormorant Garamond","Source Serif 4",Georgia,serif;--book-body:"EB Garamond",Georgia,serif;
+  --r-card:22px;--r-sheet:28px;--ease:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:clip}
+body{background:var(--page);color:var(--ink);font:400 17px/1.55 var(--font-ui);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.cloth{position:relative;background:linear-gradient(rgba(74,51,39,.42),rgba(74,51,39,.42)),url(img/bookcloth.webp) 0 0/320px 320px,var(--chocolate);background-blend-mode:normal,overlay,normal;color:var(--on-chocolate);padding:0 0 96px}
+.bar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+.lockup{font:600 26px/1 var(--book-display);color:var(--brass);text-decoration:none}.lockup b{font-weight:600;color:#F3EBDD}
+.places{display:flex;gap:4px;background:rgba(0,0,0,.22);border-radius:999px;padding:4px}
+.places span{padding:8px 16px;border-radius:999px;font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.places span.on{background:var(--page);color:var(--chocolate)}
+.who{font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero{max-width:1120px;margin:28px auto 0;padding:0 40px;display:flex;align-items:end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.hero .k{margin:0;font:500 14px/1.4 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero h1{margin:6px 0 0;font:700 56px/1.05 var(--font-ui);letter-spacing:-.025em;color:#F6F0E6}
+.hero h1 .hl{color:var(--brass)}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px;border-radius:999px;background:var(--page);color:var(--chocolate);font:600 16px/1 var(--font-ui);text-decoration:none}
+.sheet{position:relative;max-width:1120px;margin:-64px auto 0;padding:32px 40px 64px;background:var(--page);border-radius:var(--r-sheet);box-shadow:0 1px 2px rgba(42,35,32,.08),0 24px 60px -20px rgba(42,35,32,.35)}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+.head h2{margin:0;font:700 22px/1.2 var(--font-ui);letter-spacing:-.01em}
+.head .toggle{font:500 14px/1.4 var(--font-ui);color:var(--ink-soft)}
+.head .toggle a{color:var(--ochre);text-decoration:none;font-weight:600}
+.head .toggle a.on{color:var(--ink-soft);font-weight:500;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:4px}
+
+/* the rail */
+.rail{position:relative;padding-left:64px}
+.rail::before{content:"";position:absolute;left:18px;top:14px;bottom:24px;width:2px;background:var(--accent);opacity:.7;border-radius:2px}
+.stop{position:relative;display:flow-root;padding:0 0 44px}
+.stop::before{content:"";position:absolute;left:-52px;top:10px;width:14px;height:14px;border-radius:50%;background:var(--page);border:2px solid var(--accent)}
+.stop.first::before{background:var(--accent)}
+.stop .dec{position:absolute;left:-64px;top:34px;width:38px;text-align:center;font:700 11.5px/1.2 var(--font-ui);letter-spacing:.06em;color:var(--accent)}
+.stop h3{margin:0 0 14px;padding-top:6px;font:700 13px/1.3 var(--font-ui);letter-spacing:.02em;color:var(--ink-soft)}
+.stop h3 b{font-weight:700;color:var(--ink)}
+.stop h3 .n{font-weight:500;color:var(--ink-faint)}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start}
+.group{display:grid;grid-template-columns:1fr 1fr;gap:16px;grid-column:span 2;position:relative;padding-top:12px}
+.group::before{content:attr(data-label);position:absolute;left:0;top:-18px;font:italic 500 14px/1 var(--book-body);color:var(--ink-faint)}
+.group::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--gold);opacity:.5}
+
+/* one card */
+.pc{position:relative;display:block;padding:8px 8px 12px;border-radius:18px;background:var(--card);text-decoration:none;color:inherit;transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
+.pc .ph{position:relative;display:block;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--support)}
+.pc .ph img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 25%}
+.pc .ph.wide{aspect-ratio:4/3}
+.pc .nophoto{position:relative;display:grid;place-items:center;aspect-ratio:1/1;border-radius:12px;background:var(--paper-butter);box-shadow:inset 0 0 0 1px var(--line)}
+.pc .nophoto span{font:500 44px/1 "Caveat",cursive;color:var(--chocolate);transform:rotate(-3deg)}
+.pc .nophoto small{position:absolute;bottom:10px;font:500 12px/1 var(--font-ui);color:var(--ink-faint)}
+.pc .nm{margin:10px 2px 0;font:600 20px/1.1 var(--book-display);color:var(--ink);text-wrap:balance}
+.pc .yr{margin:2px 2px 0;font:500 13px/1.3 var(--font-ui);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.pc .st{margin:0 2px;font:600 12.5px/1.35 var(--font-ui);color:var(--ink-faint)}
+.pc.invited .st{color:var(--ochre)}.pc.on .st{color:var(--book-sage)}
+.pc .rem{margin:6px 2px 0;font:500 13px/1.35 var(--font-ui);color:var(--ink-soft)}
+.pc .rem b{font-weight:600;color:var(--ink)}
+.pc .ribbon{position:absolute;left:14px;top:14px;padding:5px 10px;border-radius:999px;background:var(--accent);color:var(--on-chocolate);font:700 10.5px/1 var(--font-ui);letter-spacing:.14em;text-transform:uppercase}
+.pc .env{position:absolute;right:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--card);color:var(--ochre);display:grid;place-items:center;font-size:13px;box-shadow:0 0 0 1px var(--line-strong)}
+@media (hover:hover){.pc:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}}
+.pc:focus-visible{outline:3px solid #3C8FB4;outline-offset:3px}
+
+/* the storyteller's row: the family layer */
+.teller{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,4fr) minmax(0,3fr);gap:16px;align-items:start}
+.teller .pc.big{padding:10px 10px 14px;background:var(--paper-apricot)}
+.teller .pc.big .ph{aspect-ratio:4/3}
+.teller .pc.big .nm{font-size:30px;margin-top:12px}
+.teller .pc.big .yr{font-size:14px}
+.teller .pc.big .said{margin:10px 2px 0;font:400 18px/1.45 var(--font-story);color:var(--ink)}
+.teller .pc.big .said small{display:block;margin-top:6px;font:500 12.5px/1.3 var(--font-ui);color:var(--ink-soft)}
+.voices{padding:4px 4px 0}
+.voices h4{margin:0 0 10px;font:700 15px/1.2 var(--font-ui);letter-spacing:-.01em}
+.voices h4 .hl{color:var(--ochre)}
+.voice{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.voice:first-of-type{border-top:0;padding-top:0}
+.voice img{width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1.5px var(--gold),0 0 0 3px var(--page)}
+.voice q{display:block;font:italic 400 16.5px/1.4 var(--book-body);quotes:"“" "”"}
+.voice q::before{content:open-quote}.voice q::after{content:close-quote}
+.voice .by{margin-top:3px;font:500 12.5px/1.3 var(--font-ui);color:var(--ink-soft)}
+.voice .by b{font-weight:600;color:var(--ink)}
+.tiles{display:grid;gap:10px;margin-top:10px}
+.tile{display:grid;gap:3px;min-height:72px;padding:14px 16px;border-radius:16px;background:var(--teal-slate);color:var(--on-chocolate);text-decoration:none}
+.tile.gold{background:var(--pill-gold);color:var(--chocolate)}
+.tile b{font:700 16px/1.2 var(--font-ui)}.tile span{font:500 12.5px/1.3 var(--font-ui);opacity:.85}
+.spouses{display:grid;gap:12px}
+.spouses .pc{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:center;padding:8px}
+.spouses .pc .ph,.spouses .pc .nophoto{width:72px;aspect-ratio:1/1;border-radius:10px}
+.spouses .pc .nophoto span{font-size:30px}
+.spouses .pc .nm{margin-top:0;font-size:19px}
+.spouses .pc .rem{margin-top:3px}
+.spouses .lab{font:italic 500 14px/1.2 var(--book-body);color:var(--ink-faint)}
+
+/* not placed yet, and the one-person state */
+.shelf .cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.shelf .pc .more{display:block;margin:8px 2px 0;font:600 14px/1.3 var(--font-ui);color:var(--ochre)}
+.ask{display:grid;place-items:center;align-content:center;gap:6px;align-self:stretch;min-height:200px;padding:18px 14px;border-radius:18px;border:1.5px dashed var(--line-strong);text-decoration:none;text-align:center;color:var(--ink-faint)}
+.ask b{font:400 34px/1 var(--font-ui)}.ask span{font:italic 500 17px/1.2 var(--book-body)}
+@media (hover:hover){.ask:hover{border-color:var(--accent);color:var(--accent)}}
+.stop.lone{display:none}
+body.empty .stop.full,body.empty .shelf,body.empty .meta{display:none}
+body.empty .stop.lone{display:block}
+
+@media (max-width:760px){
+  .bar{padding:0 16px}.places{display:none}
+  .hero{padding:0 16px;margin-top:16px}.hero h1{font-size:38px}.cloth{padding-bottom:72px}
+  .sheet{margin:-48px 0 0;padding:20px 16px 48px;border-radius:24px 24px 0 0}
+  .head{margin-bottom:20px}.head h2{font-size:18px}
+  .rail{padding-left:40px}.rail::before{left:9px}
+  .stop::before{left:-37px;top:8px}
+  .stop .dec{left:-44px;top:30px;width:30px;font-size:10px}
+  .stop{padding-bottom:32px}
+  .cards{grid-template-columns:1fr 1fr;gap:12px}
+  .group{grid-column:span 2;gap:12px}
+  .teller{grid-template-columns:1fr}
+  .spouses{grid-template-columns:1fr;gap:10px}
+  .pc .nm{font-size:18px}
+  .teller .pc.big .nm{font-size:26px}
+  .shelf .cards{grid-template-columns:1fr 1fr}
+  .tiles{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="cloth">
+  <div class="bar"><a class="lockup" href="#">A<b>Story</b></a><div class="places"><span>Home</span><span>Archive</span><span class="on">Family</span><span>Book</span></div><span class="who">Bao Vo</span></div>
+  <div class="hero">
+    <div><p class="k">Family &amp; friends · Rose's story</p><h1>The <span class="hl">Hartleys</span></h1></div>
+    <a class="btn" href="#">+ Invite someone</a>
+  </div>
+</div>
+
+<main class="sheet">
+  <div class="head">
+    <h2 id="title">Four generations, so far</h2>
+    <p class="toggle"><a href="#" id="t-full" class="on">Full family</a> · <a href="#empty" id="t-empty">One person</a> <span class="meta">· 16 people, 2 not placed yet</span></p>
+  </div>
+
+  <div class="rail">
+
+    <!-- the storyteller's row first -->
+    <section class="stop first">
+      <span class="dec">1940s</span>
+      <h3><b>Rose</b>, the storyteller <span class="n">· with Frank, and Tom</span></h3>
+      <div class="teller">
+        <a class="pc big on" href="person.html">
+          <span class="ph"><img src="img/wedding-1961.webp" alt=""><span class="ribbon">Storyteller</span></span>
+          <div class="nm">Rose Hartley</div>
+          <div class="yr">1941 – &nbsp;·&nbsp; <span style="color:var(--book-sage);font-weight:600">on A Story</span></div>
+          <div class="rem"><b>8 memories</b> · 3 of them written · the next question is waiting</div>
+          <p class="said">“We had the cake on a card table because the proper one wouldn't fit through the door.”<small>From “The day you were married”, on the phone, 12 October</small></p>
+        </a>
+        <div class="voices">
+          <h4>From <span class="hl">family</span></h4>
+          <div class="voice"><img src="img/p-daniel.webp" alt=""><div><q>Mum still has the card table. It's in the garage under the paint tins.</q><p class="by"><b>Daniel</b> · her son</p></div></div>
+          <div class="voice"><img src="img/p-arthur.webp" alt=""><div><q>I carried that cake from the car. Heavier than it looked.</q><p class="by"><b>Arthur</b> · her brother</p></div></div>
+          <div class="voice"><img src="img/p-claire.webp" alt=""><div><q>Aunt Rose taught me the waltz in her kitchen.</q><p class="by"><b>Claire</b> · her niece</p></div></div>
+          <div class="tiles">
+            <a class="tile" href="#"><b>Add a photo</b><span>of Rose, or of a day with her</span></a>
+            <a class="tile gold" href="#"><b>Add a memory</b><span>something you remember</span></a>
+          </div>
+        </div>
+        <div class="spouses">
+          <span class="lab">Rose's husbands</span>
+          <a class="pc passed" href="person.html"><span class="ph"><img src="img/p-frank.webp" alt=""></span><div><div class="nm">Frank Hartley</div><div class="yr">1938 – 1998</div><div class="rem">In <b>2</b> memories</div></div></a>
+          <a class="pc listed" href="person.html"><span class="nophoto"><span>T</span></span><div><div class="nm">Tom Whitfield</div><div class="yr">1944 –</div><div class="st">not on A Story yet</div></div></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="stop full">
+      <span class="dec">1910s</span>
+      <h3><b>Rose's parents</b></h3>
+      <div class="cards">
+        <div class="group" data-label="Walter &amp; Edith, married 1938">
+          <a class="pc passed" href="person.html"><span class="ph"><img src="img/porch-1952.webp" alt="" style="object-position:62% 30%"></span><div class="nm">Walter Carey</div><div class="yr">1912 – 1979</div><div class="rem">In <b>2</b> memories</div></a>
+          <a class="pc passed" href="person.html"><span class="ph"><img src="img/p-edith.webp" alt=""></span><div class="nm">Edith Carey</div><div class="yr">1915 – 2001</div><div class="rem">In <b>1</b> memory</div></a>
+        </div>
+        <a class="ask" href="#"><b>+</b><span>Walter's parents</span></a>
+        <a class="ask" href="#"><b>+</b><span>Edith's parents</span></a>
+      </div>
+    </section>
+
+    <section class="stop full">
+      <span class="dec">1940s</span>
+      <h3><b>Rose's sister and brother</b></h3>
+      <div class="cards">
+        <div class="group" data-label="Margaret &amp; Jim">
+          <a class="pc invited" href="person.html"><span class="ph"><img src="img/laughter-1986.webp" alt="" style="object-position:22% 40%"><span class="env">✉</span></span><div class="nm">Margaret Doyle</div><div class="yr">1944 –</div><div class="st">invited · waiting for them</div><div class="rem">In <b>1</b> memory</div></a>
+          <a class="pc on" href="person.html"><span class="ph"><img src="img/p-jim.webp" alt=""></span><div class="nm">Jim Doyle</div><div class="yr">1940 –</div><div class="st">on A Story</div></a>
+        </div>
+        <a class="pc on" href="person.html"><span class="ph"><img src="img/dinner-1980.webp" alt="" style="object-position:8% 35%"></span><div class="nm">Arthur Carey</div><div class="yr">1947 –</div><div class="st">on A Story</div><div class="rem">What they remember: <b>1</b></div></a>
+        <a class="ask" href="#"><b>+</b><span>a sister or brother</span></a>
+      </div>
+    </section>
+
+    <section class="stop full">
+      <span class="dec">1960s</span>
+      <h3><b>Rose's children</b> <span class="n">· and Margaret's</span></h3>
+      <div class="cards">
+        <a class="pc on" href="person.html"><span class="ph"><img src="img/p-daniel.webp" alt=""></span><div class="nm">Daniel Hartley</div><div class="yr">1966 – &nbsp;·&nbsp; you</div><div class="st">on A Story</div><div class="rem">What they remember: <b>2</b></div></a>
+        <div class="group" data-label="Anne &amp; Mark">
+          <a class="pc invited" href="person.html"><span class="ph"><img src="img/together-2026.webp" alt="" style="object-position:12% 30%"><span class="env">✉</span></span><div class="nm">Anne Keller</div><div class="yr">1969 –</div><div class="st">invited · waiting for them</div></a>
+          <a class="pc listed" href="person.html"><span class="nophoto"><span>Mark</span><small>Add a photo</small></span><div class="nm">Mark Keller</div><div class="yr">1967 –</div><div class="st">not on A Story yet</div></a>
+        </div>
+        <a class="pc on" href="person.html"><span class="ph"><img src="img/graduation-1994.webp" alt="" style="object-position:55% 30%"></span><div class="nm">Claire Doyle</div><div class="yr">1972 – &nbsp;·&nbsp; Margaret's</div><div class="st">on A Story</div><div class="rem">What they remember: <b>1</b></div></a>
+      </div>
+    </section>
+
+    <section class="stop full">
+      <span class="dec">2000s</span>
+      <h3><b>Rose's grandchildren</b></h3>
+      <div class="cards">
+        <a class="pc on" href="person.html"><span class="ph"><img src="img/p-maya.webp" alt=""></span><div class="nm">Maya Hartley</div><div class="yr">1998 – &nbsp;·&nbsp; Daniel's</div><div class="st">on A Story</div></a>
+        <a class="pc listed" href="person.html"><span class="nophoto"><span>Leo</span><small>Add a photo</small></span><div class="nm">Leo Hartley</div><div class="yr">2002 – &nbsp;·&nbsp; Daniel's</div><div class="st">not on A Story yet</div></a>
+        <a class="pc on" href="person.html"><span class="ph"><img src="img/roommates-2019.webp" alt="" style="object-position:28% 30%"></span><div class="nm">Sam Keller</div><div class="yr">2001 – &nbsp;·&nbsp; Anne's</div><div class="st">on A Story</div></a>
+        <a class="ask" href="#"><b>+</b><span>a grandchild</span></a>
+      </div>
+    </section>
+
+    <section class="stop full shelf">
+      <h3><b>Not placed yet</b> <span class="n">· say who they are to Rose</span></h3>
+      <div class="cards">
+        <a class="pc listed" href="person.html"><span class="nophoto"><span>Nora</span></span><div class="nm">Nora Pell</div><div class="yr">1943 –</div><div class="st">not on A Story yet</div><span class="more">Add as Rose's … →</span></a>
+        <a class="pc listed" href="person.html"><span class="nophoto"><span>Harold</span></span><div class="nm">Harold Pell</div><div class="yr">1940 –</div><div class="st">not on A Story yet</div><span class="more">Add as Rose's … →</span></a>
+      </div>
+    </section>
+
+    <!-- the one-person state -->
+    <section class="stop lone">
+      <h3><b>Who else was there?</b> <span class="n">· each one becomes a card here</span></h3>
+      <div class="cards">
+        <a class="ask" href="#"><b>+</b><span>a parent of Rose</span></a>
+        <a class="ask" href="#"><b>+</b><span>a sister or brother</span></a>
+        <a class="ask" href="#"><b>+</b><span>a husband or wife</span></a>
+        <a class="ask" href="#"><b>+</b><span>a child of Rose</span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  function mode(){const e=location.hash==='#empty';document.body.classList.toggle('empty',e);
+    $('t-full').classList.toggle('on',!e);$('t-empty').classList.toggle('on',e);
+    $('title').textContent=e?"It's you and Rose so far. Who else was there?":'Four generations, so far';
+    document.querySelectorAll('.spouses,.stop.first .n').forEach(x=>x.style.display=e?'none':'');}
+  window.addEventListener('hashchange',mode);mode();
+})();
+</script>
+</body>
+</html>

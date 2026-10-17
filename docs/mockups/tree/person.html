@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rose Hartley · A Story</title>
+<!-- The page a tap on any portrait opens, shared by the three tree directions (A, B, C).
+     Built from the founder's own "Family layer" and "Living timeline" phone screens: one big photograph,
+     a title, a quote, "From family" as faces with quoted lines, two filled tiles, then the terracotta
+     rail with dots and photo cards hanging off it. Static mockup; nothing here writes. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Caveat:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&display=swap">
+<style>
+:root{
+  --page:#F3EBDD;--sheet:#EAE0CF;--card:#FBF7EE;--support:#E9E2D8;
+  --chocolate:#4A3327;--chocolate-deep:#3B291D;--on-chocolate:#F6F0E6;--on-chocolate-soft:#D9CFC2;
+  --ink:#2A2320;--ink-soft:#6B625B;--ink-faint:#9A8F85;
+  --accent:#B85126;--ochre:#BF7F1A;--gold:#E0A03F;--brass:#EFC75E;--pill-gold:#F2D27A;--teal-slate:#2E566A;--teal:#0F4A58;
+  --book-sage:#55745A;--book-sage-bg:#E4E8DC;--book-print:#FFFDF8;
+  --paper-apricot:#F9EEE0;--paper-sage:#E7EFE3;--paper-blush:#F8ECEC;
+  --line:rgba(42,35,32,.08);--line-strong:rgba(42,35,32,.18);
+  --shadow-2:0 1px 2px rgba(42,35,32,.06),0 16px 40px -16px rgba(42,35,32,.18);
+  --font-ui:"Montserrat","Segoe UI",system-ui,sans-serif;--font-story:"Source Serif 4",Georgia,serif;
+  --book-display:"Cormorant Garamond","Source Serif 4",Georgia,serif;--book-body:"EB Garamond","Source Serif 4",Georgia,serif;
+  --r-card:22px;--r-sheet:28px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:clip}
+body{background:var(--page);color:var(--ink);font:400 17px/1.55 var(--font-ui);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+/* the cloth */
+.cloth{position:relative;background:linear-gradient(rgba(74,51,39,.42),rgba(74,51,39,.42)),url(img/bookcloth.webp) 0 0/320px 320px,var(--chocolate);background-blend-mode:normal,overlay,normal;color:var(--on-chocolate);padding:0 0 92px}
+.bar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+.lockup{font:600 26px/1 var(--book-display);color:var(--brass);letter-spacing:.01em;text-decoration:none}
+.lockup b{font-weight:600;color:#F3EBDD}
+.places{display:flex;gap:4px;background:rgba(0,0,0,.22);border-radius:999px;padding:4px}
+.places span{padding:8px 16px;border-radius:999px;font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.places span.on{background:var(--page);color:var(--chocolate)}
+.who{font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero{max-width:1120px;margin:28px auto 0;padding:0 40px}
+.back{display:inline-flex;align-items:center;gap:6px;font:600 14px/1 var(--font-ui);color:var(--on-chocolate-soft);text-decoration:none}
+.hero h1{margin:14px 0 0;font:600 56px/1.05 var(--book-display);letter-spacing:-.01em;color:#F6F0E6}
+.hero .meta{margin:8px 0 0;font:500 15px/1.4 var(--font-ui);color:var(--on-chocolate-soft)}
+.hero .meta b{color:var(--brass);font-weight:600}
+/* the sheet */
+.sheet{position:relative;max-width:1120px;margin:-64px auto 0;padding:40px 40px 72px;background:var(--page);border-radius:var(--r-sheet);box-shadow:0 1px 2px rgba(42,35,32,.08),0 24px 60px -20px rgba(42,35,32,.35)}
+.layer{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:40px;align-items:start}
+.bigprint{margin:0;padding:10px 10px 12px;background:var(--book-print);box-shadow:0 1px 2px rgba(42,35,32,.14),0 18px 34px -16px rgba(42,35,32,.5);transform:rotate(-.6deg)}
+.bigprint img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:50% 30%}
+.bigprint figcaption{margin:8px 2px 0;font:500 15px/1.3 "Caveat",cursive;font-size:19px;color:var(--chocolate)}
+.said{margin:24px 0 0;font:400 22px/1.5 var(--font-story);color:var(--ink);text-wrap:pretty}
+.said small{display:block;margin-top:8px;font:500 13px/1.4 var(--font-ui);color:var(--ink-soft)}
+.fam h2{margin:0 0 14px;font:700 22px/1.2 var(--font-ui);letter-spacing:-.01em}
+.fam h2 .hl{color:var(--ochre)}
+.voice{display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;align-items:start;padding:14px 0;border-top:1px solid var(--line)}
+.voice:first-of-type{border-top:0;padding-top:0}
+.voice img,.voice .ini{width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1.5px var(--gold),0 0 0 4px var(--page)}
+.voice .ini{display:grid;place-items:center;background:var(--paper-apricot);font:600 22px/1 var(--book-display);color:var(--chocolate)}
+.voice q{display:block;font:italic 400 17.5px/1.45 var(--book-body);quotes:"“" "”";color:var(--ink)}
+.voice q::before{content:open-quote}.voice q::after{content:close-quote}
+.voice .by{margin-top:4px;font:500 13px/1.4 var(--font-ui);color:var(--ink-soft)}
+.voice .by b{font-weight:600;color:var(--ink)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.tile{display:grid;gap:4px;min-height:84px;padding:16px 18px;border-radius:18px;background:var(--teal-slate);color:var(--on-chocolate);text-decoration:none}
+.tile.gold{background:var(--pill-gold);color:var(--chocolate)}
+.tile b{font:700 17px/1.2 var(--font-ui)}
+.tile span{font:500 13px/1.3 var(--font-ui);opacity:.85}
+/* the living timeline */
+.timeline{margin-top:56px}
+.timeline h2{margin:0 0 6px;font:700 28px/1.12 var(--font-ui);letter-spacing:-.02em}
+.timeline h2 .hl{color:var(--ochre)}
+.timeline > p{margin:0 0 24px;font:500 15px/1.4 var(--font-ui);color:var(--ink-soft)}
+.rail{position:relative;padding-left:44px}
+.rail::before{content:"";position:absolute;left:12px;top:8px;bottom:8px;width:2px;background:var(--accent);opacity:.75;border-radius:2px}
+.decade{position:relative;margin:0 0 10px;padding:26px 0 6px;font:700 13px/1 var(--font-ui);letter-spacing:.08em;color:var(--accent);text-transform:uppercase}
+.decade:first-child{padding-top:0}
+.decade::before{content:"";position:absolute;left:-39px;top:calc(50% + 10px);width:12px;height:12px;border-radius:50%;background:var(--page);border:2px solid var(--accent)}
+.decade:first-child::before{top:calc(50% - 2px)}
+.moment{position:relative;display:grid;grid-template-columns:168px minmax(0,1fr);gap:18px;align-items:center;padding:12px 16px 12px 12px;margin:0 0 12px;border-radius:var(--r-card);background:var(--card);text-decoration:none;color:inherit;transition:transform .2s cubic-bezier(.23,1,.32,1),box-shadow .2s}
+.moment::before{content:"";position:absolute;left:-36px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--accent)}
+.moment::after{content:"";position:absolute;left:-28px;top:50%;width:24px;height:1px;background:var(--accent);opacity:.5}
+.moment .pr{padding:5px 5px 7px;background:var(--book-print);box-shadow:0 1px 2px rgba(42,35,32,.14),0 10px 20px -12px rgba(42,35,32,.45);transform:rotate(-1.2deg)}
+.moment:nth-child(odd) .pr{transform:rotate(1deg)}
+.moment .pr img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover}
+.moment h3{margin:0;font:600 24px/1.1 var(--book-display);color:var(--ink)}
+.moment .when{margin:3px 0 0;font:500 14px/1.3 var(--font-ui);color:var(--ink-soft)}
+.moment .when b{color:var(--accent);font-weight:600}
+.moment .line{margin:8px 0 0;font:italic 400 17px/1.45 var(--book-body);color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.moment .faces{display:flex;margin-top:10px}
+.moment .faces img,.moment .faces i{width:26px;height:26px;border-radius:50%;object-fit:cover;margin-right:-6px;box-shadow:0 0 0 2px var(--card)}
+.moment .faces i{display:grid;place-items:center;background:var(--paper-sage);font:600 12px/1 var(--book-display);font-style:normal;color:var(--chocolate)}
+.moment.today{background:var(--paper-apricot)}
+.moment.ask{grid-template-columns:1fr;background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-strong);border-style:dashed}
+.moment.ask p{margin:0;font:500 16px/1.4 var(--font-ui);color:var(--ink-soft)}
+.moment.ask p b{color:var(--ochre)}
+@media (hover:hover){.moment:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}.moment:hover .pr{transform:rotate(0)}}
+/* her place in the family */
+.kin{margin-top:56px}
+.kin h2{margin:0 0 16px;font:700 22px/1.2 var(--font-ui)}
+.kinrow{display:flex;flex-wrap:wrap;gap:22px 28px}
+.kp{display:grid;justify-items:center;gap:6px;width:92px;text-decoration:none;text-align:center}
+.kp img,.kp .ini{width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1.5px var(--gold),0 0 0 4px var(--page)}
+.kp .ini{display:grid;place-items:center;background:var(--card);font:500 26px/1 "Caveat",cursive;color:var(--chocolate)}
+.kp b{font:600 16px/1.1 var(--book-display);color:var(--ink)}
+.kp span{font:500 12px/1.3 var(--font-ui);color:var(--ink-faint)}
+.kp.tree b{color:var(--ochre)}
+.kp.tree .ini{background:transparent;box-shadow:0 0 0 1.5px var(--line-strong);font:600 24px/1 var(--font-ui);color:var(--ochre)}
+@media (max-width:760px){
+  .bar{padding:0 16px}.places{display:none}
+  .hero{padding:0 16px;margin-top:16px}.hero h1{font-size:40px}
+  .cloth{padding-bottom:72px}
+  .sheet{margin:-48px 0 0;padding:24px 16px 56px;border-radius:24px 24px 0 0}
+  .layer{grid-template-columns:1fr;gap:28px}
+  .said{font-size:20px}
+  .timeline h2{font-size:24px}
+  .rail{padding-left:32px}.rail::before{left:8px}
+  .decade::before{left:-29px}
+  .moment{grid-template-columns:116px minmax(0,1fr);gap:12px;padding:10px}
+  .moment::before{left:-28px}.moment::after{left:-20px;width:16px}
+  .moment h3{font-size:20px}.moment .line{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="cloth">
+  <div class="bar">
+    <a class="lockup" href="#">A<b>Story</b></a>
+    <div class="places"><span>Home</span><span>Archive</span><span class="on">Family</span><span>Book</span></div>
+    <span class="who">Bao Vo</span>
+  </div>
+  <div class="hero">
+    <a class="back" href="javascript:history.back()">← The family</a>
+    <h1>Rose Hartley</h1>
+    <p class="meta">1941 – &nbsp;·&nbsp; <b>Storyteller</b> &nbsp;·&nbsp; on A Story &nbsp;·&nbsp; 8 memories kept, 3 of them written</p>
+  </div>
+</div>
+
+<main class="sheet">
+  <section class="layer">
+    <div>
+      <figure class="bigprint">
+        <img src="img/wedding-1961.webp" alt="">
+        <figcaption>Rose and Frank, the church hall, 1961</figcaption>
+      </figure>
+      <p class="said">“We had the cake on a card table because the proper one wouldn't fit through the door. Nobody minded. Frank's mother cried through the whole first dance.”
+        <small>Rose, on the phone, 12 October 2026 · from “The day you were married”</small></p>
+    </div>
+    <aside class="fam">
+      <h2>From <span class="hl">family</span></h2>
+      <div class="voice"><img src="img/p-daniel.webp" alt=""><div><q>Mum still has the card table. It's in the garage under the paint tins.</q><p class="by"><b>Daniel</b> · her son · 2 memories</p></div></div>
+      <div class="voice"><img src="img/p-arthur.webp" alt=""><div><q>I carried that cake from the car. It was heavier than it looked.</q><p class="by"><b>Arthur</b> · her brother · 1 memory</p></div></div>
+      <div class="voice"><img src="img/p-claire.webp" alt=""><div><q>Aunt Rose taught me the waltz in her kitchen for my own wedding.</q><p class="by"><b>Claire</b> · her niece · 1 memory</p></div></div>
+      <div class="tiles">
+        <a class="tile" href="#"><b>Add a photo</b><span>of Rose, or of a day with her</span></a>
+        <a class="tile gold" href="#"><b>Add a memory</b><span>something you remember</span></a>
+      </div>
+    </aside>
+  </section>
+
+  <section class="timeline">
+    <h2>Rose's <span class="hl">living timeline</span></h2>
+    <p>What she has told us so far, in the order it happened. Tap a card to read it.</p>
+    <div class="rail">
+      <div class="decade">1940s</div>
+      <a class="moment" href="#"><div class="pr"><img src="img/porch-1952.webp" alt=""></div><div><h3>The porch on Elm Street</h3><p class="when"><b>1952</b> · Childhood · the house with the screen door</p><p class="line">“Dad would stand in the doorway like he was deciding whether to come out at all.”</p><div class="faces"><img src="img/p-walter.webp" alt=""><img src="img/p-edith.webp" alt=""></div></div></a>
+      <a class="moment" href="#"><div class="pr"><img src="img/laundry-1956.webp" alt=""></div><div><h3>Washing day</h3><p class="when"><b>1956</b> · Childhood · the garden</p><p class="line">“Mother hung the sheets so the neighbours could see how white they were.”</p><div class="faces"><img src="img/p-edith.webp" alt=""><img src="img/p-peggy.webp" alt=""></div></div></a>
+      <div class="decade">1960s</div>
+      <a class="moment" href="#"><div class="pr"><img src="img/wedding-1961.webp" alt=""></div><div><h3>The day you were married</h3><p class="when"><b>1961</b> · Love · the church hall</p><p class="line">“We had the cake on a card table because the proper one wouldn't fit through the door.”</p><div class="faces"><img src="img/p-frank.webp" alt=""><img src="img/p-arthur.webp" alt=""></div></div></a>
+      <a class="moment" href="#"><div class="pr"><img src="img/cards-1962.webp" alt=""></div><div><h3>Card nights</h3><p class="when"><b>1962</b> · Home · Thursday evenings</p><p class="line">“Frank cheated and everyone knew and nobody said.”</p><div class="faces"><img src="img/p-frank.webp" alt=""><img src="img/p-jim.webp" alt=""></div></div></a>
+      <a class="moment" href="#"><div class="pr"><img src="img/picnic-1964.webp" alt=""></div><div><h3>After the picnic</h3><p class="when"><b>1964</b> · Family · the lake</p><p class="line">“That was the summer Daniel was on the way and I couldn't sit on the grass.”</p><div class="faces"><img src="img/p-walter.webp" alt=""><img src="img/p-edith.webp" alt=""><i>T</i></div></div></a>
+      <div class="decade">1970s</div>
+      <a class="moment" href="#"><div class="pr"><img src="img/house-1973.webp" alt=""></div><div><h3>The first house</h3><p class="when"><b>1973</b> · Home · Marlow Road</p><p class="line">“We moved in with a station wagon and three trips. Anne slept in a drawer the first night.”</p><div class="faces"><img src="img/p-frank.webp" alt=""><img src="img/p-daniel.webp" alt=""><img src="img/p-anne.webp" alt=""></div></div></a>
+      <div class="decade">1980s</div>
+      <a class="moment" href="#"><div class="pr"><img src="img/dinner-1980.webp" alt=""></div><div><h3>Sunday dinner, the long version</h3><p class="when"><b>1980</b> · Family · Dad telling it again</p><p class="line">“He told the one about the goat every single Sunday and it got longer every time.”</p><div class="faces"><img src="img/p-arthur.webp" alt=""><img src="img/p-peggy.webp" alt=""><img src="img/p-claire.webp" alt=""></div></div></a>
+      <a class="moment" href="#"><div class="pr"><img src="img/phone-1981.webp" alt=""></div><div><h3>The phone in the hall</h3><p class="when"><b>1981</b> · Home · the cord that reached the stairs</p><p class="line">“Anne could talk for an hour standing on one leg.”</p><div class="faces"><img src="img/p-anne.webp" alt=""></div></div></a>
+      <div class="decade">2020s</div>
+      <a class="moment" href="#"><div class="pr"><img src="img/oldphotos-2022.webp" alt=""></div><div><h3>The box from the attic</h3><p class="when"><b>2022</b> · Family · Daniel and Anne</p><p class="line">“They found the wedding ones and rang me to ask who everybody was.”</p><div class="faces"><img src="img/p-daniel.webp" alt=""><img src="img/p-anne.webp" alt=""></div></div></a>
+      <a class="moment today" href="#"><div class="pr"><img src="img/conversation-2026.webp" alt=""></div><div><h3>Today</h3><p class="when"><b>2026</b> · Daniel's kitchen · the question for tomorrow is waiting</p><p class="line">“I'll tell you about the goat if you've got all afternoon.”</p><div class="faces"><img src="img/p-daniel.webp" alt=""></div></div></a>
+      <a class="moment ask" href="#"><p>Something missing? <b>Ask Rose about it</b> — it becomes one of tomorrow's questions, with your name on it.</p></a>
+    </div>
+  </section>
+
+  <section class="kin">
+    <h2>Rose's family</h2>
+    <div class="kinrow">
+      <a class="kp" href="#"><img src="img/p-walter.webp" alt=""><b>Walter</b><span>her father</span></a>
+      <a class="kp" href="#"><img src="img/p-edith.webp" alt=""><b>Edith</b><span>her mother</span></a>
+      <a class="kp" href="#"><img src="img/p-frank.webp" alt=""><b>Frank</b><span>her husband</span></a>
+      <a class="kp" href="#"><span class="ini">T</span><b>Tom</b><span>her husband</span></a>
+      <a class="kp" href="#"><img src="img/p-peggy.webp" alt=""><b>Margaret</b><span>her sister</span></a>
+      <a class="kp" href="#"><img src="img/p-arthur.webp" alt=""><b>Arthur</b><span>her brother</span></a>
+      <a class="kp" href="#"><img src="img/p-daniel.webp" alt=""><b>Daniel</b><span>her son</span></a>
+      <a class="kp" href="#"><img src="img/p-anne.webp" alt=""><b>Anne</b><span>her daughter</span></a>
+      <a class="kp" href="#"><img src="img/p-maya.webp" alt=""><b>Maya</b><span>her granddaughter</span></a>
+      <a class="kp" href="#"><span class="ini">L</span><b>Leo</b><span>her grandson</span></a>
+      <a class="kp" href="#"><img src="img/p-sam.webp" alt=""><b>Sam</b><span>her grandson</span></a>
+      <a class="kp tree" href="javascript:history.back()"><span class="ini">↑</span><b>The whole family</b><span>back to the tree</span></a>
+    </div>
+  </section>
+</main>
+</body>
+</html>
