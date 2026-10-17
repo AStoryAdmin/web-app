@@ -4,10 +4,10 @@
  * up, what the family added, the calls, and the most recent memories.
  * Nothing to configure; the place to come back to.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
-import MemoryCard from "../components/MemoryCard";
+import Mosaic, { InvitePrint } from "../components/Mosaic";
 import FromTheBook from "../components/FromTheBook";
 import WeekInk from "../components/delight/WeekInk";
 import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
@@ -18,11 +18,44 @@ import { greeting, noteFor, recordSkip, skipsToday, todaysDeck, todaysQuestion }
 import { isPaid } from "../lib/plan";
 import { stripDays, dotStrength, dayLabel } from "../app-core/lib/weekStrip.js";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
-import { sortByDate } from "../app-core/lib/timeline.js";
+import { memoryDate } from "../app-core/lib/timeline.js";
+import { cardMeta } from "../app-core/lib/memoryCard.js";
 import { track } from "../lib/analytics";
-import type { Memory } from "../data/stories";
+import { resurface } from "../lib/resurface";
+import { usePhotoUrl } from "../lib/photoUrls";
+import { useTilt } from "../lib/tilt";
+import type { Memory, Story } from "../data/stories";
 
+const hasPhoto = (m: Memory) => Boolean(m.cover || m.photos?.[0]);
 const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+
+/**
+ * The story's latest photograph on the cloth, beside the greeting: one
+ * large white-bordered print, tilted a little, its caption in the white
+ * margin under the picture, the whole print the way to the memory. It
+ * leans toward the pointer like the book's cover. Nothing when the story
+ * has no photograph yet.
+ */
+function HeroPrint({ memory, story }: { memory: Memory; story: Story }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  useTilt(ref, true, { x: 10, y: 7 });
+  const meta = cardMeta(story, memory) as { title: string; photo: string | null };
+  const photo = usePhotoUrl(meta.photo);
+  const when = (memoryDate(memory) as { text: string }).text.trim() || "No date yet";
+  return (
+    <div className="object hero-print-obj" style={{ perspective: 1200 }}>
+      <Link ref={ref} className="hero-print" to={`/archive/${memory.id}`} style={{ transformStyle: "preserve-3d" }} aria-label={`${meta.title}, ${when}`}>
+        <span className="hero-print-in">
+          <img src={photo ?? undefined} alt="" width={300} data-develop />
+          <span className="band">
+            <span className="title">{meta.title}</span>
+            <span className="when">{when}</span>
+          </span>
+        </span>
+      </Link>
+    </div>
+  );
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -50,8 +83,14 @@ export default function Home() {
 
   const days = stripDays(story.memories) as { key: string; label: string; day: number; count: number; today: boolean; future: boolean; offset: number }[];
   const week = days.slice(-7);
-  const recent = sortByDate(story.memories, -1).slice(0, 4) as Memory[];
   const byCreated = [...story.memories].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const kept = byCreated.filter((m) => m.status !== "in_progress");
+  const latestPhoto = kept.find(hasPhoto) ?? null;
+  // the day's quote takes the large frame when the newest memory has no photograph; the quoted memory is never also a print
+  const quoted = resurface(story);
+  const recent = kept.filter((m) => m.id !== quoted?.memory.id);
+  const quoteLeads = Boolean(quoted) && !(recent[0] && hasPhoto(recent[0]));
+  const quote = quoted ? { node: <FromTheBook story={story} />, memoryId: quoted.memory.id } : null;
   const fromFamily = byCreated.filter((m) => m.contributor).slice(0, 3);
   const progress = bookProgress(story) as { count: number; remaining: number; ratio: number; headline: string; chaptersCovered: number };
   const left = Math.max(0, deck.length - skips);
@@ -125,6 +164,7 @@ export default function Home() {
           )}
         </div>
       </div>
+      {latestPhoto && <HeroPrint memory={latestPhoto} story={story} />}
     </div>
   );
 
@@ -153,13 +193,11 @@ export default function Home() {
           </Link>
         </div>
 
-        <FromTheBook story={story} />
-
         <div className="trio">
           <div className="card" data-rise>
             <h3>{own ? "Your book" : `${story.name}'s book`}</h3>
             <div className="bookmini">
-              <img src="/book/closed-640.webp" alt="" width={56} />
+              <img src="/book/keepsake-closed.webp" alt="" width={56} />
               <div>
                 <p className="n">
                   {progress.count}
@@ -208,8 +246,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div data-rise>
-          <div className="sechead" style={{ marginTop: 0 }}>
+        <div>
+          <div className="sechead" style={{ marginTop: 0 }} data-rise>
             <h2>Recent memories</h2>
             {story.memories.length > 0 && (
               <Link className="more" to="/archive">
@@ -217,18 +255,7 @@ export default function Home() {
               </Link>
             )}
           </div>
-          {recent.length ? (
-            <div className="recent">
-              {recent.map((m, i) => (
-                <MemoryCard key={m.id} memory={m} story={story} style={{ animationDelay: `${i * 60}ms` }} />
-              ))}
-            </div>
-          ) : (
-            <div className="card empty">
-              <h2 className="story-title" style={{ fontSize: 26 }}>Nothing here yet.</h2>
-              <p>Answer the question above, or write about anything at all. The first memory is the hardest; after that they come.</p>
-            </div>
-          )}
+          {recent.length || quote ? <Mosaic memories={recent} story={story} quote={quote} limit={quoteLeads ? 4 : 5} /> : <InvitePrint story={story} />}
         </div>
       </div>
     </Shell>

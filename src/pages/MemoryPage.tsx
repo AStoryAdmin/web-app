@@ -1,29 +1,34 @@
 /**
- * One memory, read. Its title sits on the cloth with when it was, the
- * chapter and who told it. On the sheet, one reading column: the
- * photographs first, the words in the serif with a drop cap, the voice if
- * there is one, what the family remembers, and a quiet footer where the
- * memory can be made private (you and the keepers) or left public (the
- * family on A Story, and the wall if it is shared), edited, shared or
- * removed.
+ * One memory, read, the way the founder's own draft lays it out. The cloth
+ * keeps a short band: where this is, and who told it. The sheet opens with
+ * the photograph large (or, without one, the first sentence typed on the
+ * memory's paper), then the caption band with the title and when it was,
+ * three warm tiles (a photograph, more words, what you remember), the
+ * words themselves with a drop cap, the voice if there is one, what the
+ * family remembers as faces and quoted lines, the years this story lives
+ * in, and a quiet footer where the memory can be made private (you and
+ * the keepers) or left public, edited, shared or removed.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
-import { LinkIcon, LockIcon, PeopleIcon, PenIcon, PhotoIcon, TrashIcon } from "../components/icons";
+import { LinkIcon, LockIcon, PenIcon, PeopleIcon, TrashIcon } from "../components/icons";
 import AudioPlayer from "../components/archive/AudioPlayer";
 import ReadAloud from "../components/archive/ReadAloud";
 import Treasure from "../components/archive/Treasure";
 import FamilyVoices from "../components/archive/FamilyVoices";
+import ActionTiles from "../components/archive/ActionTiles";
+import YearStrip from "../components/archive/YearStrip";
+import { CaptionBand, Photograph, TypedCard } from "../components/archive/MemoryLead";
 import { smarten } from "../lib/typography";
+import { opening } from "../lib/resurface";
 import { minutesLabel, orderedPhotos, paragraphsOf } from "../components/archive/photos";
-import { useArrive } from "../components/archive/motion";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { usePhotoUrl } from "../lib/photoUrls";
-import { toldBy } from "../lib/memoryDisplay";
-import { dateLine } from "../app-core/lib/memoryCard.js";
+import { paperFor, toldBy } from "../lib/memoryDisplay";
+import { dateLine, quoteFor } from "../app-core/lib/memoryCard.js";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import type { Memory, Story } from "../data/stories";
 
@@ -52,11 +57,6 @@ function Missing() {
       </div>
     </Shell>
   );
-}
-
-function Big({ url }: { url: string }) {
-  const src = usePhotoUrl(url);
-  return <img className="rd-hero" src={src ?? undefined} alt="" />;
 }
 
 /** A small print on the strip. Under the pointer it turns over: the date is written on the back. */
@@ -100,8 +100,7 @@ export default function MemoryPage() {
   const [flipping, setFlipping] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [reading, setReading] = useState<number | null>(null);
-  const words = useRef<HTMLDivElement>(null);
-  useArrive(words, memory?.id);
+  const [compose, setCompose] = useState(false);
 
   if (account === undefined) return <Shell compact title="Memory" back="/archive"><div className="page" aria-busy="true" /></Shell>;
   if (!story || !memory) return <Missing />;
@@ -120,9 +119,12 @@ export default function MemoryPage() {
   const body = (paragraphs.length ? paragraphs : transcript.length ? paragraphsOf(transcript.join("\n\n")) : []).map(smarten);
   const viewerName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || (user?.email || "").split("@")[0] || "Someone";
   const isOwner = !!user && story.ownerId === user.id;
-  const title = memory.title?.trim() || "Untitled";
+  const title = smarten(memory.title?.trim() || "Untitled");
   const isPrivate = memory.privacy === "private";
   const number = Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === memory.id) + 1);
+  const paper = paperFor(memory);
+  const plain = body.join(" ");
+  const lead = plain ? smarten(quoteFor(opening(plain) || plain, 170) as string) : title;
 
   const share = async () => {
     const url = window.location.href;
@@ -162,30 +164,18 @@ export default function MemoryPage() {
 
   return (
     <Shell
+      compact
       back="/archive"
       hero={
-        <div className="whero">
-          <p className="label" data-rise>
-            Memory No. {number} · {own ? "Your story" : `${story.name}'s story`}
-          </p>
-          <div className="rd-chips" data-rise>
-            <span className="pill gold">{memory.era}</span>
-            {dated ? (
-              <span className="pill cream">{date}</span>
-            ) : (
-              <Link className="pill cream" to={`/write?edit=${memory.id}&details=1`}>
-                No date yet · add one
-              </Link>
-            )}
-            {people.map((p) => (
-              <Link key={p.id} className="pill cream" to={`/family/${p.id}`}>
-                {p.givenName || p.familyName || "Someone"}
-              </Link>
-            ))}
-            {memory.status === "in_progress" && <span className="pill cream">Still being written up</span>}
-          </div>
-          <h1 className="story-q wq">{title}</h1>
-          <p className="rd-told" data-rise>
+        <div className="mpd-band">
+          <nav className="mpd-crumbs" aria-label="Where this is" data-rise>
+            <Link to="/archive">Archive</Link>
+            <span aria-hidden="true">·</span>
+            <span>{own ? "Your story" : `${story.name}'s story`}</span>
+            <span aria-hidden="true">·</span>
+            <span className="here">Memory No. {number}</span>
+          </nav>
+          <p className="rd-told mpd-told" data-rise>
             <Avatar src={memory.contributor ? null : tellerPhoto} name={memory.contributor ? memory.contributor.split(",")[0] : story.name} size={40} />
             <span className="meta">
               {toldLine}
@@ -195,101 +185,86 @@ export default function MemoryPage() {
         </div>
       }
     >
-      <div className="page read">
+      <div className="page read mpd">
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
-        <div ref={words}>
-          {current && (
-            <div className="rd-photos" data-arrive>
-              <Big url={current} />
-              {photos.length > 1 && (
-                <div className="rd-strip">
-                  {photos.map((p, i) => (
-                    <Thumb key={p} url={p} on={p === current} tilt={[-3, 2, -1, 3][i % 4]} caption={memory.period?.trim() || "No date yet"} onPick={() => setShown(p)} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="rd-story" data-arrive>
-            {body.length ? (
-              body.map((p, k) => (
-                <p key={k} className={reading === k ? "reading" : undefined}>
-                  {p.split("\n").map((line, j, arr) => (
-                    <span key={j}>
-                      {line}
-                      {j < arr.length - 1 && <br />}
-                    </span>
-                  ))}
-                </p>
-              ))
-            ) : memory.status === "in_progress" ? (
-              <p className="quiet">A Story is still writing this one up from the call. The words land here when it's done.</p>
-            ) : (
-              <p className="quiet">Nothing written down yet. {memory.photos.length ? "The photographs are here, though." : ""}</p>
-            )}
-          </div>
-
-          <div className="rd-side" data-arrive>
-            <Link className="more" to={`/write?edit=${memory.id}&photo=1`}>
-              <PhotoIcon style={{ width: 16, height: 16, verticalAlign: "-3px", marginRight: 6 }} />
-              {photos.length ? "Add another photograph" : "Add a photograph"}
-            </Link>
-            {!dated && (
-              <Link className="more" to={`/write?edit=${memory.id}&details=1`}>
-                Say when it was
-              </Link>
-            )}
-            {year != null && (
-              <Link className="more" to={`/archive#y${year}`}>
-                Everything from {year}
-              </Link>
-            )}
-          </div>
-
-          {body.length > 0 && <ReadAloud paragraphs={body} label={title} onPosition={setReading} />}
-
-          {memory.audio?.length > 0 && <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />}
-
-          <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} />
-
-          {confirm ? (
-            <div className="mp-confirm" role="alertdialog" aria-labelledby="rm-h">
-              <p id="rm-h" style={{ fontWeight: 600, color: "var(--heading)" }}>
-                Remove “{title}” from {own ? "your" : `${story.name}'s`} story?
-              </p>
-              <p className="meta">The words{memory.photos.length ? ", the photographs" : ""}{memory.audio?.length ? " and the recording" : ""} go with it. This can't be undone.</p>
-              <div className="row">
-                <Button onClick={remove} loading={removing} style={{ background: "var(--danger)" }}>
-                  Remove it
-                </Button>
-                <Button variant="outline" onClick={() => setConfirm(false)} disabled={removing}>
-                  Keep it
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="rd-foot">
-              <button type="button" className={`rd-privacy${isPrivate ? " private" : ""}`} onClick={flip} disabled={flipping} aria-pressed={isPrivate} title={isPrivate ? "Make it public" : "Make it private"}>
-                {isPrivate ? <LockIcon /> : <PeopleIcon />}
-                <span className="dot" aria-hidden="true" />
-                {isPrivate ? "Private" : "Public"}
-                <small>{isPrivate ? "· you and the keepers" : "· the family, and the wall"}</small>
-              </button>
-              <Treasure memory={memory} story={story} />
-              <ButtonLink to={`/write?edit=${memory.id}`} variant="outline" small icon={<PenIcon />}>
-                Edit the words
-              </ButtonLink>
-              <Button variant="outline" small icon={<LinkIcon />} onClick={share}>
-                {copied ?? "Share"}
-              </Button>
-              <Button variant="quiet" small className="danger" icon={<TrashIcon />} onClick={() => setConfirm(true)}>
-                Remove
-              </Button>
+        <div className="mpd-lead" data-rise>
+          {current ? <Photograph url={current} paper={paper} /> : <TypedCard line={lead} chapter={memory.era} paper={paper} />}
+          {photos.length > 1 && (
+            <div className="rd-strip">
+              {photos.map((p, i) => (
+                <Thumb key={p} url={p} on={p === current} tilt={[-3, 2, -1, 3][i % 4]} caption={memory.period?.trim() || "No date yet"} onPick={() => setShown(p)} />
+              ))}
             </div>
           )}
         </div>
+
+        <CaptionBand title={title} date={date} dated={dated} editTo={`/write?edit=${memory.id}&details=1`} chapter={memory.era} paper={paper} people={people} stillWriting={memory.status === "in_progress"} />
+
+        <ActionTiles memoryId={memory.id} onRemember={() => setCompose(true)} />
+
+        <div className="rd-story mpd-words" data-rise>
+          {body.length ? (
+            body.map((p, k) => (
+              <p key={k} className={reading === k ? "reading" : undefined}>
+                {p.split("\n").map((line, j, arr) => (
+                  <span key={j}>
+                    {line}
+                    {j < arr.length - 1 && <br />}
+                  </span>
+                ))}
+              </p>
+            ))
+          ) : memory.status === "in_progress" ? (
+            <p className="quiet">A Story is still writing this one up from the call. The words land here when it's done.</p>
+          ) : (
+            <p className="quiet">Nothing written down yet. {memory.photos.length ? "The photographs are here, though." : ""}</p>
+          )}
+        </div>
+
+        {body.length > 0 && <ReadAloud paragraphs={body} label={title} onPosition={setReading} />}
+
+        {memory.audio?.length > 0 && <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />}
+
+        <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
+
+        <YearStrip story={story} year={year} />
+
+        {confirm ? (
+          <div className="mp-confirm" role="alertdialog" aria-labelledby="rm-h">
+            <p id="rm-h" style={{ fontWeight: 600, color: "var(--heading)" }}>
+              Remove “{title}” from {own ? "your" : `${story.name}'s`} story?
+            </p>
+            <p className="meta">The words{memory.photos.length ? ", the photographs" : ""}{memory.audio?.length ? " and the recording" : ""} go with it. This can't be undone.</p>
+            <div className="row">
+              <Button onClick={remove} loading={removing} style={{ background: "var(--danger)" }}>
+                Remove it
+              </Button>
+              <Button variant="outline" onClick={() => setConfirm(false)} disabled={removing}>
+                Keep it
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="rd-foot">
+            <button type="button" className={`rd-privacy${isPrivate ? " private" : ""}`} onClick={flip} disabled={flipping} aria-pressed={isPrivate} title={isPrivate ? "Make it public" : "Make it private"}>
+              {isPrivate ? <LockIcon /> : <PeopleIcon />}
+              <span className="dot" aria-hidden="true" />
+              {isPrivate ? "Private" : "Public"}
+              <small>{isPrivate ? "· you and the keepers" : "· the family, and the wall"}</small>
+            </button>
+            <Treasure memory={memory} story={story} />
+            <ButtonLink to={`/write?edit=${memory.id}`} variant="outline" small icon={<PenIcon />}>
+              Edit the words
+            </ButtonLink>
+            <Button variant="outline" small icon={<LinkIcon />} onClick={share}>
+              {copied ?? "Share"}
+            </Button>
+            <Button variant="quiet" small className="danger" icon={<TrashIcon />} onClick={() => setConfirm(true)}>
+              Remove
+            </Button>
+          </div>
+        )}
       </div>
     </Shell>
   );

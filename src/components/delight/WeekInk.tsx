@@ -45,10 +45,10 @@ export default function WeekInk({ day, count }: { day: string; count: number }) 
     const host = d.parentElement;
     host?.classList.add("inking");
     const tl = gsap.timeline({ onComplete: () => host?.classList.remove("inking") });
-    tl.fromTo(p, { scale: 0.1, opacity: 0.55 }, { scale: 1, opacity: 0, duration: 0.8, ease: "power2.out" }, 0.1).fromTo(
+    tl.fromTo(p, { scale: 0.5, opacity: 0.55 }, { scale: 1, opacity: 0, duration: 0.8, ease: "power2.out" }, 0.1).fromTo(
       d,
-      { scale: 0, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)", clearProps: "all" },
+      { scale: 0.95, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out", clearProps: "all" },
       0.18,
     );
     return () => {

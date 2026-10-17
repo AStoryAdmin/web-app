@@ -1,0 +1,125 @@
+/**
+ * The mosaic of prints: the newest memory as one large print across two
+ * columns, the rest as tall prints three across (two on a phone), every
+ * one of them the photograph itself with the words as a caption. The
+ * day's "From the book" quote takes the large frame when the newest
+ * memory has no photograph, and otherwise sits as a wide card under the
+ * first row; the memory it quotes is never also a print.
+ *
+ * The family's sides (approved contributions, grouped by memory) are
+ * loaded once here and handed to each print for its "New from Linh" dot.
+ */
+import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
+import PrintCard from "./PrintCard";
+import { PenIcon } from "./icons";
+import { listContributions, type Contribution } from "../data/contributions";
+import { groupSides } from "../lib/seenSides";
+import { useAuth } from "../state/authContext";
+import type { Memory, Story } from "../data/stories";
+
+export type MosaicQuote = { node: ReactNode; memoryId: string };
+
+const hasPhoto = (m: Memory) => Boolean(m.cover || m.photos?.[0]);
+
+export default function Mosaic({
+  memories,
+  story,
+  lead = true,
+  quote = null,
+  rise = true,
+  limit,
+}: {
+  memories: Memory[];
+  story: Story;
+  /** Whether the first memory is set large; the Archive's year groups say no. */
+  lead?: boolean;
+  quote?: MosaicQuote | null;
+  /** Mark each cell for the page's arrival (lib/arrive); off where the page runs its own scroll-reveal. */
+  rise?: boolean;
+  /** How many memories to show, counted after the quoted one is left out. */
+  limit?: number;
+}) {
+  const { user } = useAuth();
+  const [sides, setSides] = useState<Map<string, Contribution[]>>(() => new Map());
+  const email = user?.email;
+  const firstName = user?.firstName;
+
+  useEffect(() => {
+    let live = true;
+    listContributions(story.id, "approved")
+      .then((rows) => live && setSides(groupSides(rows, { email, firstName })))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [story.id, email, firstName]);
+
+  const items = memories.filter((m) => m.id !== quote?.memoryId).slice(0, limit ?? memories.length);
+  if (!items.length && !quote) return null;
+
+  const printLead = lead && items.length > 0 && hasPhoto(items[0]);
+  const quoteLead = Boolean(quote) && lead && !printLead;
+  const riseAttr = rise ? { "data-rise": "" } : {};
+
+  const cells: ReactNode[] = [];
+  if (quoteLead && quote) {
+    cells.push(
+      <div key="quote" className="mosaic-quote lead" {...riseAttr}>
+        {quote.node}
+      </div>,
+    );
+  }
+  items.forEach((m, i) => {
+    const size = printLead && i === 0 ? "lead" : "tall";
+    cells.push(
+      <div key={m.id} className={`cell ${size}`} {...riseAttr}>
+        <PrintCard memory={m} story={story} size={size} sides={sides.get(m.id) || []} index={i} />
+      </div>,
+    );
+    if (printLead && quote && i === 1) {
+      cells.push(
+        <div key="quote" className="mosaic-quote wide" {...riseAttr}>
+          {quote.node}
+        </div>,
+      );
+    }
+  });
+  if (printLead && quote && items.length < 2) {
+    cells.push(
+      <div key="quote" className="mosaic-quote wide" {...riseAttr}>
+        {quote.node}
+      </div>,
+    );
+  }
+
+  return <div className={`mosaic${lead ? "" : " even"}`}>{cells}</div>;
+}
+
+/**
+ * The empty state: one large typed card inviting the first memory, and
+ * nothing else. The sample family's picnic sits behind the words, very
+ * faint, so the card already looks like what it will hold.
+ */
+export function InvitePrint({ story }: { story: Story }) {
+  const own = story.relationship === "Myself";
+  return (
+    <div className="mosaic">
+      <Link className="print-card lead typed invite rise" to="/write" data-rise>
+        <span className="frame" aria-hidden="true">
+          <span className="typed-in">
+            <img className="sample" src="/photos/family-04.webp" alt="" />
+            <span className="said">Nothing here yet.</span>
+            <span className="line">{own ? "Answer the question above, or write about anything at all: a kitchen, a road, a song on the radio." : `Answer today's question for ${story.name}, or write about anything at all: a kitchen, a road, a song on the radio.`}</span>
+          </span>
+          <span className="cap">
+            <span className="title">
+              <PenIcon /> Keep the first memory
+            </span>
+            <span className="dateline">The first one is the hardest; after that they come.</span>
+          </span>
+        </span>
+      </Link>
+    </div>
+  );
+}

@@ -4,12 +4,27 @@
  */
 import { Link } from "react-router-dom";
 import MemoryCard from "../MemoryCard";
+import Mosaic from "../Mosaic";
 import { MicIcon } from "../icons";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { ageAt } from "../../app-core/lib/timeline.js";
 import type { Memory, Story } from "../../data/stories";
 
 export type YearGroupT = { key: string; year: number | null; label: string; ageLabel: string | null; undated?: boolean; items: Memory[] };
+
+/** How the Archive shows a group's memories: as a mosaic of prints, or as the rows down the rail. */
+export type ArchiveView = "prints" | "list";
+
+function Cards({ items, story, view }: { items: Memory[]; story: Story; view: ArchiveView }) {
+  if (view === "prints") return <Mosaic memories={items} story={story} lead={false} rise={false} />;
+  return (
+    <div className="arc-cards">
+      {items.map((m, i) => (
+        <MemoryCard key={m.id} memory={m} story={story} style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }} />
+      ))}
+    </div>
+  );
+}
 
 const countOf = (n: number) => `${n} ${n === 1 ? "memory" : "memories"}`;
 
@@ -42,7 +57,7 @@ function yearNote(group: YearGroupT, story: Story): string | null {
   return parts.join(" ");
 }
 
-export function YearGroup({ group, story, decade }: { group: YearGroupT; story: Story; decade: number | null }) {
+export function YearGroup({ group, story, decade, view = "list" }: { group: YearGroupT; story: Story; decade: number | null; view?: ArchiveView }) {
   const note = yearNote(group, story);
   return (
     <section aria-labelledby={`y${group.key}-h`}>
@@ -55,16 +70,12 @@ export function YearGroup({ group, story, decade }: { group: YearGroupT; story: 
           {note}
         </p>
       )}
-      <div className="arc-cards">
-        {group.items.map((m, i) => (
-          <MemoryCard key={m.id} memory={m} story={story} style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }} />
-        ))}
-      </div>
+      <Cards items={group.items} story={story} view={view} />
     </section>
   );
 }
 
-export function UndatedGroup({ items, story }: { items: Memory[]; story: Story }) {
+export function UndatedGroup({ items, story, view = "list" }: { items: Memory[]; story: Story; view?: ArchiveView }) {
   return (
     <section aria-labelledby="yundated-h">
       <div className="arc-year" id="yundated" data-arrive>
@@ -72,11 +83,7 @@ export function UndatedGroup({ items, story }: { items: Memory[]; story: Story }
         <span>{countOf(items.length)}</span>
       </div>
       <p className="arc-hint">Open one to add a year.</p>
-      <div className="arc-cards">
-        {items.map((m, i) => (
-          <MemoryCard key={m.id} memory={m} story={story} style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }} />
-        ))}
-      </div>
+      <Cards items={items} story={story} view={view} />
     </section>
   );
 }

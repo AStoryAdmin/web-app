@@ -1,16 +1,24 @@
 /**
- * One person in the family: their face, what they are to the storyteller,
- * the memories they told and the ones they're in, whether they've arrived
- * on A Story (and the code to send again), and, for whoever may, their
- * details and the way out of the tree.
+ * One person in the family, the way the founder's draft lays it out. On
+ * the cloth: "{Name} & {storyteller}" (their own name when they are the
+ * storyteller), what they are to them and their years, their face as a
+ * round print. On the sheet: the shared-context pill in the product's
+ * exact words, a terracotta rail down the left with the memories they are
+ * in or sent hanging off it (oldest first, the newest last), three related
+ * memories, the notes they wrote for the family, and below, the
+ * invitation and their details for whoever may change them.
  */
 import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import Shell from "../components/Shell";
-import MemoryCard from "../components/MemoryCard";
-import { Avatar, Button, Chip, Field, Problem } from "../components/ui";
-import { MailIcon, UserIcon } from "../components/icons";
+import { Button, Field, Problem } from "../components/ui";
+import { MailIcon, PenIcon, UserIcon } from "../components/icons";
 import { CodeCard } from "../components/family/InviteSheet";
+import { Tile } from "../components/archive/ActionTiles";
+import MemoryRail from "../components/person/MemoryRail";
+import RelatedRow from "../components/person/RelatedRow";
+import FamilyNotes from "../components/person/FamilyNotes";
+import { railFor, relatedFor, spanLine, type Found } from "../components/person/personRail";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { usePhotoUrl } from "../lib/photoUrls";
@@ -18,29 +26,13 @@ import { track } from "../lib/analytics";
 import { familyCodeFor, householdFor, invitePerson, removePerson, savePerson, sendInviteEmail } from "../data/familyWrites";
 import { buildIndex } from "../app-core/lib/familyGraph.js";
 import { lifeLine, personMemories } from "../app-core/lib/personMemories.js";
-import { canEdit, linkState, personName, relationTo, storytellerOf, type Index } from "../components/family/familyView";
+import { canEdit, linkState, personName, relationTo, stateWords, storytellerOf, type Index } from "../components/family/familyView";
 import type { Person as PersonType } from "../data/family";
-import type { Memory, Story } from "../data/stories";
+import type { Story } from "../data/stories";
 
-type Found = { story: Story; memory: Memory };
 type Res = { own: Story | null; told: Found[]; tagged: Found[]; mentions: Found[]; total: number };
 
-function Group({ title, note, items }: { title: string; note?: string; items: Found[] }) {
-  if (!items.length) return null;
-  return (
-    <section className="pgroup" aria-label={title}>
-      <div className="sechead">
-        <h2>{title}</h2>
-      </div>
-      {note && <p className="meta" style={{ marginBottom: "var(--s-4)" }}>{note}</p>}
-      <div className="recent">
-        {items.map(({ story, memory }, i) => (
-          <MemoryCard key={memory.id} memory={memory} story={story} style={{ animationDelay: `${i * 60}ms` }} />
-        ))}
-      </div>
-    </section>
-  );
-}
+const RAIL_MAX = 12;
 
 export default function Person() {
   const { personId = "" } = useParams();
@@ -65,6 +57,13 @@ export default function Person() {
     };
     return personMemories(person, stories, { relationIn }) as Res;
   }, [person, stories, family, index]);
+
+  const rail = useMemo(() => (res ? railFor(res.told, res.tagged, res.own) : []), [res]);
+  const related = useMemo(() => {
+    if (!res) return [];
+    const seen = new Set<string>();
+    return [...res.mentions, ...relatedFor(rail, story)].filter((f) => !seen.has(f.memory.id) && seen.add(f.memory.id)).slice(0, 3);
+  }, [res, rail, story]);
 
   if (account === undefined) return <Shell compact back="/family"><div className="page" aria-busy="true" /></Shell>;
   if (!story) return <Navigate to="/start" replace />;
@@ -91,8 +90,15 @@ export default function Person() {
   const state = linkState(person, meId);
   const editable = canEdit(person, family, meId);
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
-  const line = [isTeller ? "Storyteller" : rel ? `${story.name}'s ${rel}` : "", lifeLine(person) as string].filter(Boolean).join(" · ");
   const name = personName(person);
+  const shown = rail.slice(-RAIL_MAX);
+  const life = lifeLine(person) as string;
+  const subline = [isTeller ? "Storyteller" : rel ? `${story.name}'s ${rel}` : "", life, spanLine(rail)].filter(Boolean).join(" · ");
+  const words = person.deathYear ? "" : stateWords(state.key);
+  const context = isTeller
+    ? `This is ${first}'s story`
+    : [rel ? `${first} is ${story.name}'s ${rel}` : `${first} is in ${story.name}'s family`, state.key === "you" ? "you" : words].filter(Boolean).join(" · ");
+  const tone = person.deathYear ? "gone" : state.key === "you" || state.key === "joined" ? "green" : state.key === "invited" ? "gold" : "outline";
 
   const sendCode = async (email: string) => {
     setBusy("code");
@@ -158,52 +164,77 @@ export default function Person() {
   };
 
   return (
-    <Shell compact title={name} back="/family">
-      <div className="page person-page">
-        {error && <Problem message={error} onDismiss={() => setError(null)} />}
-
-        <section className="card person-hero" aria-label={name} data-rise>
-          <Avatar src={photo} name={person.givenName} size={120} className={person.deathYear ? "gone" : ""} />
-          <div className="grow">
-            <p className="label">{isTeller ? "Storyteller" : state.key === "you" ? "You" : "In the family"}</p>
-            <h1>{name}</h1>
-            {line && <p className="meta big">{line}</p>}
-            <div className="chiprow" style={{ marginTop: "var(--s-3)" }}>
-              {state.key === "joined" && <Chip tone="green">on A Story</Chip>}
-              {state.key === "you" && <Chip tone="green">you</Chip>}
-              {state.key === "invited" && <Chip tone="gold">invited · waiting for them</Chip>}
-              {state.key === "listed" && <Chip tone="outline">not on A Story yet</Chip>}
-              {res.total > 0 && <Chip>{res.total} {res.total === 1 ? "memory" : "memories"}</Chip>}
-            </div>
-          </div>
-          {editable && !edit && (
-            <div className="tools">
-              <Button variant="outline" small onClick={() => setEdit({ given: person.givenName || "", last: person.familyName || "", birth: person.birthYear ? String(person.birthYear) : "", email: person.email || "" })}>
-                Edit
-              </Button>
-            </div>
-          )}
-        </section>
-
-        <div className="person-grid" data-rise>
-          <div className="col">
-            {isTeller && res.own && (
-              <p className="meta" style={{ marginBottom: "var(--s-4)" }}>
-                Everything {first} told is in <Link to="/archive">the archive</Link>.
+    <Shell
+      back="/family"
+      hero={
+        <div className={`phero${photo ? " has-portrait" : ""}`}>
+          {photo && <img className={`phero-portrait${person.deathYear ? " gone" : ""}`} src={photo} alt="" data-develop />}
+          <div className="phero-words">
+            <p className="label" data-rise>
+              {isTeller ? "Storyteller" : state.key === "you" ? "You" : "In the family"}
+            </p>
+            <h1 className="phero-title">
+              {isTeller ? (
+                name
+              ) : (
+                <>
+                  {name} <span className="amp">&amp;</span> {story.name}
+                </>
+              )}
+            </h1>
+            {subline && (
+              <p className="phero-sub" data-rise>
+                {subline}
               </p>
             )}
-            <Group title={`Memories ${first} told`} items={res.told} />
-            <Group title={`Memories ${first} is in`} items={res.tagged} />
-            <Group title={`Might be about ${first}`} note="A guess from the words; nobody has said who's in these yet." items={res.mentions} />
-            {res.told.length + res.tagged.length + res.mentions.length === 0 && !isTeller && (
-              <div className="card empty">
-                <h2 className="story-title">No memories with {first} in them yet.</h2>
-                <p>When a memory names who was there, it shows up here.</p>
-              </div>
-            )}
           </div>
+        </div>
+      }
+    >
+      <div className="page pp">
+        {error && <Problem message={error} onDismiss={() => setError(null)} />}
 
-          <aside className="col">
+        <div className="pp-top" data-rise>
+          <span className={`pp-context ${tone}`}>
+            <i aria-hidden="true" />
+            {context}
+          </span>
+          {editable && !edit && (
+            <Button variant="outline" small onClick={() => setEdit({ given: person.givenName || "", last: person.familyName || "", birth: person.birthYear ? String(person.birthYear) : "", email: person.email || "" })}>
+              Edit
+            </Button>
+          )}
+        </div>
+
+        {shown.length > 0 ? (
+          <>
+            <MemoryRail items={shown} label={isTeller ? `What ${first} told` : `Memories with ${first}`} />
+            {rail.length > shown.length && (
+              <p className="pp-more" data-rise>
+                <Link className="more" to="/archive">
+                  Everything {first} told, in the archive
+                </Link>
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="pp-empty" data-rise>
+            <div className="pp-empty-card">
+              <h2>Nothing with {first} in it yet.</h2>
+              <p>When a memory names who was there, it shows up here.</p>
+            </div>
+            <Tile icon={<PenIcon />} to="/write" className="single">
+              Write a memory with {first}
+            </Tile>
+          </div>
+        )}
+
+        <RelatedRow items={related} />
+
+        <FamilyNotes person={person} story={story} />
+
+        {((state.key !== "you" && state.key !== "remembered" && !isTeller) || (editable && edit)) && (
+          <div className="pp-tools" data-rise>
             {state.key !== "you" && state.key !== "remembered" && !isTeller && (
               <section className="card pad invitebox" aria-label="Invitation">
                 {sent ? (
@@ -271,8 +302,8 @@ export default function Person() {
                 )}
               </section>
             )}
-          </aside>
-        </div>
+          </div>
+        )}
       </div>
     </Shell>
   );

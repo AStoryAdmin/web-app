@@ -1,11 +1,10 @@
 /**
- * Family photographs on the title page: white-bordered prints lying around
- * the words and the form at their own tilts, the way they lie on a kitchen
- * table when the box comes down from the wardrobe. The frame drops them
- * onto the page as it opens; once the page is open they drift a few
- * pixels with the pointer at different depths, straighten a little under
- * the hand, and one or two turn over to show what was written on the back.
- * Still on touch; under reduced motion they are simply there.
+ * Three prints of one family (public/photos/family-*.webp) on the endpaper, held by black-paper photo corners
+ * the way an album keeps them, arranged tidily and slightly overlapping,
+ * each with a caption written under it. Once the page is open they drift
+ * two to four pixels with the pointer at their own depths, lift and
+ * straighten under the hand, and one turns over to show what was written
+ * on the back. Still on touch; under reduced motion they are simply there.
  */
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
@@ -13,27 +12,21 @@ import gsap from "gsap";
 type Print = {
   src: string;
   caption: string;
-  /** width / height */
-  ratio: number;
+  /** what is written on the back, for the one that turns */
+  back?: string;
   tilt: number;
-  /** how far it moves with the pointer, 1 = the table */
+  /** how far it moves with the pointer, 1 = the page */
   depth: number;
-  /** turns over under the pointer */
-  flips?: boolean;
-  /** width as a multiple of the base print size */
-  k: number;
-  /** position on the page, desktop */
-  at: { l?: string; r?: string; t?: string; b?: string };
+  /** position and width on the endpaper, in page widths (cqw) */
+  l: number;
+  t: number;
+  w: number;
 };
 
 const PRINTS: Print[] = [
-  { src: "/photos/18-1200.webp", caption: "Rain on the porch, 1958", ratio: 3 / 2, tilt: 4, depth: 0.7, flips: true, k: 1.1, at: { l: "31%", b: "27%" } },
-  { src: "/photos/02-1200.webp", caption: "Cutting the cake, 1961", ratio: 4 / 5, tilt: -6, depth: 1.3, k: 0.92, at: { l: "2.5%", b: "5%" } },
-  { src: "/photos/31-1200.webp", caption: "Edith, 1962", ratio: 1, tilt: 5, depth: 1, k: 0.78, at: { l: "18%", b: "6%" } },
-  { src: "/photos/12-1200.webp", caption: "The phone in the hall", ratio: 4 / 5, tilt: -4, depth: 0.85, k: 0.8, at: { l: "42%", t: "6%" } },
-  { src: "/photos/27-1200.webp", caption: "Sunday dinner on Elm Street", ratio: 3 / 2, tilt: -5, depth: 1.15, flips: true, k: 0.95, at: { r: "1.5%", t: "3%" } },
-  { src: "/photos/30-1200.webp", caption: "The lake, August 1974", ratio: 3 / 2, tilt: 6, depth: 1.4, k: 1, at: { r: "2%", b: "3%" } },
-  { src: "/photos/33-1200.webp", caption: "The kitchen on Elm Street", ratio: 4 / 3, tilt: 3, depth: 0.6, k: 0.9, at: { l: "44%", b: "4%" } },
+  { src: "/photos/family-02.webp", caption: "Sunday dinner on Elm Street", tilt: -2.5, depth: 0.7, l: 9, t: 6, w: 38 },
+  { src: "/photos/family-01.webp", caption: "The one bicycle, 1949", tilt: 2, depth: 1.2, l: 52, t: 22, w: 38 },
+  { src: "/photos/family-08.webp", caption: "Rain on the porch, 1958", back: "Nan reading to me on the porch, the July it never stopped raining. Kept by Dan.", tilt: -1.5, depth: 1, l: 14, t: 44, w: 38 },
 ];
 
 export default function Prints({ active = true }: { active?: boolean }) {
@@ -44,7 +37,6 @@ export default function Prints({ active = true }: { active?: boolean }) {
     if (!el || !active) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
     const prints = gsap.utils.toArray<HTMLElement>(el.querySelectorAll(".print"));
-    // they drift a few pixels with the pointer, each at its own depth
     const movers = prints.map((p) => ({
       d: Number(p.dataset.depth || 1),
       x: gsap.quickTo(p, "x", { duration: 1.1, ease: "power2.out" }),
@@ -54,8 +46,8 @@ export default function Prints({ active = true }: { active?: boolean }) {
       const dx = (e.clientX / window.innerWidth - 0.5) * 2;
       const dy = (e.clientY / window.innerHeight - 0.5) * 2;
       for (const m of movers) {
-        m.x(gsap.utils.clamp(-16, 16, -dx * 9 * m.d));
-        m.y(gsap.utils.clamp(-12, 12, -dy * 6 * m.d));
+        m.x(gsap.utils.clamp(-4, 4, -dx * 3 * m.d));
+        m.y(gsap.utils.clamp(-4, 4, -dy * 3 * m.d));
       }
     };
     window.addEventListener("pointermove", move, { passive: true });
@@ -70,27 +62,26 @@ export default function Prints({ active = true }: { active?: boolean }) {
       {PRINTS.map((p, i) => (
         <figure
           key={p.src}
-          className={`print${p.flips ? " flips" : ""}`}
+          className={`print${p.back ? " flips" : ""}`}
           data-depth={p.depth}
           data-n={i + 1}
-          style={{
-            ["--tilt" as string]: `${p.tilt}deg`,
-            ["--k" as string]: p.k,
-            ["--ratio" as string]: p.ratio,
-            ["--l" as string]: p.at.l ?? "auto",
-            ["--r" as string]: p.at.r ?? "auto",
-            ["--t" as string]: p.at.t ?? "auto",
-            ["--b" as string]: p.at.b ?? "auto",
-          }}
+          style={{ ["--tilt" as string]: `${p.tilt}deg`, ["--l" as string]: `${p.l}cqw`, ["--t" as string]: `${p.t}cqw`, ["--w" as string]: `${p.w}cqw` }}
         >
           <div className="print-in">
             <div className="print-face">
               <img src={p.src} alt="" decoding="async" />
+              <i className="pc tl" />
+              <i className="pc tr" />
+              <i className="pc bl" />
+              <i className="pc br" />
             </div>
-            <figcaption className="print-back">
-              <span>{p.caption}</span>
-            </figcaption>
+            {p.back && (
+              <div className="print-back">
+                <span>{p.back}</span>
+              </div>
+            )}
           </div>
+          <figcaption className="print-cap">{p.caption}</figcaption>
         </figure>
       ))}
     </div>

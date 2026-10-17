@@ -191,6 +191,14 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
   const name = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || user?.email || "";
   // A page still on its way passes an empty placeholder marked aria-busy; the heart draws itself over it.
   const busy = isValidElement<{ "aria-busy"?: boolean | string }>(children) && !!children.props["aria-busy"];
+  // The sheet is a page of the printed book (CSS §39): a running head (the story's name, the page's name) and a
+  // folio. The writer's leaf carries its own, so /write goes without.
+  const { activeStory: headStory } = useAccount();
+  const path = location.pathname;
+  const place = NAV.find((n) => (n.end ? path === n.to : path.startsWith(n.to)))?.label;
+  const pageName = title ?? (path.startsWith("/account") ? "Account" : path.startsWith("/plans") ? "Plans" : path.startsWith("/talk") ? "Talk" : place ?? "");
+  const bookName = headStory ? (headStory.lastName ? `The ${headStory.lastName} book` : `${headStory.name}'s book`) : "A Story";
+  const runningHead = !busy && !path.startsWith("/write") && pageName !== "";
 
   useLight(cloth);
   usePillThumb(pills, location.pathname);
@@ -246,8 +254,19 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
       </div>
 
       <main className="sheet-page" id="main">
+        {runningHead && (
+          <p className="running-head-sheet" aria-hidden="true">
+            <span>{bookName}</span>
+            <span>{pageName}</span>
+          </p>
+        )}
         {children}
         {busy && <LoadingMark />}
+        {runningHead && (
+          <p className="folio-sheet" aria-hidden="true">
+            {pageName}
+          </p>
+        )}
       </main>
 
       <nav className="tabbar" aria-label="Main">

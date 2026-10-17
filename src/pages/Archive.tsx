@@ -11,7 +11,7 @@ import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
 import BookCard from "../components/archive/BookCard";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
-import { InProgressGroup, UndatedGroup, YearGroup, type YearGroupT } from "../components/archive/ArchiveGroups";
+import { InProgressGroup, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
 import { countPending } from "../data/contributions";
@@ -27,6 +27,21 @@ const dayLabel = (day: string) => {
   return Number.isNaN(d.getTime()) ? day : d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 };
 
+const VIEW_KEY = "astory.archiveView";
+
+/** Prints on a laptop, the list on a phone, unless this browser remembers a choice. */
+function storedView(): ArchiveView {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === "prints" || v === "list") return v;
+  } catch {
+    /* no storage: the default below */
+  }
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "list" : "prints";
+}
+
+const decadeLabel = (d: number) => `${String(d).slice(2)}s`;
+
 const matches = (m: Memory, q: string) => {
   const hay = `${m.title}\n${m.body}\n${m.excerpt}\n${m.period}`.toLowerCase();
   return q.split(/\s+/).filter(Boolean).every((w) => hay.includes(w));
@@ -41,6 +56,7 @@ export default function Archive() {
   const [chapter, setChapter] = useState<string>("");
   const [pending, setPending] = useState(0);
   const [activeDecade, setActiveDecade] = useState<number | null>(null);
+  const [view, setView] = useState<ArchiveView>(storedView);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -85,6 +101,27 @@ export default function Archive() {
   const dated = useMemo(() => groups.filter((g) => !g.undated && g.year != null), [groups]);
   const undated = groups.find((g) => g.undated);
 
+  // the list hangs its years off a rail labelled by decade
+  const byDecade = useMemo(() => {
+    const out: { decade: number; groups: YearGroupT[] }[] = [];
+    for (const g of dated) {
+      const d = decadeOf(g.year) as number;
+      const have = out.find((x) => x.decade === d);
+      if (have) have.groups.push(g);
+      else out.push({ decade: d, groups: [g] });
+    }
+    return out;
+  }, [dated]);
+
+  const chooseView = (v: ArchiveView) => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* fine without */
+    }
+  };
+
   const decades = useMemo<Decade[]>(() => {
     const out: Decade[] = [];
     for (const g of dated) {
@@ -127,11 +164,35 @@ export default function Archive() {
     if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
   }, [location.hash, groups.length]);
 
-  const filterKey = `${chapter}|${day ?? ""}|${filtered.length === 0}`;
+  const filterKey = `${chapter}|${day ?? ""}|${filtered.length === 0}|${view}`;
   useArrive(listRef, filterKey);
   useArrive(topRef, storyId);
-  useRiseOnScroll(listRef, ".arc-cards > *", filterKey);
+  useRiseOnScroll(listRef, ".arc-cards > *, .mosaic > *", filterKey);
   useInkIn(listRef, filterKey);
+
+  // the rail's dots fill as their year or memory comes into view, once each
+  useEffect(() => {
+    const root = listRef.current;
+    if (!root || view !== "list") return;
+    const dots = Array.from(root.querySelectorAll<HTMLElement>(".arc-rail [data-dot], .arc-rail .arc-year, .arc-rail .arc-cards > *"));
+    if (!dots.length) return;
+    if (prefersReducedMotion() || typeof IntersectionObserver === "undefined") {
+      dots.forEach((d) => d.classList.add("dot-lit"));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          (e.target as HTMLElement).classList.add("dot-lit");
+          io.unobserve(e.target);
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.01 },
+    );
+    dots.forEach((d) => io.observe(d));
+    return () => io.disconnect();
+  }, [filterKey, view, groups.length]);
 
   const jump = useCallback((d: Decade) => {
     const el = document.getElementById(`y${d.year}`);
@@ -286,13 +347,47 @@ export default function Archive() {
                 </div>
               )}
 
-              {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
+              {(filtered.length > 0 || filteredProgress.length > 0) && (
+                <div className="arc-viewrow">
+                  <div className="arc-view" role="group" aria-label="Show as">
+                    <button type="button" className="chip big" aria-pressed={view === "prints"} onClick={() => chooseView("prints")}>
+                      Prints
+                    </button>
+                    <button type="button" className="chip big" aria-pressed={view === "list"} onClick={() => chooseView("list")}>
+                      List
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              {dated.map((g) => (
-                <YearGroup key={g.key} group={g} story={story} decade={decadeOf(g.year) as number | null} />
-              ))}
-
-              {undated && <UndatedGroup items={undated.items} story={story} />}
+              {view === "list" ? (
+                <div className="arc-rail" key="rail">
+                  {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
+                  {byDecade.map((b) => (
+                    <section key={b.decade} className="arc-decade" aria-label={`The ${decadeLabel(b.decade)}`}>
+                      <p className="arc-decade-label" data-dot data-arrive>
+                        {decadeLabel(b.decade)}
+                      </p>
+                      {b.groups.map((g) => (
+                        <YearGroup key={g.key} group={g} story={story} decade={b.decade} view="list" />
+                      ))}
+                    </section>
+                  ))}
+                  {undated && (
+                    <section className="arc-decade" aria-label="Not dated yet">
+                      <UndatedGroup items={undated.items} story={story} view="list" />
+                    </section>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
+                  {dated.map((g) => (
+                    <YearGroup key={g.key} group={g} story={story} decade={decadeOf(g.year) as number | null} view="prints" />
+                  ))}
+                  {undated && <UndatedGroup items={undated.items} story={story} view="prints" />}
+                </>
+              )}
 
               {filtered.length === 0 && filteredProgress.length === 0 && (
                 <div className="arc-none" role="status">
