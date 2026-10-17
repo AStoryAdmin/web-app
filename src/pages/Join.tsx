@@ -25,23 +25,34 @@ export default function Join() {
   const [result, setResult] = useState<JoinResult | null>(null);
   const [phase, setPhase] = useState<"idle" | "joined" | "ready">("idle");
   const [attempt, setAttempt] = useState(0);
-  const tried = useRef(-1);
+  // One join per attempt, kept here so a re-run of the effect (StrictMode
+  // runs it twice; a new `reload` would too) subscribes to the same call
+  // instead of starting another or, worse, losing the answer. Before this
+  // the first run was cancelled and the second skipped, and the page sat on
+  // "Finding your place…" for good.
+  const pending = useRef<{ attempt: number; promise: Promise<JoinResult> } | null>(null);
 
-  // Join once per attempt, as soon as there is a signed-in person.
+  // Join as soon as there is a signed-in person.
   useEffect(() => {
-    if (!user || !valid || tried.current === attempt) return;
-    tried.current = attempt;
+    if (!user || !valid) return;
+    if (!pending.current || pending.current.attempt !== attempt) {
+      pending.current = {
+        attempt,
+        promise: joinFamily(code).then(async (r) => {
+          if (r.ok) {
+            track("join_completed", { already: !!r.already, moved: !!r.moved });
+            await reload().catch(() => {});
+          }
+          return r;
+        }),
+      };
+    }
     let live = true;
-    (async () => {
-      const r = await joinFamily(code);
-      if (r.ok) {
-        track("join_completed", { already: !!r.already, moved: !!r.moved });
-        await reload().catch(() => {});
-      }
+    void pending.current.promise.then((r) => {
       if (!live) return;
       setResult(r);
       if (r.ok) setPhase("joined");
-    })();
+    });
     return () => {
       live = false;
     };
@@ -61,6 +72,10 @@ export default function Join() {
 
   const outcome = result ? (joinOutcome(result) as Outcome) : null;
   const next = `/join/${code}`;
+  // A code that is wrong, run out or already used is not fixed by trying
+  // again; the way out is another code, typed on the join branch of /start.
+  const retryable = !!result && !result.ok && ["offline", "failed", "too_many"].includes(result.reason);
+  const needsAnotherCode = !!result && !result.ok && ["not_found", "expired", "used", "taken", "short"].includes(result.reason);
 
   return (
     <main className="solo">
@@ -71,10 +86,21 @@ export default function Join() {
         {!valid ? (
           <>
             <h1>This link is missing its code.</h1>
-            <p className="meta">Ask whoever sent it to send it again, or type the six letters into A Story under “I have a code from family”.</p>
-            <ButtonLink to="/welcome" variant="outline" style={{ marginTop: "var(--s-6)" }}>
-              Open A Story
-            </ButtonLink>
+            <p className="meta">Ask whoever sent it to send it again, or type the six letters yourself: it says “Someone in the family gave me a code” when you create an account, or “Join someone's story” once you are in.</p>
+            <div className="acts stack" style={{ marginTop: "var(--s-6)" }}>
+              {user ? (
+                <ButtonLink to="/start?another=1&join=1" block>
+                  Type the code
+                </ButtonLink>
+              ) : (
+                <ButtonLink to="/create-account?code=" block>
+                  Type the code
+                </ButtonLink>
+              )}
+              <ButtonLink to={user ? "/" : "/welcome"} variant="outline" block>
+                Open A Story
+              </ButtonLink>
+            </div>
           </>
         ) : user === undefined ? (
           <p className="meta">One moment…</p>
@@ -85,7 +111,7 @@ export default function Join() {
               {spacedCode(code) as string}
             </div>
             <h1>Someone in your family saved you a place.</h1>
-            <p className="meta">Make an account, or sign in, and this code puts you in their family tree.</p>
+            <p className="meta">Make an account, or sign in, and this code puts you in their family tree. A code is good for 30 days from when it was sent.</p>
             <div className="acts stack">
               <ButtonLink to={`/create-account?code=${code}`} block>
                 Create an account
@@ -115,7 +141,7 @@ export default function Join() {
             <h1>That didn't work.</h1>
             <p className="meta big">{outcome?.body}</p>
             <div className="acts stack">
-              {(result && !result.ok && ["offline", "failed", "too_many"].includes(result.reason)) && (
+              {retryable && (
                 <Button
                   block
                   onClick={() => {
@@ -125,6 +151,11 @@ export default function Join() {
                 >
                   Try again
                 </Button>
+              )}
+              {needsAnotherCode && (
+                <ButtonLink to="/start?another=1&join=1" block>
+                  Type a different code
+                </ButtonLink>
               )}
               <ButtonLink to="/" variant="outline" block>
                 Go to Home

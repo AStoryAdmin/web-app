@@ -13,7 +13,8 @@ export default function CreateAccount() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
-  const prefilled = (params.get("ref") || params.get("code") || "").toUpperCase();
+  // A code from a link (/join/:code sends ?code=; the invitation email's button sends ?ref=), read the way the server will.
+  const prefilled = normaliseFamilyCode(params.get("ref") || params.get("code") || "") as string;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

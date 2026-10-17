@@ -6,14 +6,16 @@
  * prettier than the product: the sample book is built with the same
  * functions as a real one.
  */
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Lockup } from "../../components/Brand";
 import { useLight } from "../../components/delight/Light";
 import { ButtonLink } from "../../components/ui";
 import BookSpread from "../../components/book/BookSpread";
-import { buildBook } from "../../components/book/bookPages";
-import { sampleStory } from "../../data/sampleBook";
+import CoverSwatches from "../../components/book/CoverSwatches";
+import { buildSampleBook } from "../../components/book/bookPages";
+import { coverColour } from "../../components/book/coverColours";
+import { SAMPLE_BOOKS, sampleBook, type SampleBook } from "../../data/sampleBooks";
 import { BOOK_PRINT } from "../../app-core/theme/index.js";
 import { useAuth } from "../../state/authContext";
 
@@ -39,7 +41,12 @@ export default function Welcome() {
   const { user } = useAuth();
   const ground = useRef<HTMLDivElement>(null);
   useLight(ground);
-  const book = useMemo(() => buildBook(sampleStory(), { recordedBy: "her granddaughter, June" }), []);
+  // The three fictional families of the samples page, each in its own cover colour until a swatch is chosen.
+  const [family, setFamily] = useState<SampleBook["key"]>("carolyn");
+  const [colours, setColours] = useState<Record<string, string>>({});
+  const sample = sampleBook(family);
+  const colour = colours[family] || sample.coverColor;
+  const book = useMemo(() => buildSampleBook(sample, colour), [sample, colour]);
   if (user) return <Navigate to="/" replace />;
 
   return (
@@ -81,11 +88,25 @@ export default function Welcome() {
             <div className="sechead">
               <span className="pill gold">The book</span>
               <h2 id="book-h">
-                It makes itself from what they say, <span className="hl">one page at a time.</span>
+                Turn the pages of a real <span className="hl">A Story book.</span>
               </h2>
-              <p>This is Nora's, four memories in. Turn the pages with the arrows. A real book runs to a hundred or more, with the photographs the family adds and what each of them remembers.</p>
+              <p>Three fictional families, printed exactly the way yours will be. Turn the pages with the arrows, or click a page. Tap a colour to see the cover in it.</p>
             </div>
-            <BookSpread book={book} />
+            <div className="sb-pick">
+              <div className="sb-books" role="group" aria-label="Choose a sample book">
+                {SAMPLE_BOOKS.map((b) => (
+                  <button key={b.key} type="button" aria-pressed={b.key === family} onClick={() => setFamily(b.key)}>
+                    <i style={{ background: coverColour(colours[b.key] || b.coverColor).board }} aria-hidden="true" />
+                    <span>
+                      <b>{b.full}</b>
+                      <small>{b.subtitle}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <CoverSwatches value={colour} onChange={(k) => setColours((c) => ({ ...c, [family]: k }))} />
+            </div>
+            <BookSpread key={family} book={book} />
           </section>
 
           <section className="land-sec" aria-labelledby="covers-h">

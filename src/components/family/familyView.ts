@@ -12,9 +12,35 @@ import { isPlaceholder, linkStateOf } from "../../app-core/lib/familyTree.js";
 import { canEditPerson } from "../../app-core/lib/personRights.js";
 import { normaliseFamilyCode } from "../../app-core/lib/familyCode.js";
 
-/** Where a family code opens. The web's own join page, which App.tsx wires. */
+/**
+ * Where this web app will live once it is deployed. Only a last resort: it
+ * is NOT live yet (Oct 2026), so a link built on it is dead today.
+ */
 export const SITE_URL = "https://app.astoryapp.com";
-export const joinUrl = (code: string) => `${SITE_URL}/join/${normaliseFamilyCode(code)}`;
+
+/**
+ * The base of every link this app writes for somebody else to open (the
+ * join link, the QR, the whole invite message). In order:
+ *   1. a dev server: the address in the browser, so a link made on
+ *      localhost opens on localhost;
+ *   2. VITE_SITE_URL, when a build sets it (production, once the domain
+ *      is live);
+ *   3. the address the page is served from (a preview host, a tunnel);
+ *   4. SITE_URL, when there is no window at all.
+ */
+export function siteUrl(): string {
+  const origin = typeof window !== "undefined" && /^https?:/.test(window.location?.origin || "") ? window.location.origin : "";
+  if (import.meta.env.DEV && origin) return origin;
+  const env = String(import.meta.env.VITE_SITE_URL || "").trim().replace(/\/+$/, "");
+  if (/^https?:\/\/\S+$/.test(env)) return env;
+  return origin || SITE_URL;
+}
+
+/** Where a family code opens: the web's own join page (App.tsx wires /join/:code). */
+export const joinUrl = (code: string) => `${siteUrl()}/join/${normaliseFamilyCode(code)}`;
+
+/** Where a relative without an account adds to a story (App.tsx wires /c/:slug). */
+export const contributeUrl = (slug: string) => `${siteUrl()}/c/${encodeURIComponent(slug)}`;
 
 export type Index = ReturnType<typeof buildIndex>;
 export type LinkState = { key: "you" | "joined" | "remembered" | "invited" | "listed"; label: string; canInvite: boolean };

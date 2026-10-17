@@ -403,40 +403,51 @@ ul { margin: 0; padding: 0; list-style: none; }
 .tile.dark { background: var(--chocolate); color: var(--on-chocolate); border-color: var(--chocolate); }
 .tile.light { background: var(--card); color: var(--ink); }
 
-/* ───────────────────────── 9. Memory card: a page from the book ───────────────────────── */
-/* The card is the memory's page as the samples print it (astoryapp.com/samples): a tracked kicker for the
-   chapter in the sage of the book, the title in the book's display face, the dateline in terracotta
-   ("1966 · age 6"), the words as the italic summary in a soft panel, the photograph as a white-bordered
-   print, and who told it, or "Live conversation · 16 min", in the folio line. Nothing else. */
+/* ───────────────────────── 9. Memory card ───────────────────────── */
+/* Compact and warm, the way the app's own designs draw it, in the printed book's language (astoryapp.com/
+   samples): the photograph as a white-bordered print on the left; the chapter as a sage kicker, and on the
+   right "Live conversation · 16 min" or a lock; the title in the book's display face; the dateline in
+   terracotta; two lines of the person's own words in the book's body face; the faces of the people in it;
+   who told it in the folio line. The paper is the memory's chosen colour, else its chapter's tint. */
 :root { --book-display: "Cormorant Garamond", "Source Serif 4", "Iowan Old Style", Georgia, serif; --book-body: "EB Garamond", "Source Serif 4", Georgia, serif;
   --book-sage: #55745A; --book-sage-bg: #E4E8DC; --book-print: #FFFDF8; }
-.mem { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 176px; gap: var(--s-6); padding: var(--s-6) var(--s-7, 28px) var(--s-5); border-radius: 6px; background: var(--card); color: inherit; text-decoration: none;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px rgba(42,35,32,0.06), 0 14px 30px -24px rgba(42,35,32,0.35); border: 1px solid rgba(74,51,39,0.08);
+.mem { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--s-5); padding: 16px 20px 14px 16px; border-radius: 16px; background: var(--card); color: inherit; text-decoration: none;
+  border: 1px solid rgba(74, 51, 39, 0.08); box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 10px 24px -20px rgba(42,35,32,0.35);
   transition: transform var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out); }
-.mem:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 4px rgba(42,35,32,0.06), 0 24px 40px -24px rgba(42,35,32,0.4); }
-.mem.text { grid-template-columns: minmax(0, 1fr); }
-.mem .glyph { display: none; }
-.mem .body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.mem .chips { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.mem .kicker { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 999px; background: var(--book-sage-bg); color: var(--book-sage); font: 600 10.5px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; }
-.mem .kicker.quiet { background: transparent; color: var(--ink-soft); padding: 0; }
+.mem:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 22px 36px -22px rgba(42,35,32,0.45); }
+.mem.text { grid-template-columns: minmax(0, 1fr); padding-left: 20px; }
+.mem.blush { background: var(--paper-blush); } .mem.periwinkle { background: var(--paper-periwinkle); } .mem.sage { background: var(--paper-sage); }
+.mem.lilac { background: var(--paper-lilac); } .mem.apricot { background: var(--paper-apricot); } .mem.butter { background: var(--paper-butter); } .mem.sea { background: var(--paper-sea); }
+.mem .print { position: relative; align-self: start; padding: 5px 5px 7px; background: var(--book-print); box-shadow: 0 1px 2px rgba(42,35,32,0.14), 0 10px 20px -12px rgba(42,35,32,0.45); transform: rotate(-1.2deg); transition: transform var(--dur-ui) var(--ease-out); }
+.mem:hover .print { transform: rotate(0deg) scale(1.02); }
+.mem .print .pic { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--tint, #EAE0CF); }
+.mem .print .n { position: absolute; right: 9px; bottom: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(42,35,32,0.72); color: #fff; font: 600 11px/1.4 var(--font-ui); }
+.mem .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mem .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 2px; }
+.mem .chips .grow { flex: 1; }
+.mem .kicker { display: inline-flex; align-items: center; min-height: 22px; padding: 0 9px; border-radius: 999px; background: var(--book-sage-bg); color: var(--book-sage); font: 600 10.5px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+.mem .kicker.quiet { background: transparent; color: var(--ink-soft); padding: 0; letter-spacing: 0.1em; }
 .mem .kicker.treasured { background: #F7ECCF; color: #8A6A2E; }
-.mem .kicker svg { width: 11px; height: 11px; margin-right: 5px; }
-.mem h3 { font-family: var(--book-display); font-weight: 500; font-size: 30px; line-height: 1.1; letter-spacing: -0.005em; color: var(--ink); margin-top: 2px; }
-.mem .date { font: 600 13px/1 var(--font-ui); color: var(--accent); letter-spacing: 0.04em; }
-.mem .excerpt { margin: 6px 0 0; padding: 14px 16px; border-radius: 8px; background: rgba(243, 235, 221, 0.55); border: 1px solid rgba(74,51,39,0.07);
-  font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mem .kicker svg { width: 12px; height: 12px; margin-right: 5px; }
+.mem h3 { font-family: var(--book-display); font-weight: 600; font-size: 27px; line-height: 1.1; letter-spacing: -0.005em; color: var(--ink); text-wrap: balance; }
+.mem .date { font: 600 13px/1.2 var(--font-ui); color: var(--ink-soft); letter-spacing: 0.03em; }
+.mem .date.dated { color: var(--accent); }
+.mem .excerpt { font-family: var(--book-body); font-style: italic; font-size: 17.5px; line-height: 1.45; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
 .mem.text .excerpt { -webkit-line-clamp: 3; }
-.mem .foot { margin-top: auto; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); font: 600 11px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
-.mem .foot .lock { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-faint); }
-.mem .foot .lock svg { width: 12px; height: 12px; }
-.mem .print { align-self: start; padding: 6px 6px 8px; background: var(--book-print); box-shadow: 0 1px 2px rgba(42,35,32,0.12), 0 10px 24px -14px rgba(42,35,32,0.45); transform: rotate(var(--tilt, 0deg)); }
-.mem .print .pic { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 0; background: var(--tint, #EAE0CF); display: block; }
+.mem .foot { margin-top: auto; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); min-height: 28px; }
+.mem .faces { display: inline-flex; align-items: center; }
+.mem .faces .avatar { border: 2px solid var(--card); margin-left: -8px; }
+.mem .faces .avatar:first-child { margin-left: 0; }
+.mem .faces .more-n { margin-left: 6px; font: 600 12px/1 var(--font-ui); color: var(--ink-soft); }
+.mem .told { display: inline-flex; align-items: center; }
+.mem .told .avatar { border: 2px solid var(--book-print); box-shadow: 0 1px 3px rgba(42,35,32,0.2); }
+.mem .told .avatar.ph { font-size: 12px; }
 @media (max-width: 760px) {
-  .mem { grid-template-columns: minmax(0, 1fr); padding: var(--s-4); gap: var(--s-4); }
-  .mem .print { order: -1; width: 100%; } .mem .print .pic { aspect-ratio: 16 / 10; }
-  .mem h3 { font-size: 24px; }
-  .mem .excerpt { font-size: 16px; padding: 10px 12px; }
+  .mem { grid-template-columns: 104px minmax(0, 1fr); gap: var(--s-3); padding: 12px; border-radius: 14px; }
+  .mem .print { padding: 4px 4px 5px; }
+  .mem .chips .kicker.quiet { display: none; }
+  .mem h3 { font-size: 22px; }
+  .mem .excerpt { font-size: 16px; -webkit-line-clamp: 2; }
 }
 
 /* ───────────────────────── 10. Progress: a thin line toward the first edition ───────────────────────── */
@@ -1823,7 +1834,255 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 /* The memory card keeps the printed book's small print on purpose (astoryapp.com/samples): a tracked kicker
    and folio line at 11px are the book's own, and they are never body text. The dateline is terracotta only
    when there is a date; "No date yet" stays grey. */
-.mem .date { color: var(--ink-soft); }
-.mem .date.dated { color: var(--accent); }
-.mem .kicker.treasured svg { color: #8A6A2E; }
 .weekrow-in { display: flex; align-items: center; gap: var(--s-5); flex-wrap: wrap; }
+/* the roster rows: the avatar placeholder is a span too, and must not take the row's spare width */
+.prow > .avatar, .person > .avatar, .acct-list .person > .avatar { flex: none; width: 52px; height: 52px; }
+.person .prow > span.avatar:not(.chip), .person .prow > img.avatar { flex: 0 0 52px; width: 52px; height: 52px; min-width: 52px; }
+
+/* ── 29. The book as the samples print it (agent) ── */
+/* astoryapp.com/samples is the truth for the book: its faces inside the pages (Cormorant Garamond for titles, EB Garamond
+   for the words, Montserrat small caps for the marks and labels, a script for names), its inks, and every size in
+   container units so a page scales like print. The app's chrome around the book stays the app's. The pages are square,
+   as the keepsake book is; the cover sits alone on the right, the back cover alone on the left. */
+.bk-reader.samples { --sb-paper: #fbf8f1; --sb-ink: #2b2b2b; --sb-ink-soft: #6a645b; --sb-brass: #b8953c; --sb-terracotta: #b85126; --sb-rule: rgba(60, 50, 40, 0.16); --sb-sage: #55745a; --sb-sage-bg: #e4e8dc; --sb-little: #c58a3d; --sb-slate: #4a6178;
+  --sb-display: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif; --sb-body: "EB Garamond", "Iowan Old Style", Georgia, serif; --sb-sans: "Montserrat", "Helvetica Neue", Arial, sans-serif; --sb-script: "Mrs Saint Delafield", "Snell Roundhand", "Brush Script MT", cursive; }
+.bk-reader.samples .bk-spread { aspect-ratio: 2 / 1; max-width: 1040px; transition: transform 800ms cubic-bezier(0.3, 0.7, 0.2, 1); }
+.bk-reader.samples.closed-front .bk-spread { transform: translateX(-25%); }
+.bk-reader.samples.closed-back .bk-spread { transform: translateX(25%); }
+.bk-reader.samples.single .bk-spread { aspect-ratio: 1 / 1; max-width: 520px; transform: none; }
+.bk-reader.samples .bk-stage { cursor: pointer; }
+.bk-reader.samples .bk-page { container-type: size; background: var(--sb-paper); color: var(--sb-ink); font-family: var(--sb-body); font-size: 2.45cqw; line-height: 1.52; padding: 0; display: block; text-align: left; }
+.bk-reader.samples .bk-page.blank { background: transparent; box-shadow: none; }
+.bk-reader.samples .bk-page.endpaper::after, .bk-reader.samples .bk-page.cover::after { display: none; }
+.bk-reader.samples .bk-page * { box-sizing: border-box; }
+.bk-reader.samples .bk-page h2, .bk-reader.samples .bk-page h3, .bk-reader.samples .bk-page p, .bk-reader.samples .bk-page ol { margin: 0; }
+/* the page's own grain, the cloth, the mark */
+.sb-grain { position: absolute; inset: 0; pointer-events: none; opacity: 0.5; background: radial-gradient(rgba(120, 100, 70, 0.05) 1px, transparent 1.2px) 0 0/3px 3px; }
+.sb-linen { position: absolute; inset: 0; background: url(/book/bookcloth.jpg) 0 0/30cqw 30cqw; mix-blend-mode: overlay; opacity: 0.9; pointer-events: none; }
+.sb-bevel { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 0.5cqw rgba(255, 255, 255, 0.04), inset 0 0 6cqw rgba(0, 0, 0, 0.18); }
+.sb-mark { display: inline-block; background: currentColor; -webkit-mask: var(--bk-mark) center/contain no-repeat; mask: var(--bk-mark) center/contain no-repeat; }
+/* the page's frame: everything inside is in cqw, so it scales with the page like real print */
+.sb-pg { position: absolute; inset: 0; padding: 11cqw 10cqw 10cqw; display: flex; flex-direction: column; }
+.bk-page.left .sb-pg { padding-left: 10cqw; padding-right: 11.5cqw; }
+.bk-page.right .sb-pg { padding-left: 11.5cqw; padding-right: 10cqw; }
+.sb-folio { position: absolute; bottom: 5.2cqw; font: 500 1.7cqw/1 var(--sb-sans); letter-spacing: 0.2em; color: var(--sb-ink-soft); z-index: 5; }
+.bk-page.left .sb-folio { left: 8cqw; } .bk-page.right .sb-folio { right: 8cqw; }
+.sb-run { position: absolute; top: 5.5cqw; font: 600 1.45cqw/1 var(--sb-sans); letter-spacing: 0.28em; text-transform: uppercase; color: var(--sb-ink-soft); }
+.bk-page.left .sb-run { left: 10cqw; } .bk-page.right .sb-run { right: 10cqw; }
+.bk-reader.samples .kicker { font: 600 1.7cqw/1 var(--sb-sans); letter-spacing: 0.32em; text-transform: uppercase; color: var(--sb-ink-soft); }
+.bk-reader.samples .h-chap { font-family: var(--sb-display); font-weight: 500; font-size: 7.6cqw; line-height: 1; margin: 2.2cqw 0 0; letter-spacing: -0.01em; text-wrap: balance; color: var(--sb-ink); }
+.bk-reader.samples .script { font-family: var(--sb-script); font-weight: 400; line-height: 1; }
+.bk-reader.samples .smallcaps { font: 600 1.55cqw/1.5 var(--sb-sans); letter-spacing: 0.24em; text-transform: uppercase; color: var(--sb-ink-soft); }
+.sb-body { font-family: var(--sb-body); font-size: 2.62cqw; line-height: 1.56; color: var(--sb-ink); }
+.sb-body p { margin: 0 0 1.1em; text-wrap: pretty; }
+.sb-body p:last-child { margin-bottom: 0; }
+.sb-body p.drop::first-letter { font-family: var(--sb-display); font-weight: 500; float: left; font-size: 8.2cqw; line-height: 0.82; padding: 0.6cqw 1.4cqw 0 0; color: var(--cover-print, var(--sb-terracotta)); }
+/* the cover: the keepsake book in the cover colour, the title in capitals, the date line, their photographs as prints,
+   the names and a line in script */
+.bk-reader.samples .bk-page.cover { background: var(--cover); color: var(--cover-ink); }
+.sb-cv-title { position: absolute; left: 9cqw; right: 6cqw; top: 6.6cqw; font-family: var(--sb-sans); font-weight: 700; font-size: 6.5cqw; line-height: 1; letter-spacing: 0.015em; white-space: nowrap; text-transform: uppercase; }
+.sb-cv-date { position: absolute; left: 9.2cqw; top: 15cqw; font: 600 1.9cqw/1 var(--sb-sans); letter-spacing: 0.16em; text-transform: uppercase; }
+.sb-cv-collage { position: absolute; left: 31cqw; top: 18cqw; width: 66cqw; height: 79cqw; filter: drop-shadow(0 1cqw 1.5cqw rgba(0, 0, 0, 0.28)); }
+.sb-print { position: absolute; display: block; background: #fdfcf8; padding: 2.2cqw 2.2cqw 7cqw; box-shadow: 0 0.6cqw 1.6cqw rgba(0, 0, 0, 0.22), 0 0 0 0.1cqw rgba(0, 0, 0, 0.05); }
+.sb-print img { display: block; width: 100%; height: 100%; object-fit: cover; background: #e9e3d6; }
+.sb-cv-collage.bw .sb-print img { filter: grayscale(1) sepia(0.12) contrast(1.04); }
+.sb-cv-frame { position: absolute; inset: 4.5cqw; border: 0.25cqw solid currentColor; opacity: 0.35; pointer-events: none; }
+.sb-cv-frame::after { content: ""; position: absolute; inset: 1.2cqw; border: 0.12cqw solid currentColor; opacity: 0.7; }
+.sb-cv-names { position: absolute; left: 12cqw; top: 22.5cqw; font-size: 8.2cqw; transform: rotate(-4deg); }
+.sb-cv-motto { position: absolute; left: 5cqw; top: 84cqw; font-size: 6.6cqw; transform: rotate(-4deg); }
+.sb-back-cv { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 15cqw; }
+.sb-back-cv .ded { font: 400 2.1cqw/1 var(--sb-body); letter-spacing: 0.06em; }
+.sb-back-cv .r1 { width: 6cqw; height: 1px; background: currentColor; opacity: 0.5; margin: 2.2cqw auto 3cqw; }
+.sb-back-cv .fam { font-size: 12cqw; margin-bottom: 5cqw; }
+.sb-back-cv .q { font: italic 400 2.25cqw/1.65 var(--sb-body); opacity: 0.9; }
+.sb-back-cv .mark { position: absolute; bottom: 7cqw; left: 50%; transform: translateX(-50%); opacity: 0.75; }
+/* the endpapers: the mark repeated in the cover colour */
+.bk-reader.samples .bk-page.endpaper { background: var(--cover); color: var(--cover-ink); }
+.sb-pattern { position: absolute; inset: 0; opacity: 0.075; background: var(--cover-ink); -webkit-mask: var(--bk-mark) 0 0/8cqw 8.8cqw space; mask: var(--bk-mark) 0 0/8cqw 8.8cqw space; }
+.bk-page.endpaper .sb-linen { opacity: 0.35; }
+/* colophon, title page, dedication, contents */
+.sb-colophon { justify-content: flex-end; }
+.sb-colophon .sb-body { font-size: 2.05cqw; line-height: 1.6; color: var(--sb-ink-soft); }
+.sb-colophon .sb-body b { font-family: var(--sb-display); font-weight: 600; color: var(--sb-ink); font-size: 2.8cqw; display: block; margin-bottom: 0.3em; }
+.sb-colophon .sb-body p { margin: 0 0 1em; }
+.sb-titlepg { align-items: center; justify-content: center; text-align: center; color: var(--sb-ink); }
+.sb-titlepg .t1 { font: 700 4.4cqw/1 var(--sb-sans); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 5cqw; }
+.sb-titlepg .t2 { font: italic 500 6.4cqw/1.1 var(--sb-display); margin-top: 4cqw; text-wrap: balance; }
+.sb-titlepg .t3 { margin-top: 2.6cqw; }
+.sb-titlepg .t4 { position: absolute; bottom: 10cqw; left: 0; right: 0; }
+.sb-ded { align-items: center; justify-content: center; text-align: center; }
+.sb-ded .dq { font: italic 400 4.1cqw/1.45 var(--sb-display); max-width: 58cqw; text-wrap: balance; }
+.sb-ded .sig { font-size: 9cqw; margin-top: 5cqw; color: var(--sb-ink); }
+.sb-toc { list-style: none; margin: 3.4cqw 0 0; padding: 0; }
+.sb-toc li { display: grid; grid-template-columns: 5cqw 1fr auto; align-items: baseline; gap: 2cqw; padding: 1.35cqw 0; border-bottom: 1px solid var(--sb-rule); }
+.sb-toc .n { font: 600 1.7cqw/1 var(--sb-sans); letter-spacing: 0.14em; color: var(--sb-ink-soft); }
+.sb-toc .t { font: 500 2.95cqw/1.15 var(--sb-display); }
+.sb-toc .t i { display: inline; font: italic 400 1.95cqw/1.4 var(--sb-body); color: var(--sb-ink-soft); margin-left: 0.8cqw; }
+.sb-toc .p { font: 500 2cqw/1 var(--sb-sans); color: var(--sb-ink-soft); font-variant-numeric: tabular-nums; }
+/* a chapter opener: the number large in the cover colour */
+.bk-reader.samples .bk-page.opener { background: #f3ece0; }
+.sb-opener { justify-content: space-between; }
+.sb-opener .num { font: italic 400 30cqw/0.8 var(--sb-display); color: var(--cover-print, var(--sb-terracotta)); opacity: 0.9; margin-left: -1.5cqw; }
+.sb-opener .qlabel { font: 600 1.55cqw/1 var(--sb-sans); letter-spacing: 0.28em; text-transform: uppercase; color: var(--sb-terracotta); }
+.sb-opener .question { font: italic 400 4.6cqw/1.25 var(--sb-display); margin: 2.4cqw 0 2.6cqw; text-wrap: balance; }
+/* a memory: the chapter pill and the four marks, the title, the dateline in terracotta, the summary with where it came
+   from, the question and who asked it, the words with a drop cap */
+.bk-reader.samples .bk-page.mem .sb-pg { padding-top: 8.5cqw; padding-bottom: 10cqw; }
+.sb-mem.has-strip, .sb-deep, .sb-little { padding-bottom: 22cqw !important; }
+.sb-mhead { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1.5cqw; }
+.sb-pill { display: inline-block; background: var(--sb-sage-bg); color: var(--sb-sage); font: 600 1.4cqw/1 var(--sb-sans); letter-spacing: 0.2em; text-transform: uppercase; padding: 1cqw 2.1cqw; border-radius: 99cqw; }
+.sb-layers { display: flex; gap: 1cqw; flex: none; }
+.sb-layers span { display: flex; flex-direction: column; gap: 0.7cqw; font: 600 1.15cqw/1 var(--sb-sans); letter-spacing: 0.14em; text-transform: uppercase; color: #b9ae9e; width: 7.2cqw; }
+.sb-layers span i { display: block; height: 0.55cqw; border-radius: 1cqw; background: #e5dccd; }
+.sb-layers span.on { color: var(--sb-terracotta); }
+.sb-layers span.on i { background: var(--sb-terracotta); }
+.sb-mtitle { font: 500 5.5cqw/1.02 var(--sb-display); margin: 2.4cqw 0 0; letter-spacing: -0.005em; text-wrap: balance; color: var(--sb-ink); }
+.sb-mmeta { display: block; margin-top: 1.4cqw; font: 600 1.75cqw/1 var(--sb-sans); color: var(--sb-terracotta); letter-spacing: 0.04em; }
+.sb-summary { margin: 2.6cqw 0 2.2cqw; padding: 2.4cqw 3cqw; background: #f4ede1; border-radius: 1.6cqw; border: 1px solid rgba(120, 90, 60, 0.12); }
+.sb-summary .lab { font: 700 1.3cqw/1 var(--sb-sans); letter-spacing: 0.24em; color: var(--sb-ink-soft); text-transform: uppercase; margin-bottom: 1.2cqw; display: flex; justify-content: space-between; gap: 1cqw; }
+.sb-summary .lab .sb-src { color: var(--sb-terracotta); letter-spacing: 0.14em; }
+.sb-summary p { margin: 0; font: italic 400 2.3cqw/1.45 var(--sb-body); color: var(--sb-ink); }
+.sb-srcline { margin: 2.2cqw 0 0; }
+.sb-src { display: inline-flex; align-items: center; gap: 1cqw; font: 600 1.25cqw/1 var(--sb-sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--sb-ink-soft); white-space: nowrap; }
+.sb-src i { display: inline-block; width: 1.6cqw; height: 1.6cqw; flex: none; }
+.sb-src.s-live i { border-radius: 50%; background: var(--sb-terracotta); }
+.sb-src.s-little i { border-radius: 50%; border: 0.3cqw solid var(--sb-little); }
+.sb-src.s-family i { background: #a07d14; clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); }
+.sb-src.s-written i { background: #2f3f63; transform: rotate(45deg) scale(0.78); }
+.sb-src.s-memoir i { border: 0.3cqw solid var(--sb-slate); border-radius: 0.2cqw; }
+.sb-askline { font: italic 400 2.25cqw/1.4 var(--sb-body); color: var(--sb-ink); margin: 0 0 2.4cqw; }
+.sb-srcline + .sb-askline, .sb-mmeta + .sb-askline { margin-top: 2.4cqw; }
+.sb-askline b { font: 700 1.3cqw/1 var(--sb-sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--sb-terracotta); font-style: normal; margin-right: 1cqw; }
+.sb-askline span { font: 500 1.4cqw/1 var(--sb-sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sb-ink-soft); font-style: normal; margin-left: 0.8cqw; white-space: nowrap; }
+.sb-mmeta + .sb-body, .sb-srcline + .sb-body { margin-top: 2.6cqw; }
+.bk-page.mem .sb-body { font-size: 2.45cqw; line-height: 1.52; }
+.bk-page.mem .sb-body p { margin-bottom: 0.8em; }
+.sb-plate { margin: 1.6cqw 0 2cqw; }
+.sb-plate.many { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4cqw; }
+.sb-photo { display: block; background: #e9e3d6; overflow: hidden; }
+.sb-photo img { display: block; width: 100%; max-height: 34cqw; object-fit: cover; filter: sepia(0.12) contrast(1.02); }
+.sb-plate.many .sb-photo img { height: 20cqw; }
+.sb-photo-wait { display: block; width: 100%; height: 24cqw; background: #e9e3d6; }
+.sb-credit { margin-top: 1.6cqw; font: italic 400 2cqw/1.4 var(--sb-body); color: var(--sb-ink-soft); text-align: right; }
+.sb-notes { display: flex; flex-direction: column; gap: 2.4cqw; margin-top: 3cqw; }
+.sb-notecard { background: #fffdf7; padding: 3.6cqw 4cqw; box-shadow: 0 0.4cqw 1.4cqw rgba(60, 40, 20, 0.14); position: relative; }
+.sb-notecard p { margin: 0; font: 400 2.5cqw/1.5 var(--sb-body); }
+.sb-notecard .who { display: flex; justify-content: space-between; align-items: baseline; margin-top: 1.8cqw; }
+.sb-notecard .who b { font: 600 1.55cqw/1 var(--sb-sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--sb-ink-soft); }
+/* the code at the foot of a page: scan it and hear them */
+.sb-strip { position: absolute; left: 11.5cqw; right: 10cqw; bottom: 9.5cqw; display: grid; grid-template-columns: 11cqw 1fr; gap: 3cqw; align-items: center; padding-top: 2.6cqw; border-top: 1px solid var(--sb-rule); }
+.bk-page.left .sb-strip { left: 10cqw; right: 11.5cqw; }
+.sb-strip .qr-code, .sb-lq-foot .qr-code, .sb-archive-end .qr-code { display: block; width: 100%; height: auto; background: #fff; padding: 0.9cqw; box-shadow: 0 0 0 0.1cqw rgba(0, 0, 0, 0.12); }
+.sb-strip .tabs { font: 700 1.35cqw/1 var(--sb-sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--sb-terracotta); margin-bottom: 1cqw; }
+.sb-strip p { margin: 0; font: 400 2.1cqw/1.4 var(--sb-body); color: var(--sb-ink); }
+.sb-strip .rec { display: block; font: 500 1.45cqw/1.5 var(--sb-sans); letter-spacing: 0.1em; color: var(--sb-ink-soft); margin-top: 0.7cqw; text-transform: uppercase; }
+/* going deeper: the question we asked, the lesson in the cover colour, who carries it now */
+.sb-dlabel { font: 700 1.3cqw/1 var(--sb-sans); letter-spacing: 0.24em; text-transform: uppercase; color: var(--sb-terracotta); margin-top: 4.2cqw; }
+.sb-dq { font: italic 500 3.7cqw/1.2 var(--sb-display); margin: 1.4cqw 0 2.2cqw; text-wrap: balance; }
+.sb-da { font: 400 2.36cqw/1.5 var(--sb-body); color: var(--sb-ink); }
+.sb-lessonbox { margin-top: 3cqw; background: var(--cover); color: var(--cover-ink); padding: 3cqw 3.6cqw 3.2cqw; border-radius: 0.6cqw; position: relative; overflow: hidden; }
+.sb-lessonbox::after { content: ""; position: absolute; right: 2.4cqw; top: 50%; width: 8cqw; height: 8.8cqw; transform: translateY(-50%); background: currentColor; opacity: 0.12; -webkit-mask: var(--bk-mark) center/contain no-repeat; mask: var(--bk-mark) center/contain no-repeat; }
+.sb-lessonbox .ll { font: 700 1.3cqw/1 var(--sb-sans); letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.75; }
+.sb-lessonbox .lt { font: italic 500 4cqw/1.15 var(--sb-display); margin-top: 1.4cqw; max-width: 62cqw; text-wrap: balance; }
+.sb-lessonbox .lv { font: italic 400 2.2cqw/1.35 var(--sb-body); opacity: 0.8; margin-top: 1cqw; }
+.sb-passed { display: flex; flex-direction: column; gap: 1.3cqw; margin-top: 2.6cqw; }
+.sb-passed div { display: grid; grid-template-columns: 15cqw 1fr; gap: 2cqw; align-items: baseline; }
+.sb-passed b { font: 700 1.3cqw/1.3 var(--sb-sans); letter-spacing: 0.18em; text-transform: uppercase; color: var(--sb-ink-soft); }
+.sb-passed span { font: 400 2.15cqw/1.4 var(--sb-body); color: var(--sb-ink); }
+/* little questions: one a day, six to a page */
+.bk-reader.samples .bk-page.little { background: #f6efe2; }
+.sb-little .sb-mhead { margin-bottom: 3cqw; }
+.sb-lq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.2cqw; }
+.sb-lq { background: #fffcf6; border: 1px solid rgba(120, 90, 60, 0.14); border-radius: 1.4cqw; padding: 2.2cqw 2.4cqw; display: flex; flex-direction: column; gap: 1cqw; min-width: 0; }
+.sb-lq:nth-child(3n + 2) { transform: rotate(0.6deg); }
+.sb-lq:nth-child(3n) { transform: rotate(-0.5deg); }
+.sb-lq .d { font: 600 1.2cqw/1 var(--sb-sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--sb-little); }
+.sb-lq .q { font: italic 500 2.35cqw/1.2 var(--sb-display); color: var(--sb-ink-soft); }
+.sb-lq .a { font: 400 2.25cqw/1.38 var(--sb-body); color: var(--sb-ink); }
+.sb-lq-foot { position: absolute; left: 11.5cqw; right: 10cqw; bottom: 9cqw; display: grid; grid-template-columns: 9cqw 1fr; gap: 2.6cqw; align-items: center; }
+.bk-page.left .sb-lq-foot { left: 10cqw; right: 11.5cqw; }
+.sb-lq-foot p { margin: 0; font: italic 400 2cqw/1.4 var(--sb-body); color: var(--sb-ink-soft); }
+/* the last page: the mark, and the code that opens the archive */
+.sb-final { align-items: center; justify-content: flex-start; padding-top: 15cqw; text-align: center; gap: 3cqw; color: var(--sb-ink); }
+.sb-final .wm { font: 700 4.4cqw/1 var(--sb-sans); letter-spacing: 0.3em; text-transform: uppercase; }
+.sb-final .tag { font: italic 400 3.8cqw/1.2 var(--sb-display); color: var(--sb-ink-soft); }
+.sb-archive-end { position: absolute; left: 14cqw; right: 14cqw; bottom: 10cqw; display: grid; grid-template-columns: 13cqw 1fr; gap: 3.4cqw; align-items: center; text-align: left; padding-top: 3cqw; border-top: 1px solid var(--sb-rule); }
+.sb-archive-end p { margin: 0; font: 400 2.2cqw/1.4 var(--sb-body); }
+.sb-archive-end b { display: block; font: 700 1.4cqw/1 var(--sb-sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--sb-terracotta); margin-bottom: 1cqw; }
+/* the controls under the book: Back · Spread 7 of 27 · Turn page, Read this page, and the dashes to jump by */
+.bk-reader.samples .bk-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--s-3) var(--s-4); margin-top: var(--s-5); }
+.bk-reader.samples .bk-where { min-width: 150px; text-align: center; font-size: var(--t-small); font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.bk-read.on { border-color: var(--heading); }
+.bk-dots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: var(--s-4); padding: 0 var(--s-2); }
+.bk-dot { width: 22px; height: 3px; border-radius: 2px; background: var(--support); border: 0; padding: 0; cursor: pointer; position: relative; }
+.bk-dot::before { content: ""; position: absolute; inset: -20px -1px; }
+.bk-dot[aria-current="true"] { background: var(--heading); }
+.bk-dot:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+/* the cover colours: seven swatches under "Cover colour · Navy" */
+.bk-swatches { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.bk-sw-label { font-size: 14px; color: var(--ink-soft); }
+.bk-sw-label b { font-weight: 600; color: var(--heading); }
+.bk-sw-row { display: flex; gap: 2px; flex-wrap: wrap; margin-left: -8px; }
+.bk-sw { width: 44px; height: 44px; border: 0; background: transparent; padding: 0; cursor: pointer; position: relative; border-radius: 50%; }
+.bk-sw::before { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0, 0, 0, 0.18); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08); }
+.bk-sw[aria-pressed="true"]::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 1.5px solid var(--heading); }
+.bk-sw:disabled { opacity: 0.6; cursor: default; }
+.bk-sw:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.bk-swatches.dark .bk-sw-label { color: var(--on-chocolate-soft); }
+.bk-swatches.dark .bk-sw-label b { color: var(--on-chocolate); }
+.bk-swatches.dark .bk-sw[aria-pressed="true"]::after { border-color: var(--on-chocolate); }
+.bk-head { display: flex; align-items: flex-end; gap: var(--s-4); flex-wrap: wrap; }
+.bk-head .bk-swatches { margin-left: auto; }
+/* the front door: the three families, and the colour to see them in */
+.sb-pick { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-4) var(--s-8); margin-bottom: var(--s-6); }
+.sb-books { display: flex; gap: 6px; flex-wrap: wrap; }
+.sb-books button { display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px; min-height: 48px; border-radius: 999px; background: transparent; border: 1px solid transparent; cursor: pointer; font: inherit; color: var(--ink); text-align: left; transition: background-color var(--dur-ui), border-color var(--dur-ui); }
+.sb-books button:hover { background: var(--card); }
+.sb-books button[aria-pressed="true"] { background: var(--card); border-color: var(--line); box-shadow: 0 6px 18px -12px rgba(74, 51, 39, 0.45); }
+.sb-books button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.sb-books button i { width: 16px; height: 22px; border-radius: 2px 4px 4px 2px; flex: none; box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.25); }
+.sb-books button span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sb-books button b { font-family: var(--font-story); font-weight: 500; font-size: 16px; line-height: 1.15; white-space: nowrap; color: var(--heading); }
+.sb-books button small { font-size: 13px; line-height: 1.2; color: var(--ink-soft); white-space: nowrap; }
+@media (max-width: 760px) {
+  .sb-books { width: 100%; }
+  .sb-books button { flex: 1 1 0; min-width: 0; justify-content: center; padding: 8px 6px; }
+  .sb-books button i { display: none; }
+  .sb-books button span { align-items: center; }
+  .sb-books button b { font-size: 14px; white-space: normal; text-align: center; }
+  .bk-reader.samples .bk-where { min-width: 0; }
+  .bk-head .bk-swatches { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bk-reader.samples .bk-spread { transition: none; }
+}
+
+/* ── 32. Invitations (agent) ── */
+/* The one line that says an email did not send: the reason, then the code
+   that still works, so nobody is left without a way in. */
+.codecard .invite-fail { color: var(--danger); line-height: 1.5; }
+.codecard .invite-fail b { color: var(--heading); letter-spacing: 0.12em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.codecard .meta.ok { display: flex; align-items: center; gap: var(--s-2); }
+
+/* ───────────────────────── 34. The signed-out pages at size (lead) ───────────────────────── */
+/* On a wide display the sheet was a stamp in a field of brown. The composition now scales with the viewport:
+   the cloth wears a blind-tooled frame like a clothbound cover, the quote grows with the width, the sheet is
+   wider with more paper around the form, and the two sit as one spread. */
+.auth::after { content: ""; position: absolute; inset: clamp(18px, 2.2vw, 40px); pointer-events: none; z-index: 0; border-radius: 6px;
+  border: 1px solid rgba(243, 235, 221, 0.14); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22), inset 0 0 0 7px transparent, inset 0 0 0 8px rgba(243, 235, 221, 0.06); }
+.auth { gap: clamp(48px, 7vw, 140px); padding: clamp(96px, 12vh, 160px) clamp(32px, 8vw, 160px) clamp(64px, 10vh, 120px); }
+.auth .said { max-width: 24ch; padding-right: 0; }
+.auth .said .q { font-size: clamp(28px, 2.6vw + 8px, 54px); line-height: 1.22; }
+.auth .said .who { font-size: clamp(13px, 0.8vw + 6px, 17px); margin-top: clamp(20px, 1.6vw, 32px); }
+.auth .sheet-wrap { max-width: clamp(420px, 30vw, 560px); margin-top: clamp(72px, 8vw, 128px); }
+.auth .paper { padding: clamp(40px, 3.2vw, 64px) clamp(40px, 3.2vw, 64px) clamp(32px, 2.6vw, 48px); border-radius: 6px; }
+.auth .form h1 { font-size: clamp(26px, 1.4vw + 12px, 34px); }
+.auth .form .sub { font-size: clamp(16px, 0.6vw + 10px, 19px); }
+.auth .field > span:first-child { font-size: clamp(13px, 0.4vw + 8px, 15px); }
+.auth .input input { font-size: clamp(17px, 0.5vw + 11px, 20px); }
+.auth .btn { min-height: clamp(52px, 2.6vw, 60px); font-size: clamp(15px, 0.4vw + 10px, 17px); }
+.auth .switch, .auth .legal { font-size: clamp(14px, 0.4vw + 9px, 16px); }
+.auth .brand { top: clamp(28px, 3vw, 52px); left: clamp(32px, 4vw, 72px); }
+.auth .brand svg { height: clamp(32px, 2.2vw, 44px); width: auto; }
+@media (max-width: 1100px) { .auth .said .q { font-size: clamp(24px, 3vw, 34px); } }
+@media (max-width: 760px) { .auth::after { inset: 10px; } .auth { padding: var(--s-16) var(--gutter) var(--s-10); gap: var(--s-6); } .auth .sheet-wrap { max-width: none; margin-top: 84px; } .auth .paper { padding: var(--s-8) var(--s-5) var(--s-6); border-radius: 8px; } }

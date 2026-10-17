@@ -186,21 +186,68 @@ export async function joinFamily(input: string): Promise<JoinResult> {
 /* ── Invitation email ──────────────────────────────────────────────────── */
 
 /**
- * The invitation email (send-invite-email), carrying a family code. True
- * when it went. The function's INVITE_JOIN_URL decides where its button
- * lands; it must be set to this web app.
+ * Why an invitation email did not go, in a sentence the sheet can show.
+ * supabase-js answers a non-2xx function response with a FunctionsHttpError
+ * whose `context` is the Response; the function's own JSON ({ error }) is
+ * the plain reason ("Email is not configured", "Invalid code", "Could not
+ * send email"). Anything else is the connection.
  */
-export async function sendInviteEmail(input: { to: string; code: string; storyName?: string; senderName?: string }): Promise<boolean> {
+async function emailFailureReason(err: unknown): Promise<string> {
+  const e = err as { name?: string; message?: string; context?: Response | { status?: number } };
+  const ctx = e?.context as Response | undefined;
+  if (ctx && typeof ctx.status === "number") {
+    let body = "";
+    try {
+      if (typeof (ctx as Response).clone === "function") {
+        const text = await (ctx as Response).clone().text();
+        try {
+          const parsed = JSON.parse(text) as { error?: string; message?: string };
+          body = String(parsed.error || parsed.message || "").trim();
+        } catch {
+          body = text.trim().slice(0, 140);
+        }
+      }
+    } catch {
+      /* unreadable body: the status alone */
+    }
+    if (ctx.status === 404) return "the email service isn't deployed (send-invite-email answered 404)";
+    if (ctx.status === 401 || ctx.status === 403) return "the email service refused this sign-in";
+    return body ? `${body} (${ctx.status})` : `the email service answered ${ctx.status}`;
+  }
+  const msg = String(e?.message || "").trim();
+  if (/fetch|network|Failed to send a request/i.test(msg) || !msg) return "no connection to the email service";
+  return msg.replace(/\.$/, "");
+}
+
+export type EmailResult = { ok: true } | { ok: false; reason: string };
+
+/**
+ * The invitation email (phone-app/supabase/functions/send-invite-email,
+ * which sends through Resend from invites@astoryapp.com). It carries the
+ * family code; the function refuses anything but six letters and digits,
+ * so there is nothing to send without one. The button in that email lands
+ * on the function's INVITE_JOIN_URL (`/?ref=CODE`); unset, it points at the
+ * marketing site. The reason, when it fails, is for the person to read.
+ */
+export async function sendInviteEmailDetailed(input: { to: string; code: string; storyName?: string; senderName?: string }): Promise<EmailResult> {
+  const code = normaliseFamilyCode(input.code);
+  if (!/^[A-Z0-9]{6}$/.test(code)) return { ok: false, reason: "there was no six-letter code to put in it" };
   try {
     const { error } = await supabase().functions.invoke("send-invite-email", {
-      body: { to: input.to.trim().toLowerCase(), storyName: input.storyName || "", referralCode: input.code, senderName: input.senderName || "" },
+      body: { to: input.to.trim().toLowerCase(), storyName: input.storyName || "", referralCode: code, senderName: input.senderName || "" },
     });
     if (error) throw error;
-    return true;
+    return { ok: true };
   } catch (err) {
-    console.warn("sendInviteEmail:", (err as Error)?.message || err);
-    return false;
+    const reason = await emailFailureReason(err);
+    console.warn("sendInviteEmail:", reason);
+    return { ok: false, reason };
   }
+}
+
+/** The same, as a yes or no, for callers that only show a tick. */
+export async function sendInviteEmail(input: { to: string; code: string; storyName?: string; senderName?: string }): Promise<boolean> {
+  return (await sendInviteEmailDetailed(input)).ok;
 }
 
 /* ── Who keeps a story ─────────────────────────────────────────────────── */
@@ -232,7 +279,7 @@ export async function listManagers(storyId: string): Promise<Manager[]> {
  * accept_story_invites() links when they sign in with that email. Only the
  * owner may (42501 otherwise). Idempotent: already invited is a success.
  */
-export async function inviteManager(input: { storyId: string; email: string; storyName?: string; senderName?: string; code?: string }): Promise<{ ok: true; emailed: boolean } | { ok: false; error: string }> {
+export async function inviteManager(input: { storyId: string; email: string; storyName?: string; senderName?: string; code?: string }): Promise<{ ok: true; emailed: boolean; code: string | null; reason: string | null } | { ok: false; error: string }> {
   const to = input.email.trim().toLowerCase();
   if (!to) return { ok: false, error: "Missing email." };
   const { error } = await supabase().from("story_managers").insert({ story_id: input.storyId, invited_email: to, role: "manager", status: "pending" });
@@ -240,8 +287,17 @@ export async function inviteManager(input: { storyId: string; email: string; sto
     if (error.code === "42501") return { ok: false, error: "Only the story's owner can invite people to it right now." };
     return { ok: false, error: "Could not save the invite." };
   }
-  const emailed = await sendInviteEmail({ to, code: input.code || "", storyName: input.storyName, senderName: input.senderName });
-  return { ok: true, emailed };
+  // The email needs a six-letter code or the function refuses it (it used
+  // to go out with "" and never arrive). The story's family code gives the
+  // keeper their place in the tree as well; the keeper role itself comes
+  // from the row above when they sign in with this email.
+  let code = normaliseFamilyCode(input.code || "");
+  if (!code) {
+    const made = await familyCodeFor({ storyId: input.storyId });
+    code = "code" in made ? made.code : "";
+  }
+  const sent = await sendInviteEmailDetailed({ to, code, storyName: input.storyName, senderName: input.senderName });
+  return { ok: true, emailed: sent.ok, code: code || null, reason: sent.ok ? null : sent.reason };
 }
 
 /** The owner removes a keeper, or a keeper removes themselves (RLS decides). */

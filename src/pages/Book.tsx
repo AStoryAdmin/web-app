@@ -11,25 +11,33 @@ import BookObject from "../components/BookObject";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { BookIcon, PenIcon, PrintIcon } from "../components/icons";
 import BookSpread from "../components/book/BookSpread";
+import CoverSwatches from "../components/book/CoverSwatches";
 import Editions from "../components/book/Editions";
-import { buildBook, bookLine } from "../components/book/bookPages";
+import { buildBook, bookLine, type Asked } from "../components/book/bookPages";
+import { loadAskedQuestions } from "../components/book/askedQuestions";
 import { printAtHome } from "../components/book/printBook";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
+import { makeListenKey, normaliseDesign } from "../app-core/lib/bookDesign.js";
+import { needsListenKey } from "../lib/qrLinks";
 import { listContributions, type Contribution } from "../data/contributions";
 import { track } from "../lib/analytics";
 
 type Progress = { count: number; ratio: number; headline: string; chaptersCovered: number; chaptersTotal: number; state: string };
+type Design = { cover: { color: string }; listenKey: string };
 
 export default function Book() {
   const { user } = useAuth();
-  const { account, activeStory: story, loadError, reload } = useAccount();
+  const { account, activeStory: story, loadError, reload, updateStory } = useAccount();
   const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [asked, setAsked] = useState<Record<string, Asked>>({});
   const [printing, setPrinting] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const readRef = useRef<HTMLDivElement>(null);
   const editionsRef = useRef<HTMLDivElement>(null);
+  const keyed = useRef<string | null>(null);
 
   const storyId = story?.id ?? null;
   useEffect(() => {
@@ -41,8 +49,29 @@ export default function Book() {
     };
   }, [storyId]);
 
+  // The questions relatives sent in, for the memories that answered one.
+  const memoryIds = useMemo(() => (story ? story.memories.map((m) => m.id).join(",") : ""), [story]);
+  useEffect(() => {
+    if (!memoryIds) return;
+    let live = true;
+    loadAskedQuestions(memoryIds.split(",")).then((rows) => live && setAsked(rows));
+    return () => {
+      live = false;
+    };
+  }, [memoryIds]);
+
+  // The book's own key for its listening codes, made once a memory has a recording and kept on the design.
+  useEffect(() => {
+    if (!story || keyed.current === story.id || !needsListenKey(story)) return;
+    keyed.current = story.id;
+    const design = normaliseDesign(story.bookDesign) as Design;
+    updateStory({ ...story, bookDesign: { ...design, listenKey: makeListenKey() } }).catch(() => {
+      keyed.current = null;
+    });
+  }, [story, updateStory]);
+
   const recordedBy = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
-  const book = useMemo(() => (story ? buildBook(story, { contributions, recordedBy }) : null), [story, contributions, recordedBy]);
+  const book = useMemo(() => (story ? buildBook(story, { contributions, recordedBy, asked }) : null), [story, contributions, recordedBy, asked]);
 
   if (account === undefined) return <Shell compact title="The Book"><div className="page" aria-busy="true" /></Shell>;
   if (account === null && loadError) {
@@ -70,6 +99,20 @@ export default function Book() {
       setProblem((err as Error).message || "The book couldn't be made just now. Please try again.");
     } finally {
       setPrinting(false);
+    }
+  };
+
+  const design = normaliseDesign(story.bookDesign) as Design;
+  const setCover = async (color: string) => {
+    if (color === design.cover.color) return;
+    setProblem(null);
+    setCoverBusy(true);
+    try {
+      await updateStory({ ...story, bookDesign: { ...design, cover: { ...design.cover, color } } });
+    } catch (err) {
+      setProblem((err as Error).message || "The cover colour wasn't saved. Please try again.");
+    } finally {
+      setCoverBusy(false);
     }
   };
 
@@ -140,11 +183,10 @@ export default function Book() {
           </section>
         ) : (
           <>
-            <div className="sechead">
+            <div className="sechead bk-head">
               <h2>Every page</h2>
-              <span className="meta">
-                {book.pages.length - 1} pages · use the arrow keys
-              </span>
+              <span className="meta">{book.pages.length - 2} pages · use the arrow keys, or click a page</span>
+              <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />
             </div>
             <BookSpread key={story.id} book={book} />
           </>

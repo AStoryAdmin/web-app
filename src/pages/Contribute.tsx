@@ -136,7 +136,7 @@ export default function Contribute() {
             <p className="meta big">It's with {info.name}'s family now. They read everything first, and it joins the story when they keep it.</p>
             <div className="claim">
               <h2 className="story-title">Claim your place in the family</h2>
-              <p className="meta">An account with the same email lets {info.name}'s family find you in their tree.</p>
+              <p className="meta">An account with the same email lets {info.name}'s family find you in their tree. If someone sent you a six-letter family code, type it when you create the account.</p>
               <ButtonLink to="/create-account?next=/" style={{ marginTop: "var(--s-4)" }}>
                 Claim your place
               </ButtonLink>
@@ -201,7 +201,7 @@ export default function Contribute() {
                 )}
               </div>
 
-              <Field label="Your email" icon={<MailIcon />} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" hint="So we can tell you when the family adds this." autoComplete="email" />
+              <Field label="Your email" icon={<MailIcon />} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" hint="Kept with what you sent, so the family knows how to reach you. We don't send emails about it yet." autoComplete="email" />
 
               {error && (
                 <p className="meta" role="alert" style={{ color: "var(--danger)", marginBottom: "var(--s-4)" }}>

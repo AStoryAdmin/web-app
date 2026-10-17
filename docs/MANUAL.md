@@ -125,6 +125,18 @@ The book is never finished. Print one now, print another in five years.
 
 Everything above is free except A Story doing the talking. The first ten minutes are free. After that, a plan is $119 a year for one storyteller, or $229 for up to three. The price is on the page before you decide. Stop any time; the stories, recordings, family access and free book all stay.
 
+### If the invitation email never arrives
+
+The email is a convenience. The code and the link always work on their own, and they are made before any email is tried.
+
+- **Where they are.** On **Family**, the sheet that said "X is in the family" shows the six-letter code, the link and a QR. Closed it already? Open the person on **Family**; their page has **Send the code** and shows the same code again. Every code you have made is also listed on **Family** under **Codes you've sent**, with the days it has left and a **Revoke** button.
+- **What to send by text.** Press **Copy the whole message** and paste it into a text or a family group. It says who you are, gives the code on its own line, and the link. Or just send the six letters: they type them under **Someone in the family gave me a code** when they create their account.
+- **How long it lasts.** A code works for 30 days and for one person. If it has run out, open the person on **Family** and send a new one; the page makes another.
+- **If it says "The email didn't send: …".** The reason is in that line (no connection, the email service isn't set up, or an address that was refused). Nothing is lost: the code under it still works. Send it by text.
+- **If it says "Sent" and they still have nothing.** Ask them to look in spam for a message from **invites@astoryapp.com**, and send them the code by text anyway.
+
+The email's first button is only as good as the address A Story is hosted at. Until the web app is live at its own address, send the link you see on **Family** (it is this app's own address) rather than relying on the button in the email.
+
 ### If something goes wrong
 
 - **No sound when talking:** check the microphone is allowed in the browser, and that the volume is up.

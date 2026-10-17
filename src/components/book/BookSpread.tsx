@@ -1,18 +1,23 @@
 /**
- * The book open on the desk: two facing pages, turned with Previous / Next,
- * the arrow keys, a page scrubber and the chapter chips. The turn is a leaf
- * rotating on its spine (GSAP, 1.1s, a cubic ease); when the person asks
- * for less motion, or on a phone where one page shows at a time, a page
- * simply fades in. Nothing ever slides sideways.
+ * The book open on the desk, as the samples page shows it: two facing
+ * pages, the cover alone on the right and the back cover alone on the
+ * left, turned with Back / Turn page, the arrow keys, a click on a page,
+ * and a row of dashes to jump to any spread. The turn is a leaf rotating
+ * on its spine (GSAP, 1.1s, a cubic ease); when the person asks for less
+ * motion, or on a phone where one page shows at a time, a page simply
+ * fades in. Nothing ever slides sideways. "Read this page" gives the
+ * spread to the browser's voice.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { gsap } from "gsap";
 import BookPage from "./BookPage";
-import { pageNumber, spreadOfPage, spreadsOf, type Book, type Page } from "./bookPages";
-import { ChevronLeft, ChevronRight } from "../icons";
+import { pageText, spreadOfPage, spreadsOf, type Book, type Page } from "./bookPages";
+import { MARK_MASK } from "./markMask";
+import { ChevronLeft, ChevronRight, PauseIcon, PlayIcon } from "../icons";
+import { canSpeak, chunksOf } from "../../lib/readAloud";
 import { track } from "../../lib/analytics";
 
-type View = { left: Page | null; right: Page | null; leftNo: number | null; rightNo: number | null };
+type View = { left: Page | null; right: Page | null };
 type Turn = { to: number; dir: 1 | -1 };
 
 function useMedia(query: string): boolean {
@@ -26,36 +31,41 @@ function useMedia(query: string): boolean {
   return on;
 }
 
+const isCover = (p: Page | null) => p?.kind === "cover" || p?.kind === "back";
+
 export default function BookSpread({ book }: { book: Book }) {
   const single = useMedia("(max-width: 760px)");
   const reduced = useMedia("(prefers-reduced-motion: reduce)");
   const [index, setIndex] = useState(0);
   const [turn, setTurn] = useState<Turn | null>(null);
+  const [reading, setReading] = useState(false);
   const leafRef = useRef<HTMLDivElement>(null);
-  const rootRef = useRef<HTMLElement>(null);
   const opened = useRef(false);
+  const speaks = canSpeak();
 
   const views = useMemo<View[]>(() => {
-    if (single) return book.pages.map((p, i) => ({ left: null, right: p, leftNo: null, rightNo: pageNumber(i) }));
-    return spreadsOf(book.pages).map((s, i) => ({
-      left: s.left,
-      right: s.right,
-      leftNo: i === 0 ? null : pageNumber(2 * i - 1),
-      rightNo: i === 0 ? null : s.right ? pageNumber(2 * i) : null,
-    }));
+    if (single) return book.pages.map((p) => ({ left: null, right: p }));
+    return spreadsOf(book.pages);
   }, [book.pages, single]);
 
-  // The chapter openers, for the chips under the scrubber.
+  // The chapter openers, for the chips under the dashes (a real book can run to a hundred pages).
   const chapters = useMemo(
     () =>
       book.pages
-        .map((p, i) => (p.kind === "chapter" ? { name: p.chapter, view: single ? i : spreadOfPage(i) } : null))
+        .map((p, i) => (p.kind === "opener" ? { name: p.chapter, view: single ? i : spreadOfPage(i) } : null))
         .filter((c): c is { name: string; view: number } => c !== null),
     [book.pages, single],
   );
 
   const last = views.length - 1;
   const safeIndex = Math.min(index, last);
+
+  const stop = useCallback(() => {
+    if (canSpeak()) window.speechSynthesis.cancel();
+    setReading(false);
+  }, []);
+  // A new page stops the voice; so does leaving.
+  useEffect(() => stop, [safeIndex, stop]);
 
   const go = useCallback(
     (to: number) => {
@@ -105,8 +115,10 @@ export default function BookSpread({ book }: { book: Book }) {
         e.preventDefault();
         go(safeIndex - 1);
       } else if (e.key === "Home") {
+        e.preventDefault();
         go(0);
       } else if (e.key === "End") {
+        e.preventDefault();
         go(last);
       }
     };
@@ -121,52 +133,81 @@ export default function BookSpread({ book }: { book: Book }) {
   const baseLeft = turn && next && turn.dir < 0 ? next : cur;
   const baseRight = turn && next && turn.dir > 0 ? next : cur;
 
-  const where = single
-    ? cur.rightNo != null
-      ? `Page ${cur.rightNo} of ${last}`
-      : "Cover"
-    : cur.leftNo != null
-      ? cur.rightNo != null
-        ? `Pages ${cur.leftNo}–${cur.rightNo} of ${book.pages.length - 1}`
-        : `Page ${cur.leftNo} of ${book.pages.length - 1}`
-      : "Cover";
+  const read = () => {
+    if (reading) return stop();
+    const chunks = chunksOf([...pageText(cur.left), ...pageText(cur.right)].filter(Boolean));
+    if (!chunks.length) return;
+    window.speechSynthesis.cancel();
+    setReading(true);
+    chunks.forEach((c, i) => {
+      const u = new SpeechSynthesisUtterance(c.text);
+      if (i === chunks.length - 1) u.onend = () => setReading(false);
+      u.onerror = () => setReading(false);
+      window.speechSynthesis.speak(u);
+    });
+  };
+
+  // A click on a page turns it: the right half forward, the left half back.
+  const onStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button, a, input")) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    if (single) return go(e.clientX > r.left + r.width / 2 ? safeIndex + 1 : safeIndex - 1);
+    if (safeIndex === 0) return go(1);
+    if (safeIndex === last) return go(last - 1);
+    go(e.clientX > r.left + r.width / 2 ? safeIndex + 1 : safeIndex - 1);
+  };
+
+  const atFront = safeIndex === 0;
+  const atBack = safeIndex === last && (single ? isCover(cur.right) : isCover(cur.left) && !cur.right);
+  const where = atFront ? "Front cover" : atBack ? "Back cover" : single ? `Page ${safeIndex} of ${book.pages.length - 2}` : `Spread ${safeIndex} of ${last - 1}`;
+  const dotLabel = (i: number) => (i === 0 ? "Front cover" : i === last ? "Back cover" : single ? `Page ${i}` : `Spread ${i}`);
+
+  const style = {
+    "--cover": book.cover.board,
+    "--cover-ink": book.cover.ink,
+    "--cover-print": book.cover.print,
+    "--bk-mark": MARK_MASK,
+  } as CSSProperties;
 
   return (
-    <section className={`bk-reader${single ? " single" : ""}`} aria-label={`${book.name}'s book, as pages`} ref={rootRef}>
-      <div className="bk-stage">
+    <section className={`bk-reader samples${single ? " single" : ""}${atFront ? " closed-front" : ""}${atBack ? " closed-back" : ""}`} aria-label={`${book.name}'s book, as pages`} style={style}>
+      <div className="bk-stage" onClick={onStageClick}>
         <div className="bk-spread" key={single || reduced ? safeIndex : "spread"}>
-          {!single && <BookPage page={baseLeft.left} number={baseLeft.leftNo} side="left" teller={book.name} />}
-          <BookPage page={baseRight.right} number={baseRight.rightNo} side="right" teller={book.name} />
+          {!single && <BookPage page={baseLeft.left} side="left" teller={book.name} />}
+          <BookPage page={baseRight.right} side="right" teller={book.name} />
           {turn && next && (
             <div ref={leafRef} className={`bk-leaf ${turn.dir > 0 ? "fwd" : "back"}`} aria-hidden="true">
-              <div className="bk-face front">
-                {turn.dir > 0 ? <BookPage page={cur.right} number={cur.rightNo} side="right" teller={book.name} /> : <BookPage page={cur.left} number={cur.leftNo} side="left" teller={book.name} />}
-              </div>
-              <div className="bk-face back">
-                {turn.dir > 0 ? <BookPage page={next.left} number={next.leftNo} side="left" teller={book.name} /> : <BookPage page={next.right} number={next.rightNo} side="right" teller={book.name} />}
-              </div>
+              <div className="bk-face front">{turn.dir > 0 ? <BookPage page={cur.right} side="right" teller={book.name} /> : <BookPage page={cur.left} side="left" teller={book.name} />}</div>
+              <div className="bk-face back">{turn.dir > 0 ? <BookPage page={next.left} side="left" teller={book.name} /> : <BookPage page={next.right} side="right" teller={book.name} />}</div>
             </div>
           )}
         </div>
       </div>
 
       <div className="bk-controls">
-        <button type="button" className="btn outline sm" onClick={() => go(safeIndex - 1)} disabled={safeIndex === 0 || !!turn} aria-label="Previous page">
-          <ChevronLeft /> Previous
+        <button type="button" className="btn outline sm" onClick={() => go(safeIndex - 1)} disabled={atFront || !!turn} aria-label="Previous page">
+          <ChevronLeft /> Back
         </button>
-        <label className="bk-scrub">
-          <span className="sr-only">Go to a page</span>
-          <input type="range" min={0} max={last} value={safeIndex} onChange={(e) => go(Number(e.target.value))} aria-valuetext={where} />
-          <span className="bk-where" aria-live="polite">
-            {where}
-          </span>
-        </label>
+        <span className="bk-where" aria-live="polite">
+          {where}
+        </span>
         <button type="button" className="btn outline sm" onClick={() => go(safeIndex + 1)} disabled={safeIndex === last || !!turn} aria-label="Next page">
-          Next <ChevronRight />
+          {atFront ? "Open the book" : "Turn page"} <ChevronRight />
         </button>
+        {speaks && (
+          <button type="button" className={`btn outline sm bk-read${reading ? " on" : ""}`} onClick={read} aria-pressed={reading}>
+            {reading ? <PauseIcon /> : <PlayIcon />} {reading ? "Stop reading" : "Read this page"}
+          </button>
+        )}
       </div>
 
-      {chapters.length > 1 && (
+      <div className="bk-dots" role="group" aria-label="Jump to a spread">
+        {views.map((_, i) => (
+          <button key={i} type="button" className="bk-dot" aria-label={dotLabel(i)} aria-current={i === safeIndex || undefined} onClick={() => go(i)} />
+        ))}
+      </div>
+
+      {!book.fictional && chapters.length > 1 && (
         <div className="chiprow bk-chapters" role="group" aria-label="Go to a chapter">
           {chapters.map((c) => (
             <button key={c.name} type="button" className="chip big" aria-pressed={safeIndex >= c.view && (chapters.find((n) => n.view > c.view)?.view ?? Infinity) > safeIndex} onClick={() => go(c.view)}>

@@ -16,7 +16,7 @@ import { findPersonByEmail, sameNamePeople, type Family, type Person } from "../
 import type { Account, Story } from "../../data/stories";
 import { Button, Field } from "../ui";
 import { CheckIcon, CloseIcon, LinkIcon, MailIcon, ShareIcon, UserIcon } from "../icons";
-import { familyCodeFor, householdFor, invitePerson, newPerson, saveEdge, savePerson, sendInviteEmail, type EdgeKind } from "../../data/familyWrites";
+import { familyCodeFor, householdFor, invitePerson, newPerson, saveEdge, savePerson, sendInviteEmailDetailed, type EdgeKind, type EmailResult } from "../../data/familyWrites";
 import { NEW_VIA, RELATIVE_GROUPS, planRelative, relativeKind } from "../../app-core/lib/familyTree.js";
 import { inviteMessage, spacedCode } from "../../app-core/lib/familyCode.js";
 import { uuid } from "../../lib/uuid";
@@ -32,7 +32,10 @@ type Plan =
 type PlanFn = (family: Family, anchorId: string, kind: string, o: { via: string[]; person: Person; newId: () => string; label: string }) => Plan;
 const plan = planRelative as unknown as PlanFn;
 
-type Done = { person: Person; code: string | null; codeError: string | null; emailed: boolean | null; email: string; reused?: boolean };
+type Done = { person: Person; code: string | null; codeError: string | null; emailed: boolean | null; emailReason: string | null; email: string; reused?: boolean };
+
+/** One send, as the sheet records it: went, failed with a reason, or not asked for. */
+const emailOutcome = (r: EmailResult | null) => ({ emailed: r ? r.ok : null, emailReason: r && !r.ok ? r.reason : null });
 
 const STEP_WORD: Record<string, string> = { up: "Which parent?", down: "Which child?", spouse: "Which partner?", side: "Which brother or sister?" };
 
@@ -55,7 +58,7 @@ function useCopy() {
 }
 
 /** The code large, the link, a QR, and the ways to pass them on. */
-export function CodeCard({ code, who, story, senderName, emailed, email }: { code: string; who: string; story: Story; senderName: string; emailed?: boolean | null; email?: string }) {
+export function CodeCard({ code, who, story, senderName, emailed, email, emailReason }: { code: string; who: string; story: Story; senderName: string; emailed?: boolean | null; email?: string; emailReason?: string | null }) {
   const link = joinUrl(code);
   const svg = useMemo(() => qrSvg(link), [link]);
   const { copied, copy } = useCopy();
@@ -103,7 +106,11 @@ export function CodeCard({ code, who, story, senderName, emailed, email }: { cod
           <CheckIcon /> Sent to {email}.
         </p>
       )}
-      {emailed === false && email && <p className="meta">The email to {email} didn't go. Pass the code on another way.</p>}
+      {emailed === false && email && (
+        <p className="meta invite-fail" role="alert">
+          The email to {email} didn't send: {emailReason || "no reason came back"}. The code still works: <b>{spacedCode(code) as string}</b>. Send it by text, or read it out.
+        </p>
+      )}
     </div>
   );
 }
@@ -115,6 +122,7 @@ export default function InviteSheet({
   userId,
   senderName,
   anchor = null,
+  presetKind = "",
   onClose,
   onSaved,
 }: {
@@ -125,13 +133,15 @@ export default function InviteSheet({
   senderName: string;
   /** Who the new person is related to; the storyteller when not given. */
   anchor?: Person | null;
+  /** A relation already chosen (the tree's "Add a parent"): a RELATIVE_KINDS key, still changeable. */
+  presetKind?: string;
   onClose: () => void;
   /** Called after the rows have landed, before the code is shown (reload). */
   onSaved: () => Promise<void>;
 }) {
   const [given, setGiven] = useState("");
   const [last, setLast] = useState(story.lastName || "");
-  const [kindKey, setKindKey] = useState<string>("");
+  const [kindKey, setKindKey] = useState<string>(presetKind);
   const [label, setLabel] = useState("");
   const [email, setEmail] = useState("");
   const [via, setVia] = useState<string[]>([]);
@@ -166,12 +176,12 @@ export default function InviteSheet({
     try {
       if (mail && !person.email) await invitePerson(person.id, mail);
       const code = person.userId ? ({ error: "already" } as const) : await familyCodeFor({ personId: person.id });
-      let emailed: boolean | null = null;
-      if ("code" in code && mail) emailed = await sendInviteEmail({ to: mail, code: code.code, storyName: story.name, senderName });
+      let sent: EmailResult | null = null;
+      if ("code" in code && mail) sent = await sendInviteEmailDetailed({ to: mail, code: code.code, storyName: story.name, senderName });
       track("invite_sent", { method: mail ? "email" : "code", relation: kindKey || "existing", reused: true });
       await onSaved();
       setTwin(null);
-      setDone({ person, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, emailed, email: mail, reused: true });
+      setDone({ person, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, ...emailOutcome(sent), email: mail, reused: true });
     } catch (err) {
       setError(`That didn't go (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
     } finally {
@@ -230,11 +240,11 @@ export default function InviteSheet({
 
       if (mail) await invitePerson(planned.id, mail);
       const code = await familyCodeFor({ personId: planned.id });
-      let emailed: boolean | null = null;
-      if ("code" in code && mail) emailed = await sendInviteEmail({ to: mail, code: code.code, storyName: story.name, senderName });
+      let sent: EmailResult | null = null;
+      if ("code" in code && mail) sent = await sendInviteEmailDetailed({ to: mail, code: code.code, storyName: story.name, senderName });
       track("invite_sent", { method: mail ? "email" : "code", relation: kindKey });
       await onSaved();
-      setDone({ person: saved, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, emailed, email: mail });
+      setDone({ person: saved, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, ...emailOutcome(sent), email: mail });
     } catch (err) {
       setError(`That didn't save (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
     } finally {
@@ -266,14 +276,14 @@ export default function InviteSheet({
           <>
             {done.reused && <p className="meta" style={{ marginBottom: "var(--s-4)" }}>We used the {done.person.givenName} who was already listed instead of adding a second one.</p>}
             {done.code ? (
-              <CodeCard code={done.code} who={done.person.givenName} story={story} senderName={senderName} emailed={done.emailed} email={done.email} />
+              <CodeCard code={done.code} who={done.person.givenName} story={story} senderName={senderName} emailed={done.emailed} email={done.email} emailReason={done.emailReason} />
             ) : (
               <p className="meta">
                 {done.codeError === "already"
-                  ? `${done.person.givenName} is already on A Story, so no code is needed.`
+                  ? `${done.person.givenName} is already on A Story, so no code is needed${done.email ? ", and no email was sent" : ""}.`
                   : done.codeError === "not_ready"
-                    ? "Codes aren't switched on for this family yet. Invite by email from their page when they are."
-                    : "A code couldn't be made just now. Open their page later and send one."}
+                    ? `Codes aren't switched on for this family yet, so there was nothing to send${done.email ? ` to ${done.email}` : ""}. Try again later from their page.`
+                    : `A code couldn't be made just now${done.email ? `, so no email went to ${done.email}` : ""}. Open their page later and send one.`}
               </p>
             )}
             <div className="acts" style={{ marginTop: "var(--s-5)" }}>

@@ -1,0 +1,631 @@
+{
+  "_note": "Proposed rows for phone-app/content/questions.csv (then `npm run questions`). Same shape as src/app-core/data/interview.js entries. `rewrite: true` means the id already exists and this row replaces it. `about` is null where only the storyteller can answer. See docs/research/questions-2026.md.",
+  "questions": [
+    {
+      "id": "roots-born-day",
+      "era": "Where we come from",
+      "question": "What were you told about the day you were born?",
+      "followUp": "Who told you that story, and how often?",
+      "hint": "The weather, the hour, who was there, who was late. Hearsay is fine.",
+      "topic": "roots",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "people",
+        "legends",
+        "week1"
+      ],
+      "about": "What has {name} been told about the day they were born?"
+    },
+    {
+      "id": "roots-look-like",
+      "era": "Where we come from",
+      "question": "Who in the family do you look like?",
+      "followUp": "And who do you act like?",
+      "hint": "The nose, the hands, the walk. Who said it when you were small.",
+      "topic": "patterns",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "people",
+        "body",
+        "week1"
+      ],
+      "about": "Who in the family does {name} look most like?"
+    },
+    {
+      "id": "roots-grandparents-met",
+      "rewrite": true,
+      "era": "Where we come from",
+      "question": "How did your grandparents meet, as far as you know?",
+      "followUp": "Who told you the story?",
+      "hint": "Even a scrap. A dance, a farm, a boat, a shop counter.",
+      "topic": "grandparents",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "people",
+        "love"
+      ],
+      "about": "What does {name} know about how their grandparents met?"
+    },
+    {
+      "id": "roots-mother-best",
+      "era": "Where we come from",
+      "question": "What did your mother wear when she dressed up?",
+      "followUp": "How often did it come out of the wardrobe?",
+      "hint": "The one good dress, the shoes, the scent. Where she was going.",
+      "topic": "parents",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "people",
+        "clothes"
+      ],
+      "about": "What did {name}'s mother wear for best?"
+    },
+    {
+      "id": "roots-father-home",
+      "era": "Where we come from",
+      "question": "What did your father sound like coming home?",
+      "followUp": "What did you do when you heard it?",
+      "hint": "The gate, the boots, the cough, the whistle. What changed in the room.",
+      "topic": "parents",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "people",
+        "home"
+      ],
+      "about": null
+    },
+    {
+      "id": "child-birthday",
+      "era": "Childhood",
+      "question": "How was a birthday marked in your house?",
+      "followUp": "Which birthday do you remember best?",
+      "hint": "A cake or no cake. A coin, a song, a day off chores, nothing at all.",
+      "topic": "rituals",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "rituals",
+        "family",
+        "week1"
+      ],
+      "about": "How does {name} like a birthday marked?"
+    },
+    {
+      "id": "child-smallest-coin",
+      "era": "Childhood",
+      "question": "What could you buy with the smallest coin you had?",
+      "followUp": "How did you get the coin?",
+      "hint": "Name the sweet, the shop, and who was behind the counter.",
+      "topic": "money",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "money",
+        "food",
+        "place",
+        "week1"
+      ],
+      "about": "What sweet does {name} still talk about from childhood?"
+    },
+    {
+      "id": "child-saturday-sound",
+      "era": "Childhood",
+      "question": "What did Saturday morning sound like at your house?",
+      "followUp": "Who was up first?",
+      "hint": "The radio, the washing, a parent shouting up the stairs. Or nothing until noon.",
+      "topic": "home",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "home",
+        "rituals"
+      ],
+      "about": null
+    },
+    {
+      "id": "child-camera",
+      "era": "Childhood",
+      "question": "Who owned a camera when you were a child?",
+      "followUp": "Where are those photographs now?",
+      "hint": "Whose it was, when it came out, and how you had to stand.",
+      "topic": "objects",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "objects",
+        "people"
+      ],
+      "about": "Who took the photographs in {name}'s family?"
+    },
+    {
+      "id": "child-friend-house",
+      "era": "Childhood",
+      "question": "What was different about your best friend's house?",
+      "followUp": "What did your friend think of your house?",
+      "hint": "The smell, the food, the rules, the noise. What they had that you didn't.",
+      "topic": "friends",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "friends",
+        "home"
+      ],
+      "about": null
+    },
+    {
+      "id": "child-school-lunch",
+      "era": "Childhood",
+      "question": "What did you eat at school in the middle of the day?",
+      "followUp": "Who did you sit with?",
+      "hint": "Carried from home, served in a hall, or you walked home for it.",
+      "topic": "school",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "school",
+        "food",
+        "week1"
+      ],
+      "about": "What did {name} take to school for lunch?"
+    },
+    {
+      "id": "child-sick-sounds",
+      "era": "Childhood",
+      "question": "What could you hear from bed when you were kept home sick?",
+      "followUp": "Who came up the stairs, and with what?",
+      "hint": "The house going on without you. The clock, the street, the kitchen.",
+      "topic": "health",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "health",
+        "home"
+      ],
+      "about": null
+    },
+    {
+      "id": "grow-first-job",
+      "rewrite": true,
+      "era": "Growing up",
+      "question": "Tell me about your first morning at your first job.",
+      "followUp": "What did you do with the first money?",
+      "hint": "What you wore, how you got there, who showed you what to do.",
+      "topic": "work",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "work"
+      ],
+      "about": "What was {name}'s first job?"
+    },
+    {
+      "id": "grow-bedroom-wall",
+      "era": "Growing up",
+      "question": "What was on your bedroom wall at sixteen?",
+      "followUp": "Who put it there?",
+      "hint": "A picture, a map, a saint, a singer, cracks. Or no wall of your own.",
+      "topic": "room",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "home",
+        "music",
+        "week1"
+      ],
+      "about": null
+    },
+    {
+      "id": "grow-saturday-night",
+      "era": "Growing up",
+      "question": "Where were you on a Saturday night at eighteen?",
+      "followUp": "How did you get home?",
+      "hint": "The hall, the kitchen, the street corner, the night shift.",
+      "topic": "friends",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "friends",
+        "place",
+        "music"
+      ],
+      "about": "Where did {name} go on Saturday nights when they were young?"
+    },
+    {
+      "id": "grow-letter-kept",
+      "era": "Growing up",
+      "question": "Which letter from those years did you keep?",
+      "followUp": "What did it say, roughly?",
+      "hint": "Who it was from and where it sat for years. If you burned them, say so.",
+      "topic": "love",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "love",
+        "objects"
+      ],
+      "about": null
+    },
+    {
+      "id": "grow-service",
+      "rewrite": true,
+      "era": "Growing up",
+      "question": "Who from your street went away to serve or to work far off?",
+      "followUp": "What came back with them?",
+      "hint": "You, a brother, a neighbour. Where they went and who waited.",
+      "topic": "history",
+      "sensitive": "hardship",
+      "depth": 3,
+      "tags": [
+        "history",
+        "work"
+      ],
+      "about": "Who in {name}'s family went away to serve?"
+    },
+    {
+      "id": "love-shared-kitchen",
+      "era": "Love & family",
+      "question": "Who have you shared a kitchen with the longest?",
+      "followUp": "What did the two of you argue about in that kitchen?",
+      "hint": "A husband, a wife, a sister, a friend, a lodger. Who cooked and who washed up.",
+      "topic": "home-making",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "home",
+        "people",
+        "food"
+      ],
+      "about": "Who has {name} shared a home with the longest?"
+    },
+    {
+      "id": "love-first-outing",
+      "era": "Love & family",
+      "question": "Where did you go the first time you went out together?",
+      "followUp": "What did you talk about on the way home?",
+      "hint": "The picture house, the dance, a walk, a bus. What it cost and who paid.",
+      "topic": "courtship",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "love",
+        "place"
+      ],
+      "about": "Where did {name} go on their first date?"
+    },
+    {
+      "id": "love-child-raised",
+      "era": "Love & family",
+      "question": "Which small child did you help raise, yours or not?",
+      "followUp": "What did they want from you, every time?",
+      "hint": "Your own, a niece, a neighbour's, a younger brother. What they called you.",
+      "topic": "children",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "children",
+        "people"
+      ],
+      "about": "Which children did {name} help raise?"
+    },
+    {
+      "id": "love-weekly-call",
+      "era": "Love & family",
+      "question": "Who did you telephone every week, for years?",
+      "followUp": "What did you always end up talking about?",
+      "hint": "A mother, a sister, a friend across the country. The day, the hour, what it cost.",
+      "topic": "rituals",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "rituals",
+        "people"
+      ],
+      "about": "Who does {name} call every week?"
+    },
+    {
+      "id": "love-found-out",
+      "rewrite": true,
+      "era": "Love & family",
+      "question": "Where were you when you found out a baby was coming?",
+      "followUp": "Who did you tell first?",
+      "hint": "Yours, or one you were waiting on. The room, the look on someone's face.",
+      "topic": "children",
+      "sensitive": "private",
+      "depth": 3,
+      "tags": [
+        "children",
+        "feelings"
+      ],
+      "about": null
+    },
+    {
+      "id": "love-three-am",
+      "era": "Love & family",
+      "question": "What did the house sound like at 3 a.m. with a new baby?",
+      "followUp": "Who did you ask when nothing worked?",
+      "hint": "Who got up. What you did to settle them. The one thing that worked.",
+      "topic": "parenting",
+      "sensitive": null,
+      "depth": 3,
+      "tags": [
+        "children",
+        "home"
+      ],
+      "about": "What does {name} say about the nights with a new baby?"
+    },
+    {
+      "id": "work-uniform",
+      "era": "Work & making a living",
+      "question": "What did you wear to work?",
+      "followUp": "What did it smell of at the end of the day?",
+      "hint": "Uniform, overalls, a good shirt, an apron. Who washed it, and how often.",
+      "topic": "routine",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "work",
+        "clothes",
+        "week1"
+      ],
+      "about": "What did {name} wear to work?"
+    },
+    {
+      "id": "work-sound",
+      "era": "Work & making a living",
+      "question": "What did your workplace sound like?",
+      "followUp": "What did you still hear in your head after you got home?",
+      "hint": "Machines, a till, children, cattle, a typewriter, a quiet you could hear the clock in.",
+      "topic": "place",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "work",
+        "place"
+      ],
+      "about": null
+    },
+    {
+      "id": "work-brought-home",
+      "era": "Work & making a living",
+      "question": "What did you bring home on your hands or clothes?",
+      "followUp": "What did your family say about it?",
+      "hint": "Flour, oil, chalk, ink, the smell of the ward, sawdust.",
+      "topic": "craft",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "work",
+        "body"
+      ],
+      "about": "What did {name} come home from work smelling of?"
+    },
+    {
+      "id": "work-first-mistake",
+      "era": "Work & making a living",
+      "question": "What did you get wrong in your first month and never again?",
+      "followUp": "Who taught you the right way?",
+      "hint": "The mistake everyone makes once. Who caught it.",
+      "topic": "skill",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "work",
+        "skill"
+      ],
+      "about": null
+    },
+    {
+      "id": "world-lights-out",
+      "era": "The world we lived through",
+      "question": "When did the lights go out for everybody?",
+      "followUp": "Who turned up at your door?",
+      "hint": "A storm, a strike, a war, a power cut. What you did in the dark.",
+      "topic": "events",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "events",
+        "community"
+      ],
+      "about": "What does {name} remember of the big blackout or storm?"
+    },
+    {
+      "id": "world-new-food",
+      "era": "The world we lived through",
+      "question": "What food did you taste for the first time as an adult?",
+      "followUp": "What did you think of it then?",
+      "hint": "A pizza, a mango, a curry, sushi. Where, and who put it in front of you.",
+      "topic": "change",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "food",
+        "change",
+        "week1"
+      ],
+      "about": "What food did {name} discover late and love?"
+    },
+    {
+      "id": "world-safe-then",
+      "rewrite": true,
+      "era": "The world we lived through",
+      "question": "What did you do as a child that would frighten a parent today?",
+      "followUp": "Did anything ever go wrong?",
+      "hint": "Out all day, on the back of a truck, down by the river, home by dark.",
+      "topic": "change",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "play",
+        "change",
+        "week1"
+      ],
+      "about": "What did {name} do as a kid that would frighten a parent today?"
+    },
+    {
+      "id": "turn-high-point",
+      "rewrite": true,
+      "era": "When everything changed",
+      "question": "Tell me about one day you knew was good while it was happening.",
+      "followUp": "What did you do with the evening?",
+      "hint": "One day, not a stretch. Where you were, who was there, what the weather did.",
+      "topic": "high point",
+      "sensitive": null,
+      "depth": 3,
+      "tags": [
+        "feelings",
+        "place"
+      ],
+      "about": "Which day does {name} call one of the best of their life?"
+    },
+    {
+      "id": "turn-day-changed",
+      "rewrite": true,
+      "era": "When everything changed",
+      "question": "Where were you when the news came that changed everything?",
+      "followUp": "Who did you tell first?",
+      "hint": "A phone, a doorway, a letter, a doctor's room. Who told you, and the next hour.",
+      "topic": "turning point",
+      "sensitive": null,
+      "depth": 4,
+      "tags": [
+        "change",
+        "place"
+      ],
+      "about": null
+    },
+    {
+      "id": "turn-small-kindness",
+      "era": "When everything changed",
+      "question": "Who did something small for you that turned out to be big?",
+      "followUp": "Did you ever get to thank them?",
+      "hint": "A lift, a loan, a word to the right person, a meal. Name them.",
+      "topic": "luck",
+      "sensitive": null,
+      "depth": 3,
+      "tags": [
+        "people",
+        "luck"
+      ],
+      "about": "Who gave {name} a break when it mattered?"
+    },
+    {
+      "id": "faith-smell",
+      "era": "Faith & what carried me",
+      "question": "What did your place of worship smell like?",
+      "followUp": "Where did you sit, and who sat beside you?",
+      "hint": "Incense, wax, old wood, damp coats. Or the kitchen where your family kept quiet instead.",
+      "topic": "the place",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "faith",
+        "place"
+      ],
+      "about": null
+    },
+    {
+      "id": "faith-grace-said",
+      "rewrite": true,
+      "era": "Faith & what carried me",
+      "question": "Say the words your family says before a meal.",
+      "followUp": "Who says it, and who started it?",
+      "hint": "A grace, a toast, a joke, a silence. Word for word, in the language it's said in.",
+      "topic": "words",
+      "sensitive": null,
+      "depth": 2,
+      "tags": [
+        "faith",
+        "sayings",
+        "food"
+      ],
+      "about": "What does {name} say before a meal?"
+    },
+    {
+      "id": "learn-regret",
+      "rewrite": true,
+      "era": "Looking back",
+      "question": "Which letter, call or visit do you wish you had made?",
+      "followUp": "What would the first line have been?",
+      "hint": "One. Who it was to, and what stopped you.",
+      "topic": "regret",
+      "sensitive": "private",
+      "depth": 5,
+      "tags": [
+        "regret",
+        "people"
+      ],
+      "about": null
+    },
+    {
+      "id": "learn-tell-twenty",
+      "rewrite": true,
+      "era": "Looking back",
+      "question": "What were you told at twenty that you only understood at fifty?",
+      "followUp": "Have you said it to anyone since?",
+      "hint": "One sentence. Who said it, where you were standing.",
+      "topic": "advice",
+      "sensitive": null,
+      "depth": 4,
+      "tags": [
+        "advice",
+        "people",
+        "sayings"
+      ],
+      "about": null
+    },
+    {
+      "id": "later-grandchild-rule",
+      "era": "Looking back",
+      "question": "What do you let a grandchild do that your own kids never could?",
+      "followUp": "What do they call you?",
+      "hint": "Ice cream before dinner, the late bedtime. Or a niece, a neighbour's child.",
+      "topic": "grandchildren",
+      "sensitive": null,
+      "depth": 3,
+      "tags": [
+        "grandchildren",
+        "rituals"
+      ],
+      "about": "What does {name} let a grandchild do that the kids never could?"
+    },
+    {
+      "id": "family-one-question",
+      "era": "From the family",
+      "question": "What would you ask {name} if you had one question?",
+      "followUp": null,
+      "hint": "Write it the way you'd say it across the table. It goes to them next.",
+      "topic": "ask",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "ask-them",
+        "family",
+        "week1"
+      ],
+      "about": "What would you ask {name} if you had one question?"
+    },
+    {
+      "id": "photo-who-where",
+      "era": "Anything else",
+      "question": "Who is in this photograph, and where was it taken?",
+      "followUp": "What happened just after the shutter clicked?",
+      "hint": "Start with the person you knew best. The year can be a guess.",
+      "topic": "photographs",
+      "sensitive": null,
+      "depth": 1,
+      "tags": [
+        "photo",
+        "people",
+        "place",
+        "week1"
+      ],
+      "about": "Who is in this photograph of {name}, and where was it taken?"
+    }
+  ]
+}

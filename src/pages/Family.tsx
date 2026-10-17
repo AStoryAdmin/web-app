@@ -13,7 +13,10 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, Chip, Problem } from "../components/ui";
 import { ChevronRight, PlusIcon } from "../components/icons";
-import FamilyTree from "../components/family/FamilyTree";
+import FamilyTreeCard from "../components/family/tree/FamilyTreeCard";
+import { sampleFamily } from "../components/family/tree/sampleFamily";
+import { placePerson } from "../components/family/tree/placePerson";
+import type { GhostKind } from "../components/family/tree/treeModel";
 import InviteSheet from "../components/family/InviteSheet";
 import ReviewQueue from "../components/family/ReviewQueue";
 import Keepers from "../components/family/Keepers";
@@ -22,7 +25,7 @@ import { Asked, WaitingOnOthers } from "../components/family/Waiting";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { usePhotoUrl } from "../lib/photoUrls";
-import { listMyCodes, removePerson, revokeCode, type MyCode } from "../data/familyWrites";
+import { householdFor, listMyCodes, removePerson, revokeCode, type MyCode } from "../data/familyWrites";
 import { buildIndex } from "../app-core/lib/familyGraph.js";
 import { spacedCode } from "../app-core/lib/familyCode.js";
 import { canEdit, expiresLabel, familyTitle, isOrganiser, personLine, personName, realPeople, statusChip, type Index } from "../components/family/familyView";
@@ -120,7 +123,10 @@ export default function Family() {
   const { user } = useAuth();
   const { account, activeStory: story, stories, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
   const [params] = useSearchParams();
-  const [invite, setInvite] = useState<{ anchor: Person | null } | null>(null);
+  const [invite, setInvite] = useState<{ anchor: Person | null; kind?: GhostKind | null } | null>(null);
+  // Dev only: a fictional family on the tree, for judging the drawing with more than three people. Nothing on it writes.
+  const preview = import.meta.env.DEV && params.get("preview") === "tree";
+  const sample = useMemo(() => (preview ? sampleFamily() : null), [preview]);
   const [manage, setManage] = useState(false);
   const [codesVersion, setCodesVersion] = useState(0);
   const [askedCount, setAskedCount] = useState(0);
@@ -157,17 +163,23 @@ export default function Family() {
   const lineFor = (p: Person) => personLine(p, { story, index, tellerId: teller?.id || null, meId, organiser, withState: false });
   const own = story.relationship === "Myself" && (!story.ownerId || story.ownerId === meId);
   const joined = !!story.ownerId && story.ownerId !== meId;
-  const generations = (() => {
-    const years = people.map((p) => p.birthYear).filter((y): y is number => !!y);
-    if (years.length < 2) return people.length > 1 ? "The family, so far" : "";
-    const span = Math.max(...years) - Math.min(...years);
-    const n = Math.max(1, Math.round(span / 28) + 1);
-    return `${["One", "Two", "Three", "Four", "Five"][Math.min(n, 5) - 1]} generation${n === 1 ? "" : "s"}, so far`;
-  })();
 
   const afterWrite = async () => {
     await reload();
     setCodesVersion((v) => v + 1);
+  };
+
+  /** Somebody already in the family, put into the tree beside somebody else (one or two edges). */
+  const place = async (person: Person, anchor: Person, kind: GhostKind) => {
+    if (preview || !user || !family) return;
+    setError(null);
+    try {
+      const householdId = anchor.householdId || person.householdId || (await householdFor(user.id, account, family));
+      await placePerson({ family, person, anchor, kind, householdId });
+      await reload();
+    } catch (err) {
+      setError(`${person.givenName} wasn't placed (${(err as Error)?.message || "no connection"}).`);
+    }
   };
 
   const remove = async (p: Person) => {
@@ -200,22 +212,21 @@ export default function Family() {
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
 
+        <FamilyTreeCard
+          family={sample ? sample.family : family}
+          story={sample ? sample.story : story}
+          meId={sample ? sample.meId : meId}
+          own={sample ? false : own}
+          preview={preview}
+          onAdd={(anchor, kind) => !preview && setInvite({ anchor, kind })}
+          onPlace={place}
+          canPlace={(p) => !preview && canEdit(p, family, meId)}
+        />
+
         <div className="fam">
           <div className="col">
-            {others.length === 0 ? (
-              <section className="card tree empty-fam" aria-label="Family tree">
-                <h2 className="story-title">{own ? "It's just you so far. Who else was there?" : `It's you and ${story.name} so far. Who else was there?`}</h2>
-                <p className="meta">A brother, a daughter, the friend who was always at the table. Add them and they can read what's shared and add what they remember, under their own name.</p>
-                <Button icon={<PlusIcon />} onClick={() => setInvite({ anchor: null })}>
-                  Add a person
-                </Button>
-              </section>
-            ) : (
+            {others.length > 0 && (
               <>
-                <section className="card tree" aria-label="Family tree">
-                  {generations && <h2>{generations}</h2>}
-                  {family && <FamilyTree family={family} story={story} meId={meId} organiser={organiser} onAdd={() => setInvite({ anchor: null })} />}
-                </section>
                 <Duplicates people={people} family={family} stories={stories} meId={meId} onChanged={afterWrite} />
                 <section className="card people" aria-label="Everyone">
                   <h2>
@@ -255,7 +266,7 @@ export default function Family() {
       </div>
 
       {invite && user && (
-        <InviteSheet story={story} family={family} account={account} userId={user.id} senderName={senderName} anchor={invite.anchor} onClose={() => setInvite(null)} onSaved={afterWrite} />
+        <InviteSheet story={story} family={family} account={account} userId={user.id} senderName={senderName} anchor={invite.anchor} presetKind={invite.kind || ""} onClose={() => setInvite(null)} onSaved={afterWrite} />
       )}
     </Shell>
   );
