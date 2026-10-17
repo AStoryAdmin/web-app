@@ -2374,3 +2374,12 @@ img.rd-hero.developing, .rd-strip img.developing, img[data-develop].developing {
   .fromthebook .omark, .home-sheet .week .d.has::after, .arc-year.inked::after { animation: none; }
   .arc-year.will-ink::after { transform: none; }
 }
+
+/* ───────────────────────── 36. Large displays (lead) ───────────────────────── */
+/* On a 4K monitor the app sat as a 1100px column with 16px type in the middle of a wall. Like Apple's pages,
+   the whole layout steps up with the display: the column widens a little and everything else scales together
+   (zoom keeps every token's proportions; pointer effects read the zoomed boxes). */
+@media (min-width: 1700px) { html { zoom: 1.15; } :root { --content-max: 1180px; } }
+@media (min-width: 2100px) { html { zoom: 1.4; } :root { --content-max: 1220px; } }
+@media (min-width: 2600px) { html { zoom: 1.7; } :root { --content-max: 1260px; } }
+@media (min-width: 3300px) { html { zoom: 2.05; } :root { --content-max: 1300px; } }
