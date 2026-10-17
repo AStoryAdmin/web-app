@@ -44,7 +44,7 @@ export type LayoutOptions = {
   maxDown: number;
 };
 
-export const DESKTOP: LayoutOptions = { nodeW: 136, nodeH: 206, printH: 118, gapX: 40, gapY: 84, coupleGap: 34, margin: 36, maxUp: 4, maxDown: 4 };
+export const DESKTOP: LayoutOptions = { nodeW: 136, nodeH: 196, printH: 112, gapX: 40, gapY: 72, coupleGap: 34, margin: 32, maxUp: 4, maxDown: 4 };
 export const PHONE: LayoutOptions = { nodeW: 108, nodeH: 172, printH: 92, gapX: 24, gapY: 64, coupleGap: 26, margin: 24, maxUp: 4, maxDown: 4 };
 
 export type TreeNode = { id: string; x: number; y: number; gen: number; depth: number; focus: boolean; unit: number };
@@ -142,13 +142,26 @@ export function layoutFamily(people: LayoutPerson[], edges: LayoutEdge[], focusI
     frontier = next;
   }
 
-  /* 2. Blood: reachable through parent edges alone. Decides who sits on the left of a couple. */
+  /* 2. Blood: the focus's ancestors, and everyone descended from one of them (or from the focus).
+     Decides who sits on the left of a couple: the family's own side, with the in-law beside them. */
   const blood = new Set<string>([focus]);
   frontier = [focus];
   while (frontier.length) {
     const next: string[] = [];
     for (const id of frontier) {
-      for (const n of [...(parentsOf.get(id) || []), ...(childrenOf.get(id) || [])]) {
+      for (const n of parentsOf.get(id) || []) {
+        if (!gen.has(n) || blood.has(n)) continue;
+        blood.add(n);
+        next.push(n);
+      }
+    }
+    frontier = next;
+  }
+  frontier = [...blood];
+  while (frontier.length) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      for (const n of childrenOf.get(id) || []) {
         if (!gen.has(n) || blood.has(n)) continue;
         blood.add(n);
         next.push(n);

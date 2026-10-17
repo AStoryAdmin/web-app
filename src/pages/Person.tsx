@@ -162,7 +162,7 @@ export default function Person() {
       <div className="page person-page">
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
 
-        <section className="card person-hero" aria-label={name}>
+        <section className="card person-hero" aria-label={name} data-rise>
           <Avatar src={photo} name={person.givenName} size={120} className={person.deathYear ? "gone" : ""} />
           <div className="grow">
             <p className="label">{isTeller ? "Storyteller" : state.key === "you" ? "You" : "In the family"}</p>
@@ -185,7 +185,7 @@ export default function Person() {
           )}
         </section>
 
-        <div className="person-grid">
+        <div className="person-grid" data-rise>
           <div className="col">
             {isTeller && res.own && (
               <p className="meta" style={{ marginBottom: "var(--s-4)" }}>

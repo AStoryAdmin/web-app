@@ -9,6 +9,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import MemoryCard from "../components/MemoryCard";
 import FromTheBook from "../components/FromTheBook";
+import WeekInk from "../components/delight/WeekInk";
 import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
 import { MicIcon, PenIcon, SearchIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
@@ -76,7 +77,7 @@ export default function Home() {
         <h1>
           {greeting("")}, <span className="hl">{user?.firstName || "friend"}</span>.
         </h1>
-        <span className="foil" data-rise />
+        <span className="foil" />
         <div className="ask">
           <span className="pill gold" data-rise>
             {own ? "A little question for today" : `A little question for ${story.name}`}
@@ -141,6 +142,7 @@ export default function Home() {
                   {d.today ? "Today" : d.label}
                   <span className={`d${d.count ? " has" : ""}`} style={d.count ? { ["--dot" as string]: dotStrength(d) } : undefined}>
                     {d.day}
+                    {d.today && <WeekInk key={d.count} day={d.key} count={d.count} />}
                   </span>
                 </button>
               ))}

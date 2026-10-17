@@ -26,7 +26,7 @@ const MISSING_FN = new Set(["PGRST202", "42883"]);
 
 function Section({ title, lead, children, id }: { title: string; lead?: string; children: ReactNode; id?: string }) {
   return (
-    <section className="card pad acct" aria-labelledby={id ? `${id}-h` : undefined} id={id}>
+    <section className="card pad acct" aria-labelledby={id ? `${id}-h` : undefined} id={id} data-rise>
       <h2 id={id ? `${id}-h` : undefined}>{title}</h2>
       {lead && <p className="meta acct-lead">{lead}</p>}
       {children}

@@ -63,7 +63,7 @@ export default function TreeCanvas({ layout, infos, phone, canAdd, firstNameOf, 
   const suppress = useRef(false);
   const [menu, setMenu] = useState<(TreeMenu & { left: number; top: number }) | null>(null);
   const { nodeW, nodeH, printH } = layout.opts;
-  const viewH = Math.max(360, Math.min(720, layout.height + 56));
+  const viewH = Math.max(360, Math.min(860, layout.height + 56));
 
   const apply = useCallback(() => {
     const el = stage.current;

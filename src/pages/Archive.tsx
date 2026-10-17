@@ -12,7 +12,7 @@ import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../com
 import BookCard from "../components/archive/BookCard";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
 import { InProgressGroup, UndatedGroup, YearGroup, type YearGroupT } from "../components/archive/ArchiveGroups";
-import { prefersReducedMotion, useArrive } from "../components/archive/motion";
+import { prefersReducedMotion, useArrive, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
 import { countPending } from "../data/contributions";
 import { decadeOf, groupByYear } from "../app-core/lib/timeline.js";
@@ -130,6 +130,8 @@ export default function Archive() {
   const filterKey = `${chapter}|${day ?? ""}|${filtered.length === 0}`;
   useArrive(listRef, filterKey);
   useArrive(topRef, storyId);
+  useRiseOnScroll(listRef, ".arc-cards > *", filterKey);
+  useInkIn(listRef, filterKey);
 
   const jump = useCallback((d: Decade) => {
     const el = document.getElementById(`y${d.year}`);

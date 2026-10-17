@@ -51,17 +51,24 @@ type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
   error?: string | null;
   /** A "Show" toggle for passwords. */
   reveal?: { shown: boolean; toggle: () => void };
+  /** Told when focus enters or leaves the field as a whole (the input and its Show control count as one). */
+  onFocusChange?: (within: boolean) => void;
 };
 
 export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
-  { label, icon, hint, error, reveal, id, className = "", ...rest },
+  { label, icon, hint, error, reveal, onFocusChange, id, className = "", ...rest },
   ref,
 ) {
   const auto = useId();
   const inputId = id || auto;
   const hintId = `${inputId}-hint`;
   return (
-    <label className={`field ${className}`} htmlFor={inputId}>
+    <label
+      className={`field ${className}`}
+      htmlFor={inputId}
+      onFocus={onFocusChange ? () => onFocusChange(true) : undefined}
+      onBlur={onFocusChange ? (e) => (e.currentTarget.contains(e.relatedTarget as Node | null) ? undefined : onFocusChange(false)) : undefined}
+    >
       <span>{label}</span>
       <span className="input" style={error ? { borderColor: "var(--danger)" } : undefined}>
         {icon}

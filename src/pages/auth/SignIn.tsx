@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
+import type { CompanionFocus } from "../../components/delight/Companion";
 import { Button, Field, Problem } from "../../components/ui";
 import { LockIcon, MailIcon } from "../../components/icons";
 import { resendSignupCode, safeNext, signIn } from "../../data/auth";
@@ -14,6 +15,7 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [shown, setShown] = useState(false);
+  const [focus, setFocus] = useState<CompanionFocus>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,11 +41,11 @@ export default function SignIn() {
   };
 
   return (
-    <AuthFrame>
+    <AuthFrame companion={{ focus, shown, progress: Math.min(1, email.length / 24) }}>
       <form className="form" onSubmit={submit} noValidate>
         <h1>Sign in</h1>
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
-        <Field label="Email" type="email" icon={<MailIcon />} autoComplete="username" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Field label="Email" type="email" icon={<MailIcon />} autoComplete="username" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} onFocusChange={(w) => setFocus(w ? "email" : null)} required />
         <Field
           label="Password"
           type={shown ? "text" : "password"}
@@ -53,6 +55,7 @@ export default function SignIn() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           reveal={{ shown, toggle: () => setShown((s) => !s) }}
+          onFocusChange={(w) => setFocus(w ? "password" : null)}
           required
         />
         <Link className="forgot" to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}>

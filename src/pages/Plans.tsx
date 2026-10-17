@@ -83,14 +83,14 @@ export default function Plans() {
             <h1 style={{ fontSize: "var(--t-h2)" }}>What each plan includes</h1>
           </div>
         </div>
-        <p className="plans-promise story">Writing, reading and the family are free on every plan, including after a plan stops.</p>
+        <p className="plans-promise story" data-rise>Writing, reading and the family are free on every plan, including after a plan stops.</p>
         {current === "complimentary" && <p className="meta" style={{ marginBottom: "var(--s-5)" }}>Your account has full access through an access code. Nothing below is needed.</p>}
 
         <div className="plan-grid">
           {PLANS.map((p) => {
             const mine = p.id === current;
             return (
-              <article key={p.id} className={`card pad plan${p.tone === "featured" ? " featured" : ""}${mine ? " mine" : ""}`} aria-current={mine ? "true" : undefined}>
+              <article key={p.id} className={`card pad plan${p.tone === "featured" ? " featured" : ""}${mine ? " mine" : ""}`} aria-current={mine ? "true" : undefined} data-rise>
                 <div className="plan-head">
                   <h2>{PLAN_LABELS[p.id]}</h2>
                   {mine && <span className="chip green">Your plan</span>}
@@ -133,7 +133,7 @@ export default function Plans() {
           })}
         </div>
 
-        <p className="meta plans-note">Plans are bought on astoryapp.com for now and show up here the moment they are paid for. Checkout inside this app is coming.</p>
+        <p className="meta plans-note" data-rise>Plans are bought on astoryapp.com for now and show up here the moment they are paid for. Checkout inside this app is coming.</p>
         <div style={{ marginTop: "var(--s-6)" }}>
           <ButtonLink to="/account" variant="quiet">
             Back to your account

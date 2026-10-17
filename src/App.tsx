@@ -10,6 +10,7 @@ import AuthProvider from "./state/AuthProvider";
 import AccountProvider from "./state/AccountProvider";
 import RequireAuth from "./state/RequireAuth";
 import Placeholder from "./pages/Placeholder";
+import LoadingMark from "./components/delight/LoadingMark";
 import Welcome from "./pages/auth/Welcome";
 import SignIn from "./pages/auth/SignIn";
 import CreateAccount from "./pages/auth/CreateAccount";
@@ -23,7 +24,13 @@ import Talk from "./pages/Talk";
 const lazyPage = (load: () => Promise<{ default: React.ComponentType }>) => {
   const C = lazy(load);
   return (
-    <Suspense fallback={<div style={{ minHeight: "60vh" }} aria-busy="true" />}>
+    <Suspense
+      fallback={
+        <div style={{ minHeight: "60vh" }} aria-busy="true">
+          <LoadingMark />
+        </div>
+      }
+    >
       <C />
     </Suspense>
   );

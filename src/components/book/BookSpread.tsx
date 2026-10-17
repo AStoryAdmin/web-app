@@ -7,10 +7,17 @@
  * motion, or on a phone where one page shows at a time, a page simply
  * fades in. Nothing ever slides sideways. "Read this page" gives the
  * spread to the browser's voice.
+ *
+ * While the book is closed its cover leans toward the pointer the way the
+ * book object on the cloth does (useTilt), and a new cover colour sweeps
+ * across the board from the side the swatch was pressed on, under the
+ * title and the prints, instead of cutting.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 import BookPage from "./BookPage";
+import { useTilt } from "../../lib/tilt";
 import { pageText, spreadOfPage, spreadsOf, type Book, type Page } from "./bookPages";
 import { MARK_MASK } from "./markMask";
 import { ChevronLeft, ChevronRight, PauseIcon, PlayIcon } from "../icons";
@@ -33,13 +40,21 @@ function useMedia(query: string): boolean {
 
 const isCover = (p: Page | null) => p?.kind === "cover" || p?.kind === "back";
 
-export default function BookSpread({ book }: { book: Book }) {
+type Sweep = { cover: Book["cover"]; fromLeft: boolean; into: HTMLElement };
+
+export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?: RefObject<number | null> }) {
   const single = useMedia("(max-width: 760px)");
   const reduced = useMedia("(prefers-reduced-motion: reduce)");
   const [index, setIndex] = useState(0);
   const [turn, setTurn] = useState<Turn | null>(null);
   const [reading, setReading] = useState(false);
   const leafRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const coverRef = useRef<HTMLElement | null>(null);
+  const sweepRef = useRef<HTMLSpanElement>(null);
+  // the cover the stage is painted in: it lags behind the book's while a new colour sweeps across
+  const [shown, setShown] = useState(book.cover);
+  const [sweep, setSweep] = useState<Sweep | null>(null);
   const opened = useRef(false);
   const speaks = canSpeak();
 
@@ -159,19 +174,68 @@ export default function BookSpread({ book }: { book: Book }) {
 
   const atFront = safeIndex === 0;
   const atBack = safeIndex === last && (single ? isCover(cur.right) : isCover(cur.left) && !cur.right);
+
+  // The closed cover leans toward the pointer, like the book on the cloth; it lies flat again as soon as a leaf turns.
+  const closed = atFront && !turn && !single;
+  useLayoutEffect(() => {
+    coverRef.current = closed ? (stageRef.current?.querySelector<HTMLElement>(".bk-spread > .bk-page.cover") ?? null) : null;
+  }, [closed, safeIndex]);
+  useTilt(coverRef, closed, { x: 7, y: 5 });
+
+  // A new cover colour: sweep it across the closed cover from the swatch's side; otherwise, or under reduced motion, just wear it.
+  useEffect(() => {
+    const same = shown.board === book.cover.board && shown.ink === book.cover.ink;
+    if (same && !sweep) return;
+    if (!same && sweep && sweep.cover.board === book.cover.board) return; // already on its way
+    const id = requestAnimationFrame(() => {
+      if (same) {
+        setSweep(null);
+        return;
+      }
+      const into = atFront && !turn && !reduced ? stageRef.current?.querySelector<HTMLElement>(".bk-spread > .bk-page.cover") : null;
+      if (!into) {
+        setShown(book.cover);
+        return;
+      }
+      const r = into.getBoundingClientRect();
+      const x = sweepFrom?.current;
+      setSweep({ cover: book.cover, fromLeft: x != null && x < r.left + r.width / 2, into });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [book.cover, shown, sweep, atFront, turn, reduced, sweepFrom]);
+  useEffect(() => {
+    const el = sweepRef.current;
+    if (!sweep || !el) return;
+    const tween = gsap.fromTo(
+      el,
+      { clipPath: sweep.fromLeft ? "inset(0% 100% 0% 0%)" : "inset(0% 0% 0% 100%)" },
+      {
+        clipPath: "inset(0% 0% 0% 0%)",
+        duration: 0.75,
+        ease: "power2.inOut",
+        onComplete: () => {
+          setShown(sweep.cover);
+          setSweep(null);
+        },
+      },
+    );
+    return () => {
+      tween.kill();
+    };
+  }, [sweep]);
   const where = atFront ? "Front cover" : atBack ? "Back cover" : single ? `Page ${safeIndex} of ${book.pages.length - 2}` : `Spread ${safeIndex} of ${last - 1}`;
   const dotLabel = (i: number) => (i === 0 ? "Front cover" : i === last ? "Back cover" : single ? `Page ${i}` : `Spread ${i}`);
 
   const style = {
-    "--cover": book.cover.board,
-    "--cover-ink": book.cover.ink,
-    "--cover-print": book.cover.print,
+    "--cover": shown.board,
+    "--cover-ink": shown.ink,
+    "--cover-print": shown.print,
     "--bk-mark": MARK_MASK,
   } as CSSProperties;
 
   return (
     <section className={`bk-reader samples${single ? " single" : ""}${atFront ? " closed-front" : ""}${atBack ? " closed-back" : ""}`} aria-label={`${book.name}'s book, as pages`} style={style}>
-      <div className="bk-stage" onClick={onStageClick}>
+      <div className="bk-stage" onClick={onStageClick} ref={stageRef}>
         <div className="bk-spread" key={single || reduced ? safeIndex : "spread"}>
           {!single && <BookPage page={baseLeft.left} side="left" teller={book.name} />}
           <BookPage page={baseRight.right} side="right" teller={book.name} />
@@ -183,6 +247,7 @@ export default function BookSpread({ book }: { book: Book }) {
           )}
         </div>
       </div>
+      {sweep && sweep.into.isConnected && createPortal(<span ref={sweepRef} className="bk-sweep" aria-hidden="true" style={{ background: sweep.cover.board }} />, sweep.into)}
 
       <div className="bk-controls">
         <button type="button" className="btn outline sm" onClick={() => go(safeIndex - 1)} disabled={atFront || !!turn} aria-label="Previous page">

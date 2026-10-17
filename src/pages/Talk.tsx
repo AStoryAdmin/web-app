@@ -22,7 +22,7 @@ export default function Talk() {
   return (
     <Shell compact title="Talk" back="/">
       <div className="page" style={{ maxWidth: 720 }}>
-        <div className="savedbox rise">
+        <div className="savedbox" data-rise>
           <p className="label">Talking with A Story</p>
           <h1>On the phone, for now.</h1>
           {question && <p className="story-q" style={{ fontSize: 24, margin: "var(--s-4) 0" }}>{question.question}</p>}

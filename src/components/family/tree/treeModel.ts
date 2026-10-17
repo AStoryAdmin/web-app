@@ -109,14 +109,16 @@ export function nodeInfos(people: Person[], ctx: ModelContext): Map<string, Node
  */
 export function virtualTeller(story: Story): Person {
   const year = parseInt(String(story.birthYear || ""), 10);
-  return { id: `story:${story.id}`, householdId: null, givenName: story.name, familyName: story.lastName, sex: "", source: "manual", storyId: story.id, ...(story.photo ? { photo: story.photo } : {}), ...(year > 0 ? { birthYear: year } : {}) } as Person;
+  const own = story.relationship === "Myself" && story.ownerId;
+  return { id: `story:${story.id}`, householdId: null, givenName: story.name, familyName: story.lastName, sex: "", source: "manual", storyId: story.id, ...(own ? { userId: story.ownerId } : {}), ...(story.photo ? { photo: story.photo } : {}), ...(year > 0 ? { birthYear: year } : {}) } as Person;
 }
 
 /** The four places around a lone storyteller that invite: a parent above, a sibling beside, a spouse beside, a child below. */
 export function ghostFamily(focus: LayoutPerson): { people: LayoutPerson[]; edges: LayoutEdge[]; infos: Map<string, NodeInfo> } {
   const ids: Record<GhostKind, string> = { parent: "ghost:parent", sibling: "ghost:sibling", spouse: "ghost:spouse", child: "ghost:child" };
   const born = focus.birthYear || 1950;
-  const people: LayoutPerson[] = [focus, { id: ids.parent, birthYear: born - 28 }, { id: ids.sibling, birthYear: born + 2 }, { id: ids.spouse, birthYear: born }, { id: ids.child, birthYear: born + 28 }];
+  // The sibling is "older" so they sit on the left and the parent is centred over the two of them.
+  const people: LayoutPerson[] = [focus, { id: ids.parent, birthYear: born - 28 }, { id: ids.sibling, birthYear: born - 2 }, { id: ids.spouse, birthYear: born }, { id: ids.child, birthYear: born + 28 }];
   const edges: LayoutEdge[] = [
     { from: ids.parent, to: focus.id, kind: "parent" },
     { from: ids.parent, to: ids.sibling, kind: "parent" },
@@ -137,11 +139,9 @@ export function treePeople(people: Person[], story: Story | null): Person[] {
   return [virtualTeller(story), ...people];
 }
 
-/** "Three generations, so far", or the words for one or two people. */
-export function treeTitle(people: Person[], story: Story | null, own: boolean, rows: number): string {
-  const real = people.filter((p) => !p.id.startsWith("story:"));
-  if (real.length <= 1) return own ? "It's just you so far. Who else was there?" : `It's you and ${story?.name || "them"} so far. Who else was there?`;
-  if (real.length === 2) return "The two of you, so far. Who else was there?";
+/** "Three generations, so far", or, while the drawing holds one person, the question that invites. */
+export function treeTitle(placed: number, story: Story | null, own: boolean, rows: number): string {
+  if (placed <= 1) return own ? "It's just you so far. Who else was there?" : `It's you and ${story?.name || "them"} so far. Who else was there?`;
   const words = ["One", "Two", "Three", "Four", "Five", "Six"];
   const k = Math.max(1, Math.min(rows, words.length));
   return `${words[k - 1]} generation${k === 1 ? "" : "s"}, so far`;

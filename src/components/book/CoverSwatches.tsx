@@ -5,7 +5,8 @@
  */
 import { COVER_COLOURS, coverColour } from "./coverColours";
 
-export default function CoverSwatches({ value, onChange, busy = false, tone = "light" }: { value: string; onChange: (key: string) => void; busy?: boolean; tone?: "light" | "dark" }) {
+/** `onChange` is given the key and, from a pointer, the x where the swatch was pressed (the cover sweeps from that side). */
+export default function CoverSwatches({ value, onChange, busy = false, tone = "light" }: { value: string; onChange: (key: string, fromX?: number) => void; busy?: boolean; tone?: "light" | "dark" }) {
   const cur = coverColour(value);
   return (
     <div className={`bk-swatches ${tone}`}>
@@ -23,7 +24,7 @@ export default function CoverSwatches({ value, onChange, busy = false, tone = "l
             aria-label={`${c.name} cover`}
             title={c.name}
             disabled={busy}
-            onClick={() => onChange(c.key)}
+            onClick={(e) => onChange(c.key, e.clientX || undefined)}
           />
         ))}
       </div>

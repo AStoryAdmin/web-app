@@ -59,11 +59,19 @@ function Big({ url }: { url: string }) {
   return <img className="rd-hero" src={src ?? undefined} alt="" />;
 }
 
-function Thumb({ url, on, tilt, onPick }: { url: string; on: boolean; tilt: number; onPick: () => void }) {
+/** A small print on the strip. Under the pointer it turns over: the date is written on the back. */
+function Thumb({ url, on, tilt, caption, onPick }: { url: string; on: boolean; tilt: number; caption: string; onPick: () => void }) {
   const src = usePhotoUrl(url);
   return (
     <button type="button" aria-pressed={on} onClick={onPick} style={{ ["--tilt" as string]: `${tilt}deg` }} aria-label="Show this photograph">
-      <img src={src ?? undefined} alt="" loading="lazy" />
+      <span className="flip">
+        <span className="face">
+          <img src={src ?? undefined} alt="" loading="lazy" />
+        </span>
+        <span className="back" aria-hidden="true">
+          <span>{caption}</span>
+        </span>
+      </span>
     </button>
   );
 }
@@ -197,7 +205,7 @@ export default function MemoryPage() {
               {photos.length > 1 && (
                 <div className="rd-strip">
                   {photos.map((p, i) => (
-                    <Thumb key={p} url={p} on={p === current} tilt={[-3, 2, -1, 3][i % 4]} onPick={() => setShown(p)} />
+                    <Thumb key={p} url={p} on={p === current} tilt={[-3, 2, -1, 3][i % 4]} caption={memory.period?.trim() || "No date yet"} onPick={() => setShown(p)} />
                   ))}
                 </div>
               )}

@@ -38,6 +38,7 @@ export default function Book() {
   const readRef = useRef<HTMLDivElement>(null);
   const editionsRef = useRef<HTMLDivElement>(null);
   const keyed = useRef<string | null>(null);
+  const sweepFrom = useRef<number | null>(null);
 
   const storyId = story?.id ?? null;
   useEffect(() => {
@@ -103,8 +104,9 @@ export default function Book() {
   };
 
   const design = normaliseDesign(story.bookDesign) as Design;
-  const setCover = async (color: string) => {
+  const setCover = async (color: string, fromX?: number) => {
     if (color === design.cover.color) return;
+    sweepFrom.current = fromX ?? null;
     setProblem(null);
     setCoverBusy(true);
     try {
@@ -188,7 +190,7 @@ export default function Book() {
               <span className="meta">{book.pages.length - 2} pages · use the arrow keys, or click a page</span>
               <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />
             </div>
-            <BookSpread key={story.id} book={book} />
+            <BookSpread key={story.id} book={book} sweepFrom={sweepFrom} />
           </>
         )}
 

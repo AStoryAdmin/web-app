@@ -20,7 +20,10 @@ export default function FromTheBook({ story }: { story: Story }) {
         {r.age ? ` · ${r.age}` : ""}
       </p>
       <blockquote>
-        <p className="said">“{smarten(r.quote)}”</p>
+        <p className="said">
+          <span className="omark">“</span>
+          {smarten(r.quote)}”
+        </p>
       </blockquote>
       <footer>
         <span className="meta">

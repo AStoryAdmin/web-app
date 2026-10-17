@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
+import type { CompanionFocus } from "../../components/delight/Companion";
 import { Button, Checkbox, Field, Problem } from "../../components/ui";
 import { CodeIcon, LockIcon, MailIcon, UserIcon } from "../../components/icons";
 import { createAccount, MIN_PASSWORD, safeNext } from "../../data/auth";
@@ -19,6 +20,7 @@ export default function CreateAccount() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [shown, setShown] = useState(false);
+  const [focus, setFocus] = useState<CompanionFocus>(null);
   const [hasCode, setHasCode] = useState(Boolean(prefilled));
   const [code, setCode] = useState(prefilled);
   const [busy, setBusy] = useState(false);
@@ -44,13 +46,13 @@ export default function CreateAccount() {
   };
 
   return (
-    <AuthFrame line={1}>
+    <AuthFrame line={1} companion={{ focus, shown, progress: Math.min(1, (focus === "email" ? email.length : name.length) / 24) }}>
       <form className="form" onSubmit={submit} noValidate>
         <h1>Create your account</h1>
         <p className="sub">Free to start. No card.</p>
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
-        <Field label="Your name" icon={<UserIcon />} autoComplete="name" placeholder="Dan Hartley" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Field label="Email" type="email" icon={<MailIcon />} autoComplete="username" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Field label="Your name" icon={<UserIcon />} autoComplete="name" placeholder="Dan Hartley" value={name} onChange={(e) => setName(e.target.value)} onFocusChange={(w) => setFocus(w ? "other" : null)} required />
+        <Field label="Email" type="email" icon={<MailIcon />} autoComplete="username" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} onFocusChange={(w) => setFocus(w ? "email" : null)} required />
         <Field
           label="Password"
           type={shown ? "text" : "password"}
@@ -60,6 +62,7 @@ export default function CreateAccount() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           reveal={{ shown, toggle: () => setShown((s) => !s) }}
+          onFocusChange={(w) => setFocus(w ? "password" : null)}
           required
         />
         <div style={{ margin: "0 0 var(--s-5)" }}>

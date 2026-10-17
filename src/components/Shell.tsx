@@ -6,7 +6,7 @@
  * phone the places move to a floating tab bar at the bottom. The pointer
  * is a soft light over the cloth; each page arrives once (lib/arrive).
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -19,6 +19,9 @@ import { storyLine } from "../lib/storyLine";
 import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
 import { useLight } from "./delight/Light";
+import Leaf from "./delight/Leaf";
+import { usePillThumb } from "../lib/pillThumb";
+import LoadingMark from "./delight/LoadingMark";
 
 const NAV = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
@@ -184,25 +187,33 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
   const navigate = useNavigate();
   const root = useRef<HTMLDivElement>(null);
   const cloth = useRef<HTMLDivElement>(null);
+  const pills = useRef<HTMLElement>(null);
   const name = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || user?.email || "";
+  // A page still on its way passes an empty placeholder marked aria-busy; the heart draws itself over it.
+  const busy = isValidElement<{ "aria-busy"?: boolean | string }>(children) && !!children.props["aria-busy"];
 
   useLight(cloth);
+  usePillThumb(pills, location.pathname);
+  // once per page, and again when a page swaps its busy placeholder for its content (the hero or title changes)
+  const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${title ?? ""}`;
   useEffect(() => {
     const el = root.current;
     if (!el) return;
     return arrive(el);
-  }, [location.pathname]);
+  }, [location.pathname, ready]);
 
   return (
     <div className="shell" ref={root} key={location.pathname}>
       <div className={`cloth on-dark${compact ? " compact" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
         <span className="lamp" aria-hidden="true" />
+        <Leaf ground={cloth} />
         <header className="top">
           <div className="top-in">
             <NavLink className="brand" to="/" aria-label="Home" viewTransition>
               <Lockup height={28} />
             </NavLink>
-            <nav className="pillnav" aria-label="Main">
+            <nav className="pillnav" aria-label="Main" ref={pills}>
+              <span className="pill-thumb" aria-hidden="true" />
               {NAV.map(({ to, label, Icon, end }) => (
                 <NavLink key={to} to={to} end={end} viewTransition>
                   <Icon />
@@ -236,6 +247,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
 
       <main className="sheet-page" id="main">
         {children}
+        {busy && <LoadingMark />}
       </main>
 
       <nav className="tabbar" aria-label="Main">

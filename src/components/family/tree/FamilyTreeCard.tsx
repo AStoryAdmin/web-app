@@ -86,7 +86,7 @@ function ShelfItem({ person, info, anchor, canPlace, onPlace }: { person: Person
         ) : (
           <span className="ft-name">{info.name}</span>
         )}
-        <span className="ft-state">{[info.years, info.stateWord].filter(Boolean).join(" · ")}</span>
+        <span className="ft-state">{[info.years.replace(/ –$/, ""), info.stateWord].filter(Boolean).join(" · ")}</span>
       </span>
       {canPlace && anchor && (
         <Button variant="quiet" small aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
@@ -123,26 +123,27 @@ export default function FamilyTreeCard({ family, story, meId, own, preview, onAd
   const teller = people.find((p) => p.storyId === story.id) || null;
   const focusId = teller?.id || people.find((p) => p.userId === meId)?.id || people[0]?.id || null;
 
-  const { layout, infos } = useMemo(() => {
+  const { layout, infos, placed } = useMemo(() => {
     const opts = phone ? PHONE : DESKTOP;
     const ctx = { story, index, tellerId: teller?.id || null, meId };
     const infos = nodeInfos(people, ctx);
     const persons: LayoutPerson[] = people.map((p) => ({ id: p.id, birthYear: p.birthYear, deathYear: p.deathYear, sex: p.sex }));
     let layout = layoutFamily(persons, family?.edges || [], focusId, opts);
-    if (layout.nodes.length === 1 && focusId) {
+    const placed = layout.nodes.length;
+    if (placed === 1 && focusId) {
       // A lone storyteller: four places around them that invite.
       const focus = persons.find((p) => p.id === focusId)!;
       const ghosts = ghostFamily(focus);
       layout = { ...layoutFamily(ghosts.people, ghosts.edges, focusId, opts), unplaced: layout.unplaced };
       for (const [id, g] of ghosts.infos) infos.set(id, g);
     }
-    return { layout, infos };
+    return { layout, infos, placed };
   }, [people, family, focusId, phone, story, index, teller, meId]);
 
   const unplaced = layout.unplaced.map((id) => byId.get(id)).filter((p): p is Person => !!p && !p.id.startsWith("story:"));
   const anchor = focusId ? byId.get(focusId) || null : null;
   const realAnchor = anchor && !anchor.id.startsWith("story:") ? anchor : null;
-  const title = treeTitle(people, story, own, layout.rows.length);
+  const title = treeTitle(placed, story, own, layout.rows.length);
   const firstNameOf = (id: string) => firstName(byId.get(id));
 
   return (

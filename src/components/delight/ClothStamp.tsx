@@ -18,7 +18,7 @@ export default function ClothStamp({ ground }: { ground: RefObject<HTMLElement |
     const press = (e: PointerEvent) => {
       if (e.button !== 0) return;
       const t = e.target as HTMLElement;
-      if (t.closest(".paper, a, button, input, label")) return;
+      if (t.closest(".paper, .title-page, .print, a, button, input, label")) return;
       const r = el.getBoundingClientRect();
       const s = { id: ++seq, x: e.clientX - r.left, y: e.clientY - r.top, rot: 0 };
       setStamps((all) => [...all.slice(-11), s]);

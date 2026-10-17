@@ -1,8 +1,9 @@
 /**
  * Family: who is in it, who is on A Story, add someone, review what they
- * asked and sent. The tree on the left with everyone listed under it, each
- * in one of three states ("not on A Story yet", "invited · waiting for
- * them", "on A Story"); on the right what is waiting for your review (join
+ * asked and sent. The tree across the top (components/family/tree), then
+ * everyone listed on the left, each in one of three states ("not on A Story
+ * yet", "invited · waiting for them", "on A Story"); on the right what is
+ * waiting for your review (join
  * requests, suggestions, what the family sent), what you are waiting on,
  * the invitation card, and (for the story's owner) who may edit. A code
  * joins the tree, never the keepers. Nobody is listed twice (docs/PRD.md
