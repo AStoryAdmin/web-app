@@ -19,12 +19,14 @@ const fold = (s: string) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g,
 const saved = (m: Memory) => m.status !== "in_progress";
 
 /**
- * The memories that hang off the rail: the ones this person told or sent
- * and the ones somebody said they are in, oldest first so the newest is
- * last, undated at the end. For the storyteller it is their own story.
+ * The memories that hang off the rail: their own story when they have one,
+ * the ones they told or sent, and the ones somebody said they are in;
+ * oldest first so the newest is last, undated at the end. A person with a
+ * story of their own is still in other people's memories, so all of it
+ * goes on the one rail, each memory once.
  */
 export function railFor(told: Found[], tagged: Found[], own: Story | null): Found[] {
-  const items = own ? own.memories.filter(saved).map((memory) => ({ story: own, memory })) : [...told, ...tagged];
+  const items = [...(own ? own.memories.filter(saved).map((memory) => ({ story: own, memory })) : []), ...told, ...tagged];
   const byId = new Map(items.map((f) => [f.memory.id, f]));
   const ordered = sortByDate([...byId.values()].map((f) => f.memory), 1) as Memory[];
   return ordered.map((m) => byId.get(m.id)!).filter(Boolean);

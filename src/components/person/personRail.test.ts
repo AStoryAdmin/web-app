@@ -23,6 +23,13 @@ describe("the rail", () => {
     const own = story([mem({ id: "x", period: "1990" }), mem({ id: "y", period: "1980", status: "in_progress" })]);
     expect(railFor([], [], own).map((f) => f.memory.id)).toEqual(["x"]);
   });
+
+  it("keeps the memories they are in beside their own story, each once", () => {
+    const own = story([mem({ id: "x", period: "1990" })]);
+    const other = story([mem({ id: "t", period: "2001" }), mem({ id: "x", period: "1990" })]);
+    const tagged = [{ story: other, memory: other.memories[0] }, { story: other, memory: other.memories[1] }];
+    expect(railFor([], tagged, own).map((f) => f.memory.id)).toEqual(["x", "t"]);
+  });
   it("says how many and the years they span", () => {
     const s = story([]);
     expect(spanLine([{ story: s, memory: mem({ period: "2014" }) }, { story: s, memory: mem({ id: "z", period: "2024" }) }])).toBe("2 memories · 2014 to 2024");

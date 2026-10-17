@@ -223,7 +223,7 @@ export default function Person() {
               <h2>Nothing with {first} in it yet.</h2>
               <p>When a memory names who was there, it shows up here.</p>
             </div>
-            <Tile icon={<PenIcon />} to="/write" className="single">
+            <Tile icon={<PenIcon />} to={`/write?with=${encodeURIComponent(person.id)}`} className="single">
               Write a memory with {first}
             </Tile>
           </div>

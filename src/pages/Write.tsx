@@ -19,6 +19,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { firstName, personName, realPeople, storytellerOf } from "../components/family/familyView";
 import gsap from "gsap";
 import Shell from "../components/Shell";
 import { Button, ButtonLink, Problem } from "../components/ui";
@@ -80,7 +81,7 @@ function Photo({ url, tilt, onRemove }: { url: string; tilt: number; onRemove: (
 /* ── Step 2: when, chapter, photographs ───────────────────────────────── */
 
 function Afterwards({ story, kept, number, question, editing, unlimited, email, onKept }: { story: Story; kept: Memory; number: number; question: Prompt | null; editing: boolean; unlimited: boolean; email: string; onKept: (m: Memory) => void }) {
-  const { saveMemory } = useAccount();
+  const { saveMemory, family } = useAccount();
   const [period, setPeriod] = useState(kept.period);
   const [state, setState] = useState<"" | "saving" | "saved">("");
   const [error, setError] = useState<string | null>(null);
@@ -153,6 +154,14 @@ function Afterwards({ story, kept, number, question, editing, unlimited, email, 
     }
   };
 
+  // Who was there: everyone in the family but the storyteller, whose memory it is.
+  const teller = storytellerOf(family, story);
+  const people = realPeople(family).filter((p) => p.id !== teller?.id);
+  // First names, unless two people share one; then the whole name tells them apart.
+  const chipName = (p: (typeof people)[number]) => (people.filter((o) => firstName(o) === firstName(p)).length > 1 ? personName(p) : firstName(p));
+  const there = kept.personIds || [];
+  const togglePerson = (id: string) => keep({ personIds: there.includes(id) ? there.filter((x) => x !== id) : [...there, id] });
+
   const deck = todaysDeck(story, { unlimited });
   const remaining = deck.filter((p) => p.id !== question?.id).length;
   const next = deck.find((p) => p.id !== question?.id) || null;
@@ -165,7 +174,7 @@ function Afterwards({ story, kept, number, question, editing, unlimited, email, 
         <div className="after-head">
           <div>
             <span className="pill gold">If you like</span>
-            <h2 id="after-h">When it was, the chapter, a photograph.</h2>
+            <h2 id="after-h">When it was, who was there, the chapter, a photograph.</h2>
             <p className="meta">Each one is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
           </div>
           <p className={`after-state ${state}`} aria-live="polite">
@@ -192,6 +201,23 @@ function Afterwards({ story, kept, number, question, editing, unlimited, email, 
             {yearsHint && (
               <p className="meta" style={{ fontSize: 13, marginTop: 6 }}>
                 {own ? "You" : story.name} would have been {yearsHint.ages[0]} to {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
+              </p>
+            )}
+          </div>
+
+          <div className="block">
+            <span>Who was there</span>
+            {people.length > 0 ? (
+              <div className="chiprow">
+                {people.map((p) => (
+                  <button key={p.id} type="button" className="chip big" aria-pressed={there.includes(p.id)} onClick={() => togglePerson(p.id)}>
+                    {chipName(p)}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="meta" style={{ fontSize: 14 }}>
+                Nobody is in the family yet. <Link to="/family">Add someone</Link> and they can be named here.
               </p>
             )}
           </div>
@@ -272,6 +298,7 @@ function Writer({ story }: { story: Story }) {
   const editId = params.get("edit");
   const wantsPhoto = params.get("photo") === "1";
   const wantsDetails = params.get("details") === "1" || wantsPhoto;
+  const withId = params.get("with");
   const unlimited = isPaid(user?.plan ?? "free");
   const email = user?.email || "";
 
@@ -450,6 +477,7 @@ function Writer({ story }: { story: Story }) {
       cover: editing?.cover || null,
       status: "saved",
       createdAt: editing?.createdAt,
+      ...(editing?.personIds ? { personIds: editing.personIds } : withId ? { personIds: [withId] } : {}),
     });
     try {
       await saveMemory(memory, story.id);
