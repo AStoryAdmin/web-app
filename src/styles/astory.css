@@ -3087,3 +3087,134 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
   .sb-cv-date { font-size: 11px !important; }
   .land-sheet .papers { flex-wrap: wrap; }
 }
+
+/* ── 41. The family album (agent) ── */
+/* Direction B (docs/mockups/tree/B-album.html): no chart. A terracotta rail with a dot and a decade per generation;
+   the storyteller's layer first (their photograph as a white-bordered print on apricot paper, their years, their
+   memories, one line of their own words in the book's body face, the family's voices as gold-ringed faces with a
+   quoted line, two filled tiles); then one row of square prints per generation relative to the storyteller, couples
+   side by side under a gold hairline with their names in italic as its caption; a dashed "+" where a relation is
+   missing; the people not placed yet on a shelf at the bottom. Cards separate by tone and lift only under the
+   pointer; a person with no photograph is their first name in the script hand on butter paper. One column on a
+   phone, two prints to a row, nothing to pinch. Headings never italic; the ribbon is the book's own small caps. */
+:root { --font-script: "Caveat", "Segoe Print", cursive; }
+.fa { position: relative; z-index: 1; margin-bottom: var(--s-10); }
+.fa-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; margin-bottom: var(--s-6); }
+.fa-head h2 { font-size: var(--t-h3); letter-spacing: -0.01em; max-width: 34ch; text-wrap: balance; }
+.fa-meta { margin: 0; font: 500 14px/1.4 var(--font-ui); color: var(--ink-soft); }
+
+/* the rail */
+.fa-rail { position: relative; padding-left: 64px; }
+.fa-line { position: absolute; left: 18px; top: 14px; bottom: 24px; width: 2px; border-radius: 2px; background: var(--accent); opacity: 0.7; }
+.fa-stop { position: relative; display: flow-root; padding-bottom: var(--s-12); }
+.fa-stop:last-child { padding-bottom: var(--s-4); }
+.fa-dot { position: absolute; left: -52px; top: 10px; width: 14px; height: 14px; border-radius: 50%; background: var(--page); border: 2px solid var(--accent); }
+.fa-stop.first .fa-dot { background: var(--accent); }
+.fa-dec { position: absolute; left: -64px; top: 34px; width: 38px; text-align: center; font: 700 11.5px/1.2 var(--font-ui); letter-spacing: 0.06em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.fa-stop h3 { margin: 0 0 var(--s-5); padding-top: 6px; font: 700 14px/1.3 var(--font-ui); letter-spacing: 0.01em; color: var(--ink-soft); }
+.fa-stop h3 b { font-weight: 700; color: var(--ink); }
+.fa-stop h3 .n { font-weight: 500; color: var(--ink-faint); }
+
+/* the rows of prints; a couple shares one group under a gold hairline */
+.fa-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-4); align-items: start; }
+.fa-group { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); grid-column: span 2; padding-top: 12px; }
+.fa-group::before { content: attr(data-label); position: absolute; left: 2px; top: -18px; max-width: 100%; font: italic 500 14px/1 var(--book-body); color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fa-group::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--foil); opacity: 0.6; }
+
+/* one card: a square white-bordered print on a cream card, the name in the book's face */
+.fa-item { position: relative; min-width: 0; }
+.fa-card { position: relative; display: block; min-width: 0; padding: 8px 8px 12px; border-radius: 16px; background: var(--card); color: inherit; text-decoration: none; transition: transform var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out); }
+.fa-ph { position: relative; display: block; aspect-ratio: 1 / 1; padding: 6px; border-radius: 3px; background: var(--book-print); box-shadow: inset 0 0 0 1px var(--sheet-rule); overflow: hidden; }
+.fa-ph img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; }
+.fa-ph.wide, .fa-nophoto.wide { aspect-ratio: 4 / 3; }
+.fa-nophoto { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; border-radius: 3px; background: var(--paper-butter); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.fa-script { max-width: 100%; padding: 0 10px; font: 500 44px/1 var(--font-script); color: var(--chocolate); text-align: center; overflow-wrap: anywhere; transform: rotate(-3deg); }
+.fa-nophoto.wide .fa-script { font-size: 64px; }
+.fa-card.gone .fa-ph img { filter: sepia(0.2) contrast(0.96); }
+.fa-words { display: block; min-width: 0; padding: 0 2px; }
+.fa-nm { display: block; margin-top: 10px; font-family: var(--book-display); font-weight: 600; font-size: 20px; line-height: 1.1; color: var(--ink); text-wrap: balance; overflow-wrap: anywhere; }
+.fa-yr { display: block; margin-top: 2px; font: 500 13px/1.35 var(--font-ui); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.fa-st { display: block; font: 600 13px/1.35 var(--font-ui); color: var(--ink-faint); }
+.fa-card.invited .fa-st, .fa-st.invited { color: var(--ochre); }
+.fa-card.joined .fa-st, .fa-card.you .fa-st, .fa-st.joined, .fa-st.you { color: var(--book-sage); }
+.fa-rem { display: block; margin-top: 6px; font: 500 13px/1.35 var(--font-ui); color: var(--ink-soft); }
+.fa-rem b { font-weight: 600; color: var(--ink); }
+/* "Add a photo" sits over the foot of the empty square; only its words take the tap, the rest of the square opens the person */
+.fa-addphoto { position: absolute; left: 8px; right: 8px; top: 8px; z-index: 2; display: flex; align-items: end; justify-content: center; aspect-ratio: 1 / 1; pointer-events: none; text-decoration: none; }
+.fa-addphoto span { pointer-events: auto; display: grid; place-items: center; min-height: 44px; padding: 0 14px; font: 600 13px/1 var(--font-ui); color: var(--ink-soft); }
+.fa-addphoto:hover span { color: var(--accent); }
+.fa-card:focus-visible, .fa-ask:focus-visible, .fa-addphoto:focus-visible span { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 16px; }
+@media (hover: hover) and (pointer: fine) {
+  .fa-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+}
+
+/* the "+" where a relation is missing */
+.fa-ask { display: grid; place-items: center; align-content: center; gap: 6px; align-self: stretch; min-height: 200px; padding: 18px 14px; border: 1.5px dashed var(--line-strong); border-radius: 16px; background: transparent; color: var(--ink-faint); text-align: center; font: inherit; cursor: pointer; transition: transform 120ms var(--ease-out), color var(--dur-ui) var(--ease-out), border-color var(--dur-ui) var(--ease-out); }
+.fa-ask b { font: 400 34px/1 var(--font-ui); }
+.fa-ask span { font: italic 500 17px/1.25 var(--book-body); overflow-wrap: anywhere; }
+.fa-ask:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .fa-ask:hover { border-color: var(--accent); color: var(--accent); } }
+
+/* the storyteller's layer: the big print, the family's voices and the tiles, the spouses */
+.fa-teller { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 4fr); gap: var(--s-4); align-items: start; }
+.fa-teller.with-spouses { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr); }
+.fa-card.fa-big { padding: 10px 10px 16px; background: var(--paper-apricot); }
+.fa-big .fa-nm { margin-top: 12px; font-size: 30px; }
+.fa-big .fa-yr { font-size: 14px; }
+.fa-big .fa-yr .fa-st { display: inline; font-size: 14px; }
+.fa-ribbon { position: absolute; left: 14px; top: 14px; padding: 6px 10px; border-radius: 999px; background: var(--accent); color: var(--on-chocolate); font: 700 11px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; }
+.fa-said { display: block; margin-top: 10px; font: italic 400 19px/1.45 var(--book-body); color: var(--ink); }
+.fa-said small { display: block; margin-top: 6px; font: 500 12.5px/1.3 var(--font-ui); font-style: normal; color: var(--ink-soft); }
+.fa-voices { min-width: 0; padding: 4px 4px 0; }
+.fa-voices h4 { margin: 0 0 10px; font: 700 15px/1.2 var(--font-ui); letter-spacing: -0.01em; color: var(--ink); }
+.fa-voice { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); }
+.fa-voice:first-of-type { border-top: 0; padding-top: 0; }
+.fa-face { box-shadow: 0 0 0 1.5px var(--foil), 0 0 0 3px var(--page); }
+.fa-voice q { display: block; font: italic 400 16.5px/1.4 var(--book-body); color: var(--ink); quotes: "“" "”"; }
+.fa-voice .by { margin: 3px 0 0; font: 500 12.5px/1.3 var(--font-ui); color: var(--ink-soft); }
+.fa-voice .by b { font-weight: 600; color: var(--ink); }
+.fa-tiles { display: grid; gap: 10px; margin-top: 12px; }
+.fa-voice + .fa-tiles { margin-top: 16px; }
+.fa-tiles .atile { display: grid; grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center; gap: 12px; min-height: 64px; padding: 8px 20px 8px 8px; text-align: left; white-space: normal; }
+.fa-tiles .atile > span:last-child { display: grid; gap: 2px; }
+.fa-tiles .atile b { font: 700 16px/1.2 var(--font-ui); }
+.fa-tiles .atile small { font: 500 12.5px/1.3 var(--font-ui); opacity: 0.85; }
+.fa-tiles .atile.teal { background: var(--teal-slate); color: var(--on-chocolate); }
+.fa-tiles .atile.teal:hover { background: var(--teal); }
+.fa-tiles .atile.gold { background: var(--pill-gold); color: var(--chocolate); }
+.fa-tiles .atile.gold:hover { background: var(--brass); }
+.fa-tiles .atile.gold .ico { background: rgba(74, 51, 39, 0.1); }
+.fa-spouses { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.fa-spouses .lab { font: italic 500 14px/1.2 var(--book-body); color: var(--ink-faint); }
+.fa-card.compact { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px; }
+.fa-card.compact .fa-ph, .fa-card.compact .fa-nophoto { width: 72px; }
+.fa-card.compact .fa-script { font-size: 24px; padding: 0 4px; }
+.fa-card.compact .fa-nm { margin-top: 0; font-size: 18px; }
+.fa-card.compact .fa-rem { margin-top: 3px; }
+
+/* the shelf: not placed yet, each with the way to say who they are */
+.fa-shelfitem { position: relative; min-width: 0; }
+.fa-shelfitem .fa-place { margin-top: 4px; padding-left: 6px; padding-right: 6px; font-weight: 600; color: var(--ochre); }
+.fa-shelfitem .fa-place:hover { color: var(--accent); }
+.fa-shelfitem .ft-menu.shelf { top: auto; bottom: calc(100% - 8px); }
+
+@media (max-width: 760px) {
+  .fa { margin-bottom: var(--s-8); }
+  .fa-head { margin-bottom: var(--s-5); }
+  .fa-head h2 { font-size: 20px; }
+  .fa-rail { padding-left: 40px; }
+  .fa-line { left: 9px; }
+  .fa-dot { left: -37px; top: 8px; }
+  .fa-dec { left: -44px; top: 30px; width: 30px; font-size: 11px; }
+  .fa-stop { padding-bottom: var(--s-8); }
+  .fa-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .fa-group { grid-column: span 2; gap: 12px; }
+  .fa-teller, .fa-teller.with-spouses { grid-template-columns: minmax(0, 1fr); }
+  .fa-nm { font-size: 18px; }
+  .fa-big .fa-nm { font-size: 26px; }
+  .fa-script { font-size: 36px; }
+  .fa-ask { min-height: 168px; }
+  .fa-ask b { font-size: 30px; }
+  .fa-spouses { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .fa-card, .fa-ask { transition: none; } }

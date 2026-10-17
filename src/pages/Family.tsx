@@ -1,7 +1,8 @@
 /**
  * Family: who is in it, who is on A Story, add someone, review what they
- * asked and sent. The tree across the top (components/family/tree), then
- * everyone listed on the left, each in one of three states ("not on A Story
+ * asked and sent. The family album across the top (components/family/album:
+ * the storyteller's layer, then one row of photo cards per generation,
+ * then whoever is not placed yet), then everyone listed on the left, each in one of three states ("not on A Story
  * yet", "invited · waiting for them", "on A Story"); on the right what is
  * waiting for your review (join
  * requests, suggestions, what the family sent), what you are waiting on,
@@ -14,7 +15,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, Chip, Problem } from "../components/ui";
 import { ChevronRight, PlusIcon } from "../components/icons";
-import FamilyTreeCard from "../components/family/tree/FamilyTreeCard";
+import FamilyAlbum from "../components/family/album/FamilyAlbum";
 import { sampleFamily } from "../components/family/tree/sampleFamily";
 import { placePerson } from "../components/family/tree/placePerson";
 import type { GhostKind } from "../components/family/tree/treeModel";
@@ -124,8 +125,8 @@ export default function Family() {
   const { user } = useAuth();
   const { account, activeStory: story, stories, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
   const [params] = useSearchParams();
-  const [invite, setInvite] = useState<{ anchor: Person | null; kind?: GhostKind | null } | null>(null);
-  // Dev only: a fictional family on the tree, for judging the drawing with more than three people. Nothing on it writes.
+  const [invite, setInvite] = useState<{ anchor: Person | null; kind?: string | null } | null>(null);
+  // Dev only: a fictional family in the album, for judging the drawing with more than three people. Nothing on it writes.
   const preview = import.meta.env.DEV && params.get("preview") === "tree";
   const sample = useMemo(() => (preview ? sampleFamily() : null), [preview]);
   const [manage, setManage] = useState(false);
@@ -213,7 +214,7 @@ export default function Family() {
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
 
-        <FamilyTreeCard
+        <FamilyAlbum
           family={sample ? sample.family : family}
           story={sample ? sample.story : story}
           meId={sample ? sample.meId : meId}
