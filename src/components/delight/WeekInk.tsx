@@ -30,15 +30,17 @@ function remember(day: string, count: number) {
 export default function WeekInk({ day, count }: { day: string; count: number }) {
   const dot = useRef<HTMLElement>(null);
   const pool = useRef<HTMLElement>(null);
+  // what the strip last showed, read once per mount (so React's development double effect sees the same answer twice)
+  const was = useRef<number | null | undefined>(undefined);
 
   useLayoutEffect(() => {
     // in development the ticker is reachable from the console (see AuthFrame), so the bloom can be stepped by hand
     if (import.meta.env.DEV) (window as unknown as { __gsap?: typeof gsap }).__gsap = gsap;
-    const was = remembered(day);
+    if (was.current === undefined) was.current = remembered(day);
     remember(day, count);
     const d = dot.current;
     const p = pool.current;
-    if (!d || !p || was === null || count <= was) return;
+    if (!d || !p || was.current == null || count <= was.current) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const host = d.parentElement;
     host?.classList.add("inking");
