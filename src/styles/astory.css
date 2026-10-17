@@ -3047,3 +3047,43 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 :root[data-theme="dark"] .sheet-page .card, :root[data-theme="dark"] .sheet-page .mem, :root[data-theme="dark"] .sheet-page .input { background: var(--card); }
 :root[data-theme="dark"] .sheet-page .card.teal { background: var(--teal-slate); }
 :root[data-theme="dark"] { --sheet-ink: #F3EDE4; --paper-tone: #211A16; --kicker-grey: #B8ADA2; --sheet-rule: rgba(246, 240, 230, 0.16); }
+
+/* ───────────────────────── 40. The front door on the book's paper (lead) ───────────────────────── */
+/* The landing page's sheet never received §39: it kept Montserrat headings, gold pills and grey body text next
+   to a signed-in app set like the printed book. The same paper, the same type, the same plates. The cloth hero
+   above it keeps the deck's bold face, as the signed-in heroes do. */
+.land-sheet { position: relative; isolation: isolate; }
+.land-sheet .land-sec .sechead h2, .land-sheet .land-cta h2 { font-family: var(--book-display); font-weight: 600; font-size: 40px; line-height: 1.06; letter-spacing: -0.005em; color: var(--sheet-ink); max-width: 24ch; }
+.land-sheet .land-sec .sechead p, .land-sheet .land-cta p { font-family: var(--book-body); font-size: 18px; line-height: 1.55; color: var(--sheet-ink); max-width: 58ch; }
+.land-sheet .land-cta .meta { font-size: 17px; }
+.land-sheet .pill.gold { display: inline-flex; align-items: center; min-height: 22px; padding: 0 9px; border-radius: 999px; background: var(--kicker-sage-bg); color: var(--kicker-sage); font: 600 11px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; }
+.land-sheet .land-sec + .land-sec .sechead { position: relative; padding-top: var(--s-8); }
+.land-sheet .land-sec + .land-sec .sechead::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--sheet-rule); }
+.land-sheet .land-sec + .land-sec .sechead::after { content: "✦"; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); padding: 0 12px; background: var(--page); color: var(--foil); font: 400 13px/16px var(--font-ui); }
+.land-sheet .card { position: relative; isolation: isolate; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; box-shadow: none; }
+.land-sheet .card::before { content: ""; position: absolute; inset: 6px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 2px; }
+.land-sheet .hows .card .n { font-family: var(--book-display); font-weight: 600; font-size: 48px; color: var(--kicker-terracotta); }
+.land-sheet .hows .card h3 { font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.1; color: var(--sheet-ink); }
+.land-sheet .hows .card p { font-family: var(--book-body); font-size: 17px; line-height: 1.55; color: var(--sheet-ink); }
+/* the teal card's words were set in the grey of the cream cards and vanished on the teal */
+.land-sheet .hows .card.teal { background: var(--teal); }
+.land-sheet .hows .card.teal::before { border-color: rgba(246, 239, 227, 0.28); }
+.land-sheet .hows .card.teal h3, .land-sheet .hows .card.teal p { color: #F6EFE3; }
+.land-sheet .hows .card.teal .n { color: var(--brass); }
+.land-sheet .hows .card.teal .hl { color: var(--brass); }
+.land-sheet .sb-books button b { font-family: var(--book-display); font-weight: 600; font-size: 17px; }
+.land-sheet .sb-books button small { font-size: 12px; }
+.land-sheet .cover-tile b { font-family: var(--book-display); font-weight: 600; font-size: 19px; color: var(--sheet-ink); }
+.land-sheet .cover-tile small { font-size: 13px; line-height: 1.4; }
+.land-sheet .paper-chip { background: var(--paper-print); border: 1px solid var(--sheet-rule); font-size: 13px; }
+.land-sheet .land-cta { background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; }
+.land-sheet .land-foot { font-family: var(--book-body); font-size: 15px; }
+.land-sheet .land-foot a { font-weight: 500; color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 3px; }
+/* the smallest print on the sample covers and chips never drops under 12px, 11 on a phone */
+.sb-cv-date { font-size: max(12px, 1.9cqw) !important; }
+@media (max-width: 760px) {
+  .land-sheet .land-sec .sechead h2, .land-sheet .land-cta h2 { font-size: 30px; }
+  .land-sheet .cover-tile small, .land-sheet .paper-chip, .land-sheet .sb-books button small { font-size: 12px; }
+  .sb-cv-date { font-size: 11px !important; }
+  .land-sheet .papers { flex-wrap: wrap; }
+}
