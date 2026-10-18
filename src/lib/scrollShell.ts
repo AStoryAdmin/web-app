@@ -10,6 +10,10 @@
  *   exactly with the hand, and the sheet's rounded top flattens as it
  *   reaches the bar, so the brown only shows when you are back at the top.
  *
+ * The sheet's corner radius is the one property here that is not a
+ * transform or opacity: it changes over 86px of scroll only, as the paper
+ * meets the bar, and is a deliberate, documented exception (skills review).
+ *
  * Under prefers-reduced-motion the bar still condenses (a state, not a
  * motion) and nothing else moves. Pointer and layout values are not
  * converted here, so the page zoom (lib/zoom) needs no correction.

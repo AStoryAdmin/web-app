@@ -14,6 +14,7 @@
 import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
 import { tookTransition } from "./pageTransition";
+import { MOVE, OUT } from "./ease";
 
 gsap.registerPlugin(SplitText);
 
@@ -81,7 +82,7 @@ export function onEnter(items: HTMLElement[], play: (batch: HTMLElement[]) => vo
 
 /** The rise every page uses for what arrives later: 14px up and in, a short stagger, props cleared after. */
 export function riseIn(batch: HTMLElement[]): void {
-  gsap.fromTo(batch, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 0.06, clearProps: "transform,opacity", overwrite: "auto" });
+  gsap.fromTo(batch, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: OUT, stagger: 0.06, clearProps: "transform,opacity", overwrite: "auto" });
 }
 
 /**
@@ -141,7 +142,7 @@ export function arrive(root: HTMLElement): () => void {
     const now = all.filter((el) => !belowFold(el)).slice(0, 8);
     const later = all.filter((el) => !now.includes(el));
 
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    const tl = gsap.timeline({ defaults: { ease: OUT } });
 
     if (hero) {
       const title = hero.querySelector<HTMLElement>("h1");
@@ -152,16 +153,16 @@ export function arrive(root: HTMLElement): () => void {
       }
       // the gold foil rule is stamped left to right, after the words
       const foil = hero.querySelector<HTMLElement>(".foil:not([data-rise])");
-      if (foil) tl.fromTo(foil, { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.8, ease: "power3.inOut", clearProps: "transform" }, 0.45);
+      if (foil) tl.fromTo(foil, { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.8, ease: MOVE, clearProps: "transform" }, 0.45);
       if (rest.length) tl.fromTo(rest, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.07 }, 0.25);
       const object = hero.querySelector<HTMLElement>(".object");
-      if (object) tl.fromTo(object, { y: 40, opacity: 0, rotate: 2 }, { y: 0, opacity: 1, rotate: 0, duration: 1.1, ease: "power4.out" }, 0.2);
+      if (object) tl.fromTo(object, { y: 40, opacity: 0, rotate: 2 }, { y: 0, opacity: 1, rotate: 0, duration: 1.1, ease: OUT }, 0.2);
     }
     if (sheet) {
-      if (!viaTransition) tl.fromTo(sheet, { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power4.out", clearProps: "transform" }, 0.3);
+      if (!viaTransition) tl.fromTo(sheet, { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: OUT, clearProps: "transform" }, 0.3);
       // the headband is sewn on as the sheet settles (decoration D3)
       const band = sheet.querySelector<HTMLElement>(":scope > .headband");
-      if (band) tl.fromTo(band, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: "power3.out", clearProps: "clipPath" }, viaTransition ? 0.15 : 0.5);
+      if (band) tl.fromTo(band, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: OUT, clearProps: "clipPath" }, viaTransition ? 0.15 : 0.5);
       if (now.length) tl.fromTo(now, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, clearProps: "transform" }, 0.55);
       if (later.length) {
         gsap.set(later, { y: 14, opacity: 0 });

@@ -165,10 +165,14 @@ export function Chip({ tone = "", className = "", children, ...rest }: { tone?: 
 
 /** Initials in a circle when there is no photograph. */
 export function Avatar({ src, name, size = 44, className = "" }: { src?: string | null; name: string; size?: number; className?: string }) {
-  const initial = (name || "?").trim()[0]?.toUpperCase() || "?";
+  // a monogram, the way a seal is engraved: the first letter of the first and last words of the name
+  const words = (name || "").trim().split(/\s+/).filter(Boolean);
+  const first = words[0] ? Array.from(words[0])[0] : "";
+  const last = words.length > 1 ? Array.from(words[words.length - 1])[0] : "";
+  const initial = (first + (size >= 32 ? last : "")).toUpperCase() || "?";
   if (src) return <img className={`avatar ${className}`} src={src} alt="" width={size} height={size} style={{ width: size, height: size }} />;
   return (
-    <span className={`avatar ph ${className}`} aria-hidden="true" style={{ width: size, height: size, fontSize: Math.max(13, Math.round(size * 0.42)) }}>
+    <span className={`avatar ph ${className}`} aria-hidden="true" style={{ width: size, height: size, fontSize: Math.max(12, Math.round(size * (initial.length > 1 ? 0.36 : 0.44))) }}>
       {initial}
     </span>
   );

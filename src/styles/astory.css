@@ -3859,3 +3859,14 @@ body.writing-focus .sheet-page > .headband { display: none; }
    its vw is divided by the page zoom (lib/zoom) */
 .sheet-page.wide .page, .sheet-page.wide .running-head-sheet { padding-left: clamp(24px, calc(3.2vw / var(--zoom, 1)), 72px); padding-right: max(76px, clamp(24px, calc(3.2vw / var(--zoom, 1)), 72px)); }
 @media (max-width: 1279px) { .sheet-page.wide .page, .sheet-page.wide .running-head-sheet { padding-right: clamp(20px, calc(3.2vw / var(--zoom, 1)), 72px); } }
+
+/* ───────────────────────── 59. Seals, not tinted circles; legible when disabled (lead) ───────────────────────── */
+/* A person without a photograph is a monogram seal everywhere (decoration D17): their initials in the book's display
+   face, terracotta ink on the paper tone, a foil ring inside. And the last disabled controls lift to the floor. */
+.avatar.ph { background: var(--paper-tone); color: var(--kicker-terracotta); font-family: var(--book-display); font-weight: 600; letter-spacing: 0.03em; line-height: 1;
+  box-shadow: inset 0 0 0 1px var(--foil-soft), inset 0 0 0 3px var(--paper-tone), inset 0 0 0 4px rgba(201, 161, 90, 0.35); }
+.top .me .avatar.ph, .on-dark .avatar.ph { background: rgba(246, 240, 230, 0.16); color: var(--on-chocolate); box-shadow: inset 0 0 0 1px rgba(201, 161, 90, 0.5); }
+.auth.ritual .btn:disabled, .auth.ritual .input:has(input:disabled), .atile:disabled, .ribbon-step:disabled { opacity: 0.6; }
+/* the top bar's places are full touch targets */
+.pillnav a { min-height: 44px; }
+.top.stuck .pillnav a { min-height: 40px; }
