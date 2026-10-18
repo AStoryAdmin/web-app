@@ -2,11 +2,9 @@
  * A pressed leaf, the chapter mark of the archive, that drifts after the
  * pointer across the cloth and settles when you stop, the way a leaf
  * follows a hand brushed over a table. It lags, sways with its speed, and
- * comes to rest flat. It is never in the way: it has no pointer events, it
- * fades when it comes to rest on words (on Home it settled over the "Last
- * kept…" line and hid it), and it is absent under reduced motion and on
- * touch. With `page`, it follows the pointer over the whole page, cloth and
- * cream alike, from a fixed layer.
+ * comes to rest flat. It is never in the way: it has no pointer events, and
+ * is absent under reduced motion and on touch. With `page`, it follows the
+ * pointer over the whole page, cloth and cream alike, from a fixed layer.
  */
 import { useEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
@@ -24,23 +22,6 @@ export default function Leaf({ ground, page = false }: { ground?: RefObject<HTML
     const pos = { x: -200, y: -200, vx: 0, vy: 0, seen: false };
     const target = { x: 0, y: 0 };
     let settled = 0;
-    // at rest over words it fades away, and comes back the moment it moves
-    let onWords = false;
-    let shown = 0;
-    // words, not the empty end of a line: the text the caret would land in, and whether its letters are within reach
-    const wordsUnder = (x: number, y: number) => {
-      const r = el instanceof Window ? { left: 0, top: 0 } : el.getBoundingClientRect();
-      const z = pageZoom();
-      const cx = x * z + r.left;
-      const cy = y * z + r.top;
-      const caret = document.caretRangeFromPoint?.(cx, cy);
-      const node = caret?.startContainer;
-      if (!caret || !node || node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()) return false;
-      const reach = 14 * z;
-      const range = document.createRange();
-      range.selectNodeContents(node);
-      return [...range.getClientRects()].some((b) => cx >= b.left - reach && cx <= b.right + reach && cy >= b.top - reach && cy <= b.bottom + reach);
-    };
     const setX = gsap.quickSetter(node, "x", "px");
     const setY = gsap.quickSetter(node, "y", "px");
     const setR = gsap.quickSetter(node, "rotation", "deg");
@@ -74,17 +55,12 @@ export default function Leaf({ ground, page = false }: { ground?: RefObject<HTML
       pos.y += pos.vy;
       const speed = Math.hypot(pos.vx, pos.vy);
       settled = speed < 0.15 ? settled + 1 : 0;
-      if (settled === 0) onWords = false;
-      // looked at once it has settled, then now and then (the page can scroll words under it)
-      else if (settled % 30 === 12 && settled < 999) onWords = wordsUnder(pos.x, pos.y);
       // the stem points away from the direction of travel; at rest it lies flat at a slight tilt
       const heading = speed > 0.3 ? (Math.atan2(pos.vy, pos.vx) * 180) / Math.PI + 90 : 18;
       setX(pos.x);
       setY(pos.y);
       setR(heading + Math.sin(performance.now() / 420) * Math.min(10, speed * 2));
-      const want = settled > 999 || onWords ? 0 : Math.min(1, speed * 0.6 + 0.78);
-      shown += (want - shown) * (want < shown ? 0.12 : 0.35);
-      setO(shown);
+      setO(settled > 999 ? 0 : Math.min(1, speed * 0.6 + 0.78));
     };
 
     gsap.ticker.add(tick);

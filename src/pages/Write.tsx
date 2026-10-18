@@ -29,8 +29,7 @@ import { firstName, personName, realPeople, storytellerOf } from "../components/
 import gsap from "gsap";
 import Shell from "../components/Shell";
 import WhereNext, { Stop, type NextRow } from "../components/book/WhereNext";
-import { Avatar, Button, ButtonLink } from "../components/ui";
-import LedgeNote from "../components/archive/LedgeNote";
+import { Avatar } from "../components/ui";
 import { CheckIcon, CloseIcon, ExpandIcon, HelpIcon, MicIcon, PenIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -481,38 +480,6 @@ function Afterwards({
  * from a story that exists (opening /write?edit=… in a fresh tab used to
  * capture an empty draft before the account had arrived).
  */
-/**
- * The writer on a story this account reads as family and doesn't keep: only its keepers write in it. Their side
- * goes under a memory; their own memories go in their own story, one press away.
- */
-function OnlyKeepers({ story }: { story: Story }) {
-  const { ensureMyStory, chooseStory } = useAccount();
-  const [busy, setBusy] = useState(false);
-  const toMine = async () => {
-    setBusy(true);
-    try {
-      const mine = await ensureMyStory();
-      if (mine) await chooseStory(mine.id);
-    } catch {
-      /* the provider's saveFailure says so */
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="page">
-      <LedgeNote title={`Only its keepers write in ${story.name}’s story`} line={`Your side goes under any of ${story.name}’s memories, under your own name. Your own memories go in your own story.`}>
-        <Button onClick={toMine} loading={busy}>
-          Write in your own story
-        </Button>
-        <ButtonLink to="/archive" variant="outline">
-          Read {story.name}’s memories
-        </ButtonLink>
-      </LedgeNote>
-    </div>
-  );
-}
-
 export default function Write() {
   const { account, activeStory: story } = useAccount();
   const [params] = useSearchParams();
@@ -546,8 +513,6 @@ export default function Write() {
     <Shell {...frame}>
       {account === undefined || !story ? (
         <div className="page" aria-busy="true" />
-      ) : story.readOnly ? (
-        <OnlyKeepers story={story} />
       ) : (
         <WriteFrame.Provider value={setKeptAs}>
           <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}`} story={story} />

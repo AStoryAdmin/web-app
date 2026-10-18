@@ -72,12 +72,6 @@ export type Story = {
   contributionsOpen: boolean;
   contributeSlug: string | null;
   memories: Memory[];
-  /**
-   * Read as family, not kept: the account has its own row in this story's family tree and is not one of its
-   * keepers (family_readers.sql). It reads the shared memories and sends its side; nothing on the page changes the
-   * story. Absent on every story the account keeps.
-   */
-  readOnly?: boolean;
   sessionsCompleted: number;
   streakDays: number;
   lastMemoryDate: string;
@@ -189,26 +183,9 @@ export const STORY_SELECT = `
     `;
 
 /**
- * The stories this account reads as family (family_readers.sql's family_reader_stories()). Null when the
- * database doesn't have the function yet: then row-level security shows no such story, and there is nothing to
- * mark. Any other failure answers "unknown", and the caller treats every story it doesn't own as read-only for
- * this load, so a page never offers a change the database would refuse.
- */
-async function familyReaderStoryIds(): Promise<Set<string> | null | "unknown"> {
-  const { data, error } = await supabase().rpc("family_reader_stories");
-  if (error) {
-    if (["PGRST202", "42883"].includes(error.code || "")) return null;
-    console.warn("family_reader_stories:", error.message);
-    return "unknown";
-  }
-  return new Set(((data || []) as { story_id: string }[]).map((r) => r.story_id));
-}
-
-/**
- * Every story this account can see: the ones it owns, the ones it
- * co-manages, and the ones it reads as family, flagged readOnly (RLS
- * decides; no owner filter). A story merged into another stays in the
- * database for 30 days but is empty and hidden.
+ * Every story this account can see: the ones it owns and the ones it
+ * co-manages (RLS decides; no owner filter). A story merged into another
+ * stays in the database for 30 days but is empty and hidden.
  */
 export async function loadAccount(userId: string): Promise<Account> {
   const sb = supabase();
@@ -219,20 +196,16 @@ export async function loadAccount(userId: string): Promise<Account> {
     .maybeSingle();
   if (profileErr) throw new Error(`We couldn’t load the account: ${profileErr.message}`);
 
-  const [{ data: stories, error: storiesErr }, readers] = await Promise.all([
-    sb.from("stories").select(STORY_SELECT).order("created_at", { ascending: true }),
-    familyReaderStoryIds(),
-  ]);
+  const { data: stories, error: storiesErr } = await sb
+    .from("stories")
+    .select(STORY_SELECT)
+    .order("created_at", { ascending: true });
   if (storiesErr) throw new Error(`We couldn’t load the stories: ${storiesErr.message}`);
-  const readOnly = (s: Story) => (readers === "unknown" ? !!s.ownerId && s.ownerId !== userId : !!readers?.has(s.id));
 
   return {
     onboardingComplete: profile?.onboarding_complete ?? false,
     activeStoryId: profile?.active_story_id ?? null,
-    stories: ((stories || []) as Row[])
-      .filter((r) => !r.merged_into)
-      .map(rowToStory)
-      .map((s) => (readOnly(s) ? { ...s, readOnly: true } : s)),
+    stories: ((stories || []) as Row[]).filter((r) => !r.merged_into).map(rowToStory),
   };
 }
 

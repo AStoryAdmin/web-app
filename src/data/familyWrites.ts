@@ -135,24 +135,7 @@ export async function familyCodeFor({ personId = null, storyId = null }: { perso
     if (/already on A Story/i.test(error.message || "")) return { error: "already" };
     return { error: classifySaveError(error) === "offline" ? "offline" : "failed" };
   }
-  if (personId) await markInvited(personId);
   return { code: String(data) };
-}
-
-/**
- * A code made for somebody's place is an invitation out, so their row says so for the whole family, as an emailed
- * invite's does (invite_person). Codes are private to whoever made them (family_codes_select_own), so until this the
- * maker saw "invited · waiting for them" and everyone else "not on A Story yet". Only ever fills a gap; a row this
- * account may not edit is left as it is (row-level security answers with no rows, not an error).
- */
-async function markInvited(personId: string): Promise<void> {
-  const { error } = await supabase()
-    .from("people")
-    .update({ invited_at: new Date().toISOString(), status: "invited" })
-    .eq("id", personId)
-    .is("user_id", null)
-    .is("invited_at", null);
-  if (error) console.warn("markInvited:", error.message || error);
 }
 
 export type MyCode = { code: string; personId: string | null; storyId: string | null; usesLeft: number; expiresAt: string };

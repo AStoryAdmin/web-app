@@ -204,8 +204,7 @@ export default function Person() {
   // The rail never repeats the sentence the plate above it quotes.
   const quoted = theirs?.memory.id || null;
   // every memory of theirs with no year yet, not only the ones shown: the same task the Archive sets
-  // (only in stories this account keeps: one it reads as family is its keepers' to date)
-  const undated = rail.filter((f) => !f.story.readOnly && !(memoryDate(f.memory) as { dated: boolean }).dated).map((f) => f.memory);
+  const undated = rail.filter((f) => !(memoryDate(f.memory) as { dated: boolean }).dated).map((f) => f.memory);
   const kin = kinOf(person, family, index);
   const prompts = rail.length ? [] : promptsAbout(person);
   // A third column only when it carries enough; otherwise the people and lines flow under the memories.
@@ -386,7 +385,7 @@ export default function Person() {
                   {sent ? (
                     <CodeCard code={sent.code} who={first} story={story} senderName={senderName} emailed={sent.emailed} email={sent.email} focusFirst />
                   ) : stateKey === "joined" ? (
-                    <p className="pp-why">They read what’s shared and add what they remember, under their own name. Nobody writes as {first}.</p>
+                    <p className="pp-why">They read what’s shared and add what they remember, under their own name. Nobody writes as {story.name}.</p>
                   ) : liveCode && !person.email ? (
                     <>
                       <p className="pp-why">

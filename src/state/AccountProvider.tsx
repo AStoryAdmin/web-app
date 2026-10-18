@@ -196,8 +196,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const stories = useMemo(() => account?.stories ?? [], [account]);
   const activeStory = useMemo(() => {
     if (!account) return null;
-    // with no choice made, one the account keeps before one it only reads
-    return stories.find((s) => s.id === account.activeStoryId) ?? stories.find((s) => !s.readOnly) ?? stories[0] ?? null;
+    return stories.find((s) => s.id === account.activeStoryId) ?? stories[0] ?? null;
   }, [account, stories]);
 
   const value = useMemo(

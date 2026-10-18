@@ -23,7 +23,7 @@ import { PLAN_LABELS } from "../lib/plan";
 import { supabase } from "../lib/supabase";
 import { track } from "../lib/analytics";
 import { storyLine } from "../lib/storyLine";
-import { myStoryIds, storyGroupOf, storyGroups, whoseWords } from "../components/family/familyView";
+import { storyGroupOf, storyGroups } from "../components/family/familyView";
 import WhereNext, { Stop } from "../components/book/WhereNext";
 import type { Story } from "../data/stories";
 
@@ -308,8 +308,7 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
     }
     setBusy(null);
   };
-  const { family } = useAccount();
-  const groups = storyGroups(stories, meId, myStoryIds(family, meId));
+  const groups = storyGroups(stories, meId);
   return (
     <Section title="Whose stories" lead="The four places are about the story that is chosen. There are three ways to be in one, and nobody ever signs as somebody else." id="storytellers">
       {groups.length === 0 && <p className="acct-empty">No stories yet.</p>}
@@ -326,7 +325,7 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
                   <span className="acct-who">
                     <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
                     <span>
-                      {whoseWords(s, g.key, storyLine(s).split(" · ").slice(1).join(" · ") || "a story you keep")} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
+                      {g.key === "joined" ? "their story" : storyLine(s).split(" · ").slice(1).join(" · ") || "a story you keep"} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
                     </span>
                   </span>
                   {on ? (
@@ -471,8 +470,8 @@ function WallSwitch({ story }: { story: Story }) {
 }
 
 function Walls({ meId }: { meId: string }) {
-  const { stories, family } = useAccount();
-  const mine = stories.filter((s) => !s.readOnly && storyGroupOf(s, meId, myStoryIds(family, meId)) !== "joined" && (s.memories.length > 0 || s.isPublic));
+  const { stories } = useAccount();
+  const mine = stories.filter((s) => storyGroupOf(s, meId) !== "joined" && (s.memories.length > 0 || s.isPublic));
   if (!mine.length) return null;
   return (
     <Section title="The wall" lead="One page anyone with the link can read: the memories that are public, and what the family added. Turn it off any time." id="wall">

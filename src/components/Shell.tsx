@@ -16,7 +16,7 @@ import { ArchiveIcon, BookIcon, ChevronDown, ChevronLeft, CloseIcon, FamilyIcon,
 import { usePhotoUrl } from "../lib/photoUrls";
 import { storySubtitle } from "../app-core/lib/social.js";
 import { storyLine } from "../lib/storyLine";
-import { myStoryIds, storyGroups, whoseWords } from "./family/familyView";
+import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
 import { scrollShell } from "../lib/scrollShell";
 import { tookTransition, useTransitionLinks } from "../lib/pageTransition";
@@ -67,9 +67,9 @@ function TellerButton({ onClick, compact = false }: { onClick: () => void; compa
  */
 function TellerSheet({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
-  const { stories, activeStory, chooseStory, family } = useAccount();
+  const { stories, activeStory, chooseStory } = useAccount();
   const navigate = useNavigate();
-  const groups = storyGroups(stories, user?.id, myStoryIds(family, user?.id));
+  const groups = storyGroups(stories, user?.id);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -108,7 +108,7 @@ function TellerSheet({ onClose }: { onClose: () => void }) {
                     <span>
                       <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
                       <span className="meta">
-                        {whoseWords(s, g.key, storySubtitle(s) as string)} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
+                        {g.key === "joined" ? "their story" : (storySubtitle(s) as string)} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
                       </span>
                     </span>
                   </button>

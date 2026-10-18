@@ -189,47 +189,24 @@ export function statusChip(person: Person, meId: string | null | undefined): { l
 export type StoryGroupKey = "own" | "kept" | "joined";
 export type StoryGroup = { key: StoryGroupKey; title: string; meaning: string; stories: Story[] };
 
-/**
- * The stories about this account: the ones bound to its own rows in the tree. A relative who joined at a place
- * that already had a story about them (somebody else started it) has that story as their own.
- */
-export const myStoryIds = (family: Family | null, userId: string | null | undefined): string[] =>
-  userId ? (family?.people || []).filter((p) => p.userId === userId && p.storyId).map((p) => p.storyId as string) : [];
-
-/**
- * Which of the three a story is for this account: yours, one you keep for someone, or one you’ve joined.
- * `mine` (myStoryIds) puts a story about them under "Your story" whoever started it; without it, a story
- * Bao started about GBao read as "GBao Vo · their story" on GBao’s own account.
- */
-export function storyGroupOf(story: Story, meId: string | null | undefined, mine: string[] = []): StoryGroupKey {
-  if (mine.includes(story.id)) return "own";
-  const owned = !story.ownerId || !meId || story.ownerId === meId;
-  if (!owned) return "joined";
+/** Which of the three a story is for this account: yours, one you keep for someone, or one you’ve joined. */
+export function storyGroupOf(story: Story, meId: string | null | undefined): StoryGroupKey {
+  const mine = !story.ownerId || !meId || story.ownerId === meId;
+  if (!mine) return "joined";
   return story.relationship === "Myself" ? "own" : "kept";
-}
-
-/**
- * The few words after a story’s name in "Whose story?": `usual` (its relation, its year) for the ones you keep;
- * for one you’ve joined, whether you keep it with them or read it as family; for a story about you that
- * somebody else started, that it is yours (its relation is theirs to you, not yours).
- */
-export function whoseWords(story: Story, key: StoryGroupKey, usual: string): string {
-  if (key === "joined") return story.readOnly ? "you read and add" : "their story";
-  if (key === "own" && story.relationship !== "Myself") return "Your own story";
-  return usual;
 }
 
 /**
  * The stories under three headings, never mixed (docs/PRD.md §3.3a). Only
  * groups with a story in them; the headings and meanings are fixed words.
  */
-export function storyGroups(stories: Story[], meId: string | null | undefined, mine: string[] = []): StoryGroup[] {
+export function storyGroups(stories: Story[], meId: string | null | undefined): StoryGroup[] {
   const defs: Omit<StoryGroup, "stories">[] = [
     { key: "own", title: "Your story", meaning: "About you, in your words." },
     { key: "kept", title: "Stories you keep for someone", meaning: "You keep it for them, as they tell it." },
     { key: "joined", title: "Stories you’ve joined", meaning: "Their story, their account. You add what you remember, under your own name." },
   ];
-  return defs.map((d) => ({ ...d, stories: stories.filter((s) => storyGroupOf(s, meId, mine) === d.key) })).filter((g) => g.stories.length > 0);
+  return defs.map((d) => ({ ...d, stories: stories.filter((s) => storyGroupOf(s, meId) === d.key) })).filter((g) => g.stories.length > 0);
 }
 
 /* ── Dates ─────────────────────────────────────────────────────────────── */

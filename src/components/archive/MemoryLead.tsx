@@ -81,8 +81,7 @@ export function MemoryHead({
   chapter: string;
   date: string;
   dated: boolean;
-  /** Where "Add when it was" goes; left out for somebody who reads the story and doesn’t keep it. */
-  editTo?: string;
+  editTo: string;
   /** "Told by", "Written by", "From". */
   told: string;
   toldName: string;
@@ -125,7 +124,7 @@ export function MemoryHead({
         )}
       </h1>
       <p className="mv-date">
-        {dated ? <span className="dated">{date}</span> : editTo ? <Link to={editTo}>Add when it was</Link> : null}
+        {dated ? <span className="dated">{date}</span> : <Link to={editTo}>Add when it was</Link>}
         {stillWriting && <span>Still being written up</span>}
       </p>
       {kept && (
