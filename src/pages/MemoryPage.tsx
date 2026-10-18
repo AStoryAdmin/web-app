@@ -188,6 +188,8 @@ export default function MemoryPage() {
       <div className="page read mpd">
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
+        <div className="mpd-cols">
+        <div className="mpd-side">
         <div className="mpd-lead" data-rise>
           {current ? <Photograph url={current} paper={paper} /> : <TypedCard line={lead} chapter={memory.era} paper={paper} />}
           {photos.length > 1 && (
@@ -202,7 +204,9 @@ export default function MemoryPage() {
         <CaptionBand title={title} date={date} dated={dated} editTo={`/write?edit=${memory.id}&details=1`} chapter={memory.era} paper={paper} people={people} stillWriting={memory.status === "in_progress"} />
 
         <ActionTiles memoryId={memory.id} onRemember={() => setCompose(true)} />
+        </div>
 
+        <div className="mpd-main">
         <div className="rd-story mpd-words" data-rise>
           {body.length ? (
             body.map((p, k) => (
@@ -227,6 +231,8 @@ export default function MemoryPage() {
         {memory.audio?.length > 0 && <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />}
 
         <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
+        </div>
+        </div>
 
         <YearStrip story={story} year={year} />
 

@@ -3391,3 +3391,31 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
   .fr-card:hover { transform: none; }
 }
 .fr-front-portrait, .fr-front-portrait:hover, .fr-card, .fr-card:hover { text-decoration: none; }
+
+/* ───────────────────────── 48. A large screen is used, not padded (lead) ───────────────────────── */
+/* On a wide window the page sat in a 1180px column with empty margins either side. The column now takes most
+   of the window, up to 1640px, and the layouts add columns instead of stretching: five prints across, the
+   memory page in two columns (the photograph and its actions held in view on the left, the words and the
+   family on the right), the book reader larger. A phone and a laptop are unchanged. */
+@media (min-width: 1280px) {
+  :root { --content-max: clamp(1120px, calc(88vw / var(--zoom, 1)), 1640px); }
+}
+@media (min-width: 1500px) {
+  .mosaic { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .bk-reader .bk-spread, .bk-reader.samples .bk-spread { max-width: 1320px; }
+  .bk-reader.single .bk-spread, .bk-reader.samples.single .bk-spread { max-width: 640px; }
+}
+
+/* the memory page: one column until the window is wide enough for two */
+.mpd-cols, .mpd-side, .mpd-main { display: contents; }
+@media (min-width: 1280px) {
+  .page.read.mpd { max-width: var(--content-max); }
+  .mpd-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 64px; align-items: start; }
+  .mpd-side { display: flex; flex-direction: column; gap: var(--s-5); position: sticky; top: 96px; }
+  .mpd-main { display: flex; flex-direction: column; min-width: 0; }
+  .mpd-main .mpd-words { margin-top: 0; }
+  .mpd-main .rd-story { max-width: 68ch; }
+  .mpd-side .mpd-lead, .mpd-side > * { margin-top: 0; }
+}
+/* five or four across, the prints after a wide quote backfill the first row instead of leaving holes */
+.mosaic { grid-auto-flow: row dense; }
