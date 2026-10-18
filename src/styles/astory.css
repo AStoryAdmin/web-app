@@ -206,7 +206,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 .top { height: var(--top-h); }
 .top-in { max-width: var(--content-max); margin: 0 auto; height: 100%; padding: 0 var(--gutter); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-4); }
-.top .brand { display: inline-flex; width: fit-content; align-items: center; }
+.top .brand { display: inline-flex; width: fit-content; align-items: center; min-height: 44px; }
 .pillnav { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--r-pill); background: rgba(246, 240, 230, 0.08); border: 1px solid rgba(246, 240, 230, 0.12); }
 .pillnav a { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 0 16px; border-radius: var(--r-pill);
   color: var(--on-chocolate-soft); text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.01em; transition: color var(--dur-ui) var(--ease-out), background var(--dur-ui) var(--ease-out); }
@@ -3496,12 +3496,15 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .ol-sign { margin: 0; text-align: right; font-family: var(--book-body); font-style: italic; font-size: 18px; color: var(--ink-soft); }
 .ol-sign span { display: block; margin-top: 2px; font-size: 26px; color: var(--sheet-ink); }
 /* the dog: asleep with its chin on the page's top edge, paws over the border; it wakes and looks up at the end */
-.ol-dog { position: absolute; right: 84px; bottom: calc(100% - 12px); z-index: 2; width: 150px; aspect-ratio: 762 / 640; pointer-events: none; transition: transform 700ms var(--ease-out); }
-.ol-dog img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transition: opacity 520ms var(--ease-out); }
-.ol-dog .awake { opacity: 0; }
+.ol-dog { position: absolute; right: 84px; bottom: calc(100% - 12px); z-index: 2; width: 150px; aspect-ratio: 781 / 640; pointer-events: none; transition: transform 700ms var(--ease-out); }
+/* every pose on one scale (781 by 640 drawing-px); awake he peeks from behind the page's edge, the drawing cut at it;
+   the poses change without a double exposure: sleep goes in 120ms, the waking pose comes in over 200ms from 0.96 */
+.ol-dog img { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; object-fit: contain; object-position: 50% 100%; }
+.ol-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out); }
+.ol-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 12px 0); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
 .open-leaf[data-awake] .ol-dog { transform: translateY(-3px); }
 .open-leaf[data-awake] .ol-dog .sleep { opacity: 0; }
-.open-leaf[data-awake] .ol-dog .awake { opacity: 1; }
+.open-leaf[data-awake] .ol-dog .awake { opacity: 1; transform: none; transition-delay: 60ms; }
 
 /* 6. The turned-down corner (the open leaf and the writer's leaf): the sheet shows through where the corner was, the
       back of the paper folded over it */
@@ -3538,6 +3541,7 @@ body.writing-focus .leaf-one > .leaf-ribbon { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .running-head-sheet .rh-right > span, .sheet-page .running-head-sheet::after, .ol-dog, .ol-dog img { transition: none; }
+  .ol-dog .awake { transform: none; }
   .running-head-sheet .rh-sec, .running-head-sheet.in-section .rh-page { transform: none; }
 }
 

@@ -40,7 +40,7 @@ export default function Home() {
     return (
       <Shell compact title="Home">
         <div className="page">
-          <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />
+          <Problem message="We couldn’t reach your stories. Check the connection and try again." onRetry={reload} />
           <p className="meta">They're kept safe on our side. Check the connection and try again.</p>
         </div>
       </Shell>
@@ -110,14 +110,14 @@ export default function Home() {
               </div>
               {!unlimited && (
                 <p className="meta note" data-rise>
-                  {left === 1 ? "The last of today's three. Three new ones tomorrow." : `${left} of today's three waiting.`}
+                  {left === 1 ? "The last of today’s three. Three new ones tomorrow." : `${left} of today’s three waiting.`}
                 </p>
               )}
             </>
           ) : (
             <>
               <p className="story-q q" data-rise>
-                That's today's questions. Three new ones in the morning.
+                That’s today’s questions. Three new ones in the morning.
               </p>
               <div className="acts" data-rise>
                 <ButtonLink to="/write" icon={<PenIcon />}>

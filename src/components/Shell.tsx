@@ -118,11 +118,11 @@ function TellerSheet({ onClose }: { onClose: () => void }) {
         ))}
         <div className="whose-acts">
           <button type="button" className="whose-act outline" onClick={() => go("/start?another=1")}>
-            <strong>Keep someone else's story</strong>
+            <strong>Keep someone else’s story</strong>
             <span className="meta">for someone who isn't on A Story yet</span>
           </button>
           <button type="button" className="whose-act quiet" onClick={() => go("/start?another=1&join=1")}>
-            <strong>Join someone's story</strong>
+            <strong>Join someone’s story</strong>
             <span className="meta">someone who already has an account; you add what you remember</span>
           </button>
         </div>
