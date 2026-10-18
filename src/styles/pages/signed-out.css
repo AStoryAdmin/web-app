@@ -26,6 +26,9 @@
  */
 
 /* ───────────────────────── 0. Tokens ───────────────────────── */
+/* a new scale is written at once, never eased (bookFit's paint holds this for one style pass) */
+.auth.fitting, .auth.fitting *, .auth.fitting *::before, .auth.fitting *::after,
+.door.fitting, .door.fitting *, .door.fitting *::before, .door.fitting *::after { transition: none !important; }
 /* Page-scoped until the lead lifts them into astory.css §1. */
 .auth, .door {
   --fit-safe: var(--fit, 1);
@@ -89,7 +92,7 @@
 .auth .brand, .door-top .brand { min-height: 44px; min-width: 44px; align-items: center; border-radius: 4px; }
 /* the lockup is one object on the bench: the same size, in the same place, with one name on the front door and on every
    page of the book, so it holds still through a turn */
-.auth.ritual .brand, .door .door-top .brand { position: absolute; top: clamp(16px, 1.8vw, 30px); left: clamp(16px, 3vw, 56px); z-index: 3; display: inline-flex; view-transition-name: brand; }
+.auth.ritual .brand, .door .door-top .brand { position: absolute; top: clamp(16px, calc(1.8vw / var(--zoom)), 30px); left: clamp(16px, calc(3vw / var(--zoom)), 56px); z-index: 3; display: inline-flex; view-transition-name: brand; }
 .auth .brand [data-lockup] svg, .door .brand [data-lockup] svg { height: 36px; width: auto; }
 ::view-transition-group(brand) { animation: none; }
 ::view-transition-old(brand) { display: none; }
@@ -266,23 +269,24 @@
 /* ───────────────────────── 3. Between the pages ───────────────────────── */
 /* One turn, in order, never two forms at once. The old words leave first (120 ms, where they were); then the new page
    is there (the book and the title page change in one cut, at 120 ms, when no words are on them); then the new words
-   come (240 ms, rising 6px). The cloth around the book is the same on both sides and does not move. From the front
-   door (no book on one side) the bench clears in 160 ms and the open book then settles in whole, its album already
-   decoded (Welcome waits for it), in 320 ms. */
+   come (240 ms, rising 6px). The cloth around the book is the same on both sides and does not move. To or from the
+   front door (no book on one side) only the objects on the cloth change: what leaves (the bench, or the book) clears in
+   120 ms, then what comes settles in whole in 320 ms (the album already decoded: Welcome waits for it). The cloth stays
+   on the house crossfade underneath, so its weave is drawn in every frame both ways. */
 .auth .spread { view-transition-name: auth-book; }
 .auth .leaf-r { view-transition-name: auth-title; }
 .auth .promise-line { view-transition-name: auth-line; }
 .auth .plate .paper, .auth .leaf-body { view-transition-name: auth-plate; }
+.door-canvas { view-transition-name: door-bench; }
 /* the dog belongs to the title page's picture (it lies behind the plate), so it changes with the page, at 120 ms */
 ::view-transition-group(auth-book), ::view-transition-group(auth-title) { animation-duration: 420ms; animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1); }
 ::view-transition-old(auth-book), ::view-transition-old(auth-title) { mix-blend-mode: normal; animation: vt-cut-out 120ms steps(1, end) both; }
 ::view-transition-new(auth-book), ::view-transition-new(auth-title) { mix-blend-mode: normal; animation: vt-cut-in 120ms steps(1, end) both; }
 /* only one side has the book (to or from the front door): the whole book fades as one, after the bench has cleared */
-::view-transition-new(auth-book):only-child, ::view-transition-new(auth-title):only-child, ::view-transition-new(auth-plate):only-child, ::view-transition-new(auth-line):only-child { animation: 320ms cubic-bezier(0.23, 1, 0.32, 1) 140ms both vt-appear; }
-::view-transition-old(auth-book):only-child, ::view-transition-old(auth-title):only-child, ::view-transition-old(auth-plate):only-child, ::view-transition-old(auth-line):only-child { animation: 120ms cubic-bezier(0.23, 1, 0.32, 1) both vt-fade; }
-/* back to the front door, the mirror of the forward turn: the book goes first (120 ms), then the bench comes */
-:root:has(.door)::view-transition-old(root) { animation: 120ms cubic-bezier(0.23, 1, 0.32, 1) both vt-fade; }
-:root:has(.door)::view-transition-new(root) { animation: 320ms cubic-bezier(0.23, 1, 0.32, 1) 140ms both vt-appear; }
+::view-transition-new(auth-book):only-child, ::view-transition-new(auth-title):only-child, ::view-transition-new(auth-plate):only-child, ::view-transition-new(auth-line):only-child,
+::view-transition-new(door-bench):only-child { animation: 320ms cubic-bezier(0.23, 1, 0.32, 1) 140ms both vt-appear; }
+::view-transition-old(auth-book):only-child, ::view-transition-old(auth-title):only-child, ::view-transition-old(auth-plate):only-child, ::view-transition-old(auth-line):only-child,
+::view-transition-old(door-bench):only-child { animation: 120ms cubic-bezier(0.23, 1, 0.32, 1) both vt-fade; }
 /* the words: held where they were while they leave, then placed at once where the new ones come */
 ::view-transition-group(auth-plate), ::view-transition-group(auth-line) { animation-duration: 120ms; animation-timing-function: steps(1, end); }
 ::view-transition-old(auth-plate), ::view-transition-old(auth-line) { mix-blend-mode: normal; animation: 120ms linear both vt-fade; }
@@ -302,9 +306,9 @@
   ::view-transition-old(auth-book), ::view-transition-old(auth-title), ::view-transition-old(auth-plate), ::view-transition-old(auth-line) { display: none !important; }
   ::view-transition-new(auth-plate), ::view-transition-new(auth-line) { animation: 150ms linear both vt-appear !important; }
   ::view-transition-old(auth-book):only-child, ::view-transition-old(auth-title):only-child, ::view-transition-old(auth-plate):only-child, ::view-transition-old(auth-line):only-child,
-  :root:has(.door, .auth)::view-transition-old(root) { display: block !important; animation: 150ms linear both vt-fade !important; }
+  ::view-transition-old(door-bench):only-child, :root:has(.door, .auth)::view-transition-old(root) { display: block !important; animation: 150ms linear both vt-fade !important; }
   ::view-transition-new(auth-book):only-child, ::view-transition-new(auth-title):only-child, ::view-transition-new(auth-plate):only-child, ::view-transition-new(auth-line):only-child,
-  :root:has(.door, .auth)::view-transition-new(root) { animation: 150ms linear both vt-appear !important; }
+  ::view-transition-new(door-bench):only-child, :root:has(.door, .auth)::view-transition-new(root) { animation: 150ms linear both vt-appear !important; }
 }
 
 /* ───────────────────────── 4. The invitation (/join) and the code ───────────────────────── */
@@ -406,9 +410,10 @@
 .cb-thumb:nth-child(2) { transform: rotate(1.5deg); }
 .cb-thumb img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
 .cb-thumb .x { position: absolute; right: -14px; top: -14px; z-index: 1; isolation: isolate; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: var(--sheet-ink); }
-.cb-thumb .x::before { content: ""; position: absolute; inset: 12px; border-radius: 50%; background: var(--card-ivory); border: 1px solid var(--sheet-rule); z-index: -1; }
+.cb-thumb .x::before { content: ""; position: absolute; inset: 12px; border-radius: 50%; background: var(--card-ivory); border: 1px solid var(--sheet-rule); z-index: -1;
+  transition: transform 120ms var(--ease-out), background-color 160ms var(--ease-out), border-color 160ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) { .cb-thumb .x:hover::before { background: var(--paper-tone); border-color: var(--chocolate); } }
-.cb-thumb .x:active::before { transform: scale(0.94); }
+.cb-thumb .x:active::before { transform: scale(0.96); }
 .cb-thumb .x:focus-visible { outline: 2px solid var(--ochre); outline-offset: -6px; border-radius: 50%; }
 .cb .linkish { appearance: none; background: none; border: 0; padding: 0; font: 600 max(15px, var(--floor))/1.2 var(--font-ui); color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--chocolate-underline); text-underline-offset: 4px; cursor: pointer; min-height: var(--tap); display: inline-flex; align-items: center; transition: text-decoration-color 160ms var(--ease-out); }
 .cb .linkish:hover { text-decoration-color: var(--chocolate); }
@@ -470,7 +475,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 
 .door-top { position: absolute; left: 0; right: 0; top: 0; z-index: 3; height: 0; }
 
-.door-wrap { position: relative; z-index: 1; height: 100%; display: grid; place-items: center; padding: clamp(74px, calc(9vh / var(--zoom)), 100px) clamp(16px, 3vw, 56px) clamp(16px, calc(3vh / var(--zoom)), 36px); }
+.door-wrap { position: relative; z-index: 1; height: 100%; display: grid; place-items: center; padding: clamp(74px, calc(9vh / var(--zoom)), 100px) clamp(16px, calc(3vw / var(--zoom)), 56px) clamp(16px, calc(3vh / var(--zoom)), 36px); }
 .door-canvas { position: relative; width: 100%; display: grid; grid-template-columns: 440px minmax(0, 1fr); gap: 44px; align-items: stretch; }
 .door-canvas.scaled { width: 1560px; height: 740px; zoom: var(--fit, 1); }
 
@@ -516,7 +521,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 .door-picks { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 20px; flex-wrap: nowrap; }
 .door-picks > .bk-swatches { align-self: flex-end; }
 /* on a laptop the floors make the controls larger in the bench's own pixels: the families keep their names only */
-@media (min-width: 1181px) and (max-width: 1599.98px) and (min-aspect-ratio: 5/4) { .door .sb-books button small { display: none; } .door .sb-books button { min-height: var(--tap); } }
+@media (max-width: 1599.98px) { .door[data-layout="book"] .sb-books button small { display: none; } .door[data-layout="book"] .sb-books button { min-height: var(--tap); } }
 .door .sb-books { gap: 4px; flex-wrap: nowrap; }
 .door .sb-books button { color: var(--on-chocolate); border: 1px solid transparent; min-height: max(52px, var(--tap)); padding: 6px 12px 6px 10px; text-align: left; }
 .door .sb-books button i { display: block; width: 14px; height: 20px; border-radius: 1px 3px 3px 1px; box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.4); /* taste-skill-ignore: book material */ flex: none; }
@@ -616,6 +621,8 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 @media (max-width: 1180.98px), (max-aspect-ratio: 5/4) {
   html:has(.auth.ritual), body:has(.auth.ritual) { overflow-x: clip; overflow-y: visible; height: auto; }
   .auth.ritual { height: auto; min-height: calc(100vh / var(--zoom)); overflow-x: clip; }
+  /* the lockup starts on the column the pages stand in (720 at most), not in the window's corner */
+  .auth.ritual .brand, .door .door-top .brand { left: max(16px, calc((100% - 720px) / 2)); }
   .auth .spread-wrap { height: auto !important; min-height: 0; overflow: visible; display: block; padding: 84px 16px 64px; }
   .auth .spread { width: min(720px, 100%); margin: 0 auto; aspect-ratio: auto; grid-template-columns: minmax(0, 1fr); }
   .auth .leaf-r { order: 1; border-radius: 3px 3px 0 0; box-shadow: none; } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
@@ -632,8 +639,9 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .inv { position: relative; inset: auto; display: grid; }
   .inv-print { position: relative; left: auto; top: auto; width: 50%; justify-self: end; margin-right: 2%; }
   .inv-print.two { display: none; }
-  .inv-note { position: static; margin: 16px 0 0; }
-  .inv-card { position: relative; left: auto; top: auto; translate: none; width: auto; margin-top: -6%; padding: 28px 24px 26px; }
+  /* the disclosure goes under the card, never beneath it: the print, the card over its foot, then the note */
+  .inv-card { order: 2; position: relative; left: auto; top: auto; translate: none; width: auto; margin-top: -6%; padding: 28px 24px 26px; }
+  .auth .inv-note { order: 3; position: static; margin: 14px 0 0; }
   .inv-head { font-size: 26px; margin-bottom: 14px; }
   .inv-list { gap: 16px; }
   .inv-list dt { font-size: 21px; }

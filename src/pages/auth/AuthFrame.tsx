@@ -37,7 +37,7 @@ import Leaf from "../../components/delight/Leaf";
 import Prints from "../../components/delight/Prints";
 import { useLight } from "../../components/delight/Light";
 import { MARK_MASK } from "../../components/book/markMask";
-import { isStacked, markOpened, MOVE, OUT, seenOpening, useFit } from "./bookFit";
+import { isStacked, markOpened, MOVE, OUT, seedFit, seenOpening, useFit } from "./bookFit";
 
 type Props = {
   /** The bookplate's content, or the whole right page's when `plate` is false. */
@@ -165,8 +165,11 @@ export default function AuthFrame({ children, companion, rest: restProp, poses, 
     };
   }, [stage]);
 
+  // the book's scale from its first frame: the last page fitted it to this window (useFit corrects it before paint)
+  const seed = seedFit(1440, 720);
   return (
-    <div className="auth ritual on-dark" ref={ground} data-stage={stage} style={{ ["--bk-mark" as string]: MARK_MASK }}>
+    <div className="auth ritual on-dark" ref={ground} data-stage={stage} data-layout={isStacked() ? "stacked" : "book"}
+      style={{ ["--bk-mark" as string]: MARK_MASK, ...(seed === null ? null : { ["--fit" as string]: seed.toFixed(4) }) }}>
       <span className="lamp" aria-hidden="true" />
       <ClothStamp ground={ground} />
       <Leaf ground={ground} />
@@ -175,7 +178,7 @@ export default function AuthFrame({ children, companion, rest: restProp, poses, 
       </Link>
 
       <div className="spread-wrap" ref={wrapRef}>
-        <div className={`spread${isStacked() ? "" : " scaled"}`} ref={spreadRef}>
+        <div className={`spread${isStacked() ? "" : " scaled"}`} ref={spreadRef} style={seed === null ? undefined : { zoom: seed.toFixed(4) }}>
           {/* the inside of the front board: the endpaper, and what the page lays on it */}
           <section className="leaf-l endpaper" aria-label={leftLabel || "Photographs from a family’s book"}>
             <span className="ep-pattern" aria-hidden="true" />

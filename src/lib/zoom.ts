@@ -29,6 +29,10 @@ export function zoomFor(w: number, h: number): number {
 
 /** Fired on window after the html zoom has changed, for whatever measures against it. */
 export const ZOOM_EVENT = "astory:zoom";
+/** Fired on window after every resize, once the zoom for the new window is on the page (changed or not). Whatever
+ * fits itself to the window listens here instead of to resize: it then runs in the same task as the zoom, after it,
+ * so no frame is ever drawn with the new fit under the old zoom (or the old fit under the new one). */
+export const RESIZED_EVENT = "astory:resized";
 
 function apply(): void {
   const z = zoomFor(window.innerWidth, window.innerHeight);
@@ -49,6 +53,9 @@ export function startPageFit(): void {
   let timer = 0;
   window.addEventListener("resize", () => {
     window.clearTimeout(timer);
-    timer = window.setTimeout(apply, 60);
+    timer = window.setTimeout(() => {
+      apply();
+      window.dispatchEvent(new Event(RESIZED_EVENT));
+    }, 60);
   });
 }

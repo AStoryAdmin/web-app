@@ -31,7 +31,7 @@ import { MARK_MASK } from "../../components/book/markMask";
 import { SAMPLE_BOOKS, sampleBook, type SampleBook } from "../../data/sampleBooks";
 import { useAuth } from "../../state/authContext";
 import { BOOK_PRINT } from "../../app-core/theme/index.js";
-import { isStacked, markOpened, OUT, useFit } from "./bookFit";
+import { isStacked, markOpened, OUT, seedFit, useFit } from "./bookFit";
 
 /** The sign-in's album: decoded before the page turns into the open book, so its prints never arrive as grey boxes. */
 const ALBUM = ["/photos/27-1200.webp", "/photos/02-1200.webp", "/photos/18-1200.webp"];
@@ -100,8 +100,11 @@ export default function Welcome() {
     void albumReady(album).then(() => navigate(to, { viewTransition: true }));
   };
 
+  // the bench's scale from its first frame: the last visit fitted it to this window (useFit corrects it before paint)
+  const seed = seedFit(1560, 740);
   return (
-    <div className="door on-dark" ref={ground} style={{ ["--bk-mark" as string]: MARK_MASK }}>
+    <div className="door on-dark" ref={ground} data-layout={isStacked() ? "stacked" : "book"}
+      style={{ ["--bk-mark" as string]: MARK_MASK, ...(seed === null ? null : { ["--fit" as string]: seed.toFixed(4) }) }}>
       <span className="lamp" aria-hidden="true" />
       <ClothStamp ground={ground} />
       <Leaf ground={ground} />
@@ -112,7 +115,7 @@ export default function Welcome() {
       </header>
 
       <div className="door-wrap" ref={wrap}>
-        <div className={`door-canvas${isStacked() ? "" : " scaled"}`} ref={canvas}>
+        <div className={`door-canvas${isStacked() ? "" : " scaled"}`} ref={canvas} style={seed === null ? undefined : { zoom: seed.toFixed(4) }}>
           <main className="door-leaf">
             <h1>
               Every life holds a story <span className="keep">worth keeping.</span>
