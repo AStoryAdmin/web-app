@@ -40,7 +40,8 @@ function useRailMarker(nav: RefObject<HTMLElement | null>, active: number | null
 export function DecadeRail({ decades, active, onPick }: { decades: Decade[]; active: number | null; onPick: (d: Decade) => void }) {
   const nav = useRef<HTMLElement>(null);
   useRailMarker(nav, active, decades.length);
-  if (!decades.length) return null;
+  // one decade is nowhere to jump to: the rail would only take the width
+  if (decades.length < 2) return null;
   return (
     <nav className="arc-decades" aria-label="By decade" ref={nav}>
       <span className="arc-decades-mark" aria-hidden="true" />

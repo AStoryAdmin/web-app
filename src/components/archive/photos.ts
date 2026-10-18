@@ -22,3 +22,52 @@ export function minutesLabel(seconds: number): string {
   const m = Math.max(1, Math.round(seconds / 60));
   return `${m} ${m === 1 ? "minute" : "minutes"}`;
 }
+
+/**
+ * Paragraphs a reader can take in: a transcribed call often arrives as one
+ * block of a thousand words. A block longer than `max` characters is set
+ * as several paragraphs, broken only where a sentence ends, each about
+ * `target` characters. The words are never changed; only where the
+ * paragraph breaks fall.
+ */
+export function readableParagraphs(paragraphs: string[], { max = 560, target = 380 }: { max?: number; target?: number } = {}): string[] {
+  const out: string[] = [];
+  for (const p of paragraphs) {
+    if (p.length <= max || p.includes("\n")) {
+      out.push(p);
+      continue;
+    }
+    const sentences = p.match(/[^.!?…]+(?:[.!?…]+["”’)\]]*|$)\s*/g) || [p];
+    let run = "";
+    for (const s of sentences) {
+      run += s;
+      if (run.length >= target) {
+        out.push(run.trim());
+        run = "";
+      }
+    }
+    const rest = run.trim();
+    if (rest) {
+      // a short tail joins the paragraph before it rather than standing alone
+      if (rest.length < 140 && out.length) out[out.length - 1] = `${out[out.length - 1]} ${rest}`;
+      else out.push(rest);
+    }
+  }
+  return out;
+}
+
+/** "Anything else" is where a memory waits for a chapter; it is not one, so no pill says it. */
+export const realChapter = (era: string) => (era && era.trim().toLowerCase() !== "anything else" ? era : "");
+
+/** Three or more lines in a row under 40 characters: a list, a poem, words kept line by line. */
+export const isRunOfLines = (p: string) => {
+  let run = 0;
+  for (const l of p.split("\n")) {
+    run = l.trim().length > 0 && l.trim().length < 40 ? run + 1 : 0;
+    if (run >= 3) return true;
+  }
+  return false;
+};
+
+/** The book's drop cap only where it can rest: a first paragraph of 200 characters or more, no line breaks, opening on a letter. */
+export const takesDropCap = (p: string) => !p.includes("\n") && p.length >= 200 && /^[A-Za-z]/.test(p);

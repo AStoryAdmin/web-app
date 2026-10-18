@@ -1,68 +1,77 @@
 /**
- * Plans and prices (docs/PRD.md §7). Every price in full, what each plan
- * includes, the current one marked. Writing, reading and the family are
- * free on every plan; nothing here is a wall. Stripe Checkout for plans is
- * not wired on the web yet, so "Choose" hands over to the marketing site's
- * pricing page and says so.
+ * Plans and prices (docs/PRD.md §7, from pricing.ts, the file that mirrors
+ * what Stripe charges). One comparison table, every plan side by side and
+ * every price in full, the current one marked; on a phone each plan is its
+ * own short list. Nothing is invented: where a plan says nothing about a
+ * row, the cell says nothing. Writing, reading and the family are free on
+ * every plan; nothing here is a wall. Checkout for plans is not wired on the
+ * web yet, so "Choose" hands over to the marketing site's pricing page, and
+ * the page says so once.
  */
 import { useEffect } from "react";
 import Shell from "../components/Shell";
-import { ButtonLink } from "../components/ui";
-import { CheckIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { PLAN_LABELS, type Plan } from "../lib/plan";
 import { track } from "../lib/analytics";
+import WhereNext, { Stop } from "../components/book/WhereNext";
 
 const PRICING_URL = "https://astoryapp.com/pricing";
 
-type PlanCard = {
-  id: Plan;
-  price: string;
-  cadence: string;
-  about?: string;
-  includes: string[];
-  book: string;
-  tone?: "featured";
-};
+type Row = "calls" | "storytellers" | "questions" | "photos" | "book";
 
-const PLANS: PlanCard[] = [
+const ROWS: { key: Row; label: string }[] = [
+  { key: "calls", label: "Guided calls" },
+  { key: "storytellers", label: "Storytellers" },
+  { key: "questions", label: "Questions" },
+  { key: "photos", label: "Photographs" },
+  { key: "book", label: "The book" },
+];
+
+type PlanCol = { id: Plan; price: string; cadence: string; about?: string; hardcover?: boolean; cells: Partial<Record<Row, string>> };
+
+const PLANS: PlanCol[] = [
   {
     id: "free",
     price: "$0",
     cadence: "no card, no clock",
-    includes: ["Three guided questions a day", "Unlimited writing", "Unlimited family", "Five photographs a week", "One ten-minute conversation"],
-    book: "Print at home, free",
+    cells: { calls: "One ten-minute conversation", questions: "Three guided questions a day", photos: "Five a week", book: "Print at home, free" },
   },
   {
     id: "individual",
+    hardcover: true,
     price: "$119",
     cadence: "a year",
     about: "about $9.92 a month",
-    includes: ["90 minutes of guided calls a month", "One storyteller", "Every question", "Unlimited photographs"],
-    book: "A Classic Hardcover each year, or its $69 toward a finer edition, plus the Digital Edition",
-    tone: "featured",
+    cells: {
+      calls: "90 minutes a month",
+      storytellers: "One",
+      questions: "Every question",
+      photos: "Unlimited",
+      book: "A Classic Hardcover each year, or its $69 toward a finer edition, plus the Digital Edition",
+    },
   },
   {
     id: "family",
+    hardcover: true,
     price: "$229",
     cadence: "a year",
     about: "about $19.08 a month",
-    includes: ["200 minutes a month, shared", "Up to three storytellers", "Every question", "Unlimited photographs"],
-    book: "A Classic Hardcover for each storyteller, each year",
+    cells: { calls: "200 minutes a month, shared", storytellers: "Up to three", questions: "Every question", photos: "Unlimited", book: "A Classic Hardcover for each storyteller, each year" },
   },
   {
     id: "express",
+    hardcover: true,
     price: "$79",
-    cadence: "once, for about 30 days",
-    includes: ["140 minutes of guided calls", "One storyteller", "Nothing renews"],
-    book: "A Classic Hardcover with the pass",
+    cadence: "once",
+    about: "for about 30 days; nothing renews",
+    cells: { calls: "140 minutes", storytellers: "One", book: "A Classic Hardcover with the pass" },
   },
   {
     id: "monthly",
     price: "$19.99",
     cadence: "a month",
-    includes: ["No yearly commitment", "Guided calls each month", "Every question", "Unlimited photographs"],
-    book: "The Digital Edition included; printed books from $39",
+    about: "no yearly commitment",
+    cells: { calls: "Guided calls each month", questions: "Every question", photos: "Unlimited", book: "The Digital Edition; printed books from $39" },
   },
 ];
 
@@ -75,70 +84,102 @@ export default function Plans() {
   }, [current]);
 
   return (
-    <Shell compact title="Plans" back="/account">
-      <div className="page plans-page">
-        <div className="pagehead">
-          <div className="grow">
-            <p className="label">Plans</p>
-            <h1 style={{ fontSize: "var(--t-h2)" }}>What each plan includes</h1>
-          </div>
+    <Shell
+      compact
+      wide
+      back="/account"
+      title="Plans"
+      hero={
+        <div className="pl-hero">
+          <h1 className="hero-title">
+            Plans
+            <Stop />
+          </h1>
+          <p className="pl-promise" data-rise>
+            Writing, reading and the family are free on every plan, including after a plan stops.
+          </p>
         </div>
-        <p className="plans-promise story" data-rise>Writing, reading and the family are free on every plan, including after a plan stops.</p>
-        {current === "complimentary" && <p className="meta" style={{ marginBottom: "var(--s-5)" }}>Your account has full access through an access code. Nothing below is needed.</p>}
+      }
+    >
+      <div className="page plans-page">
+        <div className="pl-note" data-rise>
+          {current === "complimentary" ? (
+            <p>
+              <b>Your account has full access</b> through an access code. Nothing below is needed.
+            </p>
+          ) : (
+            <p>
+              You are on <b>{PLAN_LABELS[current]}</b>.
+            </p>
+          )}
+          <p>Plans are bought on astoryapp.com for now, and show here the moment they are paid for.</p>
+        </div>
 
-        <div className="plan-grid">
+        <div className="pl-table" role="group" aria-label="What each plan includes" data-rise>
+          <div className="pl-labels" aria-hidden="true">
+            <span className="pl-corner" />
+            {ROWS.map((r) => (
+              <span key={r.key} className="pl-label">
+                {r.label}
+              </span>
+            ))}
+            <span className="pl-label pl-label-act" />
+          </div>
           {PLANS.map((p) => {
             const mine = p.id === current;
             return (
-              <article key={p.id} className={`card pad plan${p.tone === "featured" ? " featured" : ""}${mine ? " mine" : ""}`} aria-current={mine ? "true" : undefined} data-rise>
-                <div className="plan-head">
-                  <h2>{PLAN_LABELS[p.id]}</h2>
-                  {mine && <span className="chip green">Your plan</span>}
-                </div>
-                <p className="plan-price">
-                  <b>{p.price}</b> <span>{p.cadence}</span>
-                </p>
-                {p.about && <p className="meta">{p.about}</p>}
-                <ul className="plan-list">
-                  {p.includes.map((line) => (
-                    <li key={line}>
-                      <CheckIcon aria-hidden="true" />
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-                <p className="plan-book">
-                  <span className="label quiet">The book</span>
-                  {p.book}
-                </p>
-                <div className="plan-act">
+              <section key={p.id} className={`pl-col${mine ? " mine gilt" : ""}`} aria-labelledby={`pl-${p.id}`} aria-current={mine ? "true" : undefined}>
+                {mine && (
+                  <>
+                    <i className="glint" aria-hidden="true" />
+                    <span className="pl-flourish tl" aria-hidden="true" />
+                    <span className="pl-flourish br" aria-hidden="true" />
+                  </>
+                )}
+                <header className="pl-head">
+                  <h2 id={`pl-${p.id}`}>{PLAN_LABELS[p.id]}</h2>
+                  <p className="pl-price">
+                    <b>{p.price}</b> <span>{p.cadence}</span>
+                  </p>
+                  <p className="pl-about">{p.about ?? " "}</p>
+                </header>
+                {ROWS.map((r) => (
+                  <p key={r.key} className={`pl-cell${p.cells[r.key] ? "" : " none"}`}>
+                    <span className="pl-cell-label">{r.label}</span>
+                    <span className="pl-cell-value">
+                      {r.key === "book" && p.hardcover && <img className="pl-keepsake" src="/book/keepsake-closed.webp" alt="" width={40} height={40} />}
+                      {p.cells[r.key] ?? "—"}
+                    </span>
+                  </p>
+                ))}
+                <div className="pl-act">
                   {mine ? (
-                    <span className="meta">This is the plan you are on.</span>
+                    <span className="pl-mine">Your plan</span>
                   ) : p.id === "free" ? (
-                    <span className="meta">A plan that stops returns the account to Free. The app is yours. It does not stop being yours.</span>
+                    <span className="pl-quiet">Where every account starts</span>
                   ) : (
-                    <a
-                      className={`btn ${p.tone === "featured" ? "primary" : "outline"} block`}
-                      href={PRICING_URL}
-                      target="_blank"
-                      rel="noopener"
-                      onClick={() => track("checkout_started", { plan: p.id, via: "pricing_site" })}
-                    >
-                      Choose {PLAN_LABELS[p.id]}
+                    <a className="btn outline sm pl-choose" href={PRICING_URL} target="_blank" rel="noopener" onClick={() => track("checkout_started", { plan: p.id, via: "pricing_site" })}>
+                      Choose {PLAN_LABELS[p.id]} <span aria-hidden="true">↗</span>
+                      <span className="sr-only"> (opens astoryapp.com)</span>
                     </a>
                   )}
                 </div>
-              </article>
+              </section>
             );
           })}
         </div>
 
-        <p className="meta plans-note" data-rise>Plans are bought on astoryapp.com for now and show up here the moment they are paid for. Checkout inside this app is coming.</p>
-        <div style={{ marginTop: "var(--s-6)" }}>
-          <ButtonLink to="/account" variant="quiet">
-            Back to your account
-          </ButtonLink>
-        </div>
+        <p className="pl-foot">
+          A plan that stops returns the account to Free. The app is yours. It does not stop being yours.
+        </p>
+
+        <WhereNext
+          rows={[
+            { to: "/book", title: "See the book", line: "Every page as it will print, and the editions." },
+            { to: "/account", title: "Your account", line: "Your name, the wall, who looks after this." },
+            { to: "/", title: "Back to today", line: "Writing is free on every plan." },
+          ]}
+        />
       </div>
     </Shell>
   );

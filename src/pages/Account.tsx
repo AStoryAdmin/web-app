@@ -1,15 +1,20 @@
 /**
- * Account: the person, their storytellers, their plan, two privacy
- * switches, the password and the email, who looks after this if they
- * can't, a copy of everything, sign out, and deleting the account (which
- * names who inherits each story first, docs/PORTING-MANIFEST.md §1.8).
- * Everything that can fail says so beside the thing that failed.
+ * Account: a settings page, set like the back matter of a book. On a wide
+ * window an index stays beside the page (the person, then every section,
+ * grouped: you, the stories, the plan and privacy, if you can't), and each
+ * section is one row: its name and what it is for on the left, the controls
+ * on the right, rows parted by a hairline, never boxed. The person, their
+ * storytellers under the three ways to be in a story, the wall, the plan,
+ * two privacy switches, the email and the password, who looks after this if
+ * they can't, a copy of everything, and deleting the account (which names
+ * who inherits each story first, docs/PORTING-MANIFEST.md §1.8). Everything
+ * that can fail says so beside the thing that failed.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, ButtonLink, CodeInput, Field, Problem } from "../components/ui";
-import { ChevronRight, LinkIcon, LockIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
+import { LinkIcon, LockIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { changePassword, confirmEmailChange, requestEmailChange, updateProfile, updateSettings, CODE_LEN, MIN_PASSWORD, type Settings, type User } from "../data/auth";
@@ -17,6 +22,8 @@ import { PLAN_LABELS } from "../lib/plan";
 import { supabase } from "../lib/supabase";
 import { track } from "../lib/analytics";
 import { storyLine } from "../lib/storyLine";
+import { storyGroupOf, storyGroups } from "../components/family/familyView";
+import WhereNext, { Stop } from "../components/book/WhereNext";
 import type { Story } from "../data/stories";
 
 type Note = { ok?: string; error?: string } | null;
@@ -24,12 +31,18 @@ type Note = { ok?: string; error?: string } | null;
 /** A function the database does not have yet (an older deploy). */
 const MISSING_FN = new Set(["PGRST202", "42883"]);
 
-function Section({ title, lead, children, id }: { title: string; lead?: string; children: ReactNode; id?: string }) {
+/** One row of the settings: its name and what it is for on the left, the controls on the right. */
+function Section({ title, lead, children, id, tone }: { title: string; lead?: ReactNode; children: ReactNode; id: string; tone?: "danger" }) {
   return (
-    <section className="card pad acct" aria-labelledby={id ? `${id}-h` : undefined} id={id} data-rise>
-      <h2 id={id ? `${id}-h` : undefined}>{title}</h2>
-      {lead && <p className="meta acct-lead">{lead}</p>}
-      {children}
+    // no data-rise: a row below the fold must never wait on an observer to be seen (Bao's Standard rule 25)
+    <section className={`acct-sec${tone ? ` ${tone}` : ""}`} aria-labelledby={`${id}-h`} id={id}>
+      <header className="acct-sec-head">
+        <h2 id={`${id}-h`} data-running={title}>
+          {title}
+        </h2>
+        {lead && <p className="acct-lead">{lead}</p>}
+      </header>
+      <div className="acct-sec-body">{children}</div>
     </section>
   );
 }
@@ -66,7 +79,6 @@ function Profile({ user, refresh }: { user: User; refresh: () => Promise<unknown
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note>(null);
   const changed = first !== user.firstName || last !== user.lastName || phone !== user.phone;
-  const name = `${user.firstName} ${user.lastName}`.trim() || user.email;
 
   const save = async () => {
     setBusy(true);
@@ -79,15 +91,23 @@ function Profile({ user, refresh }: { user: User; refresh: () => Promise<unknown
     setBusy(false);
   };
 
+  const name = `${user.firstName} ${user.lastName}`.trim() || user.email;
   return (
-    <Section title="You" id="profile">
-      <div className="acct-person">
-        <Avatar src={user.avatarUrl} name={name} size={72} />
-        <div>
-          <strong className="acct-name">{name}</strong>
-          <span className="meta">{user.email}</span>
+    <section className="acct-sec acct-sec-profile" aria-labelledby="profile-h" id="profile" data-rise>
+      {/* Ex Libris: the bookplate from the printed book, the person's name written on it (decoration D16) */}
+      <div className="acct-exlibris">
+        <img className="acct-plate" src="/book/bookplate.webp" alt="" aria-hidden="true" width={1130} height={1400} />
+        <div className="acct-plate-words">
+          <Avatar src={user.avatarUrl} name={name} size={56} className="acct-seal" />
+          <h1 id="profile-h" data-running="Your name">
+            {name}
+            <Stop />
+          </h1>
         </div>
       </div>
+      <div className="acct-sec-body">
+      <h2 className="acct-sub">Your name</h2>
+      <p className="acct-lead">How the family sees you, in the book's colophon and beside what you add.</p>
       <form
         className="acct-form"
         onSubmit={(e) => {
@@ -107,7 +127,8 @@ function Profile({ user, refresh }: { user: User; refresh: () => Promise<unknown
           <NoteLine note={note} />
         </div>
       </form>
-    </Section>
+      </div>
+    </section>
   );
 }
 
@@ -146,7 +167,7 @@ function Email({ user, refresh }: { user: User; refresh: () => Promise<unknown> 
   };
 
   return (
-    <Section title="Email" id="email">
+    <Section title="Email" lead="Where your sign-in codes and the Sunday email go." id="email">
       <p className="acct-value">
         <MailIcon /> {user.email}
       </p>
@@ -225,7 +246,7 @@ function Password() {
   };
 
   return (
-    <Section title="Password" id="password">
+    <Section title="Password" lead="For signing in on a new computer or phone." id="password">
       <form
         className="acct-form"
         onSubmit={(e) => {
@@ -248,7 +269,7 @@ function Password() {
 
 /* ── Storytellers ────────────────────────────────────────────────────── */
 
-function Storytellers({ stories, active, chooseStory }: { stories: Story[]; active: Story | null; chooseStory: (id: string) => Promise<void> }) {
+function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]; active: Story | null; chooseStory: (id: string) => Promise<void>; meId: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<Note>(null);
   const pick = async (id: string) => {
@@ -261,39 +282,49 @@ function Storytellers({ stories, active, chooseStory }: { stories: Story[]; acti
     }
     setBusy(null);
   };
+  const groups = storyGroups(stories, meId);
   return (
-    <Section title="Your storytellers" lead="Whose stories this account keeps. The four places are about the one that is chosen." id="storytellers">
-      <ul className="acct-list">
-        {stories.map((s) => {
-          const on = s.id === active?.id;
-          return (
-            <li key={s.id} className="person" aria-current={on ? "true" : undefined}>
-              <Avatar name={s.name} size={52} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <strong>{storyLine(s)}</strong>
-                <span className="meta">
-                  {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
-                  {on ? " · chosen" : ""}
-                </span>
-              </span>
-              {on ? (
-                <Link to="/" className="btn quiet sm">
-                  Open <ChevronRight />
-                </Link>
-              ) : (
-                <Button variant="outline" small onClick={() => pick(s.id)} loading={busy === s.id}>
-                  Switch
-                </Button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+    <Section title="Whose stories" lead="The four places are about the story that is chosen. There are three ways to be in one, and nobody ever writes as somebody else." id="storytellers">
+      {groups.length === 0 && <p className="acct-empty">No stories yet.</p>}
+      {groups.map((g) => (
+        <div key={g.key} className="acct-group">
+          <h3>{g.title}</h3>
+          <p className="acct-group-meaning">{g.meaning}</p>
+          <ul className="acct-people">
+            {g.stories.map((s) => {
+              const on = s.id === active?.id;
+              return (
+                <li key={s.id} className={on ? "on" : undefined} aria-current={on ? "true" : undefined}>
+                  <Avatar name={s.name} size={44} className="acct-seal" />
+                  <span className="acct-who">
+                    <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
+                    <span>
+                      {g.key === "joined" ? "their story" : storyLine(s).split(" · ").slice(1).join(" · ") || "a story you keep"} · {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
+                    </span>
+                  </span>
+                  {on ? (
+                    <span className="acct-chosen">Chosen</span>
+                  ) : (
+                    <Button variant="outline" small onClick={() => pick(s.id)} loading={busy === s.id} disabled={!!busy && busy !== s.id}>
+                      Switch to {s.name}
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
       <NoteLine note={note} />
-      <div className="acct-acts">
-        <ButtonLink to="/start?another=1" variant="outline" small>
-          Keep someone else's story
-        </ButtonLink>
+      <div className="acct-ways">
+        <Link to="/start?another=1" className="acct-way">
+          <strong>Keep someone else's story</strong>
+          <span>For someone who isn't on A Story yet. You do the typing, in their name.</span>
+        </Link>
+        <Link to="/start?another=1&join=1" className="acct-way">
+          <strong>Join someone's story</strong>
+          <span>Someone who already has an account. You add what you remember, under your own name.</span>
+        </Link>
       </div>
     </Section>
   );
@@ -304,7 +335,7 @@ function Storytellers({ stories, active, chooseStory }: { stories: Story[]; acti
 function PlanCard({ user }: { user: User }) {
   const ends = user.subscriptionCancelAt ? new Date(user.subscriptionCancelAt) : null;
   return (
-    <Section title="Your plan" id="plan">
+    <Section title="Your plan" lead="Writing, reading and the family are free on every plan." id="plan">
       <p className="acct-plan">
         <b>{PLAN_LABELS[user.plan]}</b>
         {user.plan === "free" && <span className="meta">Three guided questions a day, unlimited writing, the whole family, print at home free.</span>}
@@ -316,8 +347,8 @@ function PlanCard({ user }: { user: User }) {
         </p>
       )}
       <div className="acct-acts">
-        <ButtonLink to="/plans" variant={user.plan === "free" ? "primary" : "outline"} small>
-          See plans
+        <ButtonLink to="/plans" variant="outline" small>
+          Compare the plans
         </ButtonLink>
       </div>
     </Section>
@@ -338,7 +369,7 @@ function Privacy({ user, refresh }: { user: User; refresh: () => Promise<unknown
     setBusy(null);
   };
   return (
-    <Section title="Privacy" id="privacy">
+    <Section title="Privacy" lead="What leaves this account, and when." id="privacy">
       <div className="acct-switches">
         <Switch on={user.settings.shareUsage} label="Help improve A Story" hint="Counts and taps, never a word anybody said." onChange={(v) => set("shareUsage", v)} busy={busy === "shareUsage"} />
         <Switch on={user.settings.weeklyDigest} label="The Sunday email" hint="What the family added this week, once a week." onChange={(v) => set("weeklyDigest", v)} busy={busy === "weeklyDigest"} />
@@ -413,12 +444,12 @@ function WallSwitch({ story }: { story: Story }) {
   );
 }
 
-function Walls() {
+function Walls({ meId }: { meId: string }) {
   const { stories } = useAccount();
-  const mine = stories.filter((s) => s.memories.length > 0 || s.isPublic);
+  const mine = stories.filter((s) => storyGroupOf(s, meId) !== "joined" && (s.memories.length > 0 || s.isPublic));
   if (!mine.length) return null;
   return (
-    <Section title="The wall" lead="A page anyone with the link can read: the memories that are public, and what the family added. Send it to a cousin, put it in the family group. Turn it off any time." id="wall">
+    <Section title="The wall" lead="One page anyone with the link can read: the memories that are public, and what the family added. Private memories never show. Turn it off any time." id="wall">
       <div className="acct-switches">
         {mine.map((s) => (
           <WallSwitch key={s.id} story={s} />
@@ -507,36 +538,54 @@ function Trusted() {
 /* ── Export ──────────────────────────────────────────────────────────── */
 
 function Export({ stories, recordedBy }: { stories: Story[]; recordedBy: string }) {
-  const [busy, setBusy] = useState<string | null>(null);
+  const withPages = stories.filter((s) => s.memories.length > 0);
+  const [pick, setPick] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note>(null);
-  const run = async (s: Story) => {
-    setBusy(s.id);
+  const chosen = withPages.find((s) => s.id === pick) ?? withPages[0] ?? null;
+  const run = async () => {
+    if (!chosen) return;
+    setBusy(true);
     setNote(null);
-    track("export_requested", { memories: s.memories.length, kind: "pdf" });
+    track("export_requested", { memories: chosen.memories.length, kind: "pdf" });
     try {
       // The print builder carries the book's fonts; only fetched when somebody asks for the file.
       const { printAtHome } = await import("../components/book/printBook");
-      await printAtHome(s, recordedBy);
+      await printAtHome(chosen, recordedBy);
+      setNote({ ok: "The book opened in a new window. Choose “Save as PDF” there." });
     } catch (err) {
-      setNote({ error: (err as Error).message });
+      setNote({ error: (err as Error).message || "The book couldn't be made just now. Please try again." });
     }
-    setBusy(null);
+    setBusy(false);
   };
   return (
-    <Section title="A copy of everything" lead="The whole book as it would print, with every photograph. Choose “Save as PDF” in the print dialog to keep a file." id="export">
-      <ul className="acct-list plain">
-        {stories.map((s) => (
-          <li key={s.id} className="acct-row">
-            <span>
-              <strong>{storyLine(s)}</strong> <span className="meta">· {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}</span>
-            </span>
-            <Button variant="outline" small icon={<PrintIcon />} onClick={() => run(s)} loading={busy === s.id} disabled={!!busy && busy !== s.id}>
-              Download everything as a PDF
+    <Section title="A copy of everything" lead="The whole book as it would print, with every photograph, to print or to keep as a PDF." id="export">
+      {withPages.length === 0 ? (
+        <p className="acct-empty">Nothing to copy yet. The first memory makes the first page.</p>
+      ) : (
+        <>
+          {withPages.length > 1 && (
+            <div className="acct-pick" role="radiogroup" aria-label="Whose book">
+              {withPages.map((s) => (
+                <label key={s.id} className={`acct-pick-row${chosen?.id === s.id ? " on" : ""}`}>
+                  <input type="radio" name="export-story" checked={chosen?.id === s.id} onChange={() => setPick(s.id)} />
+                  <span className="acct-pick-dot" aria-hidden="true" />
+                  <strong>{storyLine(s)}</strong>
+                  <span className="acct-pick-n">
+                    {s.memories.length} {s.memories.length === 1 ? "memory" : "memories"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="acct-acts">
+            <Button variant="outline" small icon={<PrintIcon />} onClick={run} loading={busy}>
+              {withPages.length > 1 && chosen ? `Print or save ${chosen.name}'s book` : "Print or save as a PDF"}
             </Button>
-          </li>
-        ))}
-      </ul>
-      <NoteLine note={note} />
+            <NoteLine note={note} />
+          </div>
+        </>
+      )}
     </Section>
   );
 }
@@ -608,7 +657,7 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
   const kept = stories.filter((s) => s.ownerId !== user.id);
 
   return (
-    <Section title="Delete this account" id="delete">
+    <Section title="Delete this account" lead="Each story you keep passes to the person who has kept it with you longest. You see who before anything is deleted." id="delete" tone="danger">
       {!open ? (
         <div className="acct-acts">
           <Button variant="quiet" small className="danger-text" onClick={begin}>
@@ -654,6 +703,59 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
   );
 }
 
+/* ── The index beside the page ───────────────────────────────────────── */
+
+const INDEX: { group: string; items: [string, string][] }[] = [
+  { group: "You", items: [["profile", "Your name"], ["email", "Email"], ["password", "Password"]] },
+  { group: "The stories", items: [["storytellers", "Whose stories"], ["wall", "The wall"], ["export", "A copy of everything"]] },
+  { group: "Plan and privacy", items: [["plan", "Your plan"], ["privacy", "Privacy"]] },
+  { group: "If you can't", items: [["trusted", "Who looks after this"], ["delete", "Delete the account"]] },
+];
+
+/**
+ * The sections actually on the page (the wall and the keeper appear only when they apply), and the one being
+ * read: the last whose heading has passed a line a third of the way down the window. Only a marker moves; no
+ * section is ever hidden for it.
+ */
+function useIndex(root: React.RefObject<HTMLElement | null>, ready: boolean) {
+  const [present, setPresent] = useState<string[]>([]);
+  const [current, setCurrent] = useState<string>("profile");
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const read = () => {
+      const ids = [...el.querySelectorAll<HTMLElement>(".acct-sec[id]")].map((s) => s.id);
+      setPresent((prev) => (prev.join() === ids.join() ? prev : ids));
+    };
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [root, ready]);
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const onScroll = () => {
+      const line = window.innerHeight * 0.34;
+      let at = present[0] || "profile";
+      for (const id of present) {
+        const s = document.getElementById(id);
+        if (s && s.getBoundingClientRect().top <= line) at = id;
+      }
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && present.length) at = present[present.length - 1];
+      setCurrent(at);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [root, present, ready]);
+  return { present, current, setCurrent };
+}
+
 /* ── The page ────────────────────────────────────────────────────────── */
 
 export default function Account() {
@@ -661,8 +763,15 @@ export default function Account() {
   const { account, stories, activeStory, chooseStory, loadError, reload } = useAccount();
   const navigate = useNavigate();
   const [leaving, setLeaving] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const { present, current, setCurrent } = useIndex(pageRef, !!user && account !== undefined);
 
-  if (user === undefined || account === undefined) return <Shell compact title="Account"><div className="page" aria-busy="true" /></Shell>;
+  if (user === undefined || account === undefined)
+    return (
+      <Shell bare wide title="Account">
+        <div className="page" aria-busy="true" />
+      </Shell>
+    );
   if (!user) return null; // RequireAuth sends them to sign in
 
   const recordedBy = `${user.firstName} ${user.lastName}`.trim();
@@ -671,49 +780,70 @@ export default function Account() {
     await signOut();
     navigate("/welcome", { replace: true });
   };
+  const jump = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    setCurrent(id);
+    el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    window.history.replaceState(null, "", `#${id}`);
+  };
 
   return (
-    <Shell
-      hero={
-        <>
-          <p className="label" data-rise>
-            Account &amp; settings
-          </p>
-          <h1>{`${user.firstName} ${user.lastName}`.trim() || user.email}</h1>
-          <div data-rise style={{ marginTop: "var(--s-5)", display: "flex", alignItems: "center", gap: "var(--s-5)", flexWrap: "wrap" }}>
-            <span className="meta">{user.email}</span>
-            <Button variant="outline" small onClick={leave} loading={leaving}>
-              Sign out
-            </Button>
-          </div>
-        </>
-      }
-    >
-      <div className="page acct-page">
-        {loadError && <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />}
+    <Shell bare wide title="Account">
+      <div className="page acct-page" ref={pageRef}>
+        <aside className="acct-index" aria-label="Account">
+          <nav className="acct-nav" aria-label="Settings">
+            {INDEX.map((g) => {
+              const items = g.items.filter(([id]) => present.includes(id));
+              if (!items.length) return null;
+              return (
+                <div key={g.group} className="acct-nav-group">
+                  <p>{g.group}</p>
+                  <ul>
+                    {items.map(([id, label]) => (
+                      <li key={id}>
+                        <a href={`#${id}`} onClick={(e) => jump(e, id)} aria-current={current === id ? "location" : undefined}>
+                          {label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </nav>
+          <Button variant="outline" small onClick={leave} loading={leaving} className="acct-signout">
+            Sign out
+          </Button>
+        </aside>
 
-        <div className="acct-grid">
-          <div className="acct-col">
-            <Profile user={user} refresh={refresh} />
-            <Storytellers stories={stories} active={activeStory} chooseStory={chooseStory} />
-            <PlanCard user={user} />
-            <Privacy user={user} refresh={refresh} />
-            <Walls />
-          </div>
-          <div className="acct-col">
-            <Email user={user} refresh={refresh} />
-            <Password />
-            <Trusted />
-            <Export stories={stories} recordedBy={recordedBy} />
-            <Delete
-              user={user}
-              stories={stories}
-              afterDelete={async () => {
-                await signOut();
-                navigate("/welcome", { replace: true });
-              }}
-            />
-          </div>
+        <div className="acct-body">
+          {loadError && <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />}
+          <Profile user={user} refresh={refresh} />
+          <Email user={user} refresh={refresh} />
+          <Password />
+          <Storytellers stories={stories} active={activeStory} chooseStory={chooseStory} meId={user.id} />
+          <Walls meId={user.id} />
+          <Export stories={stories} recordedBy={recordedBy} />
+          <PlanCard user={user} />
+          <Privacy user={user} refresh={refresh} />
+          <Trusted />
+          <Delete
+            user={user}
+            stories={stories}
+            afterDelete={async () => {
+              await signOut();
+              navigate("/welcome", { replace: true });
+            }}
+          />
+          <WhereNext
+            rows={[
+              { to: "/plans", title: "Compare the plans", line: "Every price in full, side by side." },
+              { to: "/book", title: "Open the book", line: "Every page, as it will print." },
+              { to: "/", title: "Back to today", line: "Today's question is waiting." },
+            ]}
+          />
         </div>
       </div>
     </Shell>

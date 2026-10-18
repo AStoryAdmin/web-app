@@ -1,19 +1,23 @@
 /**
- * The Book: the real teal book with how far along it is, then every page
- * of it as facing spreads in the print book's own type, print at home for
- * free, and the editions with their prices from the server. The book is a
- * web object (docs/PRODUCT-DECISIONS.md §8): nothing here is "12 more".
+ * The Book: the family's book open on the desk, the way astoryapp.com/samples
+ * shows it, sized to the window so the whole spread and its controls are in
+ * view at once. On the teal cloth, the title and how far along it is; on the
+ * paper, the book's own contents beside it (every chapter, a click away), the
+ * cover colours and Print at home; below, the editions as a price list. The
+ * book is a web object (docs/PRODUCT-DECISIONS.md §8): nothing here is
+ * "12 more".
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import BookObject from "../components/BookObject";
 import { Button, ButtonLink, Problem } from "../components/ui";
-import { BookIcon, PenIcon, PrintIcon } from "../components/icons";
+import { PenIcon, PrintIcon } from "../components/icons";
 import BookSpread from "../components/book/BookSpread";
 import CoverSwatches from "../components/book/CoverSwatches";
 import Editions from "../components/book/Editions";
-import { buildBook, bookLine, type Asked } from "../components/book/bookPages";
+import WhereNext, { Stop } from "../components/book/WhereNext";
+import { buildBook, type Asked } from "../components/book/bookPages";
 import { loadAskedQuestions } from "../components/book/askedQuestions";
 import { printAtHome } from "../components/book/printBook";
 import { useAuth } from "../state/authContext";
@@ -35,8 +39,6 @@ export default function Book() {
   const [printing, setPrinting] = useState(false);
   const [coverBusy, setCoverBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const readRef = useRef<HTMLDivElement>(null);
-  const editionsRef = useRef<HTMLDivElement>(null);
   const keyed = useRef<string | null>(null);
   const sweepFrom = useRef<number | null>(null);
 
@@ -74,10 +76,15 @@ export default function Book() {
   const recordedBy = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const book = useMemo(() => (story ? buildBook(story, { contributions, recordedBy, asked }) : null), [story, contributions, recordedBy, asked]);
 
-  if (account === undefined) return <Shell compact title="The Book"><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined)
+    return (
+      <Shell compact tone="teal" title="The Book">
+        <div className="page" aria-busy="true" />
+      </Shell>
+    );
   if (account === null && loadError) {
     return (
-      <Shell compact title="The Book">
+      <Shell compact tone="teal" title="The Book">
         <div className="page">
           <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />
         </div>
@@ -89,6 +96,7 @@ export default function Book() {
   const progress = bookProgress(story) as Progress;
   const pct = Math.round(progress.ratio * 100);
   const empty = book.memories === 0;
+  const pages = book.pages.length - 2;
 
   const print = async () => {
     setProblem(null);
@@ -118,62 +126,65 @@ export default function Book() {
     }
   };
 
-  const scrollTo = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  const swatches = <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />;
+  const printButton = (
+    <div className="bk-print">
+      <Button variant="outline" icon={<PrintIcon />} onClick={print} loading={printing}>
+        Print at home, free
+      </Button>
+      <p className="meta">To print, or to keep as a PDF.</p>
+    </div>
+  );
 
   return (
     <Shell
+      compact
+      wide
       tone="teal"
       hero={
-        <div className="hero-grid">
-          <div className="bookhero-body">
-            <p className="label" data-rise>
-              The book
-              <span className="mobile-only">
-                {" "}
-                <TellerPick />
-              </span>
+        <div className="bkh">
+          <div className="bkh-words">
+            <p className="label mobile-only" data-rise>
+              <TellerPick />
             </p>
-
-            <h1 className="story-title bookhero-title">{book.title}</h1>
-            <p className="bookhero-sub" data-rise>{book.title === book.fullName ? book.subtitle : book.fullName}</p>
-            <p className="bookhero-headline" data-rise>{progress.headline}</p>
-            <div data-rise className="progress" style={{ ["--pct" as string]: `${Math.max(6, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
-              <div className="bar">{pct >= 20 ? `${pct}%` : ""}</div>
-              <div className="mark" />
-              <div className="comb" />
-              <div className="end">First edition</div>
-            </div>
-            <p className="meta bookhero-line" data-rise>{bookLine(book)}</p>
-            <div className="bookhero-acts" data-rise>
-              <Button icon={<BookIcon />} onClick={() => scrollTo(readRef.current)} disabled={empty}>
-                Read it
-              </Button>
-              <Button variant="outline" icon={<PrintIcon />} onClick={print} loading={printing}>
-                Print at home — free
-              </Button>
-              <Button variant="quiet" onClick={() => scrollTo(editionsRef.current)}>
-                Printed editions
-              </Button>
-            </div>
-            <p className="meta bookhero-hint" data-rise>Print at home opens the whole book in a new window; choose "Save as PDF" there to keep a copy.</p>
+            <h1 className="bkh-title">
+              {book.title}
+              <Stop />
+            </h1>
+            <p className="bkh-line" data-rise>
+              {book.fullName} · {empty ? "no pages yet" : `${book.chapters} ${book.chapters === 1 ? "chapter" : "chapters"} · ${pages} pages`}
+            </p>
           </div>
-          <BookObject width={260} />
+          <div className="bkh-edition" data-rise>
+            <p className="bkh-headline">{progress.headline}</p>
+            <div className="bkh-rule" style={{ ["--pct" as string]: `${Math.max(4, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
+              <span className="bkh-fill" />
+              <span className="bkh-star" aria-hidden="true">
+                ✦
+              </span>
+            </div>
+            <p className="bkh-end">First edition</p>
+          </div>
         </div>
       }
     >
       <div className="page book-page">
-
         {problem && <Problem message={problem} onDismiss={() => setProblem(null)} />}
 
-
-        <div ref={readRef} className="book-anchor" id="read" />
         {empty ? (
-          <section className="card book-empty" aria-label="The book is empty">
-            <img src="/book/open-1200.webp" alt="" width={520} height={340} />
-            <div>
-              <h2 className="story-title">The first page is waiting.</h2>
+          <section className="bk-empty" aria-labelledby="bk-empty-h" data-rise>
+            <div className="bk-empty-desk">
+              <BookObject book={book} className="bk-empty-object" />
+              {/* the family dog, asleep against the closed book until there is something to read (D11) */}
+              <img className="bk-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
+            </div>
+            <div className="bk-empty-words">
+              <h2 id="bk-empty-h">
+                The first page is waiting<Stop />
+              </h2>
               <p className="story">Answer one question, or write about anything at all. The book makes itself from what {story.name} says, chapter by chapter, with the photographs the family adds.</p>
-              <div className="bookhero-acts">
+              <p className="bk-empty-time">The first memory takes about two minutes.</p>
+              <div className="bk-empty-acts">
                 <ButtonLink to="/write" icon={<PenIcon />}>
                   Write the first memory
                 </ButtonLink>
@@ -181,21 +192,32 @@ export default function Book() {
                   Today's question
                 </ButtonLink>
               </div>
+              {swatches}
             </div>
           </section>
         ) : (
-          <>
-            <div className="sechead bk-head">
-              <h2>Every page</h2>
-              <span className="meta">{book.pages.length - 2} pages · use the arrow keys, or click a page</span>
-              <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />
-            </div>
-            <BookSpread key={story.id} book={book} sweepFrom={sweepFrom} />
-          </>
+          <BookSpread
+            key={`read-${story.id}`}
+            book={book}
+            sweepFrom={sweepFrom}
+            rail={
+              <>
+                {swatches}
+                {printButton}
+              </>
+            }
+          />
         )}
 
-        <div ref={editionsRef} className="book-anchor" id="editions-anchor" />
-        <Editions key={story.id} storyId={story.id} memories={book.memories} onPrintAtHome={print} printing={printing} />
+        <Editions key={`ed-${story.id}`} storyId={story.id} memories={book.memories} />
+
+        <WhereNext
+          rows={[
+            { to: "/write", title: "Write the next page", line: `One question, or anything ${story.relationship === "Myself" ? "you remember" : `${story.name} remembers`}.` },
+            { to: "/archive", title: "Read it as an archive", line: "Every memory by year, with the photographs." },
+            { to: "/family", title: "Ask the family in", line: "What they add prints under their own names." },
+          ]}
+        />
       </div>
     </Shell>
   );

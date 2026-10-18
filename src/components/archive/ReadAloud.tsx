@@ -39,7 +39,7 @@ function pickVoice(): SpeechSynthesisVoice | null {
   return [...voices].sort((a, b) => score(b) - score(a)).find((v) => score(v) >= 0) ?? null;
 }
 
-export default function ReadAloud({ paragraphs, label, onPosition }: { paragraphs: string[]; label: string; onPosition?: (paragraph: number | null) => void }) {
+export default function ReadAloud({ paragraphs, label, onPosition, autoStart = false }: { paragraphs: string[]; label: string; onPosition?: (paragraph: number | null) => void; /** Start reading as soon as it appears (it was asked for from a menu). */ autoStart?: boolean }) {
   const chunks = useMemo(() => chunksOf(paragraphs), [paragraphs]);
   const [status, setStatus] = useState<"idle" | "reading" | "paused" | "done" | "failed">("idle");
   const [at, setAt] = useState(0);
@@ -107,6 +107,14 @@ export default function ReadAloud({ paragraphs, label, onPosition }: { paragraph
   // Leaving the page stops the voice.
   useEffect(() => () => stop(), [stop]);
 
+  // Asked for from the page's menu: begin at once, a single time.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!autoStart || started.current || !canSpeak() || !chunks.length) return;
+    started.current = true;
+    speakFrom(0);
+  }, [autoStart, chunks.length, speakFrom]);
+
   // Some browsers hand the voice list over late; asking once warms it.
   useEffect(() => {
     if (!canSpeak()) return;
@@ -138,7 +146,7 @@ export default function ReadAloud({ paragraphs, label, onPosition }: { paragraph
           {reading ? <PauseIcon /> : <PlayIcon />}
         </button>
         <span className="who-reads">
-          <b>Read it back to me</b>
+          <b>Listen</b>
           <small>{line}</small>
         </span>
         <div className="bars" aria-hidden="true">

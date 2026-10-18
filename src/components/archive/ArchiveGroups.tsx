@@ -2,8 +2,13 @@
  * The groups the Archive lists: a year with its memories, the calls A Story
  * is still writing up, and the memories nobody has dated yet.
  */
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import MemoryCard from "../MemoryCard";
+import PrintCard from "../PrintCard";
+import { listContributions, type Contribution } from "../../data/contributions";
+import { groupSides } from "../../lib/seenSides";
+import { useAuth } from "../../state/authContext";
 import Mosaic from "../Mosaic";
 import { MicIcon } from "../icons";
 import { usePhotoUrl } from "../../lib/photoUrls";
@@ -16,7 +21,12 @@ export type YearGroupT = { key: string; year: number | null; label: string; ageL
 export type ArchiveView = "prints" | "list";
 
 function Cards({ items, story, view }: { items: Memory[]; story: Story; view: ArchiveView }) {
-  if (view === "prints") return <Mosaic memories={items} story={story} lead={false} rise={false} />;
+  if (view === "prints")
+    return (
+      <div className="arc-prints">
+        <Mosaic memories={items} story={story} lead={false} rise={false} />
+      </div>
+    );
   return (
     <div className="arc-cards">
       {items.map((m, i) => (
@@ -26,7 +36,25 @@ function Cards({ items, story, view }: { items: Memory[]; story: Story; view: Ar
   );
 }
 
-const countOf = (n: number) => `${n} ${n === 1 ? "memory" : "memories"}`;
+/**
+ * The years the Archive still lacks, as one small task with the time it
+ * takes (Bao's Standard rule 34), never "No date yet" on every card: it
+ * opens the first undated memory at its "when" step.
+ */
+export function DateTask({ items }: { items: Memory[] }) {
+  if (!items.length) return null;
+  const n = items.length;
+  const minutes = Math.max(1, Math.round((n * 15) / 60));
+  return (
+    <Link className="arc-task" to={`/write?edit=${items[0].id}&details=1`}>
+      Give {n === 1 ? "it" : `${num(n)} memories`} a year
+      <span className="arc-task-t"> · about {minutes} {minutes === 1 ? "minute" : "minutes"}</span>
+      <span className="arc-task-arrow" aria-hidden="true">
+        →
+      </span>
+    </Link>
+  );
+}
 
 const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 const num = (n: number) => WORDS[n] ?? String(n);
@@ -63,7 +91,7 @@ export function YearGroup({ group, story, decade, view = "list" }: { group: Year
     <section aria-labelledby={`y${group.key}-h`}>
       <div className="arc-year" id={`y${group.key}`} data-decade={decade ?? undefined} data-arrive>
         <h2 id={`y${group.key}-h`}>{group.label}</h2>
-        <span>{[group.ageLabel, countOf(group.items.length)].filter(Boolean).join(" · ")}</span>
+        {group.ageLabel && <span>{group.ageLabel}</span>}
       </div>
       {note && (
         <p className="arc-yearnote" data-arrive>
@@ -80,9 +108,8 @@ export function UndatedGroup({ items, story, view = "list" }: { items: Memory[];
     <section aria-labelledby="yundated-h">
       <div className="arc-year" id="yundated" data-arrive>
         <h2 id="yundated-h">Not dated yet</h2>
-        <span>{countOf(items.length)}</span>
+        <DateTask items={items} />
       </div>
-      <p className="arc-hint">Open one to add a year.</p>
       <Cards items={items} story={story} view={view} />
     </section>
   );
@@ -122,5 +149,53 @@ export function InProgressGroup({ items, story }: { items: Memory[]; story: Stor
         ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * The Prints view as one sheet: the prints of the whole archive in one
+ * grid, each year opening with a heading row across it (the year in
+ * terracotta, as the book's chapter openers set it, how old they were, and
+ * the year's own line when it has three memories or more). "Not dated yet"
+ * comes last, with the one task that dates them.
+ */
+export function PrintsFlow({ groups, story }: { groups: (YearGroupT & { decade: number | null })[]; story: Story }) {
+  const { user } = useAuth();
+  const [sides, setSides] = useState<Map<string, Contribution[]>>(() => new Map());
+  const email = user?.email;
+  const firstName = user?.firstName;
+  useEffect(() => {
+    let live = true;
+    listContributions(story.id, "approved")
+      .then((rows) => live && setSides(groupSides(rows, { email, firstName })))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [story.id, email, firstName]);
+
+  let index = 0;
+  return (
+    <div className="arc-prints">
+      <div className="mosaic arc-flow">
+        {groups.flatMap((g) => {
+          const note = yearNote(g, story);
+          // the year as a heading row across the sheet, the book's chapter opener in small
+          const tile = (
+            <div key={`t-${g.key}`} className={`arc-year arc-yrow${g.undated ? " undated" : ""}`} id={`y${g.key}`} data-decade={g.decade ?? undefined} data-arrive>
+              <h2 id={`y${g.key}-h`}>{g.undated ? "Not dated yet" : g.label}</h2>
+              {g.ageLabel && <span>{g.ageLabel}</span>}
+              {g.undated ? <DateTask items={g.items} /> : note ? <span className="arc-yrow-note">{note}</span> : null}
+            </div>
+          );
+          const prints = g.items.map((m) => (
+            <div key={m.id} className="cell tall">
+              <PrintCard memory={m} story={story} size="tall" sides={sides.get(m.id) || []} index={index++} />
+            </div>
+          ));
+          return [tile, ...prints];
+        })}
+      </div>
+    </div>
   );
 }

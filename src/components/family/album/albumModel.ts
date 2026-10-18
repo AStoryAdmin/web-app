@@ -3,7 +3,7 @@
  * relative to the storyteller ("Rose's parents", "Rose's sister and
  * brother", "Rose's children"), couples side by side, a ghost card where a
  * relation is missing, and a shelf of the people nobody has placed yet.
- * Pure; FamilyAlbum draws it. The generation of each person comes from the
+ * Pure; tree/plateModel orders it into the plate that FamilyTree draws. The generation of each person comes from the
  * same walk the phone app uses (app-core/lib/familyTree.js generationOf),
  * so the two products never disagree about who sits where.
  */
@@ -118,7 +118,7 @@ export function rowTitle(level: number, main: Person[], extras: Person[], whose:
 }
 
 /** Whether a relation label puts somebody in the storyteller's own line at this level. */
-function isMain(level: number, code: string): boolean {
+export function isMain(level: number, code: string): boolean {
   if (level === -1) return code === "parent";
   if (level === 1) return code === "child";
   if (level === 0) return code === "sibling";
@@ -127,7 +127,7 @@ function isMain(level: number, code: string): boolean {
 }
 
 /** What `from` is to `to`, as the stable code ("parent", "sibling", "cousin-1-0"), or "". */
-function codeOf(index: Index, fromId: string, toId: string): string {
+export function codeOf(index: Index, fromId: string, toId: string): string {
   const r = relationshipBetween(index, fromId, toId) as { code: string; label: string } | null;
   if (!r) return "";
   return r.code === "stated" ? `stated:${r.label}` : r.code;

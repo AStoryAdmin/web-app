@@ -1,12 +1,14 @@
 /**
- * One memory as a card: compact and warm, the way the app's own designs
- * draw it, in the printed book's language (astoryapp.com/samples). The
- * photograph as a white-bordered print on the left; the chapter as a sage
- * kicker and, on the right, "Live conversation · 16 min" or a lock; the
- * title in the book's display face; the dateline in terracotta; two lines
- * of the person's OWN words (never the server's third-person summary); the
- * faces of the people in it; who told it as a small portrait, not a sentence. The paper is
- * the memory's chosen colour, else its chapter's tint.
+ * One memory as a card: compact and warm, in the printed book's language
+ * (astoryapp.com/samples). The photograph as a white-bordered print on the
+ * left; the chapter as a sage kicker (none for "Anything else", which is
+ * not a chapter), a wax seal when it is treasured, and on the right "Live
+ * conversation · 16 min" or a lock; the title in the book's display face;
+ * the date in terracotta when there is one (undated memories say nothing
+ * here; the Archive asks once); the person's kept line, their own words,
+ * never the server's third-person summary; the faces of the people in it;
+ * who told it as a small portrait. The paper is the memory's chosen
+ * colour, else its chapter's tint.
  */
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
@@ -15,7 +17,9 @@ import { usePhotoUrl } from "../lib/photoUrls";
 import { useAccount } from "../state/accountContext";
 import { Avatar } from "./ui";
 import { LockIcon, MicIcon } from "./icons";
-import { StarIcon } from "./archive/Treasure";
+import WaxSeal from "./archive/WaxSeal";
+import { keptLine } from "./archive/transcript";
+import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
 import { opening } from "../lib/resurface";
 import { smarten } from "../lib/typography";
@@ -30,6 +34,8 @@ const minutes = (memory: Memory) => {
 /** The person's own words for the card: the first real sentence of what they said, never the summary. */
 function cardWords(memory: Memory): string {
   const body = (memory.body || "").trim();
+  const kept = keptLine(body);
+  if (kept) return smarten(kept);
   if (body) return smarten(quoteFor(opening(body) || body, 150) as string);
   const ex = (memory.excerpt || "").trim();
   if (/^the (speaker|narrator|storyteller)\b/i.test(ex)) return "";
@@ -60,12 +66,8 @@ export default function MemoryCard({ memory, story, style }: { memory: Memory; s
       )}
       <div className="body">
         <div className="chips">
-          <span className="kicker">{meta.chapter}</span>
-          {isTreasured(memory) && (
-            <span className="kicker treasured">
-              <StarIcon filled width={11} height={11} /> Treasured
-            </span>
-          )}
+          {realChapter(meta.chapter) && <span className="kicker">{meta.chapter}</span>}
+          {isTreasured(memory) && <WaxSeal size={22} className="mem-seal" label="Treasured" />}
           <span className="grow" />
           {voice && (
             <span className="kicker quiet">
@@ -79,7 +81,7 @@ export default function MemoryCard({ memory, story, style }: { memory: Memory; s
           )}
         </div>
         <h3>{meta.title}</h3>
-        <p className={`date${dated ? " dated" : ""}`}>{meta.date}</p>
+        {dated && <p className="date dated">{meta.date}</p>}
         {words && <p className="excerpt">{words}</p>}
         <div className="foot">
           {people.length > 0 ? (

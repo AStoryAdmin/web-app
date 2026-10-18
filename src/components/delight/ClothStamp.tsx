@@ -19,7 +19,8 @@ export default function ClothStamp({ ground }: { ground: RefObject<HTMLElement |
     const press = (e: PointerEvent) => {
       if (e.button !== 0) return;
       const t = e.target as HTMLElement;
-      if (t.closest(".paper, .title-page, .print, a, button, input, label")) return;
+      // only the cloth takes the stamp: the book, the leaf and anything you can use are left alone
+      if (t.closest(".spread, .door-leaf, .door-book, .paper, .print, a, button, input, label, textarea")) return;
       const r = el.getBoundingClientRect();
       const z = pageZoom();
       const s = { id: ++seq, x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z, rot: 0 };

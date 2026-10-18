@@ -1,48 +1,72 @@
 /**
- * Three prints of one family (public/photos/family-*.webp) on the endpaper, held by black-paper photo corners
- * the way an album keeps them, arranged tidily and slightly overlapping,
- * each with a caption written under it. Once the page is open they drift
- * two to four pixels with the pointer at their own depths, lift and
- * straighten under the hand, and one turns over to show what was written
- * on the back. Still on touch; under reduced motion they are simply there.
+ * Prints of one family on the endpaper, held by black-paper photo corners
+ * the way an album keeps them, each with a line written under it. They are
+ * placed by quarters of the page (left and top in percent of the page,
+ * widths in the page's smaller side), so the album fills a square page and
+ * a tall one alike and no print ever covers another's caption. Once the
+ * page is open they drift a few pixels with the pointer at their own
+ * depths, lift and straighten under the hand, and the one with a note
+ * turns over to show what was written on the back. Still on touch; under
+ * reduced motion they are simply there.
+ *
+ * The photographs are the master library's (public/photos/NN-1200.webp),
+ * large enough for a 4K window; the captions are sample lines.
  */
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 
-type Print = {
+export type Print = {
   src: string;
   caption: string;
   /** what is written on the back, for the one that turns */
   back?: string;
+  /** the print's shape, as a CSS aspect ratio */
+  ratio: string;
+  /** the photograph's focus inside its frame */
+  focus?: string;
   tilt: number;
   /** how far it moves with the pointer, 1 = the page */
   depth: number;
-  /** position and width on the endpaper, in page widths (cqw) */
+  /** left and top in percent of the page; width in percent of the page's smaller side */
   l: number;
   t: number;
   w: number;
 };
 
-const PRINTS: Print[] = [
-  { src: "/photos/family-02.webp", caption: "Sunday dinner on Elm Street", tilt: -2.5, depth: 0.7, l: 9, t: 6, w: 38 },
-  { src: "/photos/family-01.webp", caption: "The one bicycle, 1949", tilt: 2, depth: 1.2, l: 52, t: 22, w: 38 },
-  { src: "/photos/family-08.webp", caption: "Rain on the porch, 1958", back: "Nan reading to me on the porch, the July it never stopped raining. Kept by Dan.", tilt: -1.5, depth: 1, l: 14, t: 44, w: 38 },
+/** The album on the sign-in's endpaper: dinner, the cake, the porch. */
+const ALBUM: Print[] = [
+  { src: "/photos/27-1200.webp", caption: "Sunday dinner, everyone talking at once", ratio: "3 / 2", focus: "50% 45%", tilt: -2.2, depth: 0.7, l: 6, t: 6.5, w: 51 },
+  { src: "/photos/02-1200.webp", caption: "The cake, June 1957", ratio: "4 / 5", focus: "50% 30%", tilt: 2.2, depth: 1.2, l: 62, t: 9, w: 31 },
+  {
+    src: "/photos/18-1200.webp",
+    caption: "Rain on the porch, 1961",
+    back: "Grandpa watching the storm come in, the July it never stopped raining. Kept by Dan.",
+    ratio: "3 / 2",
+    tilt: -1.4,
+    depth: 1,
+    l: 8,
+    t: 53,
+    w: 47,
+  },
 ];
 
-export default function Prints({ active = true }: { active?: boolean }) {
+export default function Prints({ active = true, prints = ALBUM }: { active?: boolean; prints?: Print[] }) {
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = box.current;
     if (!el || !active) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
-    const prints = gsap.utils.toArray<HTMLElement>(el.querySelectorAll(".print"));
-    const movers = prints.map((p) => ({
+    const els = gsap.utils.toArray<HTMLElement>(el.querySelectorAll(".print"));
+    // The drift is a few pixels in the page's own coordinates: the page is scaled (html zoom, the book's fit),
+    // so the movement scales with the prints and stays the same share of them at any window size.
+    const movers = els.map((p) => ({
       d: Number(p.dataset.depth || 1),
       x: gsap.quickTo(p, "x", { duration: 1.1, ease: "power2.out" }),
       y: gsap.quickTo(p, "y", { duration: 1.1, ease: "power2.out" }),
     }));
     const move = (e: PointerEvent) => {
+      // clientX and innerWidth are both in screen pixels, so the ratio is the same at any zoom
       const dx = (e.clientX / window.innerWidth - 0.5) * 2;
       const dy = (e.clientY / window.innerHeight - 0.5) * 2;
       for (const m of movers) {
@@ -53,23 +77,24 @@ export default function Prints({ active = true }: { active?: boolean }) {
     window.addEventListener("pointermove", move, { passive: true });
     return () => {
       window.removeEventListener("pointermove", move);
-      gsap.killTweensOf(prints);
+      gsap.killTweensOf(els);
+      gsap.set(els, { x: 0, y: 0 });
     };
   }, [active]);
 
   return (
     <div className="prints" ref={box} aria-hidden="true">
-      {PRINTS.map((p, i) => (
+      {prints.map((p, i) => (
         <figure
           key={p.src}
           className={`print${p.back ? " flips" : ""}`}
           data-depth={p.depth}
           data-n={i + 1}
-          style={{ ["--tilt" as string]: `${p.tilt}deg`, ["--l" as string]: `${p.l}cqw`, ["--t" as string]: `${p.t}cqw`, ["--w" as string]: `${p.w}cqw` }}
+          style={{ ["--tilt" as string]: `${p.tilt}deg`, ["--l" as string]: `${p.l}%`, ["--t" as string]: `${p.t}%`, ["--w" as string]: `${p.w}cqmin`, ["--ratio" as string]: p.ratio }}
         >
           <div className="print-in">
             <div className="print-face">
-              <img src={p.src} alt="" decoding="async" />
+              <img src={p.src} alt="" decoding="async" style={p.focus ? { objectPosition: p.focus } : undefined} />
               <i className="pc tl" />
               <i className="pc tr" />
               <i className="pc bl" />

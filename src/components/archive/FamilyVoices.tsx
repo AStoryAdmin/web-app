@@ -45,24 +45,26 @@ function Voice({ c, person, pending, onKeep, onDrop, busy }: { c: Contribution; 
   const photo = usePhotoUrl(person?.photo);
   return (
     <li className={`fv-row${pending ? " pending" : ""}`}>
-      <Avatar src={photo} name={name} size={44} />
-      <div className="fv-body">
-        <p className="fv-who">
+      <q className="fv-words">{smarten(c.body)}</q>
+      <p className="fv-who">
+        <Avatar src={photo} name={name} size={24} />
+        <span>
           <b>{name}</b>
-          <span>{[rel ? rel.toLowerCase() : "", pending ? "waiting for a look" : `wrote · ${when(c.createdAt)}`].filter(Boolean).join(" · ")}</span>
-        </p>
-        <q className="fv-words">{smarten(c.body)}</q>
-        {pending && onKeep && onDrop && (
-          <div className="fv-acts">
-            <Button small onClick={onKeep} loading={busy}>
-              Keep it
-            </Button>
-            <Button small variant="quiet" onClick={onDrop} disabled={busy}>
-              Not this one
-            </Button>
-          </div>
-        )}
-      </div>
+          {[rel ? `, ${rel.toLowerCase()}` : "", pending ? "" : ` · ${when(c.createdAt)}`].join("")}
+        </span>
+      </p>
+      {pending && onKeep && onDrop && (
+        <div className="fv-acts">
+          <span className="fv-wait">Waiting for you</span>
+          <button type="button" className="mv-tool" onClick={onKeep} disabled={busy} aria-busy={busy || undefined}>
+            <CheckIcon aria-hidden="true" />
+            {busy ? "Keeping…" : "Keep it"}
+          </button>
+          <button type="button" className="mv-tool" onClick={onDrop} disabled={busy}>
+            Not this one
+          </button>
+        </div>
+      )}
     </li>
   );
 }
@@ -162,7 +164,7 @@ export default function FamilyVoices({
     <section className="fv" aria-labelledby="voices-h">
       <div className="fv-head">
         <h2 id="voices-h">What the family remembers</h2>
-        {loaded && !approved.length && !pending.length && <p className="meta">Nobody else has added their side of this one yet.</p>}
+        {loaded && !approved.length && !pending.length && <p className="fv-empty">Nobody else has added their side yet.</p>}
       </div>
       {error && <Problem message={error} onDismiss={() => setError(null)} />}
       {(approved.length > 0 || pending.length > 0) && (

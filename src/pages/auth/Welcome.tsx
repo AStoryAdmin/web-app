@@ -1,98 +1,126 @@
 /**
- * The front door for somebody with no session. The cloth carries one
- * bold line and two buttons, with something a person said beside them.
- * On the sheet: the book itself, a sample you can turn, the covers and
- * papers it comes in, and the three things A Story does. Nothing here is
- * prettier than the product: the sample book is built with the same
- * functions as a real one.
+ * The front door for somebody with no session: the bookbinder's bench.
+ * The same chocolate cloth as the sign-in, and on it two things: a leaf of
+ * the book's paper (the title page: the promise, how it works in three
+ * lines, the two ways in) and the real sample book, lying closed, which
+ * you can open and read, in three families' books and seven cover colours
+ * (BookSpread, built with the same functions as a real book, printed
+ * exactly as the samples page prints it). One screen on a desktop, scaled
+ * to the window like the sign-in's book; on a phone the leaf comes first
+ * and the book shows one page at a time.
+ *
+ * Going on to Sign in or Begin a book is a View Transition: the leaf
+ * becomes the title page of the open book (they share a name, CSS §3).
+ * The front door is the arrival, so the sign-in's opening ritual is
+ * marked as seen.
  */
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import gsap from "gsap";
 import { Lockup } from "../../components/Brand";
 import { useLight } from "../../components/delight/Light";
+import ClothStamp from "../../components/delight/ClothStamp";
+import Leaf from "../../components/delight/Leaf";
+import Companion from "../../components/delight/Companion";
 import { ButtonLink } from "../../components/ui";
 import BookSpread from "../../components/book/BookSpread";
 import CoverSwatches from "../../components/book/CoverSwatches";
 import { buildSampleBook } from "../../components/book/bookPages";
 import { coverColour } from "../../components/book/coverColours";
+import { MARK_MASK } from "../../components/book/markMask";
 import { SAMPLE_BOOKS, sampleBook, type SampleBook } from "../../data/sampleBooks";
-import { BOOK_PRINT } from "../../app-core/theme/index.js";
 import { useAuth } from "../../state/authContext";
-
-type Cover = { board: string; foil?: string; ink?: string; text?: string };
-const covers = BOOK_PRINT.covers as { cloth: Cover; heirloom: Cover; tipped: Cover; wrap: Cover; keepsake: Record<string, Cover> };
-const papers = BOOK_PRINT.papers as Record<string, { page: string; heading: string; accent: string }>;
-
-const COVERS: { key: string; name: string; note: string; board: string; foil: string; kind?: "tipped" | "photo" }[] = [
-  { key: "keepsake", name: "Keepsake", note: "Their name and their photographs, in seven colours", board: covers.keepsake.navy.board, foil: covers.keepsake.navy.ink || "#F1EBD9" },
-  { key: "cloth", name: "Clothbound", note: "Deep brown cloth, the title in gold foil", board: covers.cloth.board, foil: covers.cloth.foil || "#D9B45A" },
-  { key: "heirloom", name: "Heirloom", note: "Teal cloth with a foil frame and the mark", board: covers.heirloom.board, foil: covers.heirloom.foil || "#D9B45A" },
-  { key: "tipped", name: "Photo plate", note: "A photograph set into a linen board", board: covers.tipped.board, foil: covers.tipped.foil || "#8C6A2E", kind: "tipped" },
-  { key: "wrap", name: "Photo wrap", note: "Their photograph across the whole cover", board: "#6B5546", foil: "#FFFFFF", kind: "photo" },
-];
-
-const PAPERS = [
-  { key: "classic", name: "Classic", note: "white, teal and terracotta" },
-  { key: "ivory", name: "Ivory", note: "warm cream, brown and terracotta" },
-  { key: "antique", name: "Antique", note: "older paper, brown and gold" },
-];
+import { markOpened, OUT, STACKED, useFit } from "./bookFit";
 
 export default function Welcome() {
   const { user } = useAuth();
   const ground = useRef<HTMLDivElement>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLDivElement>(null);
+  const sweepFrom = useRef<number | null>(null);
   useLight(ground);
+  useFit(ground, wrap, canvas, "door", 1440, 760);
   // The three fictional families of the samples page, each in its own cover colour until a swatch is chosen.
   const [family, setFamily] = useState<SampleBook["key"]>("carolyn");
-  const [colours, setColours] = useState<Record<string, string>>({});
+  // The first book lies on the cloth in cream: a dark board on the brown cloth reads as a hole (the founder's
+  // ruling on the teal book on brown). The other families keep their own colours from the samples page.
+  const [colours, setColours] = useState<Record<string, string>>({ carolyn: "cream" });
   const sample = sampleBook(family);
   const colour = colours[family] || sample.coverColor;
   const book = useMemo(() => buildSampleBook(sample, colour), [sample, colour]);
+
+  // Arrival, once per visit: the leaf's lines rise one after another, the book settles onto the cloth.
+  // Content is visible by default; this only plays it in, and finishes on its own clock (no observer).
+  useLayoutEffect(() => {
+    markOpened();
+    // the sign-in's album, fetched while the visitor reads, so the open book arrives with its photographs
+    for (const src of ["/photos/27-1200.webp", "/photos/02-1200.webp", "/photos/18-1200.webp"]) new Image().src = src;
+    const el = ground.current;
+    if (!el) return;
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const lines = el.querySelectorAll(".door-leaf > *");
+      const book = el.querySelectorAll(".door-book > *");
+      gsap.fromTo(el.querySelector(".door-leaf"), { y: 18, opacity: 0, scale: 0.985 }, { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: OUT, clearProps: "transform,opacity" });
+      gsap.fromTo(lines, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: OUT, stagger: 0.07, delay: 0.12, clearProps: "transform,opacity" });
+      gsap.fromTo(book, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: OUT, stagger: 0.09, delay: 0.25, clearProps: "transform,opacity" });
+    });
+    return () => mm.revert();
+  }, []);
+
   if (user) return <Navigate to="/" replace />;
 
   return (
-    <div className="land">
-      <div className="wall-cloth on-dark" ref={ground}>
-        <span className="lamp" aria-hidden="true" />
-        <div className="wall-top">
-          <Link className="brand" to="/welcome" aria-label="A Story">
-            <Lockup height={32} />
-          </Link>
-          <Link to="/sign-in">Sign in</Link>
-        </div>
-        <section className="land-hero">
-          <div>
+    <div className="door on-dark" ref={ground} style={{ ["--bk-mark" as string]: MARK_MASK }}>
+      <span className="lamp" aria-hidden="true" />
+      <ClothStamp ground={ground} />
+      <Leaf ground={ground} />
+      <header className="door-top">
+        <Link className="brand" to="/welcome" aria-label="A Story">
+          <Lockup height={36} />
+        </Link>
+      </header>
+
+      <div className="door-wrap" ref={wrap}>
+        <div className={`door-canvas${matchMedia(STACKED).matches ? "" : " scaled"}`} ref={canvas}>
+          <main className="door-leaf">
             <h1>
-              Every life holds a story <span className="hl">worth keeping.</span>
+              Every life holds a story <span className="keep">worth keeping.</span>
             </h1>
-            <p className="lead">A question a day, answered in their own words. The family adds what it remembers. The book makes itself, chapter by chapter, and arrives bound.</p>
-            <div className="acts">
-              <ButtonLink to="/create-account">Get started</ButtonLink>
-              <ButtonLink to="/sign-in" variant="outline">
-                I already have an account
+            <i className="door-rule" aria-hidden="true" />
+            <dl className="door-how">
+              <div>
+                <dt>A question a day</dt>
+                <dd>Small ones, like the kitchen they grew up in. Answered in writing, or on a call at the hour they choose.</dd>
+              </div>
+              <div>
+                <dt>The family adds its side</dt>
+                <dd>What everyone else remembers, each under their own name.</dd>
+              </div>
+              <div>
+                <dt>The book arrives</dt>
+                <dd>Read it on screen any day, print it at home for free, or have it bound.</dd>
+              </div>
+            </dl>
+            <div className="door-foot">
+            <div className="door-acts">
+              <ButtonLink to="/create-account" viewTransition>
+                Begin a book
+              </ButtonLink>
+              <ButtonLink to="/sign-in" variant="outline" viewTransition>
+                Sign in
               </ButtonLink>
             </div>
-            <p className="meta" style={{ marginTop: "var(--s-5)" }}>
-              Someone gave you a code? <Link to="/create-account?code=" style={{ color: "var(--brass)" }}>Use it here</Link>.
+            <p className="door-code">
+              Have a family code? <Link to="/create-account?code=" viewTransition>Use it here</Link>
             </p>
-          </div>
-          <aside className="said" aria-label="Something a person said">
-            <p className="q">Your grandfather asked me three times. I said yes the first time. He just didn’t hear me.</p>
-            <p className="who">Nora, 84, telling her granddaughter</p>
-          </aside>
-        </section>
-      </div>
-
-      <main className="land-sheet">
-        <div className="page">
-          <section className="land-sec" aria-labelledby="book-h">
-            <div className="sechead">
-              <span className="pill gold">The book</span>
-              <h2 id="book-h">
-                Turn the pages of a real <span className="hl">A Story book.</span>
-              </h2>
-              <p>Three fictional families, printed exactly the way yours will be. Turn the pages with the arrows, or click a page. Tap a colour to see the cover in it.</p>
+            {/* the family dog beside the way in, its paws on the leaf's foil rule, watching the pointer as on the sign-in */}
+            <Companion focus={null} shown={false} rest="watch" />
             </div>
-            <div className="sb-pick">
+          </main>
+
+          <section className="door-book" aria-label="A sample book you can read">
+            <div className="door-picks">
               <div className="sb-books" role="group" aria-label="Choose a sample book">
                 {SAMPLE_BOOKS.map((b) => (
                   <button key={b.key} type="button" aria-pressed={b.key === family} onClick={() => setFamily(b.key)}>
@@ -104,90 +132,32 @@ export default function Welcome() {
                   </button>
                 ))}
               </div>
-              <CoverSwatches value={colour} onChange={(k) => setColours((c) => ({ ...c, [family]: k }))} />
+              <CoverSwatches
+                tone="dark"
+                value={colour}
+                onChange={(k, x) => {
+                  sweepFrom.current = x ?? null;
+                  setColours((c) => ({ ...c, [family]: k }));
+                }}
+              />
             </div>
-            <BookSpread key={family} book={book} />
-          </section>
-
-          <section className="land-sec" aria-labelledby="covers-h">
-            <div className="sechead">
-              <span className="pill gold">Printed editions</span>
-              <h2 id="covers-h">
-                Five covers, three papers, <span className="hl">made to stay on a shelf.</span>
-              </h2>
-              <p>Softcover for the table, clothbound hardcover for the shelf, the Heirloom for the generations after. Or print it at home, free, whenever you like.</p>
+            <div className="door-bench">
+              {/* loose prints on the cloth, waiting to go into a book; the book lies on top of them when it opens */}
+              <figure className="loose l1" aria-hidden="true">
+                <img src="/photos/30-1200.webp" alt="" decoding="async" />
+              </figure>
+              <figure className="loose l2" aria-hidden="true">
+                <img src="/photos/12-1200.webp" alt="" decoding="async" />
+              </figure>
+              <figure className="loose l3" aria-hidden="true">
+                <img src="/photos/33-1200.webp" alt="" decoding="async" />
+              </figure>
+              <BookSpread key={family} book={book} sweepFrom={sweepFrom} />
             </div>
-            <div className="covers">
-              {COVERS.map((c) => (
-                <div key={c.key} className="cover-tile">
-                  <div className={`book${c.kind === "tipped" ? " tipped" : ""}${c.kind === "photo" ? " photo" : ""}`} style={{ ["--board" as string]: c.board, ["--foil" as string]: c.foil }} aria-hidden="true">
-                    {c.key === "heirloom" && <span className="frame" />}
-                    {c.kind === "tipped" && <span className="plate" />}
-                    <span className="name">
-                      Nora Whitfield
-                      <small>A life, in her words</small>
-                    </span>
-                  </div>
-                  <b>{c.name}</b>
-                  <small>{c.note}</small>
-                </div>
-              ))}
-            </div>
-            <div className="papers" aria-label="Papers">
-              {PAPERS.map((p) => (
-                <span key={p.key} className="paper-chip">
-                  <i style={{ ["--swatch" as string]: papers[p.key]?.page || "#fff" }} />
-                  {p.name} <small>· {p.note}</small>
-                </span>
-              ))}
-            </div>
-          </section>
-
-          <section className="land-sec" aria-labelledby="how-h">
-            <div className="sechead">
-              <span className="pill gold">How it works</span>
-              <h2 id="how-h">
-                Three small things, <span className="hl">every day.</span>
-              </h2>
-            </div>
-            <div className="hows">
-              <div className="card">
-                <p className="n">1</p>
-                <h3>A question a day</h3>
-                <p>Small ones. The kitchen, the first job, the song on the radio. Answer in writing, or on a phone call A Story makes at the hour you choose.</p>
-              </div>
-              <div className="card">
-                <p className="n">2</p>
-                <h3>The family adds its side</h3>
-                <p>A daughter remembers the lemonade. A nephew has the photograph. Each memory gathers what everyone remembers, under their own names.</p>
-              </div>
-              <div className="card teal">
-                <p className="n">3</p>
-                <h3>The book arrives</h3>
-                <p>
-                  Chapter by chapter, with the photographs. <span className="hl">Read it on screen any day, print it at home, or have it bound.</span>
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section className="card land-cta" aria-label="Get started">
-            <div>
-              <h2>Start with one memory.</h2>
-              <p className="meta">Free to begin. Nothing to set up. The first question is waiting.</p>
-            </div>
-            <div className="acts">
-              <ButtonLink to="/create-account">Get started</ButtonLink>
-              <ButtonLink to="/sign-in" variant="quiet">
-                Sign in
-              </ButtonLink>
-            </div>
+            <p className="door-note">Three sample families’ books, printed exactly the way yours will be. The photographs beside them are samples too.</p>
           </section>
         </div>
-        <footer className="land-foot">
-          <Link to="/sign-in">Sign in</Link> · <Link to="/create-account">Create an account</Link> · A Story
-        </footer>
-      </main>
+      </div>
     </div>
   );
 }

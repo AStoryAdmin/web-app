@@ -3,7 +3,8 @@
  * the ones that matter most (rating 5, the same column the phone app
  * reads). The card wears a "Treasured" chip, and the book can lead with
  * them later. One star, on or off; nothing to rate. Pressing it, the star
- * itself gives a little and a few specks of ink fly; the button stays put.
+ * itself gives a little (a short ease-out, no bounce) and a few specks of
+ * ink fly; the button stays put.
  */
 import { useRef, useState } from "react";
 import gsap from "gsap";
@@ -28,7 +29,7 @@ export default function Treasure({ memory, story }: { memory: Memory; story: Sto
   const press = () => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !star.current) return;
     const tl = gsap.timeline();
-    tl.fromTo(star.current, { scale: 1, transformOrigin: "50% 50%" }, { scale: 1.35, duration: 0.14, ease: "power2.out" }).to(star.current, { scale: 1, duration: 0.55, ease: "elastic.out(1, 0.5)" });
+    tl.fromTo(star.current, { scale: 1, transformOrigin: "50% 50%" }, { scale: 1.3, duration: 0.14, ease: "power2.out" }).to(star.current, { scale: 1, duration: 0.32, ease: "power3.out", clearProps: "transform" });
     if (!on && ink.current) {
       const specks = Array.from(ink.current.children);
       tl.fromTo(specks, { x: 0, y: 0, scale: 0, opacity: 1 }, { x: () => gsap.utils.random(-18, 18), y: () => gsap.utils.random(-16, 16), scale: () => gsap.utils.random(0.5, 1.1), opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.015 }, 0.05);
@@ -46,7 +47,7 @@ export default function Treasure({ memory, story }: { memory: Memory; story: Sto
     }
   };
   return (
-    <button type="button" className={`rd-treasure${on ? " on" : ""}`} onClick={flip} disabled={busy} aria-pressed={on} title={on ? "Not one of the treasured ones after all" : "Mark it as one of the treasured ones"}>
+    <button type="button" className={`mv-tool rd-treasure${on ? " on" : ""}`} onClick={flip} disabled={busy} aria-pressed={on} title={on ? "Not one of the treasured ones after all" : "Mark it as one of the treasured ones"}>
       <StarIcon filled={on} ref={star} />
       <span className="rd-treasure-ink" aria-hidden="true" ref={ink}>
         <i />

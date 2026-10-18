@@ -2,28 +2,34 @@
  * Writing a memory, in two steps that never share a screen.
  *
  * 1. The words. The question sits on the cloth, large, where the eye lands
- *    first. Under it, one page of the family book: a title line, ruled
- *    lines for the words, starters while the page is empty, the
- *    storyteller's sign-off. The wax seal under the page keeps it.
- * 2. Afterwards, if they like: when it was, the chapter, a photograph. Each
- *    is kept the moment it is chosen; nothing else is asked. Then the next
- *    question, or the memory as a page to read.
+ *    first. Under it the family book lies open on the desk, like a journal:
+ *    the leaf in its cloth board with gold corners, a ribbon between the
+ *    pages, the family dog asleep on the board's edge (it looks up once the
+ *    words start). The page holds a title line, "Dear family,", ruled lines
+ *    and the storyteller's sign-off; the seal under the book keeps it. On a
+ *    wide window the margins of the desk carry the rest: on the left today's
+ *    questions and ways to begin, on the right a pencil note and the help
+ *    (Speak instead, Tidy my words, Suggest a title, What am I not saying?).
+ * 2. Afterwards, if they like: when it was, who was there, the chapter, a
+ *    photograph, beside the page just kept. Each is kept the moment it is
+ *    chosen; nothing else is asked. Then the next question.
  *
- * The draft autosaves to this browser; nothing is lost to a closed tab.
- * Ctrl/Cmd+Enter keeps it. Focus mode (Esc leaves) keeps only the page.
- * Speak instead of typing where the browser can listen.
+ * Drafts autosave to this browser, one per question, so moving between
+ * today's questions never loses a page. Ctrl/Cmd+Enter keeps it. Focus mode
+ * (Esc leaves) keeps only the book. Speak instead of typing where the
+ * browser can listen.
  *
  * Walls (Free): the daily questions are counted when a question is CHOSEN,
  * the weekly photos when the picker opens; never at Keep. Writing in your
  * own words is never metered.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { firstName, personName, realPeople, storytellerOf } from "../components/family/familyView";
 import gsap from "gsap";
 import Shell from "../components/Shell";
-import { Button, ButtonLink, Problem } from "../components/ui";
-import { CheckIcon, CloseIcon, ExpandIcon, MicIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
+import { Avatar, ButtonLink, Problem } from "../components/ui";
+import { CheckIcon, CloseIcon, ExpandIcon, HelpIcon, MicIcon, PenIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { newMemory, uploadMemoryPhoto } from "../data/memories";
@@ -42,7 +48,9 @@ import type { Memory, Story } from "../data/stories";
 
 type Draft = { title: string; body: string; era: string; questionId: string | null; memoryId: string };
 
-const draftKey = (storyId: string, memoryId?: string | null) => `astory-draft-${storyId}${memoryId ? `-${memoryId}` : ""}`;
+/** One draft per page: the memory being edited, a question, or writing in your own words. */
+const draftKey = (storyId: string, memoryId?: string | null, questionId?: string | null) =>
+  memoryId ? `astory-draft-${storyId}-${memoryId}` : questionId ? `astory-draft-${storyId}-q-${questionId}` : `astory-draft-${storyId}`;
 
 function readDraft(key: string): Partial<Draft> | null {
   try {
@@ -51,6 +59,14 @@ function readDraft(key: string): Partial<Draft> | null {
   } catch {
     return null;
   }
+}
+
+/** A question's draft: its own key, or (written before drafts were kept per question) the story's, if it was for this question. */
+function questionDraft(storyId: string, questionId: string): Partial<Draft> | null {
+  const own = readDraft(draftKey(storyId, null, questionId));
+  if (own) return own;
+  const legacy = readDraft(draftKey(storyId));
+  return legacy && legacy.questionId === questionId ? legacy : null;
 }
 
 /** Sentence starters for an empty page: the question's own hint first, then the ones that work for anything. */
@@ -64,23 +80,148 @@ function startersFor(question: Prompt | null, own: boolean): string[] {
 
 const LINE = 36;
 const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+/** The part of the day, for the running head: the page knows when it is being written. */
+const partOfDay = (d = new Date()) => {
+  const h = d.getHours();
+  return h < 5 ? "late at night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 22 ? "evening" : "late at night";
+};
 const countWords = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
+const reduced = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function Photo({ url, tilt, onRemove }: { url: string; tilt: number; onRemove: () => void }) {
+/** Whether a media query matches, kept current as the window changes. */
+function useMedia(query: string): boolean {
+  return useSyncExternalStore(
+    (on) => {
+      const mq = matchMedia(query);
+      mq.addEventListener("change", on);
+      return () => mq.removeEventListener("change", on);
+    },
+    () => matchMedia(query).matches,
+    () => false,
+  );
+}
+
+function bookNameOf(story: Story): string {
+  const own = story.relationship === "Myself";
+  return story.lastName ? `The ${story.lastName} book` : own ? "Your book" : `${story.name}'s book`;
+}
+
+/* ── Small pieces ─────────────────────────────────────────────────────── */
+
+/** The family dog, asleep on the edge of the book; once there are words on the page it covers its eyes: the letter is yours. */
+function Dog({ awake }: { awake: boolean }) {
+  return (
+    <span className="w-dog" data-awake={awake ? "" : undefined} aria-hidden="true">
+      <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={762} height={640} decoding="async" />
+      <img className="awake" src="/dog/peek.png" alt="" width={790} height={640} decoding="async" />
+    </span>
+  );
+}
+
+/** The wax seal that keeps the page: a pool of red wax, pressed with the book's initial. */
+function WaxSeal() {
+  return (
+    <svg viewBox="0 0 64 64" width="64" height="64">
+      <path className="wax" d="M32 3.5c4.2 0 6.4 2.6 10 3.6 3.7 1 7.6-.3 10.2 2.6 2.6 2.9 1.4 6.6 3 10 1.5 3.3 5 5.3 5 9.6 0 4.2-3.2 6.2-4.2 9.8-1 3.6.6 7.4-2.2 10.3-2.8 2.9-6.6 1.8-10 3.4-3.4 1.6-5.5 5.2-9.8 5.2s-6.6-3.3-10.2-4.4c-3.6-1.1-7.5.4-10.2-2.3-2.7-2.7-1.6-6.6-3-10C9.2 38.6 5.5 36.4 5.5 32c0-4.4 3.6-6.4 4.8-9.9 1.2-3.5-.3-7.4 2.5-10.1 2.8-2.7 6.6-1.4 10-2.9C26.2 7.6 27.8 3.5 32 3.5Z" />
+      <circle className="ring" cx="32" cy="32" r="19.5" />
+      <circle className="ring inner" cx="32" cy="32" r="16.5" />
+      <text className="mark" x="32" y="40.5" textAnchor="middle">A</text>
+    </svg>
+  );
+}
+
+/** Gold corner pieces on the book's cloth board, the way a journal's corners are protected. */
+function Corners() {
+  return (
+    <>
+      {(["tl", "tr", "bl", "br"] as const).map((c) => (
+        <svg key={c} className={`w-corner ${c}`} viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
+          <path d="M0 0 H28 L0 28 Z" />
+          <path className="rule" d="M5 3.5 H19 M3.5 5 V19" />
+        </svg>
+      ))}
+    </>
+  );
+}
+
+function Print({ url, tilt, onRemove }: { url: string; tilt: number; onRemove?: () => void }) {
   const src = usePhotoUrl(url);
   return (
     <figure className="wphoto" style={{ ["--tilt" as string]: `${tilt}deg` }}>
       {src ? <img src={src} alt="" /> : <span className="ph" />}
-      <button type="button" className="x" onClick={onRemove} aria-label="Remove this photograph">
-        <CloseIcon />
-      </button>
+      {onRemove && (
+        <button type="button" className="x" onClick={onRemove} aria-label="Remove this photograph">
+          <CloseIcon />
+        </button>
+      )}
     </figure>
   );
 }
 
-/* ── Step 2: when, chapter, photographs ───────────────────────────────── */
+function PersonChip({ person, label, pressed, onToggle }: { person: { id: string; photo?: string | null }; label: string; pressed: boolean; onToggle: () => void }) {
+  const src = usePhotoUrl(person.photo || null);
+  return (
+    <button type="button" className="w-person" aria-pressed={pressed} onClick={onToggle}>
+      <Avatar src={src} name={label} size={30} />
+      <span>{label}</span>
+      {pressed && <CheckIcon className="tick" />}
+    </button>
+  );
+}
 
-function Afterwards({ story, kept, number, question, editing, unlimited, email, onKept }: { story: Story; kept: Memory; number: number; question: Prompt | null; editing: boolean; unlimited: boolean; email: string; onKept: (m: Memory) => void }) {
+/** The page just kept, in miniature: its words on paper, the prints tucked onto it as they are added. */
+function KeptPage({ story, kept, number }: { story: Story; kept: Memory; number: number }) {
+  const own = story.relationship === "Myself";
+  return (
+    <figure className="w-kept" aria-label={`Memory No. ${number}, as it is in the book`}>
+      <div className="w-kept-page">
+        <span className="page-frame" aria-hidden="true" />
+        <p className="w-kept-head" aria-hidden="true">
+          <span>{kept.era || "Anything else"}</span>
+          <i>✦</i>
+          <span>{kept.period || `No. ${number}`}</span>
+        </p>
+        <h2 className="w-kept-title">{kept.title}</h2>
+        <p className="w-kept-words">{kept.body}</p>
+        <p className="w-kept-sign" aria-hidden="true">
+          {own ? "Yours," : "As told by"}
+          <span>{story.name}</span>
+        </p>
+        {kept.photos.length > 0 && (
+          <div className="w-kept-prints" aria-hidden="true">
+            {kept.photos.slice(0, 3).map((u, i) => (
+              <Print key={u} url={u} tilt={[-5, 4, -2][i]} />
+            ))}
+          </div>
+        )}
+      </div>
+    </figure>
+  );
+}
+
+/* ── Step 2: when, who, chapter, photographs ──────────────────────────── */
+
+function Afterwards({
+  story,
+  kept,
+  number,
+  question,
+  editing,
+  photoFirst,
+  unlimited,
+  email,
+  onKept,
+}: {
+  story: Story;
+  kept: Memory;
+  number: number;
+  question: Prompt | null;
+  editing: boolean;
+  photoFirst: boolean;
+  unlimited: boolean;
+  email: string;
+  onKept: (m: Memory) => void;
+}) {
   const { saveMemory, family } = useAccount();
   const [period, setPeriod] = useState(kept.period);
   const [state, setState] = useState<"" | "saving" | "saved">("");
@@ -166,102 +307,122 @@ function Afterwards({ story, kept, number, question, editing, unlimited, email, 
   const remaining = deck.filter((p) => p.id !== question?.id).length;
   const next = deck.find((p) => p.id !== question?.id) || null;
 
+  const whenBlock = (
+    <div className="w-choice" key="when">
+      <h3>When it was</h3>
+      <div className="chiprow">
+        {decades.map((dec) => (
+          <button key={dec} type="button" className="chip big" aria-pressed={kept.period === formatDecade(dec)} onClick={() => pickDecade(dec)}>
+            {(formatDecade(dec) as string).replace(/^the /, "")}
+          </button>
+        ))}
+      </div>
+      <label className="w-line">
+        <span className="sr-only">Or the date in your words</span>
+        <input placeholder="or June 1975, the summer of ’68…" value={period} onChange={(e) => setPeriod(e.target.value)} />
+      </label>
+      {yearsHint && (
+        <p className="w-note">
+          {own ? "You" : story.name} would have been {yearsHint.ages[0]} to {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
+        </p>
+      )}
+    </div>
+  );
+
+  const whoBlock = (
+    <div className="w-choice" key="who">
+      <h3>Who was there</h3>
+      {people.length > 0 ? (
+        <div className="chiprow">
+          {people.map((p) => (
+            <PersonChip key={p.id} person={p} label={chipName(p)} pressed={there.includes(p.id)} onToggle={() => togglePerson(p.id)} />
+          ))}
+        </div>
+      ) : (
+        <p className="w-note">
+          Nobody is in the family yet. <Link to="/family">Add someone</Link> and they can be named here.
+        </p>
+      )}
+    </div>
+  );
+
+  const chapterBlock = (
+    <div className="w-choice chapter" key="chapter">
+      <h3>The chapter</h3>
+      <div className="chiprow">
+        {(ERAS as string[]).map((e) => (
+          <button key={e} type="button" className="chip big" aria-pressed={kept.era === e} onClick={() => keep({ era: e })}>
+            {e}
+            {e === FAITH_CHAPTER && !unlimited ? " · always open" : ""}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const photoBlock = (
+    <div className={`w-choice photo${photoFirst ? " first" : ""}`} key="photo">
+      <h3>A photograph</h3>
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
+      {kept.photos.length > 0 && (
+        <div className="wphotos">
+          {kept.photos.map((u, i) => (
+            <Print key={u} url={u} tilt={[-3, 2, -1, 3][i % 4]} onRemove={() => keep({ photos: kept.photos.filter((x) => x !== u), cover: kept.cover === u ? null : kept.cover })} />
+          ))}
+        </div>
+      )}
+      <button type="button" className="w-attach" onClick={() => fileRef.current?.click()} disabled={busy} aria-busy={busy || undefined}>
+        <PhotoIcon /> {busy ? "Putting it in…" : kept.photos.length ? "Add another" : "Add a photograph"}
+      </button>
+    </div>
+  );
+
+  const blocks = photoFirst ? [photoBlock, whenBlock, whoBlock, chapterBlock] : [whenBlock, whoBlock, photoBlock, chapterBlock];
+
   return (
-    <div className="after">
+    <div className="w-after">
       {error && <Problem message={error} onDismiss={() => setError(null)} />}
-
-      <section className="card after-card" aria-labelledby="after-h" data-rise>
-        <div className="after-head">
-          <div>
-            <span className="pill gold">If you like</span>
-            <h2 id="after-h">When it was, who was there, the chapter, a photograph.</h2>
-            <p className="meta">Each one is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
-          </div>
-          <p className={`after-state ${state}`} aria-live="polite">
-            {state === "saving" ? "Keeping…" : state === "saved" ? "Kept" : ""}
-          </p>
-        </div>
-
-        <div className="after-grid">
-          <div className="block">
-            <span>When was this</span>
-            <div className="chiprow">
-              {decades.map((dec) => (
-                <button key={dec} type="button" className="chip big" aria-pressed={kept.period === formatDecade(dec)} onClick={() => pickDecade(dec)}>
-                  {(formatDecade(dec) as string).replace(/^the /, "")}
-                </button>
-              ))}
+      <div className="w-after-grid">
+        <KeptPage story={story} kept={kept} number={number} />
+        <section className="w-choices" aria-labelledby="after-h">
+          <header className="w-choices-head">
+            <div>
+              <h2 id="after-h">
+                A few more things, if you like<span className="w-stop">.</span>
+              </h2>
+              <p className="w-note">Each is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
             </div>
-            <label className="field" style={{ margin: "var(--s-3) 0 0", maxWidth: 320 }}>
-              <span className="sr-only">Or the date in your words</span>
-              <span className="input">
-                <input placeholder="or June 1975, Summer of '68…" value={period} onChange={(e) => setPeriod(e.target.value)} />
-              </span>
-            </label>
-            {yearsHint && (
-              <p className="meta" style={{ fontSize: 13, marginTop: 6 }}>
-                {own ? "You" : story.name} would have been {yearsHint.ages[0]} to {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
-              </p>
-            )}
-          </div>
+            <p className={`w-state ${state}`} aria-live="polite">
+              {state === "saving" ? "Keeping…" : state === "saved" ? (
+                <>
+                  <CheckIcon /> Kept
+                </>
+              ) : (
+                ""
+              )}
+            </p>
+          </header>
+          <div className="w-choice-grid">{blocks}</div>
+        </section>
+      </div>
 
-          <div className="block">
-            <span>Who was there</span>
-            {people.length > 0 ? (
-              <div className="chiprow">
-                {people.map((p) => (
-                  <button key={p.id} type="button" className="chip big" aria-pressed={there.includes(p.id)} onClick={() => togglePerson(p.id)}>
-                    {chipName(p)}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="meta" style={{ fontSize: 14 }}>
-                Nobody is in the family yet. <Link to="/family">Add someone</Link> and they can be named here.
-              </p>
-            )}
-          </div>
-
-          <div className="block">
-            <span>Chapter</span>
-            <div className="chiprow">
-              {(ERAS as string[]).map((e) => (
-                <button key={e} type="button" className="chip big" aria-pressed={kept.era === e} onClick={() => keep({ era: e })}>
-                  {e}
-                  {e === FAITH_CHAPTER && !unlimited ? " · always open" : ""}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="block">
-            <span>Photographs</span>
-            <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
-            {kept.photos.length > 0 && (
-              <div className="wphotos">
-                {kept.photos.map((u, i) => (
-                  <Photo key={u} url={u} tilt={[-3, 2, -1, 3][i % 4]} onRemove={() => keep({ photos: kept.photos.filter((x) => x !== u), cover: kept.cover === u ? null : kept.cover })} />
-                ))}
-              </div>
-            )}
-            <button type="button" className="attach" onClick={() => fileRef.current?.click()} disabled={busy}>
-              <PhotoIcon /> {busy ? "One moment…" : kept.photos.length ? "Add another photograph" : "Attach a photograph"}
-            </button>
-          </div>
+      <section className="w-next" aria-label="What next">
+        <div className="w-next-words">
+          {next && !editing ? (
+            <>
+              <p className="w-kick">{unlimited ? "There’s time for another" : `${remaining} more ${remaining === 1 ? "question" : "questions"} today`}</p>
+              <p className="w-next-q">{next.question}</p>
+            </>
+          ) : (
+            <p className="w-next-q">{editing ? "The changes are in the book." : "That’s today’s questions. Three new ones in the morning."}</p>
+          )}
         </div>
-      </section>
-
-      <section className="after-next" data-rise>
-        {next && !editing ? (
-          <>
-            <span className="pill cream">{unlimited ? "There's time for another" : `${remaining} more ${remaining === 1 ? "question" : "questions"} waiting today`}</span>
-            <p className="story-q nextq">{next.question}</p>
-          </>
-        ) : (
-          <p className="story-q nextq">{editing ? "The changes are in." : "That's today's questions. Three new ones in the morning."}</p>
-        )}
-        <div className="acts">
-          {next && !editing && <ButtonLink to={`/write?q=${encodeURIComponent(next.id)}`}>Answer it</ButtonLink>}
+        <div className="w-next-acts">
+          {next && !editing && (
+            <ButtonLink to={`/write?q=${encodeURIComponent(next.id)}`} icon={<PenIcon />}>
+              Answer it
+            </ButtonLink>
+          )}
           <ButtonLink to={`/archive/${kept.id}`} variant={next && !editing ? "outline" : "primary"}>
             Read memory No. {number}
           </ButtonLink>
@@ -290,9 +451,11 @@ export default function Write() {
   return <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}`} story={story} />;
 }
 
+type Help = "tidy" | "title" | "ask";
+
 function Writer({ story }: { story: Story }) {
   const { user } = useAuth();
-  const { saveMemory } = useAccount();
+  const { saveMemory, family } = useAccount();
   const [params] = useSearchParams();
   const qid = params.get("q");
   const editId = params.get("edit");
@@ -309,21 +472,24 @@ function Writer({ story }: { story: Story }) {
     return deck.find((p) => p.id === qid) || null;
   }, [story, qid]);
 
-  const key = draftKey(story.id, editId);
+  const key = draftKey(story.id, editId, question?.id);
   const initial = useMemo<Draft>(() => {
-    const saved = key ? readDraft(key) : null;
     if (editing) {
+      const saved = readDraft(key);
       return { title: editing.title, body: editing.body, era: editing.era, questionId: null, memoryId: editing.id, ...(saved && saved.memoryId === editing.id ? saved : {}) };
     }
     const base: Draft = { title: "", body: "", era: question?.era || "", questionId: question?.id || null, memoryId: crypto.randomUUID() };
-    return saved && (!question || saved.questionId === question.id) ? { ...base, ...saved } : base;
-  }, [key, editing, question]);
+    const saved = question ? questionDraft(story.id, question.id) : readDraft(key);
+    return saved ? { ...base, ...saved } : base;
+  }, [key, editing, question, story.id]);
 
   const [d, setD] = useState<Draft>(initial);
-  const [busy, setBusy] = useState<"" | "save" | "tidy" | "title" | "ask">("");
+  const [busy, setBusy] = useState<"" | "save" | Help>("");
+  const [helped, setHelped] = useState<Help | "">("");
   const [error, setError] = useState<string | null>(null);
   const [kept, setKept] = useState<Memory | null>(() => (editing && wantsDetails ? editing : null));
   const [asks, setAsks] = useState<string[]>([]);
+  const [asked, setAsked] = useState<string | null>(null);
   const [undo, setUndo] = useState<string | null>(null);
   const [counted, setCounted] = useState(false);
   const [focus, setFocus] = useState(false);
@@ -333,9 +499,13 @@ function Writer({ story }: { story: Story }) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const sealRef = useRef<HTMLButtonElement>(null);
-  const pageRef = useRef<HTMLElement>(null);
+  const bookRef = useRef<HTMLDivElement>(null);
+  const deskRef = useRef<HTMLDivElement>(null);
 
   const set = useCallback((patch: Partial<Draft>) => setD((prev) => ({ ...prev, ...patch })), []);
+  // the open journal needs a laptop's width; the margin beside it a large window's
+  const spread = useMedia("(min-width: 1280px)");
+  const rail = useMedia("(min-width: 1560px)");
 
   // Speaking: final phrases land at the end of the page.
   const dictation = useDictation((text) => {
@@ -372,13 +542,38 @@ function Writer({ story }: { story: Story }) {
     track("question_shown", { question_id: question.id, depth: question.depth ?? 0, mode_offered: "write" });
   }, [question, counted, unlimited, editing, email]);
 
+  // The pen is ready on the page, without scrolling the question off the cloth; on a phone the keyboard waits for a tap.
+  useEffect(() => {
+    if (kept) return;
+    if (matchMedia("(pointer: fine)").matches) bodyRef.current?.focus({ preventScroll: true });
+  }, [kept]);
+
+  // W puts the pen on the page from anywhere on the writer that is not already a field (the keyboard layer, BAOS rule 43).
+  useEffect(() => {
+    if (kept) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "w" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.closest("input, textarea, select, [contenteditable]") || t.isContentEditable)) return;
+      e.preventDefault();
+      const el = bodyRef.current;
+      if (!el) return;
+      el.focus({ preventScroll: false });
+      el.setSelectionRange(el.value.length, el.value.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [kept]);
+
   // The page grows with the words, in whole ruled lines; the title line grows too.
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const lines = Math.ceil(el.scrollHeight / LINE) + 1;
-    el.style.height = `${Math.max(focus ? 16 : 12, lines) * LINE}px`;
+    // one ruled line, as the stylesheet sets it for this width (36px, 32px on a phone)
+    const line = parseFloat(getComputedStyle(el).lineHeight) || LINE;
+    const lines = Math.ceil(el.scrollHeight / line) + 1;
+    el.style.height = `${Math.max(focus ? 16 : 10, lines) * line}px`;
   }, [d.body, focus, dictation.interim, kept]);
   useEffect(() => {
     const el = titleRef.current;
@@ -387,11 +582,11 @@ function Writer({ story }: { story: Story }) {
     el.style.height = `${el.scrollHeight}px`;
   }, [d.title, focus, kept]);
 
-  // Focus mode: only the page; Esc leaves.
+  // Focus mode: only the book; Esc leaves.
   useEffect(() => {
     document.body.classList.toggle("writing-focus", focus);
     if (!focus) return;
-    bodyRef.current?.focus();
+    bodyRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFocus(false);
     window.addEventListener("keydown", onKey);
     return () => {
@@ -400,21 +595,26 @@ function Writer({ story }: { story: Story }) {
     };
   }, [focus]);
 
-  // The page settles on the desk, then the running head and the sign-off are inked in with the pen.
+  // The book is laid on the desk, the running head and the sign-off are inked in, the ribbon settles, the margins follow.
   useEffect(() => {
-    const el = pageRef.current;
-    if (!el) return;
+    const book = bookRef.current;
+    const desk = deskRef.current;
+    if (!book || !desk) return;
+    // in development the clock can be stepped by hand where the pane draws no frames
+    if (import.meta.env.DEV) (window as unknown as { __gsap?: typeof gsap }).__gsap = gsap;
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const blank = { clipPath: "inset(-30% 100% -30% 0)" };
       const inked = { clipPath: "inset(-30% 0% -30% 0)", ease: "power2.inOut", clearProps: "clipPath" };
+      const margins = desk.querySelectorAll<HTMLElement>(".w-side > *, .leaf-left > :not(.page-frame), .w-tools-row");
       gsap
-        .timeline({ delay: 0.25 })
-        .fromTo(el, { y: 18, rotation: -0.4, opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.7, ease: "power3.out", clearProps: "transform,opacity" })
-        .fromTo(el.querySelectorAll(".running-head"), blank, { ...inked, duration: 0.7 }, "-=0.3")
-        .fromTo(el.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.8 }, "-=0.35")
+        .timeline({ delay: 0.2, defaults: { ease: "power3.out" } })
+        .fromTo(book, { y: 22, rotation: -0.5, opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.8, clearProps: "transform,opacity" })
+        .fromTo(book.querySelectorAll(".running-head"), blank, { ...inked, duration: 0.7 }, "-=0.35")
+        .fromTo(book.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.8 }, "-=0.4")
         // the ribbon's tail swings once and hangs still, as it does when a book is laid open
-        .fromTo(el.querySelectorAll(".leaf-ribbon"), { rotation: 7 }, { rotation: 0, duration: 1.4, ease: "elastic.out(1, 0.35)", clearProps: "transform" }, 0.2);
+        .fromTo(book.querySelectorAll(".w-ribbon"), { rotation: 6 }, { keyframes: { rotation: [6, -3, 1.2, 0], ease: "sine.inOut" }, duration: 1.3, clearProps: "transform" }, 0.3)
+        .fromTo(margins, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.07, clearProps: "transform,opacity" }, 0.45);
     });
     return () => mm.revert();
   }, [kept]);
@@ -422,23 +622,33 @@ function Writer({ story }: { story: Story }) {
   const own = story.relationship === "Myself";
   const era = d.era || "Anything else";
   const words = countWords(d.body);
+  const empty = !d.body.trim();
   const starters = startersFor(question, own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
-  const bookName = story.lastName ? `The ${story.lastName} book` : own ? "Your book" : `${story.name}'s book`;
+  const bookName = bookNameOf(story);
+  const withPerson = withId ? realPeople(family).find((p) => p.id === withId) || null : null;
+  // Today's questions, the one on the page among them (a paid plan's walk is long; three is a page's worth).
+  const deck = useMemo(() => {
+    const all = todaysDeck(story, { unlimited });
+    const three = all.slice(0, 3);
+    return question && !three.some((p) => p.id === question.id) ? [question, ...three.slice(0, 2)] : three;
+  }, [story, unlimited, question]);
+  const drafted = useMemo(() => new Set(deck.filter((p) => p.id !== question?.id && questionDraft(story.id, p.id)?.body?.trim()).map((p) => p.id)), [deck, question, story.id]);
 
   const insertStarter = (s: string) => {
     set({ body: d.body.trimEnd() ? `${d.body.trimEnd()}\n\n${s}` : s });
     requestAnimationFrame(() => {
       const el = bodyRef.current;
       if (!el) return;
-      el.focus();
+      el.focus({ preventScroll: true });
       el.setSelectionRange(el.value.length, el.value.length);
     });
   };
 
-  const help = async (mode: "tidy" | "title" | "ask") => {
+  const help = async (mode: Help) => {
     const about = own ? "" : story.name;
     setBusy(mode);
+    setHelped("");
     try {
       if (mode === "tidy") {
         const text = await tidy(d.body, about);
@@ -451,10 +661,29 @@ function Writer({ story }: { story: Story }) {
         if (title) set({ title });
       } else {
         setAsks(await nextQuestions(d.body, about, { topic: question?.topic, followUp: question?.followUp }));
+        setAsked(null);
       }
+      setHelped(mode);
     } finally {
       setBusy("");
     }
+  };
+
+  const answerAsk = (a: string) => {
+    setAsked(a);
+    // on a laptop the slip above the bar is put away; the question stays in pencil in the left page's margin
+    if (spread && !rail) {
+      setAsks([]);
+      setHelped("");
+    }
+    if (asked === a) return;
+    set({ body: d.body.trimEnd() ? `${d.body.trimEnd()}\n\n` : "" });
+    requestAnimationFrame(() => {
+      const el = bodyRef.current;
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
   };
 
   const save = async () => {
@@ -485,6 +714,8 @@ function Writer({ story }: { story: Story }) {
       await saveMemory(memory, story.id);
       try {
         localStorage.removeItem(key);
+        // a draft for this question written before drafts were kept per question
+        if (question && readDraft(draftKey(story.id))?.questionId === question.id) localStorage.removeItem(draftKey(story.id));
       } catch {
         /* fine */
       }
@@ -494,17 +725,21 @@ function Writer({ story }: { story: Story }) {
       setPressed(true);
       setKeptNumber(number);
       const seal = sealRef.current?.querySelector(".seal") as HTMLElement | null;
-      if (seal && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.fromTo(seal, { scale: 2.4, rotation: -40, opacity: 0 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.42, ease: "back.out(1.4)" });
+      if (seal) {
+        // the wax is pressed (D4: scale 1.18, a turn, then still), then the stamp lands beside it (D5)
+        if (!reduced()) gsap.fromTo(seal, { scale: 1.18, rotation: -14, opacity: 0.4 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.28, ease: "power4.out" });
         const r = seal.getBoundingClientRect();
-        setTimeout(() => inkStamp(r.left + r.width / 2 + 120, r.top + r.height / 2), 260);
+        setTimeout(() => inkStamp(r.left + r.width / 2 + 150, r.top + r.height / 2), reduced() ? 0 : 260);
       }
       setFocus(false);
-      setTimeout(() => {
-        setKept(memory);
-        setBusy("");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 1100);
+      setTimeout(
+        () => {
+          setKept(memory);
+          setBusy("");
+          window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
+        },
+        reduced() ? 700 : 1300,
+      );
     } catch (err) {
       setError(`This memory hasn't been kept yet (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
       setBusy("");
@@ -524,14 +759,12 @@ function Writer({ story }: { story: Story }) {
     return (
       <Shell
         back="/"
+        wide
         hero={
           <div className="whero">
             <p className="label" data-rise>
-              Kept in {bookName}
+              Memory No. {n} · kept in {bookName}
             </p>
-            <span className="pill gold" data-rise>
-              Memory No. {n}
-            </span>
             <h1 className="story-q wq">{kept.title}</h1>
             <p className="meta wmeta" data-rise>
               {[kept.era, kept.period, kept.photos.length ? `${kept.photos.length} ${kept.photos.length === 1 ? "photograph" : "photographs"}` : ""].filter(Boolean).join(" · ")}
@@ -539,8 +772,18 @@ function Writer({ story }: { story: Story }) {
           </div>
         }
       >
-        <div className="page desk">
-          <Afterwards story={story} kept={kept} number={n} question={question} editing={Boolean(editing) && !keptNumber} unlimited={unlimited} email={email} onKept={setKept} />
+        <div className="page desk w-desk after-step">
+          <Afterwards
+            story={story}
+            kept={kept}
+            number={n}
+            question={question}
+            editing={Boolean(editing) && !keptNumber}
+            photoFirst={wantsPhoto}
+            unlimited={unlimited}
+            email={email}
+            onKept={setKept}
+          />
         </div>
       </Shell>
     );
@@ -549,164 +792,306 @@ function Writer({ story }: { story: Story }) {
   /* ── Step 1 ── */
   const keepLabel = editing ? "Keep the changes" : "Keep it";
   const hint = question ? noteFor(question) || question.hint : "";
+  const kicker = editing
+    ? `Editing memory No. ${number}`
+    : `${question ? (own ? "Today’s question" : `A question for ${story.name}`) : wantsPhoto ? "A photograph" : "In your own words"}${withPerson ? ` · with ${firstName(withPerson)}` : ""}`;
+  const heading = question
+    ? question.question
+    : editing
+      ? editing.title || "This memory"
+      : wantsPhoto
+        ? "Which photograph, and what was happening?"
+        : own
+          ? "What would you like to keep today?"
+          : `What would you like to keep of ${story.name}’s?`;
+  const sub = question ? hint : editing ? "" : wantsPhoto ? "A few lines first. The photograph goes in on the next page." : "Anything at all. A kitchen, a road, a song on the radio.";
+  const helpsOff = empty || busy !== "";
+  const toolState =
+    helped === "tidy"
+      ? undo
+        ? "Tidied: spelling and full stops. Your words, your order."
+        : "Nothing needed tidying."
+      : helped === "title"
+        ? "A title is on the page. Change it as you like."
+        : helped === "ask" && asks.length
+          ? "In pencil, for you to answer or not:"
+          : "";
+
+  const questionHead = (
+    <header className="w-qhead">
+      <p className="w-qkick">{kicker}</p>
+      <h1 className="w-question">{heading}</h1>
+      {sub && <p className="w-sub">{sub}</p>}
+    </header>
+  );
+  const begin = (
+    <section className="w-begin">
+      <h2 className="w-kick">Ways to begin</h2>
+      <ul>
+        {starters.map((s) => (
+          <li key={s}>
+            <button type="button" onClick={() => insertStarter(s)}>
+              {s.trim()}…
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+  const others = deck.filter((p) => p.id !== question?.id);
+  const context = (
+    <>
+      {(others.length > 0 || question || editing) && (
+        <section className="w-qs">
+          <h2 className="w-kick">{question || editing ? "Or another of today’s questions" : own ? "Or one of today’s questions" : `Or one of today’s questions for ${story.name}`}</h2>
+          <ul>
+            {others.map((p) => (
+              <li key={p.id}>
+                <Link className="w-q" to={`/write?q=${encodeURIComponent(p.id)}`}>
+                  {p.question}
+                  {drafted.has(p.id) && <small>a page begun</small>}
+                </Link>
+              </li>
+            ))}
+            {(question || editing) && (
+              <li>
+                <Link className="w-q own" to="/write">
+                  Or something else, in your own words
+                </Link>
+              </li>
+            )}
+          </ul>
+        </section>
+      )}
+      {/* on one page the ways to begin are on the page itself */}
+      {spread && empty && !dictation.listening && begin}
+    </>
+  );
+  const pencil = (
+    <p className={`w-pencil${asked ? " asked" : ""}`} aria-live="polite">
+      <span>{asked ? asked : "A few lines is plenty."}</span>
+      <svg viewBox="0 0 70 34" width="70" height="34">
+        <path d="M4 6 C18 22 36 30 62 26 M62 26 L54 19 M62 26 L55 32" />
+      </svg>
+    </p>
+  );
+  const tools = (
+    <section className="w-help">
+      <h2 className="w-kick">If you’d like a hand</h2>
+      <div className="w-tool-list">
+        {dictation.available && (
+          <button type="button" className={`w-tool speak${dictation.listening ? " listening" : ""}`} aria-pressed={dictation.listening} onClick={dictation.toggle}>
+            <MicIcon />
+            <span>
+              <b>{dictation.listening ? "Stop listening" : "Speak instead"}</b>
+              <small>{dictation.listening ? "The words land on the page as you talk." : "Talk, and the words land on the page."}</small>
+            </span>
+          </button>
+        )}
+        <button type="button" className="w-tool" onClick={() => help("tidy")} disabled={helpsOff} aria-busy={busy === "tidy" || undefined}>
+          <SparkIcon />
+          <span>
+            <b>{busy === "tidy" ? "Tidying…" : "Tidy my words"}</b>
+          </span>
+        </button>
+        <button type="button" className="w-tool" onClick={() => help("title")} disabled={helpsOff} aria-busy={busy === "title" || undefined}>
+          <PenIcon />
+          <span>
+            <b>{busy === "title" ? "Finding a title…" : "Suggest a title"}</b>
+          </span>
+        </button>
+        <button type="button" className="w-tool" onClick={() => help("ask")} disabled={helpsOff} aria-busy={busy === "ask" || undefined}>
+          <HelpIcon />
+          <span>
+            <b>{busy === "ask" ? "Reading it…" : "What am I not saying?"}</b>
+          </span>
+        </button>
+      </div>
+      {empty && <p className="w-note w-help-off">Write a line and these can help.</p>}
+      <div className="w-help-out" aria-live="polite">
+        {spread && !rail && (toolState || asks.length > 0 || undo) && (
+          <button
+            type="button"
+            className="w-slip-close"
+            onClick={() => {
+              setAsks([]);
+              setHelped("");
+              setUndo(null);
+            }}
+          >
+            Done
+          </button>
+        )}
+        {toolState && <p className="w-note done">{toolState}</p>}
+        {asks.length > 0 && (
+          <ul className="w-asks">
+            {asks.map((a) => (
+              <li key={a}>
+                <button type="button" aria-pressed={asked === a} onClick={() => answerAsk(a)}>
+                  {a}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {undo && (
+          <button
+            type="button"
+            className="w-undo"
+            onClick={() => {
+              set({ body: undo });
+              setUndo(null);
+              setHelped("");
+            }}
+          >
+            Put my own words back
+          </button>
+        )}
+      </div>
+    </section>
+  );
+  // the open journal (two pages) where the window has room for it; the help in the margin beside it on a large window
+  const layout = spread ? (rail ? "spread rail" : "spread") : "single";
 
   return (
-    <Shell
-      back={true}
-      hero={
-        <div className="whero">
-          <p className="label" data-rise>
-            {editing ? `Editing memory No. ${number}` : `Memory No. ${number}`} · {bookName}
-          </p>
-          <span className="pill gold" data-rise>
-            {question ? (own ? "Today's question" : `A question for ${story.name}`) : editing ? "The words" : "In your own words"}
-          </span>
-          <h1 className="story-q wq">{question ? question.question : editing ? editing.title || "This memory" : own ? "What would you like to keep today?" : `What would you like to keep of ${story.name}'s?`}</h1>
-          {hint && (
-            <p className="meta wmeta" data-rise>
-              {hint}
-            </p>
-          )}
-          {!question && !editing && (
-            <p className="meta wmeta" data-rise>
-              Anything at all. A kitchen, a road, a song on the radio.
-            </p>
-          )}
-        </div>
-      }
-    >
-      <div className="page desk">
+    <Shell bare wide>
+      <div className={`page desk w-desk${focus ? " focus" : ""}`} ref={deskRef}>
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
-        {dictation.problem && <Problem message={dictation.problem} onDismiss={() => {}} />}
+        {dictation.problem && <Problem message={dictation.problem} />}
 
-        <article className="leaf-one" ref={pageRef} aria-label="The page">
-          <button type="button" className="focusbtn" aria-pressed={focus} aria-label={focus ? "Leave focus mode" : "Focus mode: only the page"} title={focus ? "Leave focus (Esc)" : "Focus mode"} onClick={() => setFocus((f) => !f)}>
-            {focus ? <ShrinkIcon /> : <ExpandIcon />}
-          </button>
-          <p className="running-head" aria-hidden="true">
-            <span>{era}</span>
-            <i>✦</i>
-            <span>{longDate()}</span>
-          </p>
-          <textarea
-            ref={titleRef}
-            className="wtitle"
-            rows={1}
-            placeholder="A title, if one comes to mind"
-            value={d.title}
-            onChange={(e) => set({ title: e.target.value.split(String.fromCharCode(10)).join(" ") })}
-            aria-label="Title"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !(e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                bodyRef.current?.focus();
-              } else onKey(e);
-            }}
-          />
-          <p className="dear" aria-hidden="true">
-            Dear family,
-          </p>
-          <textarea
-            ref={bodyRef}
-            className="wbody"
-            placeholder={question ? "Start anywhere. A room, a smell, who was there." : "Start anywhere."}
-            value={d.body}
-            onChange={(e) => set({ body: e.target.value })}
-            onKeyDown={onKey}
-            aria-label="The memory"
-            autoFocus
-          />
-          {dictation.listening && (
-            <p className="heard" aria-live="polite">
-              {dictation.interim || "Listening…"}
-            </p>
-          )}
-          {!d.body.trim() && !dictation.listening && (
-            <div className="starters" aria-label="Ways to begin">
-              <span className="label">Ways to begin</span>
-              {starters.map((s) => (
-                <button key={s} type="button" onClick={() => insertStarter(s)}>
-                  {s.trim()}…
-                </button>
-              ))}
+        <div className={`w-grid ${layout}`}>
+          {/* the book, open on the desk */}
+          <div className="w-center">
+            {!spread && questionHead}
+            <div className="w-book" ref={bookRef}>
+              <Dog awake={!empty || dictation.listening} />
+              <Corners />
+              <div className="w-pages">
+                {spread && (
+                  <section className="leaf-left" aria-label="Today">
+                    <span className="page-frame" aria-hidden="true" />
+                    <p className="running-head verso" aria-hidden="true">
+                      <span>{bookName}</span>
+                      <span>Memory No. {number}</span>
+                    </p>
+                    {questionHead}
+                    <p className="w-orn" aria-hidden="true">
+                      <i>✦</i>
+                    </p>
+                    {context}
+                    {pencil}
+                  </section>
+                )}
+                <article className="leaf-one" aria-label="The page">
+                  <span className="page-frame" aria-hidden="true" />
+                  <button type="button" className="w-focus" aria-pressed={focus} title={focus ? "Leave focus (Esc)" : "Focus: only the page"} onClick={() => setFocus((f) => !f)}>
+                    {focus ? <ShrinkIcon /> : <ExpandIcon />}
+                    <span>{focus ? "Leave focus" : "Focus"}</span>
+                  </button>
+                  <p className="running-head" aria-hidden="true">
+                    <span>{era}</span>
+                    <i>✦</i>
+                    <span>
+                      {longDate()} · {partOfDay()}
+                    </span>
+                  </p>
+                  {/* with the cloth put away, the question comes onto the page */}
+                  {focus && question && <p className="w-focus-q">{question.question}</p>}
+                  <textarea
+                    ref={titleRef}
+                    className="wtitle"
+                    rows={1}
+                    placeholder="A title, if one comes to mind"
+                    value={d.title}
+                    onChange={(e) => set({ title: e.target.value.split(String.fromCharCode(10)).join(" ") })}
+                    aria-label="Title"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !(e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        bodyRef.current?.focus();
+                      } else onKey(e);
+                    }}
+                  />
+                  <p className="dear" aria-hidden="true">
+                    Dear family,
+                  </p>
+                  {/* a single page: the ways to begin sit on the page itself */}
+                  {!spread && empty && !dictation.listening && (
+                    <div className="w-begin-inpage" aria-label="Ways to begin">
+                      {starters.map((s) => (
+                        <button key={s} type="button" onClick={() => insertStarter(s)}>
+                          {s.trim()}…
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <textarea
+                    ref={bodyRef}
+                    className="wbody"
+                    placeholder={question ? "Start anywhere. A room, a smell, who was there." : "Start anywhere."}
+                    value={d.body}
+                    onChange={(e) => set({ body: e.target.value })}
+                    onKeyDown={onKey}
+                    aria-label="The memory"
+                  />
+                  {dictation.listening && (
+                    <p className="heard" aria-live="polite">
+                      {dictation.interim || "Listening…"}
+                    </p>
+                  )}
+                  <p className="signoff" aria-hidden="true">
+                    {own ? "Yours," : "As told by"}
+                    <span>{story.name}</span>
+                  </p>
+                  <p className="folio">
+                    <span>
+                      {words} {words === 1 ? "word" : "words"}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span aria-live="polite">{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : "Nothing written yet"}</span>
+                  </p>
+                  <span className="leaf-ear" aria-hidden="true" />
+                </article>
+              </div>
+              {/* the ribbon between the pages, its tail hanging below the book */}
+              <span className="w-ribbon" aria-hidden="true" />
             </div>
-          )}
-          <p className="signoff" aria-hidden="true">
-            {own ? "Yours," : "As told by"}
-            <span>{story.name}</span>
-          </p>
-          <p className="folio">
-            <span>
-              {words} {words === 1 ? "word" : "words"}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : "Nothing written yet"}</span>
-          </p>
-          <span className="page-frame" aria-hidden="true" />
-          {/* the journal's own things: a ribbon between the pages, its tail below the leaf, and a turned-down corner */}
-          <span className="leaf-ribbon" aria-hidden="true" />
-          <span className="leaf-ear" aria-hidden="true" />
-        </article>
 
-        <div className="keeprow">
-          <div className="keep">
-            <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "save" || !d.body.trim()}>
-              <span className="seal" aria-hidden="true">
-                <CheckIcon />
-              </span>
-              {busy === "save" ? "Keeping…" : keepLabel}
-            </button>
-            <small>
-              <b>Ctrl+Enter</b> keeps it · <Link to="/">Not now</Link>
-            </small>
+            <div className="w-keep">
+              <div className="w-keep-seal">
+                <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "save" || empty} aria-busy={busy === "save" || undefined}>
+                  <span className="seal" aria-hidden="true">
+                    <WaxSeal />
+                  </span>
+                  {busy === "save" ? "Keeping…" : keepLabel}
+                </button>
+                <p className="w-keep-note">
+                  {empty ? (
+                    "A line or two is enough to keep."
+                  ) : (
+                    <>
+                      {focus && <><kbd>Esc</kbd> leaves focus, </>}<kbd>Ctrl</kbd> + <kbd>Enter</kbd> keeps it
+                    </>
+                  )}{" "}
+                  · <Link to="/">Not now</Link>
+                </p>
+              </div>
+              {spread && !rail && <div className="w-tools-row">{tools}</div>}
+            </div>
           </div>
-          <div className="helps">
-            {dictation.available && (
-              <Button variant="outline" small icon={<MicIcon />} className={dictation.listening ? "listening" : ""} onClick={dictation.toggle} aria-pressed={dictation.listening}>
-                {dictation.listening ? "Stop listening" : "Speak instead"}
-              </Button>
-            )}
-            <Button variant="outline" small icon={<SparkIcon />} loading={busy === "tidy"} onClick={() => help("tidy")} disabled={!d.body.trim()}>
-              Tidy my words
-            </Button>
-            <Button variant="outline" small loading={busy === "title"} onClick={() => help("title")} disabled={!d.body.trim()}>
-              Suggest a title
-            </Button>
-            <Button variant="outline" small loading={busy === "ask"} onClick={() => help("ask")} disabled={!d.body.trim()}>
-              What am I not saying?
-            </Button>
-            {undo && (
-              <Button
-                variant="quiet"
-                small
-                onClick={() => {
-                  set({ body: undo });
-                  setUndo(null);
-                }}
-              >
-                Keep mine
-              </Button>
-            )}
-          </div>
+
+          {/* the margins: the help beside the book on a large window; below it, with the questions, on a smaller one */}
+          {!spread && (
+            <aside className="w-side w-context" aria-label="Today’s questions">
+              {context}
+            </aside>
+          )}
+          {(rail || !spread) && (
+            <aside className="w-side w-tools" aria-label="Help with the words">
+              {tools}
+            </aside>
+          )}
         </div>
-        {asks.length > 0 && (
-          <div className="asks">
-            {asks.map((a) => (
-              <button
-                key={a}
-                type="button"
-                className="chip big"
-                onClick={() => {
-                  set({ body: `${d.body.trimEnd()}\n\n` });
-                  setAsks([]);
-                  bodyRef.current?.focus();
-                }}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </Shell>
   );

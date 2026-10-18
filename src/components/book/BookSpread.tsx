@@ -13,9 +13,10 @@
  * across the board from the side the swatch was pressed on, under the
  * title and the prints, instead of cutting.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { gsap } from "gsap";
+import { CustomEase } from "gsap/CustomEase";
 import BookPage from "./BookPage";
 import { useTilt } from "../../lib/tilt";
 import { pageText, spreadOfPage, spreadsOf, type Book, type Page } from "./bookPages";
@@ -42,8 +43,33 @@ const isCover = (p: Page | null) => p?.kind === "cover" || p?.kind === "back";
 
 type Sweep = { cover: Book["cover"]; fromLeft: boolean; into: HTMLElement };
 
-export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?: RefObject<number | null> }) {
-  const single = useMedia("(max-width: 760px)");
+gsap.registerPlugin(CustomEase);
+/** The samples' leaf: cubic-bezier(.45,.05,.25,1) over 0.9s, so a page turns here exactly as it turns there. */
+const LEAF_EASE = CustomEase.create("bk-leaf", "M0,0 C0.45,0.05 0.25,1 1,1");
+
+/** Where a spread sits in the book, for the line under the dashes. */
+function placeOf(view: View): string {
+  for (const p of [view.right, view.left]) {
+    if (!p) continue;
+    if (p.kind === "memory" || p.kind === "deeper" || p.kind === "opener") return p.chapter;
+    if (p.kind === "little") return p.title;
+  }
+  const p = view.right ?? view.left;
+  if (!p) return "";
+  if (p.kind === "contents") return "Contents";
+  if (p.kind === "title" || p.kind === "colophon" || p.kind === "dedication") return "The opening pages";
+  if (p.kind === "final") return "The last page";
+  return "";
+}
+
+/**
+ * `rail`, when given, lays the book out as a desk: the book's own contents (the cover, the contents page, every
+ * chapter, the last page) in a column beside it, then whatever the page puts there (the cover colours, print at
+ * home), and the spread takes the rest of the window. Without it, the book stands alone (the front door).
+ */
+export default function BookSpread({ book, sweepFrom, rail }: { book: Book; sweepFrom?: RefObject<number | null>; rail?: ReactNode }) {
+  // one page at a time on a phone, and on a window taller than it is wide (the samples' own rule)
+  const single = useMedia("(max-width: 760px), (max-aspect-ratio: 9/10)");
   const reduced = useMedia("(prefers-reduced-motion: reduce)");
   const [index, setIndex] = useState(0);
   const [turn, setTurn] = useState<Turn | null>(null);
@@ -74,6 +100,21 @@ export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?
 
   const last = views.length - 1;
   const safeIndex = Math.min(index, last);
+
+  // The book's own contents, for the desk: the cover, the contents page, each chapter's opener, the last page.
+  const contents = useMemo(() => {
+    const at = (kind: Page["kind"]) => {
+      const i = book.pages.findIndex((p) => p.kind === kind);
+      return i < 0 ? -1 : single ? i : spreadOfPage(i);
+    };
+    const rows: { key: string; num: string; name: string; view: number }[] = [{ key: "cover", num: "", name: "The cover", view: 0 }];
+    const c = at("contents");
+    if (c > 0) rows.push({ key: "contents", num: "", name: "Contents", view: c });
+    chapters.forEach((ch, i) => rows.push({ key: `ch-${ch.name}`, num: String(i + 1), name: ch.name, view: ch.view }));
+    const f = at("final");
+    if (f > 0) rows.push({ key: "final", num: "", name: "The last page", view: f });
+    return rows;
+  }, [book.pages, chapters, single]);
 
   const stop = useCallback(() => {
     if (canSpeak()) window.speechSynthesis.cancel();
@@ -106,8 +147,8 @@ export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?
         { rotateY: 0 },
         {
           rotateY: dir > 0 ? -180 : 180,
-          duration: 1.1,
-          ease: "power2.inOut",
+          duration: 0.9,
+          ease: LEAF_EASE,
           onComplete: () => {
             setIndex(to);
             setTurn(null);
@@ -223,6 +264,7 @@ export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?
       tween.kill();
     };
   }, [sweep]);
+  const place = placeOf(cur);
   const where = atFront ? "Front cover" : atBack ? "Back cover" : single ? `Page ${safeIndex} of ${book.pages.length - 2}` : `Spread ${safeIndex} of ${last - 1}`;
   const dotLabel = (i: number) => (i === 0 ? "Front cover" : i === last ? "Back cover" : single ? `Page ${i}` : `Spread ${i}`);
 
@@ -233,8 +275,11 @@ export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?
     "--bk-mark": MARK_MASK,
   } as CSSProperties;
 
-  return (
-    <section className={`bk-reader samples${single ? " single" : ""}${atFront ? " closed-front" : ""}${atBack ? " closed-back" : ""}`} aria-label={`${book.name}'s book, as pages`} style={style}>
+  // the row of the contents the reader is in: the last one whose spread is at or before this one
+  const currentRow = [...contents].reverse().find((r) => r.view <= safeIndex)?.key;
+
+  const reader = (
+    <>
       <div className="bk-stage" onClick={onStageClick} ref={stageRef}>
         <div className="bk-spread" key={single || reduced ? safeIndex : "spread"}>
           {!single && <BookPage page={baseLeft.left} side="left" teller={book.name} />}
@@ -250,7 +295,8 @@ export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?
       {sweep && sweep.into.isConnected && createPortal(<span ref={sweepRef} className="bk-sweep" aria-hidden="true" style={{ background: sweep.cover.board }} />, sweep.into)}
 
       <div className="bk-controls">
-        <button type="button" className="btn outline sm" onClick={() => go(safeIndex - 1)} disabled={atFront || !!turn} aria-label="Previous page">
+        {/* on the front cover there is nothing behind: the button keeps its place but is not shown */}
+        <button type="button" className={`btn outline sm${atFront ? " bk-hide" : ""}`} onClick={() => go(safeIndex - 1)} disabled={atFront || !!turn} aria-hidden={atFront || undefined} tabIndex={atFront ? -1 : undefined} aria-label="Previous page">
           <ChevronLeft /> Back
         </button>
         <span className="bk-where" aria-live="polite">
@@ -271,6 +317,41 @@ export default function BookSpread({ book, sweepFrom }: { book: Book; sweepFrom?
           <button key={i} type="button" className="bk-dot" aria-label={dotLabel(i)} aria-current={i === safeIndex || undefined} onClick={() => go(i)} />
         ))}
       </div>
+      <p className="bk-caption" aria-hidden="true">
+        {place}
+      </p>
+    </>
+  );
+
+  const cls = `bk-reader samples${rail ? " bk-desk" : ""}${single ? " single" : ""}${atFront ? " closed-front" : ""}${atBack ? " closed-back" : ""}`;
+
+  if (rail) {
+    return (
+      <section className={cls} aria-label={`${book.name}'s book, as pages`} style={style}>
+        <aside className="bk-rail">
+          <nav className="bk-contents" aria-label="Contents of the book">
+            <p className="bk-rail-label">Contents</p>
+            <ol>
+              {contents.map((r) => (
+                <li key={r.key}>
+                  <button type="button" onClick={() => go(r.view)} aria-current={currentRow === r.key ? "true" : undefined}>
+                    <span className="n">{r.num}</span>
+                    <span className="t">{r.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </nav>
+          {rail}
+        </aside>
+        <div className="bk-main">{reader}</div>
+      </section>
+    );
+  }
+
+  return (
+    <section className={cls} aria-label={`${book.name}'s book, as pages`} style={style}>
+      {reader}
 
       {!book.fictional && chapters.length > 1 && (
         <div className="chiprow bk-chapters" role="group" aria-label="Go to a chapter">

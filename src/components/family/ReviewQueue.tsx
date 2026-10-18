@@ -12,7 +12,8 @@ import { approveContribution, listContributions, memoryFromContribution, rejectC
 import { useAccount } from "../../state/accountContext";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { track } from "../../lib/analytics";
-import { Avatar, Button } from "../ui";
+import { Button } from "../ui";
+import Portrait from "./Portrait";
 import { whenLabel } from "./familyView";
 
 function Pic({ url, alt }: { url: string; alt: string }) {
@@ -29,7 +30,7 @@ function Item({ item, story, now, busy, onKeep, onSkip }: { item: Contribution; 
   const text = open || !long ? item.body : `${item.body.slice(0, 300).trimEnd()}…`;
   return (
     <article className="contrib rise" aria-label={`${who} ${did}`}>
-      {item.photos[0] ? <Pic url={item.photos[0]} alt={`Photograph from ${who}`} /> : <Avatar name={who} size={56} className="pic-av" />}
+      {item.photos[0] ? <Pic url={item.photos[0]} alt={`Photograph from ${who}`} /> : <Portrait given={who.split(" ")[0]} family={who.split(" ").slice(1).join(" ")} size={56} className="pic-av" />}
       <div>
         <p className="who">
           <b>{who}</b> {did}

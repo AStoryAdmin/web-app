@@ -1,15 +1,20 @@
 /**
- * /c/:slug — add to somebody's story without an account. Anyone with the
- * link: their name, how they knew them, a memory or a note, a few
- * photographs, an email if they'd like to hear when the family keeps it.
- * Everything lands as pending; the family reads it first. Afterwards they
- * are offered their place in the family, and nothing more than that.
+ * /c/:slug — add to somebody's story without an account. The family book
+ * open on the cloth, like the sign-in: on the left page, the person whose
+ * story it is (their photograph as a print, or their initials as a seal)
+ * and what happens to what you send; on the right page, a leaf to write
+ * on, in two steps that never share the page (Bao's Standard rule 13):
+ * first what you remember, with up to three photographs; then who it is
+ * from. Everything lands as pending; the family reads it first and keeps
+ * it under your name. Afterwards you are offered your place in the
+ * family, and nothing more than that.
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Lockup } from "../components/Brand";
-import { Avatar, Button, ButtonLink, Field } from "../components/ui";
-import { CloseIcon, MailIcon, PhotoIcon, UserIcon } from "../components/icons";
+import AuthFrame from "./auth/AuthFrame";
+import { Button, ButtonLink, Field } from "../components/ui";
+import { CloseIcon } from "../components/icons";
+import LoadingMark from "../components/delight/LoadingMark";
 import { getSupabase } from "../lib/supabase";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { uuid } from "../lib/uuid";
@@ -21,15 +26,36 @@ type Info = { id?: string; name: string; last_name: string; photo_url: string | 
 const BUCKET = "contribution-photos";
 const MAX_PHOTOS = 3;
 
-function StoryCard({ info }: { info: Info }) {
+const initials = (info: Info) => `${info.name.trim()[0] || ""}${info.last_name.trim()[0] || ""}`.toUpperCase() || "A";
+
+/** The left page: whose story this is, and what happens to what you send. */
+function Person({ info }: { info: Info }) {
   const photo = usePhotoUrl(info.photo_url);
   const full = `${info.name} ${info.last_name}`.trim();
   return (
-    <div className="storycard">
-      <Avatar src={photo} name={info.name} size={72} />
-      <div>
-        <p className="label">A memory for</p>
-        <h1>{full}'s story</h1>
+    <div className="cb-person ep-arrive">
+      {photo ? (
+        <figure className="cb-print" aria-hidden="true">
+          <img src={photo} alt="" decoding="async" />
+          <i className="pc tl" />
+          <i className="pc tr" />
+          <i className="pc bl" />
+          <i className="pc br" />
+        </figure>
+      ) : (
+        <div className="cb-seal" aria-hidden="true">
+          <span>{initials(info)}</span>
+        </div>
+      )}
+      <div className="cb-who">
+        <p className="cb-for">The book of</p>
+        <h2 className="cb-name">{full}</h2>
+        <i className="cb-rule" aria-hidden="true" />
+        <ul className="cb-what">
+          <li>Their family reads what you send before anything else happens.</li>
+          <li>When they keep it, it joins {info.name}'s book under your name.</li>
+          <li>You don't need an account to send it.</li>
+        </ul>
       </div>
     </div>
   );
@@ -38,6 +64,7 @@ function StoryCard({ info }: { info: Info }) {
 export default function Contribute() {
   const { slug = "" } = useParams();
   const [info, setInfo] = useState<Info | null | undefined>(undefined);
+  const [step, setStep] = useState<"words" | "who">("words");
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [kind, setKind] = useState<"memory" | "testimonial">("memory");
@@ -48,7 +75,10 @@ export default function Contribute() {
   const [busy, setBusy] = useState<"" | "send" | "photo">("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let live = true;
@@ -68,7 +98,7 @@ export default function Contribute() {
     return () => {
       live = false;
     };
-  }, [slug]);
+  }, [slug, attempt]);
 
   const addPhotos = async (files: FileList | null) => {
     const sb = getSupabase();
@@ -96,15 +126,28 @@ export default function Contribute() {
     }
   };
 
+  const toWho = () => {
+    setError(null);
+    if (!body.trim() && !photos.length) {
+      setError("Write what you remember, or add a photograph.");
+      bodyRef.current?.focus();
+      return;
+    }
+    setStep("who");
+    requestAnimationFrame(() => nameRef.current?.focus());
+  };
+
   const send = async () => {
     setError(null);
-    if (!name.trim()) return setError("Your name, so the family knows who this is from.");
-    if (!body.trim() && !photos.length) return setError("Write what you remember, or add a photograph.");
+    if (!name.trim()) {
+      nameRef.current?.focus();
+      return setError("Your name, so the family knows who this is from.");
+    }
     setBusy("send");
     try {
       const ok = await submitAnonymous({ slug, contributorName: name.trim(), relationship: relationship.trim(), kind, title: kind === "memory" ? title.trim() : "", body: body.trim(), photos, contributorEmail: email });
       if (!ok) {
-        setError("This link isn't taking memories right now. It may have been closed by the family.");
+        setError("This link isn't taking memories right now. The family may have closed it.");
         return;
       }
       track("contribution_sent", { kind, photos: photos.length, with_email: !!email.trim() });
@@ -116,108 +159,177 @@ export default function Contribute() {
     }
   };
 
+  const again = () => {
+    setTitle("");
+    setBody("");
+    setPhotos([]);
+    setKind("memory");
+    setStep("words");
+    setDone(false);
+    setError(null);
+  };
+
+  const errorLine = error && (
+    <p className="cb-error" role="alert">
+      {error}
+    </p>
+  );
+
+  // A link that leads nowhere is the family book with the dog on its plate, one line of cause and remedy, one action.
+  if (info === null) {
+    return (
+      <AuthFrame rest="watch">
+        <div className="form">
+          <h1>
+            This link isn’t available<span className="stop">.</span>
+          </h1>
+          <p className="sub">The family may have closed it, or a letter is missing from the address. Ask whoever sent it for the link again; it takes a minute.</p>
+          <div className="acts">
+            <Button block onClick={() => setAttempt((a) => a + 1)}>
+              Try the link again
+            </Button>
+          </div>
+          <p className="switch">
+            <Link to="/welcome" viewTransition>
+              What is A Story?
+            </Link>
+          </p>
+        </div>
+      </AuthFrame>
+    );
+  }
+
+  let page;
+  if (info === undefined) {
+    page = (
+      <div className="cb-state cb-wait" aria-busy="true">
+        <LoadingMark />
+        <p className="cb-p">Opening the family’s book</p>
+      </div>
+    );
+  } else if (done) {
+    page = (
+      <div className="cb-state">
+        <p className="cb-kicker">Sent to {info.name}'s family</p>
+        <h1 className="cb-q">
+          Thank you<span className="stop">.</span>
+        </h1>
+        <p className="cb-p">It's with {info.name}'s family now. They read everything first, and it joins the book under your name when they keep it.</p>
+        <div className="cb-claim">
+          <h2>Your place in the family</h2>
+          <p className="cb-p">An account with the same email lets {info.name}'s family find you in their tree. If someone sent you a six-letter family code, type it when you make the account.</p>
+          <div className="cb-row">
+            <ButtonLink to={`/create-account?next=/`} viewTransition>
+              Claim your place
+            </ButtonLink>
+            <button type="button" className="linkish" onClick={again}>
+              Send another memory
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  } else if (step === "words") {
+    page = (
+      <form
+        className="cb-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          toWho();
+        }}
+        noValidate
+      >
+        <div className="cb-top">
+          <p className="cb-kicker">A page for {info.name}'s book</p>
+          <div className="cb-kind" role="group" aria-label="What you are writing">
+            <button type="button" aria-pressed={kind === "memory"} onClick={() => setKind("memory")}>
+              A memory
+            </button>
+            <button type="button" aria-pressed={kind === "testimonial"} onClick={() => setKind("testimonial")}>
+              A note for the family
+            </button>
+          </div>
+        </div>
+        <h1 className="cb-q">{kind === "memory" ? `What do you remember about ${info.name}?` : `What would you like to tell ${info.name}'s family?`}</h1>
+        {errorLine}
+        {kind === "memory" && <input className="cb-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title, if one comes to mind" aria-label="Title" maxLength={200} />}
+        <textarea
+          ref={bodyRef}
+          className="cb-body"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={kind === "memory" ? "Begin anywhere: a place, a smell, something they said." : "A few lines is plenty."}
+          aria-label={kind === "memory" ? "Your memory" : "Your note"}
+          maxLength={10000}
+        />
+        <div className="cb-foot">
+          <div className="cb-photos">
+            {photos.map((url) => (
+              <figure key={url} className="cb-thumb">
+                <img src={url} alt="A photograph you added" />
+                <button type="button" className="x" aria-label="Remove this photograph" onClick={() => setPhotos((p) => p.filter((u) => u !== url))}>
+                  <CloseIcon width={14} height={14} />
+                </button>
+              </figure>
+            ))}
+            {info.id && photos.length < MAX_PHOTOS && (
+              <>
+                <button type="button" className="linkish cb-add" onClick={() => fileRef.current?.click()} disabled={busy === "photo"} aria-busy={busy === "photo" || undefined}>
+                  {busy === "photo" ? "Adding…" : photos.length ? "Add another photograph" : "Add a photograph"}
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => void addPhotos(e.target.files)} />
+              </>
+            )}
+          </div>
+          <Button type="submit" disabled={busy === "photo"}>
+            Next: who it's from
+          </Button>
+        </div>
+      </form>
+    );
+  } else {
+    const firstLine = body.trim().split(/\n/)[0] || title.trim();
+    page = (
+      <form
+        className="cb-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void send();
+        }}
+        noValidate
+      >
+        <div className="cb-top">
+          <p className="cb-kicker">A page for {info.name}'s book</p>
+          <button type="button" className="linkish cb-back" onClick={() => setStep("words")}>
+            ← Back to your words
+          </button>
+        </div>
+        <h1 className="cb-q">Who is it from?</h1>
+        {firstLine && <blockquote className="cb-quote">{firstLine.length > 140 ? `${firstLine.slice(0, 140).trim()}…` : firstLine}</blockquote>}
+        {errorLine}
+        <div className="cb-fields">
+          <Field ref={nameRef} label="Your name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So they know who this is from" autoComplete="name" aria-invalid={error && !name.trim() ? true : undefined} />
+          <Field label={`How you knew ${info.name}`} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Her neighbour, his niece, an old friend" autoComplete="off" />
+          <Field label="Your email, if you like" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" hint="Kept with what you sent, so the family can reach you." />
+        </div>
+        <div className="cb-foot">
+          <span />
+          <Button type="submit" loading={busy === "send"}>
+            Send to the family
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
   return (
-    <main className="solo contribute">
-      <a href="https://astoryapp.com" aria-label="A Story" className="solo-brand">
-        <Lockup height={40} />
-      </a>
-      <section className="solo-card wide" aria-live="polite">
-        {info === undefined ? (
-          <p className="meta">One moment…</p>
-        ) : info === null ? (
-          <>
-            <h1>This link isn't available.</h1>
-            <p className="meta big">It may have been closed by the family.</p>
-          </>
-        ) : done ? (
-          <>
-            <p className="label">Sent</p>
-            <h1>Thank you.</h1>
-            <p className="meta big">It's with {info.name}'s family now. They read everything first, and it joins the story when they keep it.</p>
-            <div className="claim">
-              <h2 className="story-title">Claim your place in the family</h2>
-              <p className="meta">An account with the same email lets {info.name}'s family find you in their tree. If someone sent you a six-letter family code, type it when you create the account.</p>
-              <ButtonLink to="/create-account?next=/" style={{ marginTop: "var(--s-4)" }}>
-                Claim your place
-              </ButtonLink>
-            </div>
-          </>
-        ) : (
-          <>
-            <StoryCard info={info} />
-            <p className="meta" style={{ margin: "var(--s-2) 0 var(--s-6)" }}>
-              Something you remember about {info.name}, or a note for the family. They read it first.
-            </p>
-            <form
-              className="pform"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void send();
-              }}
-            >
-              <Field label="Your name" icon={<UserIcon />} value={name} onChange={(e) => setName(e.target.value)} placeholder="So they know who this is from" autoComplete="name" />
-              <Field label={`How you knew ${info.name}`} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Her neighbour, his niece, an old friend" autoComplete="off" />
-
-              <p className="field-label">What is this?</p>
-              <div className="chiprow" role="group" aria-label="What is this">
-                <button type="button" className="chip big" aria-pressed={kind === "memory"} onClick={() => setKind("memory")}>
-                  A memory
-                </button>
-                <button type="button" className="chip big" aria-pressed={kind === "testimonial"} onClick={() => setKind("testimonial")}>
-                  A note for the family
-                </button>
-              </div>
-
-              <div className="paper">
-                {kind === "memory" && <input className="wtitle" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title, if one comes to mind" aria-label="Title" maxLength={200} />}
-                <textarea
-                  className="wbody"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder={kind === "memory" ? `What do you remember about ${info.name}?` : `Something to say to ${info.name}'s family.`}
-                  aria-label={kind === "memory" ? "Your memory" : "Your note"}
-                  rows={7}
-                  maxLength={10000}
-                />
-                {photos.length > 0 && (
-                  <div className="wphotos">
-                    {photos.map((url) => (
-                      <figure key={url} className="wphoto">
-                        <img src={url} alt="" />
-                        <button type="button" className="x" aria-label="Remove this photograph" onClick={() => setPhotos((p) => p.filter((u) => u !== url))}>
-                          <CloseIcon width={18} height={18} />
-                        </button>
-                      </figure>
-                    ))}
-                  </div>
-                )}
-                {info.id && photos.length < MAX_PHOTOS && (
-                  <div className="wtools">
-                    <Button variant="outline" small icon={<PhotoIcon />} loading={busy === "photo"} onClick={() => fileRef.current?.click()}>
-                      Add a photograph
-                    </Button>
-                    <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => void addPhotos(e.target.files)} />
-                  </div>
-                )}
-              </div>
-
-              <Field label="Your email" icon={<MailIcon />} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Optional" hint="Kept with what you sent, so the family knows how to reach you. We don't send emails about it yet." autoComplete="email" />
-
-              {error && (
-                <p className="meta" role="alert" style={{ color: "var(--danger)", marginBottom: "var(--s-4)" }}>
-                  {error}
-                </p>
-              )}
-              <Button type="submit" block loading={busy === "send"} disabled={busy === "photo"}>
-                Send to the family
-              </Button>
-            </form>
-          </>
-        )}
-      </section>
-      <p className="solo-foot meta">
-        A Story keeps a family's memories in their own words. <Link to="/welcome">Find out more</Link>
-      </p>
-    </main>
+    <AuthFrame plate={false} left={info ? <Person info={info} /> : <span />} leftLabel={info ? `Whose story: ${info.name} ${info.last_name}` : undefined}>
+      <div className="cb" aria-live="polite">
+        {page}
+        <p className="cb-colophon">
+          A Story keeps a family's memories in their own words. <Link to="/welcome">About A Story</Link>
+        </p>
+      </div>
+    </AuthFrame>
   );
 }

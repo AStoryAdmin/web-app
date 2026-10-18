@@ -13,9 +13,10 @@ import { noteIsFrom } from "./personRail";
 import type { Person } from "../../data/family";
 import type { Story } from "../../data/stories";
 
-export default function FamilyNotes({ person, story }: { person: Person; story: Story }) {
+export default function FamilyNotes({ person, story, preview }: { person: Person; story: Story; preview?: boolean }) {
   const [notes, setNotes] = useState<Contribution[]>([]);
   useEffect(() => {
+    if (preview) return;
     let live = true;
     listContributions(story.id, "approved")
       .then((rows) => live && setNotes(rows.filter((c) => String(c.body || "").trim() && noteIsFrom(c, person))))
@@ -23,7 +24,7 @@ export default function FamilyNotes({ person, story }: { person: Person; story: 
     return () => {
       live = false;
     };
-  }, [story.id, person.id, person.givenName, person.familyName, person]);
+  }, [story.id, person.id, person.givenName, person.familyName, person, preview]);
 
   if (!notes.length) return null;
   const first = person.givenName || "them";

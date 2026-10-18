@@ -7,12 +7,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import { archiveStats } from "../app-core/lib/timeline.js";
+import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
-import BookCard from "../components/archive/BookCard";
-import OpenLeaf from "../components/delight/OpenLeaf";
+import WhereNext from "../components/book/WhereNext";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
-import { InProgressGroup, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
+import { InProgressGroup, PrintsFlow, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
 import { countPending } from "../data/contributions";
@@ -56,6 +56,7 @@ export default function Archive() {
   const [query, setQuery] = useState("");
   const [chapter, setChapter] = useState<string>("");
   const [pending, setPending] = useState(0);
+  const [wallCopied, setWallCopied] = useState<string | null>(null);
   const [activeDecade, setActiveDecade] = useState<number | null>(null);
   const [view, setView] = useState<ArchiveView>(storedView);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -140,7 +141,7 @@ export default function Archive() {
     let raf = 0;
     const read = () => {
       raf = 0;
-      const heads = Array.from(document.querySelectorAll<HTMLElement>(".arc-year[data-decade]"));
+      const heads = Array.from(document.querySelectorAll<HTMLElement>(".arc-year[data-decade], .arc-ytile[data-decade]"));
       let current: number | null = null;
       for (const h of heads) {
         if (h.getBoundingClientRect().top <= 140) current = Number(h.dataset.decade);
@@ -200,6 +201,17 @@ export default function Archive() {
     if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
   }, []);
 
+  const copyWall = async () => {
+    const url = `${window.location.origin}/p/${story?.publicSlug ?? ""}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setWallCopied("Link copied");
+    } catch {
+      setWallCopied("Copy failed; it's on Account");
+    }
+    window.setTimeout(() => setWallCopied(null), 3000);
+  };
+
   const clearDay = () => {
     const next = new URLSearchParams(params);
     next.delete("day");
@@ -222,6 +234,13 @@ export default function Archive() {
   const own = story.relationship === "Myself";
   const stats = archiveStats(story) as { memories: number; chapters: number; span: { from: number; to: number } | null };
   const whose = own ? "your" : `${story.name}'s`;
+  const photoCount = saved.reduce((n, m) => n + (m.photos?.length || 0), 0);
+  // the book's progress as the fourth figure: "8 of about 20" toward the first edition, never a countdown
+  const book = bookProgress(story) as { count: number; remaining: number; ratio: number; state: string };
+  // a share, not the count again (the count is the first figure): how far toward the first edition
+  const bookPct = Math.round(book.ratio * 100);
+  const bookSub = book.state === "ready" ? "Ready to print" : book.state === "lopsided" ? "Enough to print; some chapters are thin" : "Of the way to the first edition";
+  const bookLine = `${bookPct}% ${bookSub.toLowerCase()}`;
   const filtering = Boolean(q || chapter || day);
   const nothingAtAll = memories.length === 0;
 
@@ -230,7 +249,7 @@ export default function Archive() {
       hero={
         <>
           <p className="label" data-rise>
-            {`${story.name} ${story.lastName}`.trim()}
+            <span className="arc-hero-name">{`${story.name} ${story.lastName}`.trim()}</span>
             <span className="mobile-only">
               {" "}
               <TellerPick />
@@ -238,41 +257,63 @@ export default function Archive() {
           </p>
           <h1>The Archive</h1>
           <p className="meta arc-wall" data-rise>
-            {story.isPublic ? (
+            {story.isPublic && story.publicSlug ? (
               <>
-                The wall is on. <Link to="/account#wall">Share the link</Link>
+                Anyone with the link can read the public memories.{" "}
+                <button type="button" className="arc-wall-act" onClick={copyWall}>
+                  {wallCopied ?? "Copy link"}
+                </button>
               </>
             ) : (
               <>
-                Only the family sees this. <Link to="/account#wall">Turn on the wall</Link> to share it by link.
+                Only the family can read this.{" "}
+                <Link className="arc-wall-act" to="/account#wall">
+                  Share it by link
+                </Link>
               </>
             )}
           </p>
-          <dl className="hero-stats" data-rise>
+          <dl className="hero-stats arc-stats-hero" data-rise>
             <div>
               <b>{stats.memories}</b>
               <span>{stats.memories === 1 ? "Memory" : "Memories"}</span>
             </div>
-            <div>
-              <b>{stats.span ? (stats.span.from === stats.span.to ? String(stats.span.from) : `${stats.span.from}–${stats.span.to}`) : "—"}</b>
-              <span>Years covered</span>
-            </div>
+            {stats.span ? (
+              <div>
+                <b>{stats.span.from === stats.span.to ? String(stats.span.from) : `${stats.span.from}–${stats.span.to}`}</b>
+                <span>{stats.span.from === stats.span.to ? "The one year dated so far" : "The years it reaches"}</span>
+              </div>
+            ) : (
+              <div>
+                <b>{photoCount}</b>
+                <span>{photoCount === 1 ? "Photograph" : "Photographs"}</span>
+              </div>
+            )}
             <div>
               <b>{stats.chapters}</b>
               <span>{stats.chapters === 1 ? "Chapter" : "Chapters"}</span>
+            </div>
+            <div className="arc-hs-book">
+              <Link to="/book" className="arc-hs-link" aria-label={`${bookLine}. Open the book`}>
+                <img src="/book/keepsake-closed.webp" alt="" width={34} height={46} />
+                <span className="arc-hs-txt">
+                  <b>
+                    {bookPct}
+                    <small>%</small>
+                  </b>
+                  <span>{bookSub}</span>
+                  <i className="arc-hs-bar" style={{ ["--pct" as string]: `${Math.max(4, bookPct)}%` }} aria-hidden="true" />
+                </span>
+              </Link>
             </div>
           </dl>
         </>
       }
     >
-      <div className="page">
+      <div className="page arc-page">
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
         <div ref={topRef}>
-          <div className="arc-top">
-            <BookCard story={story} />
-          </div>
-
           {pending > 0 && (
             <Link className="banner arc-banner" to="/family?review=1" data-arrive>
               <FamilyIcon />
@@ -300,40 +341,52 @@ export default function Archive() {
             <DecadeRail decades={decades} active={activeDecade} onPick={jump} />
 
             <section aria-label="Memories" ref={listRef}>
-              <form
-                className="arc-search"
-                role="search"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  searchRef.current?.blur();
-                }}
-              >
-                <label className="input">
-                  <span className="sr-only">Search {whose} memories</span>
-                  <input ref={searchRef} type="search" placeholder={`Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
-                  {query && (
-                    <button type="button" className="clear" onClick={() => setQuery("")} aria-label="Clear the search">
-                      <CloseIcon width={20} height={20} />
+              {/* one row: the search, the chapters, and how to show them */}
+              <div className="arc-tools">
+                <form
+                  className="arc-search"
+                  role="search"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    searchRef.current?.blur();
+                  }}
+                >
+                  <label className="input">
+                    <span className="sr-only">Search {whose} memories</span>
+                    <input ref={searchRef} type="search" placeholder={`Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+                    {query && (
+                      <button type="button" className="clear" onClick={() => setQuery("")} aria-label="Clear the search">
+                        <CloseIcon width={20} height={20} />
+                      </button>
+                    )}
+                    <button className="go" type="submit" aria-label="Search">
+                      <SearchIcon />
                     </button>
-                  )}
-                  <button className="go" type="submit" aria-label="Search">
-                    <SearchIcon />
-                  </button>
-                </label>
-              </form>
+                  </label>
+                </form>
 
-              {chapters.length > 1 && (
-                <div className="chiprow scroll arc-chips" role="group" aria-label="Chapters">
-                  <button type="button" className="chip big" aria-pressed={chapter === ""} onClick={() => setChapter("")}>
-                    All <span className="n">· {saved.length}</span>
-                  </button>
-                  {chapters.map((c) => (
-                    <button key={c.era} type="button" className="chip big" aria-pressed={chapter === c.era} onClick={() => setChapter(chapter === c.era ? "" : c.era)}>
-                      {c.era} <span className="n">· {c.count}</span>
+                {chapters.length > 1 && (
+                  <div className="chiprow scroll arc-chips" role="group" aria-label="Chapters">
+                    <button type="button" className="chip big" aria-pressed={chapter === ""} onClick={() => setChapter("")}>
+                      All <span className="n">· {saved.length}</span>
                     </button>
-                  ))}
+                    {chapters.map((c) => (
+                      <button key={c.era} type="button" className="chip big" aria-pressed={chapter === c.era} onClick={() => setChapter(chapter === c.era ? "" : c.era)}>
+                        {c.era} <span className="n">· {c.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="arc-view" role="group" aria-label="Show as">
+                  <button type="button" className="chip big" aria-pressed={view === "prints"} onClick={() => chooseView("prints")}>
+                    Prints
+                  </button>
+                  <button type="button" className="chip big" aria-pressed={view === "list"} onClick={() => chooseView("list")}>
+                    List
+                  </button>
                 </div>
-              )}
+              </div>
 
               <DecadeRow decades={decades} active={activeDecade} onPick={jump} />
 
@@ -345,19 +398,6 @@ export default function Archive() {
                       <CloseIcon width={18} height={18} />
                     </button>
                   </span>
-                </div>
-              )}
-
-              {(filtered.length > 0 || filteredProgress.length > 0) && (
-                <div className="arc-viewrow">
-                  <div className="arc-view" role="group" aria-label="Show as">
-                    <button type="button" className="chip big" aria-pressed={view === "prints"} onClick={() => chooseView("prints")}>
-                      Prints
-                    </button>
-                    <button type="button" className="chip big" aria-pressed={view === "list"} onClick={() => chooseView("list")}>
-                      List
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -383,10 +423,7 @@ export default function Archive() {
               ) : (
                 <>
                   {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
-                  {dated.map((g) => (
-                    <YearGroup key={g.key} group={g} story={story} decade={decadeOf(g.year) as number | null} view="prints" />
-                  ))}
-                  {undated && <UndatedGroup items={undated.items} story={story} view="prints" />}
+                  {(dated.length > 0 || undated) && <PrintsFlow groups={[...dated, ...(undated ? [undated] : [])].map((g) => ({ ...g, decade: g.undated ? null : (decadeOf(g.year) as number) }))} story={story} />}
                 </>
               )}
 
@@ -419,7 +456,15 @@ export default function Archive() {
             </section>
           </div>
         )}
-        {!nothingAtAll && <OpenLeaf story={story} />}
+        {!nothingAtAll && (
+          <WhereNext
+            rows={[
+              { to: "/write", title: own ? "Write today's memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
+              { to: "/book", title: "Open the book", line: "See these memories set on the printed page." },
+              { to: "/family", title: "Ask the family", line: "Invite someone to add what they remember." },
+            ]}
+          />
+        )}
       </div>
     </Shell>
   );

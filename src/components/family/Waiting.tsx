@@ -16,7 +16,8 @@ import { answerJoinRequest, listJoinRequests, listMyJoinRequests, listPendingSug
 import { savePerson } from "../../data/familyWrites";
 import type { Story } from "../../data/stories";
 import { suggestionLine, suggestionPatch } from "../../app-core/lib/personRights.js";
-import { Avatar, Button } from "../ui";
+import { Button } from "../ui";
+import Portrait from "./Portrait";
 import { canEdit, personName, whenLabel } from "./familyView";
 
 type Shape = { joins: JoinRequest[]; suggestions: Suggestion[] };
@@ -113,7 +114,7 @@ export function Asked({
         const who = r.requesterName || people.find((p) => p.userId === r.requester)?.givenName || "Someone in the family";
         return (
           <article key={r.id} className="askrow" aria-label={`${who} asked to join`}>
-            <Avatar name={who} size={44} />
+            <Portrait given={who} size={44} />
             <div>
               <p>
                 <b>{who}</b> asked to join {story.name}'s story · {whenLabel(r.createdAt, now)}
@@ -135,7 +136,7 @@ export function Asked({
         const person = personOf(s.personId);
         return (
           <article key={s.id} className="askrow" aria-label={`${s.byName} suggested a change`}>
-            <Avatar name={s.byName} size={44} />
+            <Portrait given={s.byName.split(" ")[0]} family={s.byName.split(" ").slice(1).join(" ")} size={44} />
             <div>
               <p>
                 <b>{s.byName}</b> suggests <b>{line(s)}</b> for {person ? <Link to={`/family/${person.id}`}>{personName(person)}</Link> : "someone"} · {whenLabel(s.createdAt, now)}

@@ -4,8 +4,11 @@
  * trimmed to the paws' bottom edge). The states cross-fade on one box,
  * anchored at the bottom so the paws stay on the plate's border. At rest it
  * watches (sign in), looks up curious (create account) or sleeps (verify).
- * While it watches, two soft highlight dots in paper colour sit over the
- * eyes and follow the pointer, so the gaze moves; the head tilts a few
+ * While it watches, a small catchlight sits in each eye and follows the
+ * pointer, a pixel or two either way, so the gaze moves without the eyes
+ * ever being washed over (they are dots of light, never discs over the
+ * pupil); the offsets are in the dog's own coordinates, so they scale with
+ * it under the page zoom and the book's fit; the head tilts a few
  * degrees toward the field being typed in; paper-coloured lids blink every
  * four to seven seconds. Password: it covers its eyes. "Show": it peeks.
  * Focus leaves: it rests again. On touch and under reduced motion it is a
@@ -64,8 +67,8 @@ export default function Companion({ focus, shown, progress = 0, rest = "watch" }
     const toX = gsap.quickTo(g, "x", { duration: still ? 0 : 0.5, ease: "power3.out" });
     const toY = gsap.quickTo(g, "y", { duration: still ? 0 : 0.5, ease: "power3.out" });
     if (focus) {
-      toX(gsap.utils.clamp(-3, 3, -3 + progress * 6));
-      toY(2.5);
+      toX(gsap.utils.clamp(-1.6, 1.6, -1.6 + progress * 3.2));
+      toY(1.2);
       return;
     }
     if (still || !pointer()) {
@@ -77,8 +80,8 @@ export default function Companion({ focus, shown, progress = 0, rest = "watch" }
       const r = g.getBoundingClientRect();
       const dx = (ev.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2);
       const dy = (ev.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2);
-      toX(gsap.utils.clamp(-3, 3, dx * 4));
-      toY(gsap.utils.clamp(-2, 3, dy * 3));
+      toX(gsap.utils.clamp(-1.6, 1.6, dx * 2.4));
+      toY(gsap.utils.clamp(-1.2, 1.4, dy * 2));
     };
     window.addEventListener("pointermove", move, { passive: true });
     return () => window.removeEventListener("pointermove", move);

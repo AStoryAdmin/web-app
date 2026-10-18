@@ -1,35 +1,41 @@
 /**
- * One memory, read, the way the founder's own draft lays it out. The cloth
- * keeps a short band: where this is, and who told it. The sheet opens with
- * the photograph large (or, without one, the first sentence typed on the
- * memory's paper), then the caption band with the title and when it was,
- * three warm tiles (a photograph, more words, what you remember), the
- * words themselves with a drop cap, the voice if there is one, what the
- * family remembers as faces and quoted lines, the years this story lives
- * in, and a quiet footer where the memory can be made private (you and
- * the keepers) or left public, edited, shared or removed.
+ * One memory, read: a page of the family book open on the bench
+ * (docs/research/reading-2026.md §3). No hero band: the sheet starts under
+ * the bar and the page carries its own head, set as the book sets a
+ * memory's first page. The words lead, in EB Garamond at 22px (23 on a
+ * large screen, 20 on a phone), 1.6 leading, 25.4em to the line (about 66
+ * characters), paragraphs spaced 0.8em, the full ink. A call is set as a
+ * clean transcript, with the exact words one click away. On a laptop the
+ * photograph is the left page, a straight print held in view; on a phone
+ * it follows the first paragraph. A memory without one has the family's
+ * lines in the margin. Under the words: the voice when there is a
+ * recording, one hairline row of tools, the family's lines, and the page
+ * turn.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Shell from "../components/Shell";
-import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
-import { LinkIcon, LockIcon, PenIcon, PeopleIcon, TrashIcon } from "../components/icons";
+import { Button, ButtonLink, Problem } from "../components/ui";
+import { ChevronLeft, LinkIcon, LockIcon, PenIcon, PeopleIcon, PhotoIcon, TrashIcon, CalendarIcon, PlayIcon } from "../components/icons";
 import AudioPlayer from "../components/archive/AudioPlayer";
 import ReadAloud from "../components/archive/ReadAloud";
 import Treasure from "../components/archive/Treasure";
 import FamilyVoices from "../components/archive/FamilyVoices";
-import ActionTiles from "../components/archive/ActionTiles";
-import YearStrip from "../components/archive/YearStrip";
-import { CaptionBand, Photograph, TypedCard } from "../components/archive/MemoryLead";
+import ToolMenu from "../components/archive/ToolMenu";
+import { MemoryHead, PageTurn, Plate } from "../components/archive/MemoryLead";
 import { smarten } from "../lib/typography";
-import { opening } from "../lib/resurface";
-import { minutesLabel, orderedPhotos, paragraphsOf } from "../components/archive/photos";
+import { canSpeak } from "../lib/readAloud";
+import { isRunOfLines, minutesLabel, orderedPhotos, paragraphsOf, readableParagraphs, takesDropCap } from "../components/archive/photos";
+import { cleanTranscript, keptLine, soundsSpoken } from "../components/archive/transcript";
+import WhereNext from "../components/book/WhereNext";
+import { isTreasured } from "../lib/treasured";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { usePhotoUrl } from "../lib/photoUrls";
-import { paperFor, toldBy } from "../lib/memoryDisplay";
-import { dateLine, quoteFor } from "../app-core/lib/memoryCard.js";
+import { dateLine } from "../app-core/lib/memoryCard.js";
 import { memoryDate } from "../app-core/lib/timeline.js";
+import { loadAskedQuestions } from "../components/book/askedQuestions";
+import type { Asked } from "../components/book/bookPages";
 import type { Memory, Story } from "../data/stories";
 
 function findMemory(id: string | undefined, active: Story | null, stories: Story[]): { story: Story; memory: Memory } | null {
@@ -43,10 +49,24 @@ function findMemory(id: string | undefined, active: Story | null, stories: Story
   return null;
 }
 
+/** The spread needs a laptop's width; below it the page is one column and the photograph sits in the words. */
+const SPREAD = "(min-width: 1280px)";
+function useSpread(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(SPREAD);
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(SPREAD).matches,
+    () => true,
+  );
+}
+
 function Missing() {
   return (
-    <Shell compact title="Memory" back="/archive">
-      <div className="page">
+    <Shell bare title="Memory">
+      <div className="page mv">
         <div className="mp-missing">
           <h1>That memory isn't here.</h1>
           <p className="meta">It may have been removed, or it belongs to a story this account can't see.</p>
@@ -59,28 +79,12 @@ function Missing() {
   );
 }
 
-/** A small print on the strip. Under the pointer it turns over: the date is written on the back. */
-function Thumb({ url, on, tilt, caption, onPick }: { url: string; on: boolean; tilt: number; caption: string; onPick: () => void }) {
-  const src = usePhotoUrl(url);
-  return (
-    <button type="button" aria-pressed={on} onClick={onPick} style={{ ["--tilt" as string]: `${tilt}deg` }} aria-label="Show this photograph">
-      <span className="flip">
-        <span className="face">
-          <img src={src ?? undefined} alt="" loading="lazy" />
-        </span>
-        <span className="back" aria-hidden="true">
-          <span>{caption}</span>
-        </span>
-      </span>
-    </button>
-  );
-}
-
 export default function MemoryPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const { account, activeStory, stories, family, chooseStory, saveMemory, removeMemory, saveFailure, clearSaveFailure } = useAccount();
   const navigate = useNavigate();
+  const spread = useSpread();
 
   const found = findMemory(id, activeStory, stories);
   const foundStoryId = found?.story.id ?? null;
@@ -91,6 +95,7 @@ export default function MemoryPage() {
 
   const story = found?.story ?? null;
   const memory = found?.memory ?? null;
+  const memoryId = memory?.id ?? null;
   const photos = memory ? orderedPhotos(memory) : [];
   const [shown, setShown] = useState<string | null>(null);
   const current = shown && photos.includes(shown) ? shown : photos[0] || null;
@@ -101,30 +106,72 @@ export default function MemoryPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [reading, setReading] = useState<number | null>(null);
   const [compose, setCompose] = useState(false);
+  const [asked, setAsked] = useState<Asked | null>(null);
+  const [verbatim, setVerbatim] = useState(false);
+  const [listen, setListen] = useState(false);
 
-  if (account === undefined) return <Shell compact title="Memory" back="/archive"><div className="page" aria-busy="true" /></Shell>;
+  // the question a relative sent in, when this memory answered one (the book prints it the same way)
+  useEffect(() => {
+    if (!memoryId) return;
+    let live = true;
+    loadAskedQuestions([memoryId]).then((r) => live && setAsked(r[memoryId] || null));
+    return () => {
+      live = false;
+    };
+  }, [memoryId]);
+
+  // a new memory (Previous, Next) opens tidied and silent, on its own first photograph
+  const [openFor, setOpenFor] = useState(memoryId);
+  if (openFor !== memoryId) {
+    setOpenFor(memoryId);
+    setVerbatim(false);
+    setListen(false);
+    setShown(null);
+    setConfirm(false);
+  }
+
+  if (account === undefined)
+    return (
+      <Shell bare title="Memory">
+        <div className="page" aria-busy="true" />
+      </Shell>
+    );
   if (!story || !memory) return <Missing />;
 
   const own = story.relationship === "Myself";
-  const { year, dated } = memoryDate(memory) as { year: number | null; dated: boolean };
+  const { dated } = memoryDate(memory) as { year: number | null; dated: boolean };
   const date = dateLine(story, memory) as string;
   const people = (memory.personIds || [])
     .map((pid) => family?.people.find((p) => p.id === pid))
     .filter((p): p is NonNullable<typeof p> => !!p);
+  const hasVoice = memory.audio?.length > 0;
   const seconds = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
-  const told = toldBy(memory, story);
-  const toldLine = memory.audio?.length ? `${told} on a call${minutesLabel(seconds) ? ` · ${minutesLabel(seconds)}` : ""}` : told;
+  const told = memory.contributor ? "From" : hasVoice ? "Told by" : "Written by";
+  const toldName = memory.contributor ? memory.contributor.split(",")[0].trim() : story.name;
+  const toldRest = hasVoice ? ` on a call${minutesLabel(seconds) ? ` · ${minutesLabel(seconds)}` : ""}` : "";
+
+  // the words: what was typed is set as typed; what was said is set as a clean transcript, the exact words a click away
   const transcript = (memory.audio || []).filter((c) => c.speaker !== "assistant" && c.transcript).map((c) => c.transcript);
-  const paragraphs = paragraphsOf(memory.body);
-  const body = (paragraphs.length ? paragraphs : transcript.length ? paragraphsOf(transcript.join("\n\n")) : []).map(smarten);
+  const typed = paragraphsOf(memory.body);
+  const raw = typed.length ? typed : transcript.length ? paragraphsOf(transcript.join("\n\n")) : [];
+  const spoken = hasVoice || Boolean(memory.familyCallId) || soundsSpoken(raw.join("\n\n"));
+  const tidy = spoken ? cleanTranscript(raw) : raw;
+  const body = readableParagraphs(spoken && !verbatim ? (tidy.length ? tidy : raw) : raw).map(smarten);
+  const tidied = spoken && tidy.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
+  const kept = smarten(keptLine(raw.join(" ")));
+
   const viewerName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || (user?.email || "").split("@")[0] || "Someone";
   const isOwner = !!user && story.ownerId === user.id;
   const title = smarten(memory.title?.trim() || "Untitled");
   const isPrivate = memory.privacy === "private";
-  const number = Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === memory.id) + 1);
-  const paper = paperFor(memory);
-  const plain = body.join(" ");
-  const lead = plain ? smarten(quoteFor(opening(plain) || plain, 170) as string) : title;
+  const byKept = [...story.memories].filter((m) => m.status !== "in_progress").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const at = byKept.findIndex((m) => m.id === memory.id);
+  const turn = (k: number) => (byKept[k] ? { id: byKept[k].id, title: smarten(byKept[k].title?.trim() || "Untitled") } : null);
+  const prev = at > 0 ? turn(at - 1) : null;
+  const next = at >= 0 ? turn(at + 1) : null;
+  const plate = Boolean(current);
+  const when = memory.period?.trim() || "";
+  const editDetails = `/write?edit=${memory.id}&details=1`;
 
   const share = async () => {
     const url = window.location.href;
@@ -136,15 +183,16 @@ export default function MemoryPage() {
       await navigator.clipboard.writeText(url);
       setCopied("Link copied");
     } catch {
-      setCopied("Copy the address bar to share this page");
+      setCopied("Copy the address bar");
     }
     window.setTimeout(() => setCopied(null), 3000);
   };
 
-  const flip = async () => {
+  const setPrivacy = async (makePrivate: boolean) => {
+    if (makePrivate === isPrivate) return;
     setFlipping(true);
     try {
-      await saveMemory({ ...memory, privacy: isPrivate ? "shared" : "private" }, story.id);
+      await saveMemory({ ...memory, privacy: makePrivate ? "private" : "shared" }, story.id);
     } catch {
       /* the provider's saveFailure says so */
     } finally {
@@ -162,115 +210,195 @@ export default function MemoryPage() {
     }
   };
 
+  const thePlate = current ? <Plate photos={photos} current={current} onPick={setShown} when={when} alt={`${story.name}'s photograph for “${title}”`} /> : null;
+
+  const family_ = (
+    <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
+  );
+
+  const headTools = (
+    <>
+      <Treasure memory={memory} story={story} />
+      <ToolMenu
+        className={`rd-privacy${isPrivate ? " private" : ""}`}
+        icon={isPrivate ? <LockIcon aria-hidden="true" /> : <PeopleIcon aria-hidden="true" />}
+        label={flipping ? "Saving…" : isPrivate ? "Private" : "Public"}
+        busy={flipping}
+        ariaLabel={`${isPrivate ? "Private" : "Public"}. Change who can read it`}
+        align="end"
+        items={[
+          { key: "public", label: "Public", hint: "The family on A Story, and the wall when it is on", checked: !isPrivate, onSelect: () => void setPrivacy(false) },
+          { key: "private", label: "Private", hint: "Only you and the story's keepers", checked: isPrivate, onSelect: () => void setPrivacy(true) },
+        ]}
+      />
+      <button type="button" className="mv-tool" onClick={share}>
+        <LinkIcon aria-hidden="true" />
+        <span role="status">{copied ?? "Share"}</span>
+      </button>
+    </>
+  );
+
+  const words = (
+    <div className={`rd-story mv-words${spoken && !verbatim ? " tidy" : ""}${body.length >= 3 ? " illum" : ""}`} lang="en">
+      {body.length ? (
+        body.map((p, k) => (
+          <div key={k} className="mv-para">
+            <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
+              {p.split("\n").map((line, j, arr) => (
+                <span key={j}>
+                  {line}
+                  {j < arr.length - 1 && <br />}
+                </span>
+              ))}
+            </p>
+            {k === 0 && plate && !spread && <aside className="mv-plate inline" aria-label="Photographs">{thePlate}</aside>}
+          </div>
+        ))
+      ) : memory.status === "in_progress" ? (
+        <p className="quiet">A Story is still writing this one up from the call. The words land here when it's done.</p>
+      ) : (
+        <>
+          <p className="quiet">Nothing written down yet.</p>
+          {plate && !spread && <aside className="mv-plate inline" aria-label="Photographs">{thePlate}</aside>}
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <Shell
-      compact
-      back="/archive"
-      hero={
-        <div className="mpd-band">
-          <nav className="mpd-crumbs" aria-label="Where this is" data-rise>
-            <Link to="/archive">Archive</Link>
-            <span aria-hidden="true">·</span>
-            <span>{own ? "Your story" : `${story.name}'s story`}</span>
-            <span aria-hidden="true">·</span>
-            <span className="here">Memory No. {number}</span>
-          </nav>
-          <p className="rd-told mpd-told" data-rise>
-            <Avatar src={memory.contributor ? null : tellerPhoto} name={memory.contributor ? memory.contributor.split(",")[0] : story.name} size={40} />
-            <span className="meta">
-              {toldLine}
-              <small>{isPrivate ? "Private · you and the keepers" : "Public · the family on A Story"}</small>
-            </span>
-          </p>
-        </div>
-      }
-    >
-      <div className="page read mpd">
+    <Shell bare title={memory.era || "Archive"}>
+      <div className={`page mv${plate ? " has-plate" : " no-plate"}`}>
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
-        <div className="mpd-cols">
-        <div className="mpd-side">
-        <div className="mpd-lead" data-rise>
-          {current ? <Photograph url={current} paper={paper} /> : <TypedCard line={lead} chapter={memory.era} paper={paper} />}
-          {photos.length > 1 && (
-            <div className="rd-strip">
-              {photos.map((p, i) => (
-                <Thumb key={p} url={p} on={p === current} tilt={[-3, 2, -1, 3][i % 4]} caption={memory.period?.trim() || "No date yet"} onPick={() => setShown(p)} />
-              ))}
-            </div>
+        <nav className="mv-crumbs" aria-label="Back" data-rise>
+          <Link to="/archive" className="mv-back">
+            <ChevronLeft aria-hidden="true" width={18} height={18} />
+            The Archive
+          </Link>
+        </nav>
+
+        <article className="mv-grid" aria-labelledby="mv-title">
+          {plate && spread && (
+            <aside className="mv-plate" aria-label="Photographs" data-rise>
+              {thePlate}
+            </aside>
           )}
-        </div>
 
-        <CaptionBand title={title} date={date} dated={dated} editTo={`/write?edit=${memory.id}&details=1`} chapter={memory.era} paper={paper} people={people} stillWriting={memory.status === "in_progress"} />
+          <MemoryHead
+            title={title}
+            chapter={memory.era}
+            date={date}
+            dated={dated}
+            editTo={editDetails}
+            told={told}
+            toldName={toldName}
+            toldRest={toldRest}
+            toldPhoto={memory.contributor ? null : tellerPhoto}
+            people={people}
+            stillWriting={memory.status === "in_progress"}
+            actions={headTools}
+            kept={kept}
+            treasured={isTreasured(memory)}
+          />
 
-        <ActionTiles memoryId={memory.id} onRemember={() => setCompose(true)} />
-        </div>
+          <div className="mv-body">
+            {asked && (
+              <div className="mv-asked">
+                <p className="mv-asked-lab">The question</p>
+                <p className="mv-asked-q">{smarten(asked.q)}</p>
+                <p className="mv-asked-by">Asked by {asked.by}</p>
+              </div>
+            )}
 
-        <div className="mpd-main">
-        <div className="rd-story mpd-words" data-rise>
-          {body.length ? (
-            body.map((p, k) => (
-              <p key={k} className={[reading === k ? "reading" : "", k === 0 && p.split("\n")[0].trim().length < 48 ? "nodrop" : ""].filter(Boolean).join(" ") || undefined}>
-                {p.split("\n").map((line, j, arr) => (
-                  <span key={j}>
-                    {line}
-                    {j < arr.length - 1 && <br />}
-                  </span>
-                ))}
+            {words}
+
+            {kept && body.length > 1 && (
+              <p className="mv-coda">
+                <span className="mv-coda-mark" aria-hidden="true">
+                  ✦
+                </span>
+                “{kept}”
               </p>
-            ))
-          ) : memory.status === "in_progress" ? (
-            <p className="quiet">A Story is still writing this one up from the call. The words land here when it's done.</p>
-          ) : (
-            <p className="quiet">Nothing written down yet. {memory.photos.length ? "The photographs are here, though." : ""}</p>
-          )}
-        </div>
+            )}
 
-        {body.length > 0 && <ReadAloud paragraphs={body} label={title} onPosition={setReading} />}
+            {tidied && body.length > 0 && (
+              <p className="mv-tidy" aria-live="polite">
+                {verbatim ? `Word for word, as it was said` : `Lightly tidied from the ${hasVoice ? "call" : "conversation"}`}
+                <span aria-hidden="true"> · </span>
+                <button type="button" onClick={() => setVerbatim((v) => !v)} aria-pressed={verbatim}>
+                  {verbatim ? "Read it tidied" : "Read it word for word"}
+                </button>
+              </p>
+            )}
 
-        {memory.audio?.length > 0 && <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />}
+            {hasVoice ? (
+              <div className="mv-voice">
+                <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />
+              </div>
+            ) : listen && body.length > 0 ? (
+              <div className="mv-voice">
+                <ReadAloud paragraphs={body} label={title} onPosition={setReading} autoStart />
+              </div>
+            ) : null}
 
-        <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
-        </div>
-        </div>
+            {confirm ? (
+              <div className="mp-confirm mv-confirm" role="alertdialog" aria-labelledby="rm-h">
+                <p id="rm-h" className="mv-confirm-h">
+                  Remove “{title}” from {own ? "your" : `${story.name}'s`} story?
+                </p>
+                <p className="meta">
+                  The words{memory.photos.length ? ", the photographs" : ""}
+                  {memory.audio?.length ? " and the recording" : ""} go with it. This can't be undone.
+                </p>
+                <div className="row">
+                  <Button onClick={remove} loading={removing} className="mv-danger-fill">
+                    Remove it
+                  </Button>
+                  <Button variant="outline" onClick={() => setConfirm(false)} disabled={removing}>
+                    Keep it
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mv-tools" role="group" aria-label="This memory">
+                <Link className="mv-tool" to={`/write?edit=${memory.id}&photo=1`}>
+                  <PhotoIcon aria-hidden="true" />
+                  {photos.length ? "Add a photograph" : "Add the first photograph"}
+                </Link>
+                <Link className="mv-tool" to={`/write?edit=${memory.id}`}>
+                  <PenIcon aria-hidden="true" />
+                  Add to the words
+                </Link>
+                <span className="mv-tools-gap" aria-hidden="true" />
+                <ToolMenu
+                  className="mv-more-btn"
+                  label={<span aria-hidden="true">•••</span>}
+                  ariaLabel="More"
+                  align="end"
+                  items={[
+                    { key: "when", label: "Edit when and chapter", icon: <CalendarIcon />, onSelect: () => navigate(editDetails) },
+                    { key: "who", label: "Who's in it", icon: <PeopleIcon />, onSelect: () => navigate(editDetails) },
+                    ...(!hasVoice && body.length > 0 && canSpeak() ? [{ key: "listen", label: listen ? "Stop listening" : "Listen", icon: <PlayIcon />, onSelect: () => setListen((v) => !v) }] : []),
+                    { key: "remove", label: "Remove…", icon: <TrashIcon />, danger: true, onSelect: () => setConfirm(true) },
+                  ]}
+                />
+              </div>
+            )}
 
-        <YearStrip story={story} year={year} />
-
-        {confirm ? (
-          <div className="mp-confirm" role="alertdialog" aria-labelledby="rm-h">
-            <p id="rm-h" style={{ fontWeight: 600, color: "var(--heading)" }}>
-              Remove “{title}” from {own ? "your" : `${story.name}'s`} story?
-            </p>
-            <p className="meta">The words{memory.photos.length ? ", the photographs" : ""}{memory.audio?.length ? " and the recording" : ""} go with it. This can't be undone.</p>
-            <div className="row">
-              <Button onClick={remove} loading={removing} style={{ background: "var(--danger)" }}>
-                Remove it
-              </Button>
-              <Button variant="outline" onClick={() => setConfirm(false)} disabled={removing}>
-                Keep it
-              </Button>
-            </div>
+            {(plate || !spread) && family_}
+            <PageTurn prev={prev} next={next} pos={at >= 0 ? `Memory ${at + 1} of ${byKept.length}` : undefined} />
           </div>
-        ) : (
-          <div className="rd-foot">
-            <button type="button" className={`rd-privacy${isPrivate ? " private" : ""}`} onClick={flip} disabled={flipping} aria-pressed={isPrivate} title={isPrivate ? "Make it public" : "Make it private"}>
-              {isPrivate ? <LockIcon /> : <PeopleIcon />}
-              <span className="dot" aria-hidden="true" />
-              {isPrivate ? "Private" : "Public"}
-              <small>{isPrivate ? "· you and the keepers" : "· the family, and the wall"}</small>
-            </button>
-            <Treasure memory={memory} story={story} />
-            <ButtonLink to={`/write?edit=${memory.id}`} variant="outline" small icon={<PenIcon />}>
-              Edit the words
-            </ButtonLink>
-            <Button variant="outline" small icon={<LinkIcon />} onClick={share}>
-              {copied ?? "Share"}
-            </Button>
-            <Button variant="quiet" small className="danger" icon={<TrashIcon />} onClick={() => setConfirm(true)}>
-              Remove
-            </Button>
-          </div>
-        )}
+
+          {!plate && spread && <aside className="mv-margin">{family_}</aside>}
+        </article>
+
+        <WhereNext
+          rows={[
+            { to: "/archive", title: "Back to the Archive", line: `Every memory in ${own ? "your" : `${story.name}'s`} story, by year.` },
+            { to: "/write", title: own ? "Write the next memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
+            { to: "/book", title: "Open the book", line: "See this memory set on the printed page." },
+          ]}
+        />
       </div>
     </Shell>
   );

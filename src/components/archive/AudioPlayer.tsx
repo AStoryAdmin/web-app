@@ -118,6 +118,10 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
         <button type="button" className="play" onClick={toggle} aria-label={playing ? `Pause ${label}` : `Play ${label}`} disabled={!ready}>
           {playing ? <PauseIcon /> : <PlayIcon />}
         </button>
+        <span className="who-reads">
+          <b>Hear {name} tell it</b>
+          <small>{total >= 60 ? `${Math.round(total / 60)} min` : total > 0 ? "under a minute" : "The recording"}</small>
+        </span>
         <div
           className="bars"
           role="slider"

@@ -1,1 +1,408 @@
-/* family-people: owned by one builder at a time; loaded after astory.css (see docs/BAOS-STANDARD.md). */
+/* family-people: the Family page and the person pages. Owned by one builder at a time; loaded after astory.css
+   (see docs/BAOS-STANDARD.md). Replaces astory.css §47 (.fr-*, the register) and the old roster; the person page
+   rules here override §42's .pp-* where they meet.
+
+   The family is drawn as the front of the family book draws it: an engraved plate, one tier per generation down a
+   terracotta rail, faces as round prints in a paper ring with a gold hairline (or a monogram seal), couples joined
+   by an ampersand in foil, fine gold threads from each couple to their children, a dashed ring where somebody is
+   missing. Beside it, the storyteller's own words on a plate. Every vw is divided by --zoom (lib/zoom). */
+
+/* ───────────── the portrait: a round print, or the monogram seal ───────────── */
+.por { --pz: 96px; position: relative; display: grid; place-items: center; flex: none; width: var(--pz); height: var(--pz); border-radius: 50%; overflow: hidden;
+  background: var(--paper-print); box-shadow: 0 0 0 1px var(--foil-soft), 0 0 0 calc(var(--pz) * 0.045 + 1px) var(--paper-print), 0 0 0 calc(var(--pz) * 0.045 + 2px) var(--sheet-rule); }
+.por img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.por.seal { background: var(--paper-tone); }
+.por.seal::after { content: ""; position: absolute; inset: calc(var(--pz) * 0.07); border-radius: 50%; border: 1px solid var(--foil-soft); pointer-events: none; }
+.por-mono { font-family: var(--book-display); font-weight: 600; font-size: calc(var(--pz) * 0.36); line-height: 1; letter-spacing: 0.03em; color: var(--kicker-terracotta); font-variant-numeric: lining-nums; }
+
+/* ───────────── the page: the family's name on the sheet, the plate beside the storyteller ───────────── */
+.sheet-page .fp { padding-bottom: var(--s-16); }
+.fp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-5) var(--s-8); flex-wrap: wrap; padding-bottom: 22px; margin-bottom: 40px; position: relative; }
+.fp-head::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--sheet-rule); }
+.fp-head::before { content: ""; position: absolute; left: 0; bottom: 0; z-index: 1; width: 64px; height: 1px; background: var(--foil); }
+.fp-title { min-width: 0; }
+.sheet-page .fp .fp-head h1 { margin: 0; font-size: clamp(40px, calc(3.4vw / var(--zoom, 1)), 58px); line-height: 1.02; letter-spacing: -0.012em; overflow-wrap: anywhere; }
+.fp-sub { margin: 10px 0 0; font: 500 15px/1.45 var(--font-ui); color: var(--ink-soft); }
+.fp-head .btn { flex: none; }
+.fp-head .btn[aria-disabled="true"] { opacity: 0.65; cursor: not-allowed; }
+.fp-name { position: relative; display: flex; align-items: center; gap: 20px; min-width: 0; }
+/* the house full stop (BAOS §33), in terracotta on the paper */
+.stop { color: var(--accent); }
+/* D17: the family's initial in a foil cartouche */
+.orn-cartouche { flex: none; width: 60px; height: 74px; color: var(--foil); }
+.orn-cartouche-l { font-family: var(--book-display); font-weight: 600; font-size: 34px; fill: var(--sheet-ink); }
+/* D19: a pressed fern behind the cartouche, in the margin (shown once public/deco/pressed-fern.webp exists) */
+.orn-pressed { position: absolute; left: -34px; top: -30px; z-index: -1; width: clamp(96px, calc(8vw / var(--zoom, 1)), 132px); opacity: 0.88; mix-blend-mode: multiply; transform: rotate(-14deg); pointer-events: none; }
+.fp-quiet { margin: 0; font: 500 14px/1.45 var(--font-ui); color: var(--ink-soft); }
+.fp .dupes { margin-bottom: var(--s-8); }
+
+.fp-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; align-items: start; }
+@media (min-width: 1500px) {
+  .fp-grid { grid-template-columns: minmax(320px, 380px) minmax(0, 1fr); gap: 72px; }
+  .fp-grid > .st { position: sticky; top: 112px; }
+}
+
+/* below a laptop the family comes first (faces first), the storyteller's words and the family's lines after it */
+@media (max-width: 1099px) {
+  .fp-grid > .tp-wrap { order: -1; }
+}
+
+/* ───────────── the storyteller's plate ───────────── */
+.st { position: relative; isolation: isolate; padding: 34px 32px 30px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; min-width: 0; }
+.st::before { content: ""; position: absolute; inset: 6px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 2px; }
+.sheet-page .fp .st-name { margin: 0; font-size: 38px; line-height: 1.04; }
+.st-name a { color: inherit; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 6px; transition: text-decoration-color 200ms var(--ease-out); }
+@media (hover: hover) { .st-name a:hover { text-decoration-color: var(--foil); } }
+.st-meta { margin: 8px 0 0; font: 500 14px/1.45 var(--font-ui); color: var(--ink-soft); }
+.st-said { position: relative; margin: 26px 0 0; padding: 0 0 0 30px; }
+.st-said::before { content: "\201C"; position: absolute; left: -4px; top: -14px; font-family: var(--book-display); font-weight: 600; font-size: 64px; line-height: 1; color: var(--foil); }
+.st-said blockquote { margin: 0; }
+.st-said blockquote p { margin: 0; font-family: var(--book-body); font-style: italic; font-size: 21px; line-height: 1.5; color: var(--sheet-ink); text-wrap: pretty; }
+.st-said figcaption { margin-top: 10px; font: 500 13px/1.45 var(--font-ui); color: var(--ink-soft); }
+.st-said figcaption a { color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; }
+.st-said figcaption a:hover { text-decoration-color: var(--accent); }
+.st-said.empty { padding-left: 0; font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.5; color: var(--ink-soft); }
+.st-said.empty::before { display: none; }
+.st-acts { display: flex; flex-wrap: wrap; gap: 0 22px; margin-top: 16px; }
+.st-act { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 600 14px/1.2 var(--font-ui); color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 5px; white-space: nowrap;
+  transition: color 160ms var(--ease-out), text-decoration-color 160ms var(--ease-out); }
+.st-act svg { width: 17px; height: 17px; color: var(--accent); flex: none; }
+.st-act:hover { color: var(--accent-deep); text-decoration-color: var(--accent); }
+.st-act:active { transform: scale(0.98); }
+.st-voices { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--sheet-rule); display: grid; gap: 18px; }
+.sheet-page .st-h { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.15; color: var(--sheet-ink); }
+.st-voice { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; margin: 0; align-items: start; }
+.st-voice > div { position: relative; padding-right: 50px; }
+/* D18: what arrived from the family wears a postmark */
+.orn-postmark { position: absolute; right: -4px; top: -6px; width: 50px; height: 50px; color: var(--ink-stamp, var(--accent)); opacity: 0.62; transform: rotate(-8deg); pointer-events: none; }
+.orn-postmark-d { font-family: var(--book-display); font-weight: 600; font-size: 12.5px; fill: currentColor; }
+.st-voice blockquote { margin: 0; }
+.st-voice blockquote p { margin: 0; font-family: var(--book-body); font-style: italic; font-size: 17px; line-height: 1.45; color: var(--sheet-ink); text-wrap: pretty; }
+.st-voice blockquote p::before { content: "\201C"; }
+.st-voice blockquote p::after { content: "\201D"; }
+.st-voice figcaption { margin-top: 5px; font: 500 13px/1.35 var(--font-ui); color: var(--ink-soft); }
+.st-voice figcaption b { font-weight: 600; color: var(--sheet-ink); }
+.st-empty p { margin: 0; font-family: var(--book-body); font-size: 17px; line-height: 1.5; color: var(--sheet-ink); }
+.st-empty .st-act { padding: 0; border: 0; background: none; cursor: pointer; }
+.st-empty .st-act span { color: var(--accent); }
+/* D2a: the storyteller's plate is gilt-edged; light catches the gold once as the hand passes */
+.st.gilt { border: 1.5px solid var(--foil); }
+.st.gilt::before { border-color: var(--foil-soft); }
+.st.gilt > .glint { position: absolute; inset: -1.5px; border-radius: inherit; padding: 1.5px; overflow: hidden; pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.st.gilt > .glint::before { content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 28%; background: var(--foil-light, #EFDCAB);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 45% 55%, transparent); mask: linear-gradient(90deg, transparent, #000 45% 55%, transparent); transform: translateX(-140%) skewX(-18deg); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .st.gilt > .glint::before { transition: transform 900ms var(--ease-in-out); }
+  .st.gilt:hover > .glint::before { transform: translateX(460%) skewX(-18deg); }
+}
+/* between a laptop and a large window the plate lies across the top: the words left, the family's lines right */
+@media (min-width: 1100px) and (max-width: 1499px) {
+  .st:not(.quiet) { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 48px; align-items: start; }
+  .st:not(.quiet) > :not(.st-voices, .glint) { grid-column: 1; }
+  .st:not(.quiet) .st-voices { grid-column: 2; grid-row: 1 / span 4; margin-top: 0; padding-top: 0; border-top: 0; padding-left: 40px; border-left: 1px solid var(--sheet-rule); }
+}
+
+/* ───────────── the plate: the generations ───────────── */
+.tp-wrap { min-width: 0; }
+.tp { --pz: 96px; --pz-t: 140px; --node: 132px; --node-t: 180px; --amp: 24px; position: relative; }
+.tp[data-tight="1"] { --pz: 80px; --pz-t: 116px; --node: 112px; --node-t: 156px; --amp: 20px; }
+.tp-threads { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 0; }
+.tp-threads path { fill: none; stroke: var(--foil); stroke-width: 1.25; stroke-linecap: round; opacity: 0.95; transition: stroke 200ms var(--ease-out), opacity 200ms var(--ease-out), stroke-width 200ms var(--ease-out); }
+.tp-threads path.dash { stroke: var(--ink-faint); stroke-dasharray: 2 5; opacity: 0.75; }
+.tp-threads path.lit { stroke: var(--accent); stroke-width: 1.75; opacity: 1; }
+.tp-threads path.dim { opacity: 0.22; }
+.tp-rail { position: absolute; left: 6px; top: 34px; bottom: 30px; width: 1.5px; background: var(--accent); opacity: 0.7; border-radius: 1px; pointer-events: none; }
+
+.tp-tier { position: relative; z-index: 1; display: grid; grid-template-columns: 168px minmax(0, 1fr); column-gap: 20px; padding-bottom: 76px; }
+.tp-tier:last-child { padding-bottom: 0; }
+.tp-label { position: relative; padding: 28px 0 0 30px; min-width: 0; }
+.tp-dot { position: absolute; left: 0; top: 30px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent); background: var(--page); }
+.tp-tier.home .tp-dot { background: var(--accent); box-shadow: 0 0 0 4px var(--page), 0 0 0 5px var(--accent-border); }
+.tp-dot.open { border-style: dashed; border-color: var(--line-strong); }
+.tp-dec { display: block; margin-bottom: 6px; font: 600 13px/1 var(--font-ui); letter-spacing: 0.04em; color: var(--kicker-terracotta); font-variant-numeric: lining-nums; }
+.sheet-page .tp-label h3 { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 21px; line-height: 1.15; letter-spacing: -0.003em; color: var(--sheet-ink); text-wrap: balance; overflow-wrap: anywhere; }
+.tp-hint { margin: 8px 0 0; font: 500 13px/1.45 var(--font-ui); color: var(--ink-soft); }
+.tp-tier.home .tp-label { padding-top: calc(var(--pz-t) / 2 - 12px); }
+.tp-tier.home .tp-label .tp-dot { top: calc(var(--pz-t) / 2 - 10px); }
+.tp-tier.home .tp-label:has(.tp-dec) .tp-dot { top: calc(var(--pz-t) / 2 - 10px); }
+
+.tp-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 22px 24px; min-width: 0; }
+.tp-unit { display: flex; align-items: flex-start; }
+.tp-pair { display: flex; align-items: flex-start; }
+.tp-amp { flex: none; width: var(--amp); margin-top: calc(var(--pz) / 2 - 18px); text-align: center; font-family: var(--book-display); font-weight: 500; font-size: 30px; line-height: 1; color: var(--foil); }
+.tp-tier.home .tp-amp { margin-top: calc(var(--pz-t) / 2 - 18px); }
+/* in the storyteller's tier every face sits on the storyteller's centre line */
+.tp-tier.home :is(.tp-node:not(.teller), .tp-ghost) { margin-top: calc((var(--pz-t) - var(--pz)) / 2); }
+
+.tp-node { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; width: var(--node); min-width: 0; padding: 4px 2px 6px; border-radius: 10px; color: inherit; text-decoration: none;
+  transition: opacity 220ms var(--ease-out); }
+.tp-node .por { --pz: inherit; margin-bottom: 14px; transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out); }
+.tp-node.teller { width: var(--node-t); }
+.tp-node.teller .por { --pz: var(--pz-t); box-shadow: 0 0 0 1px var(--foil), 0 0 0 7px var(--paper-print), 0 0 0 8.5px var(--accent); margin-bottom: 18px; }
+.tp-kick { margin-bottom: 4px; font: 600 13px/1.2 var(--font-ui); color: var(--kicker-terracotta); }
+.tp-nm { font-family: var(--book-display); font-weight: 600; font-size: 19px; line-height: 1.12; color: var(--sheet-ink); overflow-wrap: anywhere; text-wrap: balance; }
+.tp-node.teller .tp-nm { font-size: 27px; line-height: 1.05; }
+.tp-rel { margin-top: 4px; font: 500 13px/1.35 var(--font-ui); color: var(--ink-soft); text-wrap: balance; }
+.tp-yrs { margin-top: 1px; font: 500 13px/1.35 var(--font-ui); color: var(--ink-soft); font-variant-numeric: lining-nums tabular-nums; }
+.tp-state { display: block; margin-top: 5px; font: 500 13px/1.3 var(--font-ui); color: var(--ink-soft); text-wrap: balance; }
+.tp-state i { display: inline-block; vertical-align: 0.12em; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--ink-faint); }
+.tp-state.on { color: var(--kicker-sage); }
+.tp-state.on i { background: var(--kicker-sage); }
+.tp-state.waiting { color: var(--accent-deep); }
+.tp-state.waiting i { background: var(--ochre); }
+.tp-note { margin-top: 3px; font: 500 13px/1.3 var(--font-ui); color: var(--kicker-terracotta); }
+.tp-node:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 4px; }
+.tp-node:active .por { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  a.tp-node:hover .por { transform: translateY(-3px); box-shadow: 0 0 0 1px var(--foil), 0 0 0 calc(var(--pz) * 0.045 + 1px) var(--paper-print), 0 0 0 calc(var(--pz) * 0.045 + 2px) var(--foil-soft), 0 16px 26px -16px rgba(42, 35, 32, 0.5); }
+  a.tp-node.teller:hover .por { box-shadow: 0 0 0 1px var(--foil), 0 0 0 7px var(--paper-print), 0 0 0 8.5px var(--accent), 0 18px 30px -18px rgba(42, 35, 32, 0.5); }
+  a.tp-node:hover .tp-nm { text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+}
+.tp-node.dim, .tp-ghost.dim { opacity: 0.42; }
+.tp-node.lit:not(.teller) .por { box-shadow: 0 0 0 1px var(--accent), 0 0 0 calc(var(--pz) * 0.045 + 1px) var(--paper-print), 0 0 0 calc(var(--pz) * 0.045 + 2px) var(--accent-border); }
+
+.tp-ghost { display: flex; flex-direction: column; align-items: center; width: var(--node); padding: 4px 2px 6px; border: 0; border-radius: 10px; background: none; font: inherit; color: var(--ink-soft); cursor: pointer; transition: opacity 220ms var(--ease-out); }
+.tp-ring { display: grid; place-items: center; width: calc(var(--pz) * 0.74); height: calc(var(--pz) * 0.74); margin: calc(var(--pz) * 0.13) 0 calc(var(--pz) * 0.13 + 10px); border-radius: 50%; border: 1.5px dashed var(--line-strong);
+  font-family: var(--book-display); font-size: 30px; line-height: 1; color: var(--ink-soft); background: transparent; transition: border-color 200ms var(--ease-out), color 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.tp-gl { font-family: var(--book-body); font-style: italic; font-size: 16px; line-height: 1.3; color: var(--ink-soft); text-wrap: balance; }
+.tp-ghost:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 4px; }
+.tp-ghost:active .tp-ring { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) {
+  .tp-ghost:hover .tp-ring { border-color: var(--accent); color: var(--accent); }
+  .tp-ghost:hover .tp-gl { color: var(--sheet-ink); }
+}
+
+.tp-shelf .tp-row { justify-content: center; }
+.tp-shelfitem { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tp-place { min-height: 44px; }
+.tp-menu.ft-menu.shelf { left: 50%; top: calc(100% + 4px); transform: translateX(-50%); background: var(--paper-print); border-radius: 6px; box-shadow: var(--shadow-float), 0 0 0 1px var(--sheet-rule); }
+.tp-menu.ft-menu button { border-radius: 4px; font: 500 15px/1.3 var(--font-ui); }
+.tp-menu.ft-menu button:hover, .tp-menu.ft-menu button:focus-visible { background: var(--paper-tone); }
+
+/* a laptop or a tablet: the generation's name above its faces, no threads (the words under each face say whose) */
+@media (max-width: 1099px) {
+  .tp-threads { display: none; }
+  .tp-tier { display: block; padding: 0 0 52px 30px; }
+  .tp-label { padding: 0; margin-bottom: 20px; }
+  .tp-dot, .tp-tier.home .tp-label .tp-dot, .tp-tier.home .tp-label:has(.tp-dec) .tp-dot { left: -30px; top: 3px; }
+  .tp-tier.home .tp-label { padding-top: 0; }
+  .tp-dec { display: inline-block; margin: 0 10px 0 0; }
+  .sheet-page .tp-label h3 { display: inline; }
+  .tp-rail { top: 10px; }
+}
+
+/* ───────────── keeping the family: review, invitations, who may edit ───────────── */
+.fp-keep { position: relative; margin-top: 104px; padding-top: 52px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 32px 40px; align-items: start; }
+.fp-keep::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--sheet-rule); }
+.fp-keep::after { content: "✦"; position: absolute; left: 50%; top: -9px; transform: translateX(-50%); padding: 0 14px; background: var(--page); color: var(--foil); font: 400 14px/18px var(--font-ui); }
+.fp-keep-col { min-width: 0; display: grid; gap: 28px; align-content: start; }
+.fp-keep .card { background: none; border: 0; padding: 0; box-shadow: none; }
+.fp-keep .card::before { display: none; }
+.sheet-page .fp-keep :is(.review > h2, .card > h2, .fp-invites > h2) { display: flex; align-items: baseline; gap: 10px; margin: 0 0 8px; font-family: var(--book-display); font-weight: 600; font-size: 28px; line-height: 1.1; color: var(--sheet-ink); }
+.fp-keep .review .n { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; background: var(--accent); color: #FFFDF8; font: 600 13px/1 var(--font-ui); }
+.fp-keep .meta, .fp-how { font: 500 14px/1.5 var(--font-ui); color: var(--ink-soft); }
+.fp-how { margin: 0 0 18px; max-width: 46ch; }
+.fp-keep .waiting-on { padding-top: 24px; border-top: 1px solid var(--sheet-rule); }
+.fp-codes { list-style: none; margin: 0; padding: 0; display: grid; }
+.fp-codes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; min-height: 56px; border-top: 1px solid var(--sheet-rule); }
+.fp-codes li:last-child { border-bottom: 1px solid var(--sheet-rule); }
+.fp-codes b { font-family: var(--book-display); font-weight: 600; font-size: 22px; letter-spacing: 0.08em; color: var(--sheet-ink); font-variant-numeric: lining-nums; }
+.fp-keep .keeperlist .por { --pz: 40px; }
+.fp-keep .askrow { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-top: 1px solid var(--sheet-rule); }
+.fp-keep .contrib .pic-av { --pz: 56px; }
+/* the state of a keeper, in sentence case like every quiet word on this page */
+.fp .chip:not(.big) { font: 500 13px/1 var(--font-ui); letter-spacing: 0; text-transform: none; min-height: 28px; }
+.sheet-page :is(.fp, .pp2) .field > span:first-child { font: 600 13px/1.4 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
+/* the Invitations plate, with the family's dog curious on its top edge: someone new is coming (D11) */
+.fp-invites { position: relative; isolation: isolate; padding: 30px 28px 24px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; }
+.fp-invites::before { content: ""; position: absolute; inset: 6px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 2px; }
+.fp-dog { position: absolute; right: 22px; top: 0; width: 104px; transform: translateY(-74%); pointer-events: none; user-select: none; }
+
+/* ───────────── where to next (BAOS §38): three ruled rows ───────────── */
+.wn { margin-top: 96px; }
+.sheet-page .wn-h { margin: 0 0 14px; font-family: var(--book-display); font-weight: 600; font-size: 30px; line-height: 1.1; color: var(--sheet-ink); }
+.wn ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
+.wn li { border-bottom: 1px solid var(--sheet-rule); }
+.wn-row { display: grid; grid-template-columns: minmax(180px, 0.6fr) minmax(0, 1fr) 44px; align-items: center; gap: 8px 32px; min-height: 76px; padding: 12px 4px; color: inherit; text-decoration: none; transition: background 200ms var(--ease-out); }
+.wn-t { font-family: var(--book-display); font-weight: 600; font-size: 24px; line-height: 1.15; color: var(--sheet-ink); }
+.wn-l { font: 500 14px/1.45 var(--font-ui); color: var(--ink-soft); }
+.wn-a { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); color: var(--accent); font: 400 18px/1 var(--font-ui); transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out); }
+.wn-row:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
+.wn-row:active .wn-a { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) {
+  .wn-row:hover { background: var(--paper-tone); }
+  .wn-row:hover .wn-a { border-color: var(--accent); transform: translateX(3px); }
+}
+@media (max-width: 760px) {
+  .wn { margin-top: 72px; }
+  .wn-row { grid-template-columns: minmax(0, 1fr) 44px; }
+  .wn-a { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* ───────────── a phone ───────────── */
+@media (max-width: 760px) {
+  .fp-head { margin-bottom: 28px; padding-bottom: 18px; }
+  .fp-head .btn { width: 100%; justify-content: center; }
+  .sheet-page .fp .fp-head h1 { font-size: 40px; }
+  .st { padding: 26px 22px 24px; }
+  .sheet-page .fp .st-name { font-size: 32px; }
+  .st-said blockquote p { font-size: 19px; }
+  .tp, .tp[data-tight="1"] { --pz: 64px; --pz-t: 92px; --node: 92px; --node-t: 108px; --amp: 14px; }
+  .tp-ghost { width: 76px; }
+  .tp-ring { width: 44px; height: 44px; margin: calc((var(--pz) - 44px) / 2) 0 calc((var(--pz) - 44px) / 2 + 8px); }
+  .tp-note { display: none; }
+  .tp-tier { padding-left: 26px; padding-bottom: 44px; }
+  .tp-dot, .tp-tier.home .tp-label .tp-dot, .tp-tier.home .tp-label:has(.tp-dec) .tp-dot { left: -26px; }
+  .tp-row { gap: 18px 6px; }
+  .tp-amp { font-size: 22px; margin-top: calc(var(--pz) / 2 - 13px); }
+  .tp-tier.home .tp-amp { margin-top: calc(var(--pz-t) / 2 - 13px); }
+  .tp-nm { font-size: 17px; }
+  .tp-node.teller .tp-nm { font-size: 21px; }
+  .tp-rel, .tp-yrs, .tp-state, .tp-note { font-size: 12.5px; }
+  .tp-node .por { margin-bottom: 10px; }
+  .tp-gl { font-size: 14.5px; }
+  .tp-ring { font-size: 22px; }
+  .fp-keep { margin-top: 72px; }
+  .fp-codes li { grid-template-columns: minmax(0, 1fr) auto; }
+  .fp-codes li .fp-quiet { grid-column: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-node, .tp-node .por, .tp-ghost, .tp-ring, .tp-threads path, .st-name a { transition: none; }
+  a.tp-node:hover .por { transform: none; }
+}
+
+/* ═════════════ the person page ═════════════ */
+.sheet-page .pp2 { padding-bottom: var(--s-16); }
+.pp-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (min-width: 1100px) {
+  .pp-cols { grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 72px; }
+  .pp-side { position: sticky; top: 112px; }
+}
+.pp-side { min-width: 0; display: grid; gap: 28px; }
+.pp-plate { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 36px 28px 26px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; }
+.pp-plate::before { content: ""; position: absolute; inset: 6px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 2px; }
+.pp-por { --pz: 196px; margin-bottom: 22px; }
+.pp-por.teller { box-shadow: 0 0 0 1px var(--foil), 0 0 0 9px var(--paper-print), 0 0 0 10.5px var(--accent); }
+/* a photograph stands in an arch, as on the founder's own sites (gbaonvo.com, Shiori, Kiyo); the seal stays round */
+.pp-por:not(.seal) { width: 204px; height: 256px; border-radius: 102px 102px 4px 4px; }
+/* the title on the cloth: bold Montserrat (the lead's ruling for the cloth), the house full stop in brass */
+.hero .phero-title { font-family: var(--font-ui); font-weight: 700; letter-spacing: -0.025em; line-height: 1.04; font-size: clamp(34px, calc(4.2vw / var(--zoom, 1)), 58px); }
+/* a large window: three columns, the person, their memories, and the people and lines around them */
+@media (min-width: 1600px) {
+  .pp-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); gap: 64px; align-items: start; }
+  .pp-extras .pk:first-child, .pp-extras > :first-child { margin-top: 0; }
+  .pp-extras .pk-list { grid-template-columns: minmax(0, 1fr); }
+  .pp-extras .pp-thumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pp-extras .pp-notegrid { grid-template-columns: minmax(0, 1fr); }
+  .sheet-page .pp2 .pp-extras :is(.pk-h, .pp-related h2, .pp-notes h2) { font-size: 26px; }
+}
+.hero .phero-title .stop { color: var(--brass); }
+.hero .phero-sub { margin-top: 10px; }
+/* D22: their own words, once on the page, on a plate with a double foil keyline and a leaf to close */
+.pp-words-plate { position: relative; margin: 0 0 56px; padding: 30px 36px 26px; background: var(--paper-print); border: 1px solid var(--foil); border-radius: 4px; }
+.pp-words-plate::before { content: ""; position: absolute; inset: 4px; border: 0.5px solid var(--foil); border-radius: 2px; pointer-events: none; }
+.pp-words-plate blockquote { margin: 0; }
+.pp-words-plate p { margin: 0; max-width: 60ch; font-family: var(--book-body); font-style: italic; font-size: 24px; line-height: 1.45; color: var(--sheet-ink); text-wrap: pretty; }
+.pp-words-plate p::before { content: "\201C"; }
+.pp-words-plate p::after { content: "\201D\2009\2766"; color: var(--foil); font-style: normal; }
+.pp-words-plate figcaption { margin-top: 12px; font: 500 14px/1.4 var(--font-ui); color: var(--ink-soft); }
+.pp-words-plate figcaption a { color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; }
+.pp-words-plate figcaption a:hover { text-decoration-color: var(--accent); }
+/* D10: a terracotta ribbon marks the latest memory on the rail */
+.pp2 .pp-list > .pp-item:last-child .pp-card { position: relative; }
+.pp2 .pp-list > .pp-item:last-child .pp-card::after { content: ""; position: absolute; right: 22px; top: -1px; width: 12px; height: 40px; background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); pointer-events: none; }
+.pp2 .pp-list > .pp-item:last-child .pp-body { padding-right: 34px; }
+.pp-addphoto { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: -8px 0 4px; font: 600 13px/1.2 var(--font-ui); color: var(--ink-soft); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; }
+.pp-addphoto span { color: var(--accent); }
+.pp-addphoto:hover { color: var(--sheet-ink); text-decoration-color: var(--accent); }
+.pp-addphoto:active { transform: scale(0.98); }
+/* the margin ribbon hangs about 48px in from the sheet's right edge: keep the wide pages' content clear of it */
+@media (min-width: 761px) {
+  .sheet-page.wide .page:is(.fp, .pp2) { padding-right: max(clamp(20px, calc(3.2vw / var(--zoom, 1)), 72px), 68px); }
+}
+.pp-none { display: flex; align-items: flex-start; gap: 24px; }
+.pp-dog { flex: none; width: 128px; margin-top: 4px; }
+.pp-state { margin: 0; font: 600 15px/1.4 var(--font-ui); color: var(--sheet-ink); text-wrap: balance; }
+.pp-state i { display: inline-block; vertical-align: 0.1em; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--ink-faint); }
+.pp-state.on i { background: var(--kicker-sage); }
+.pp-state.waiting i { background: var(--ochre); }
+.pp-span { margin: 6px 0 0; font: 500 14px/1.4 var(--font-ui); color: var(--ink-soft); }
+.pp-invite { align-self: stretch; display: grid; gap: 14px; justify-items: start; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--sheet-rule); text-align: left; }
+.pp-invite .field { width: 100%; }
+.pp-why { margin: 0; font: 500 14px/1.5 var(--font-ui); color: var(--ink-soft); }
+.pp-edit { margin-top: 14px; }
+.pp-editbox { align-self: stretch; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--sheet-rule); text-align: left; }
+.pp-editbox form { display: grid; gap: 12px; }
+.pp-editbox .acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.pp-editbox .removebox { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--sheet-rule); display: grid; gap: 10px; justify-items: start; }
+.pp-editbox .danger { color: var(--danger); }
+
+.pp-main { min-width: 0; }
+.pp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
+.sheet-page .pp2 :is(.pp-head h2, .pp-none h2, .pk-h) { margin: 0; font-size: 34px; line-height: 1.08; }
+.pp-write, .pk-tree { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 600 14px/1.2 var(--font-ui); color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 5px; white-space: nowrap;
+  transition: color 160ms var(--ease-out), text-decoration-color 160ms var(--ease-out); }
+.pp-write span, .pk-tree span { display: inline-block; color: var(--accent); transition: transform 200ms var(--ease-out); }
+.pp-write:hover, .pk-tree:hover { color: var(--accent-deep); text-decoration-color: var(--accent); }
+@media (hover: hover) { .pp-write:hover span, .pk-tree:hover span { transform: translateX(3px); } }
+.pp-write:active, .pk-tree:active { transform: scale(0.98); }
+.pp2 .pp-rail { margin-top: 28px; }
+/* the rail's memories: a print and the words on the paper, no tinted bubble; the plate shows under the pointer */
+.pp2 .pp-card, .pp2 .pp-card:is(.blush, .periwinkle, .sage, .lilac, .apricot, .butter, .sea) { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 14px 18px 14px 14px;
+  transition: background 200ms var(--ease-out), border-color 200ms var(--ease-out), transform 200ms var(--ease-out); }
+@media (hover: hover) { .pp2 .pp-card:hover { background: var(--paper-print); border-color: var(--sheet-rule); transform: none; } }
+.pp2 .pp-card:active { transform: scale(0.99); }
+.pp2 .pp-print { padding: 6px 6px 9px; background: var(--paper-print); border: 1px solid var(--sheet-rule); }
+.pp2 .pp-card.text .pp-words { font-style: italic; -webkit-line-clamp: 2; }
+.pp2 .pp-card.text .pp-words::before { content: "\201C"; }
+.pp2 .pp-card.text .pp-words::after { content: "\201D"; }
+.pp2 .pp-words { color: var(--sheet-ink); }
+.pp2 .pp-date { letter-spacing: 0; font-weight: 500; }
+.pp2 .pp-more { padding-left: 44px; }
+.pp-none { padding: 28px 0 8px; }
+.pp-none p { margin: 10px 0 6px; max-width: 46ch; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--sheet-ink); }
+
+/* the people closest to them */
+.pk { margin-top: 72px; }
+.pk-list { list-style: none; margin: 20px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 20px; }
+.pk-one { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px 10px 8px 6px; border-radius: 6px; color: inherit; text-decoration: none; transition: background 200ms var(--ease-out); }
+@media (hover: hover) {
+  .pk-one:hover { background: var(--paper-tone); }
+  .pk-one:hover .pk-nm { text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; }
+}
+.pk-one:active { transform: scale(0.98); }
+.pk-one:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
+.pk-words { display: grid; gap: 2px; min-width: 0; }
+.pk-nm { font-family: var(--book-display); font-weight: 600; font-size: 20px; line-height: 1.1; color: var(--sheet-ink); overflow-wrap: anywhere; }
+.pk-rel { font: 500 13px/1.3 var(--font-ui); color: var(--ink-soft); }
+.pk-none { margin: 12px 0 0; font-family: var(--book-body); font-size: 18px; color: var(--ink-soft); }
+.pk-tree { margin-top: 12px; }
+
+/* related memories and the family's notes, as prints and plates on the paper (no tinted boxes) */
+.pp2 .pp-related, .pp2 .pp-notes { margin-top: 72px; }
+.pp2 .pp-thumb-print { padding: 6px 6px 9px; background: var(--paper-print); border: 1px solid var(--sheet-rule); }
+.pp2 .pp-thumb-print.text, .pp2 .pp-thumb-print.text:is(.blush, .periwinkle, .sage, .lilac, .apricot, .butter, .sea) { position: relative; isolation: isolate; background: var(--paper-print); border-color: var(--sheet-rule); color: var(--kicker-terracotta); font-size: 72px; }
+.pp2 .pp-thumb-print.text::before { content: ""; position: absolute; inset: 8px; z-index: -1; border: 1px solid var(--foil-soft); }
+.pp2 .pp-note { position: relative; isolation: isolate; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; }
+.pp2 .pp-note::before { content: ""; position: absolute; inset: 6px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 2px; }
+.pp-missing { padding-top: 40px; padding-bottom: 80px; }
+.pp-missing p { font-family: var(--book-body); font-size: 19px; color: var(--sheet-ink); }
+
+@media (max-width: 760px) {
+  .pp-plate { padding: 28px 20px 22px; }
+  .pp-por { --pz: 148px; margin-bottom: 18px; }
+  .sheet-page .pp2 :is(.pp-head h2, .pp-none h2, .pk-h) { font-size: 28px; }
+  .pp-por:not(.seal) { width: 160px; height: 200px; border-radius: 80px 80px 4px 4px; }
+  .pp-words-plate { padding: 24px 22px 20px; margin-bottom: 40px; }
+  .pp-words-plate p { font-size: 20px; }
+  .pp-none { flex-direction: column; gap: 8px; }
+  .pp-dog { width: 104px; }
+  .pk, .pp2 .pp-related, .pp2 .pp-notes { margin-top: 56px; }
+  .pk-list { grid-template-columns: minmax(0, 1fr); }
+  .pp2 .pp-card { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp2 .pp-card, .pk-one, .pp-write span, .pk-tree span { transition: none; }
+}

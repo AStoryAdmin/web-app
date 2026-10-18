@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
-import { Button, CodeInput, Problem } from "../../components/ui";
+import { Button, CodeInput } from "../../components/ui";
 import { CODE_LEN, resendSignupCode, safeNext, verifySignupCode } from "../../data/auth";
 
-/** The six-digit code that confirms the email, typed here, never a link. */
+/** The six-digit code that confirms the email, typed here, never a link. The dog sleeps while it waits. */
 export default function Verify() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -14,18 +14,18 @@ export default function Verify() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resent, setResent] = useState(false);
-  const [wait, setWait] = useState(45);
+  const [again, setAgain] = useState<"wait" | "ready" | "busy" | "sent">("wait");
 
+  // Another code can be asked for after a little while; no clock is shown, the link simply appears.
   useEffect(() => {
-    if (wait <= 0) return;
-    const t = setTimeout(() => setWait((w) => w - 1), 1000);
+    if (again !== "wait" && again !== "sent") return;
+    const t = setTimeout(() => setAgain("ready"), 45000);
     return () => clearTimeout(t);
-  }, [wait]);
+  }, [again]);
 
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
-    if (code.length < CODE_LEN) return setError("Type all six digits.");
+    if (code.length < CODE_LEN) return setError("Type all six digits from the email.");
     setError(null);
     setBusy(true);
     const r = await verifySignupCode(email, code);
@@ -40,30 +40,57 @@ export default function Verify() {
   }, [code]);
 
   const resend = async () => {
-    setResent(false);
+    setAgain("busy");
     const r = await resendSignupCode(email);
-    if (!r.ok) return setError(r.error);
-    setResent(true);
-    setWait(45);
+    if (!r.ok) {
+      setAgain("ready");
+      return setError(r.error);
+    }
+    setAgain("sent");
   };
 
+  if (!email) {
+    return (
+      <AuthFrame>
+        <div className="form">
+          <h1>Which email was it?</h1>
+          <p className="sub">This page needs the address the code was sent to. Sign in with it and we'll send a fresh code.</p>
+          <div className="acts">
+            <Link className="btn primary block" to="/sign-in" viewTransition>
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </AuthFrame>
+    );
+  }
+
   return (
-    <AuthFrame line={1}>
+    <AuthFrame>
       <form className="form" onSubmit={submit} noValidate>
-        <h1>Check your email</h1>
+        <h1>
+          Check your email<span className="stop">.</span>
+        </h1>
         <p className="sub">
           We sent a six-digit code to <b>{email}</b>.
         </p>
-        {error && <Problem message={error} onDismiss={() => setError(null)} />}
+        {error && (
+          <p className="plate-error" role="alert">
+            {error}
+          </p>
+        )}
         <CodeInput value={code} onChange={setCode} autoFocus />
         <Button type="submit" block loading={busy}>
           Continue
         </Button>
         <p className="resend">
-          {resent ? "A new code is on its way." : "Didn't get it?"}
-          {wait > 0 ? <span style={{ display: "block", marginTop: 4 }}>You can ask for another in {wait}s</span> : (
-            <button type="button" onClick={resend}>
-              Send another code
+          {again === "sent" ? (
+            <span className="plate-ok">A new code is on its way.</span>
+          ) : again === "wait" ? (
+            "Nothing yet? It can take a minute; look in spam too."
+          ) : (
+            <button type="button" className="linkish" onClick={resend} disabled={again === "busy"} aria-busy={again === "busy" || undefined}>
+              {again === "busy" ? "Sending…" : "Send another code"}
             </button>
           )}
         </p>

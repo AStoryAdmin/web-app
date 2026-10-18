@@ -9,7 +9,8 @@ import type { Person } from "../../data/family";
 import type { Story } from "../../data/stories";
 import { inviteManager, listManagers, removeManager, type Manager } from "../../data/familyWrites";
 import { keeperName } from "../../app-core/lib/keeperName.js";
-import { Avatar, Button, Chip, Field } from "../ui";
+import { Button, Chip, Field } from "../ui";
+import Portrait from "./Portrait";
 import { MailIcon } from "../icons";
 
 export default function Keepers({ story, people, senderName }: { story: Story; people: Person[]; senderName: string }) {
@@ -58,7 +59,7 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
       <ul className="keeperlist">
         {list?.map((m) => (
           <li key={m.id}>
-            <Avatar name={nameFor(m)} size={40} />
+            <Portrait given={nameFor(m).split(" ")[0]} family={nameFor(m).split(" ").slice(1).join(" ")} size={40} />
             <span>
               <strong>{nameFor(m)}</strong>
               <span className="meta">{m.invitedEmail}</span>
