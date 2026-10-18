@@ -27,7 +27,7 @@ export { MOVE, OUT } from "../../lib/ease";
 const KEY = "astory-opened";
 /** The pages stack (and scroll) on a phone, a narrow window or a portrait screen; a short desktop window keeps the
  * spread and scales it (the floors keep its controls legible). Mirrored in signed-out.css §7. */
-export const STACKED = "(max-width: 1180.98px), (max-aspect-ratio: 5/4)";
+export const STACKED = "(max-width: 1180.98px), (max-aspect-ratio: 1/1)";
 export const isStacked = () => typeof window !== "undefined" && window.matchMedia(STACKED).matches;
 
 export const seenOpening = () => {

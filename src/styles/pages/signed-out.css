@@ -274,7 +274,7 @@
    come (240 ms, rising 6px). The cloth around the book is the same on both sides and does not move. To or from the
    front door (no book on one side) only the objects on the cloth change: what leaves (the bench, or the book) clears in
    120 ms, then what comes settles in whole in 320 ms (the album already decoded: Welcome waits for it). The cloth stays
-   on the house crossfade underneath, so its weave is drawn in every frame both ways. */
+   held underneath (the old page whole until the new one has faded in over it), so its weave is drawn in every frame both ways. */
 .auth .spread { view-transition-name: auth-book; }
 .auth .leaf-r { view-transition-name: auth-title; }
 .auth .promise-line { view-transition-name: auth-line; }
@@ -289,6 +289,9 @@
 ::view-transition-new(door-bench):only-child { animation: 320ms cubic-bezier(0.23, 1, 0.32, 1) 140ms both vt-appear; }
 ::view-transition-old(auth-book):only-child, ::view-transition-old(auth-title):only-child, ::view-transition-old(auth-plate):only-child, ::view-transition-old(auth-line):only-child,
 ::view-transition-old(door-bench):only-child { animation: 120ms cubic-bezier(0.23, 1, 0.32, 1) both vt-fade; }
+/* the cloth: the old page's picture is held whole under the new one while that fades in (the new page is opaque by
+   its end), so the weave never thins: two half-faded cloths over a flat backdrop never make a whole one */
+:root:has(.door, .auth)::view-transition-old(root) { animation: none; }
 /* the words: held where they were while they leave, then placed at once where the new ones come */
 ::view-transition-group(auth-plate), ::view-transition-group(auth-line) { animation-duration: 120ms; animation-timing-function: steps(1, end); }
 ::view-transition-old(auth-plate), ::view-transition-old(auth-line) { mix-blend-mode: normal; animation: 120ms linear both vt-fade; }
@@ -308,7 +311,8 @@
   ::view-transition-old(auth-book), ::view-transition-old(auth-title), ::view-transition-old(auth-plate), ::view-transition-old(auth-line) { display: none !important; }
   ::view-transition-new(auth-plate), ::view-transition-new(auth-line) { animation: 150ms linear both vt-appear !important; }
   ::view-transition-old(auth-book):only-child, ::view-transition-old(auth-title):only-child, ::view-transition-old(auth-plate):only-child, ::view-transition-old(auth-line):only-child,
-  ::view-transition-old(door-bench):only-child, :root:has(.door, .auth)::view-transition-old(root) { display: block !important; animation: 150ms linear both vt-fade !important; }
+  ::view-transition-old(door-bench):only-child { display: block !important; animation: 150ms linear both vt-fade !important; }
+  :root:has(.door, .auth)::view-transition-old(root) { display: block !important; animation: none !important; }
   ::view-transition-new(auth-book):only-child, ::view-transition-new(auth-title):only-child, ::view-transition-new(auth-plate):only-child, ::view-transition-new(auth-line):only-child,
   ::view-transition-new(door-bench):only-child, :root:has(.door, .auth)::view-transition-new(root) { animation: 150ms linear both vt-appear !important; }
 }
@@ -617,10 +621,10 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 .door .companion { --cw: 124px; position: relative; grid-column: 2; grid-row: 2; align-self: end; margin: -6px 14px -24px 0; /* his paws on the leaf's inner foil rule (14px in, under the foot's 38px), clear of its corner bracket */ width: var(--cw); height: calc(var(--cw) / 1.2531); pointer-events: none; }
 
 /* ───────────────────────── 7. Stacked ───────────────────────── */
-/* A phone, a portrait tablet, or a window too narrow or short for the book to stay comfortable (bookFit STACKED): the
+/* A phone, a portrait screen (taller than wide), or a window narrower than 1181px (bookFit STACKED): the
    pages stack, the title page first, at their own size, centred in a column no wider than a page; the page scrolls.
    astory.css §33 holds the phone's share of this below 760px; the rules here cover the whole stacked range. */
-@media (max-width: 1180.98px), (max-aspect-ratio: 5/4) {
+@media (max-width: 1180.98px), (max-aspect-ratio: 1/1) {
   html:has(.auth.ritual), body:has(.auth.ritual) { overflow-x: clip; overflow-y: visible; height: auto; }
   .auth.ritual { height: auto; min-height: calc(100vh / var(--zoom)); overflow-x: clip; }
   /* the lockup starts on the column the pages stand in (720 at most), not in the window's corner */
