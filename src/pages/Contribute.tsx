@@ -264,7 +264,7 @@ export default function Contribute() {
         </div>
         <h1 className="cb-q">{kind === "memory" ? `What do you remember about ${info.name}?` : `What would you like to tell ${info.name}’s family?`}</h1>
         {errorLine}
-        {kind === "memory" && <input className="cb-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title, if one comes to mind" aria-label="Title" maxLength={200} />}
+        {kind === "memory" && <input className="cb-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title, if you like" aria-label="Title" maxLength={200} />}
         <textarea
           ref={bodyRef}
           className="cb-body"
@@ -322,8 +322,8 @@ export default function Contribute() {
         {firstLine && <blockquote className="cb-quote">{firstLine.length > 140 ? `${firstLine.slice(0, 140).trim()}…` : firstLine}</blockquote>}
         {errorLine}
         <div className="cb-fields">
-          <Field ref={nameRef} label="Your name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So they know who this is from" autoComplete="name" aria-invalid={error && !name.trim() ? true : undefined} aria-describedby={error && !name.trim() ? "cb-say" : undefined} />
-          <Field label={`How you knew ${info.name}`} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Her neighbour, his niece, an old friend" autoComplete="off" />
+          <Field ref={nameRef} label="Your name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So they know who it’s from" autoComplete="name" aria-invalid={error && !name.trim() ? true : undefined} aria-describedby={error && !name.trim() ? "cb-say" : undefined} />
+          <Field label={`How you knew ${info.name}`} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Neighbour, niece, old friend" autoComplete="off" />
           <Field label="Your email, if you like" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" hint="Kept with what you sent, so the family can reach you." />
         </div>
         <div className="cb-foot">

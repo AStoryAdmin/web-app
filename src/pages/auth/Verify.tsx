@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
 import { useCodeAria } from "./useCodeAria";
-import { Button, CodeInput } from "../../components/ui";
+import { Button } from "../../components/ui";
+import PlateCode from "./PlateCode";
 import { CODE_LEN, resendSignupCode, safeNext, verifySignupCode } from "../../data/auth";
 
 /** The six-digit code that confirms the email, typed here, never a link. The dog sleeps while it waits. */
@@ -89,7 +90,7 @@ export default function Verify() {
         </p>
         <PlateSay error={error}>Six digits, from the email we just sent.</PlateSay>
         <div className={error ? "code-wrap is-bad" : "code-wrap"} ref={codeRef}>
-          <CodeInput value={code} onChange={setCode} autoFocus />
+          <PlateCode value={code} onChange={setCode} autoFocus />
         </div>
         <Button type="submit" block loading={busy}>
           Continue

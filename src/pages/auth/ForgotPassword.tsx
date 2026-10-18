@@ -4,7 +4,8 @@ import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
 import { useCodeAria } from "./useCodeAria";
 import type { CompanionFocus } from "../../components/delight/Companion";
-import { Button, CodeInput, Field } from "../../components/ui";
+import { Button, Field } from "../../components/ui";
+import PlateCode from "./PlateCode";
 import { CODE_LEN, MIN_PASSWORD, requestPasswordReset, resetPassword } from "../../data/auth";
 
 type Bad = "email" | "code" | "password" | null;
@@ -120,13 +121,13 @@ export default function ForgotPassword() {
           </p>
           <PlateSay error={error}>Type the six digits, then your new password.</PlateSay>
           <div className={bad === "code" ? "code-wrap is-bad" : "code-wrap"} ref={codeRef}>
-            <CodeInput value={code} onChange={setCode} autoFocus />
+            <PlateCode value={code} onChange={setCode} autoFocus />
           </div>
           <Field
             label="New password"
             type={shown ? "text" : "password"}
             autoComplete="new-password"
-            placeholder={`At least ${MIN_PASSWORD} characters`}
+            placeholder={`${MIN_PASSWORD}+ characters`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             reveal={{ shown, toggle: () => setShown((s) => !s) }}

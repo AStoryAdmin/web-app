@@ -162,7 +162,7 @@ export default function CreateAccount() {
             label="Password"
             type={shown ? "text" : "password"}
             autoComplete="new-password"
-            placeholder={`At least ${MIN_PASSWORD} characters`}
+            placeholder={`${MIN_PASSWORD}+ characters`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             reveal={{ shown, toggle: () => setShown((s) => !s) }}

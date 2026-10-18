@@ -1,6 +1,6 @@
 /**
- * The six digit boxes (CodeInput, in components/ui) take no ARIA props of their own, so this marks them from their
- * wrapper: while the code is wrong each box is aria-invalid and points at the plate's line ("plate-say").
+ * The code's input (PlateCode) is marked from its wrapper: while the code is wrong it is aria-invalid and points at
+ * the plate's line ("plate-say").
  */
 import { useEffect, type RefObject } from "react";
 

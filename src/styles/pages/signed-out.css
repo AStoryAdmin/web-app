@@ -253,7 +253,7 @@
 .auth.ritual .owner input:focus-visible { border-bottom-color: var(--chocolate); outline: 2px solid var(--ochre); outline-offset: 4px; border-radius: 2px; }
 .auth.ritual .owner input[aria-invalid="true"] { border-bottom-color: var(--danger); }
 .auth.ritual .owner-hint { display: block; margin: 6px 0 0; font-size: max(14px, var(--floor)); color: var(--ink-soft); }
-.auth.ritual .given { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 10px; margin: -2px 0 2px; font-size: max(14px, var(--floor)); color: var(--ink-soft); }
+.auth.ritual .given { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 10px; text-align: center; margin: -2px 0 2px; font-size: max(14px, var(--floor)); color: var(--ink-soft); }
 .auth.ritual .given b { color: var(--sheet-ink); font-weight: 600; overflow-wrap: anywhere; }
 .auth.ritual .given .linkish { font-weight: 500; color: var(--ink-soft); }
 .auth.ritual .given.with-code { margin: 8px 0 12px; }
@@ -267,12 +267,21 @@
 .auth.ritual .form .check.on i { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
 .auth.ritual .form .check:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; border-radius: 4px; }
 .auth.ritual .hint { font-size: max(14px, var(--floor)); color: var(--ink-soft); }
-/* the six boxes for an emailed code, on the plate's paper */
-.auth.ritual .form .code { margin: 2px 0 12px; gap: 8px; }
-.auth.ritual .code input { min-height: max(var(--tap), 52px); aspect-ratio: auto; background: var(--code-box-fill); border: 1px solid var(--code-box-line); border-radius: 6px; font-family: var(--book-display); font-weight: 600; font-size: max(28px, var(--ctl)); color: var(--sheet-ink); }
-.auth.ritual .code input:hover { border-color: var(--field-line-hover); }
-.auth.ritual .code input:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; border-color: var(--chocolate); }
-.auth.ritual .code-wrap.is-bad .code input { border-color: var(--danger); }
+/* the emailed code (PlateCode): one input across the paper, drawn as six slots behind its (invisible) text; the
+   whole row is the one target, and the slot that comes next is marked while it has focus */
+.auth.ritual .plate-code { position: relative; margin: 2px 0 12px; }
+.auth.ritual .plate-code-slots { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; pointer-events: none; }
+.auth.ritual .plate-code .slot { display: grid; place-items: center; min-height: max(var(--tap), 52px); background: var(--code-box-fill); border: 1px solid var(--code-box-line); border-radius: 6px;
+  font-family: var(--book-display); font-weight: 600; font-size: max(28px, var(--ctl)); line-height: 1; color: var(--sheet-ink); transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
+.auth.ritual .plate-code .slot.is-next { border-color: var(--chocolate); box-shadow: 0 0 0 1px var(--chocolate); }
+.auth.ritual .plate-code-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent;
+  color: transparent; caret-color: transparent; font-size: 16px; cursor: text; }
+.auth.ritual .plate-code-input::selection { background: transparent; }
+.auth.ritual .plate-code-input:focus { outline: none; }
+.auth.ritual .plate-code-input:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .auth.ritual .plate-code:hover .slot:not(.is-next) { border-color: var(--field-line-hover); } }
+.auth.ritual .code-wrap.is-bad .plate-code .slot { border-color: var(--danger); }
+.auth.ritual .code-wrap.is-bad .plate-code .slot.is-next { box-shadow: 0 0 0 1px var(--danger); }
 .auth.ritual .resend { margin: 8px 0 0; min-height: var(--tap); display: grid; place-items: center; font-size: max(15px, var(--floor)); color: var(--ink-soft); text-align: center; }
 
 /* ───────────────────────── 3. Between the pages ───────────────────────── */
@@ -710,10 +719,11 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 @media (max-width: 760.98px) {
   .auth .spread-wrap { padding: 72px 10px 32px; }
   .auth .titlepg { padding: 9% 3.5% 8%; }
-  .auth .promise-line { font-size: 30px; }
+  /* the headlines scale with a phone's width (divided by the page zoom) so each holds two lines down to 320 */
+  .auth .promise-line { font-size: clamp(24px, calc(8.4vw / var(--zoom, 1)), 30px); }
   .auth .plate-wrap { --pw: min(93cqw, 520px); --cw: 90px; }
   .auth .plate .paper { padding-bottom: 18px; }
-  .auth.ritual .form h1, .auth.ritual .form .plate-head { font-size: 27px; padding: 0 7%; }
+  .auth.ritual .form h1, .auth.ritual .form .plate-head { font-size: clamp(22px, calc(6.8vw / var(--zoom, 1)), 27px); padding: 0 5%; }
   .auth .plate:not(.lettered) .paper { margin-top: 0; }
   /* the album is its own tall box (the prints' size container), and the sentence follows it in flow, so a caption,
      the brass rule and the sentence each keep their own room */
@@ -731,11 +741,12 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .auth .ep-how { position: relative; left: auto; right: auto; top: auto; bottom: auto; margin: 22px 7% 0; }
   .auth .ep-how p { font-size: 18px; }
   .auth.ritual .codeseal { font-size: 36px; }
-  /* six thumb-sized digit boxes across a phone's plate: the row borrows the plate's inner margin */
-  .auth.ritual .form .code { gap: 3px; margin-inline: -10px; }
-  .auth.ritual .code input { min-width: 44px; padding: 0; }
-  .cb-q { font-size: 28px; }
-  .cb-state .cb-q { font-size: 32px; }
+  /* the code's six slots inside the paper's width (one input, one full-width target) */
+  .auth.ritual .plate-code { margin-inline: 6px; }
+  .auth.ritual .plate-code-slots { gap: 5px; }
+  .auth.ritual .plate-code .slot { font-size: 24px; }
+  .cb-q { font-size: clamp(22px, calc(7.2vw / var(--zoom, 1)), 28px); }
+  .cb-state .cb-q { font-size: clamp(24px, calc(8.2vw / var(--zoom, 1)), 32px); }
   .cb-person { grid-template-columns: 104px minmax(0, 1fr); gap: 16px; }
   .cb-name { font-size: 26px; }
   /* on a phone the person keeps the one line a stranger needs */
@@ -749,7 +760,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .door .sb-books { grid-template-columns: auto; justify-items: start; }
   .door-wrap { padding: 0 10px 40px; }
   .door-leaf { padding: 36px 26px 30px; }
-  .door-leaf h1 { font-size: 38px; }
+  .door-leaf h1 { font-size: clamp(28px, calc(8.8vw / var(--zoom, 1)), 38px); }
   .door-how dt { font-size: 21px; }
   .door-foot { row-gap: 12px; } /* his ears clear the Sign in pill above him */
   .door .companion { --cw: 70px; margin-bottom: -16px; } /* the leaf's foot is 30px here: his paws on its foil rule, 14px in */
