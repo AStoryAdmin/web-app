@@ -252,6 +252,39 @@ function Bench({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * The counts under the name, and the tail that says who shared it. Each count stays whole with its dot. Below 1100px
+ * the counts hold a fixed number of lines per band and the tail is its own line (shortened below 375), so the line
+ * count never depends on the numbers; the waiting frame holds the same markup, so the two are always the same height.
+ */
+function WallCounts({ count, chapters, family }: { count: number; chapters: number; family: number }) {
+  return (
+    <>
+      <span className="wall-counts-nums">
+        <span className="nw">{memories(count)}</span>
+        {chapters > 1 && (
+          <>
+            {" "}
+            <span className="nw">· {chapters} chapters</span>
+          </>
+        )}
+        {family > 0 && (
+          <>
+            {" "}
+            <span className="nw">· {family} from the family</span>
+          </>
+        )}
+      </span>{" "}
+      <span className="wall-counts-tail">
+        <span className="nw">
+          <span className="wall-counts-dot">· </span>shared by the family
+        </span>
+        <span className="wall-counts-more">, for anyone with the link</span>
+      </span>
+    </>
+  );
+}
+
+/**
  * While the story is fetched: the wall's own frame in hairlines, the portrait ring and two lines on the cloth, the
  * contents column and a row of leaf outlines on the sheet, with the mark drawing over them (Bao's Standard rule 42).
  */
@@ -272,9 +305,14 @@ function WallWait({ onShown }: { onShown: () => void }) {
           <div className="hero-in wall-hero-in">
             <span className="wall-portrait wall-sk-ring" />
             <div className="wall-hero-words">
-              <i className="wall-sk-hl tall" />
-              <i className="wall-sk-hl" />
-              <i className="wall-sk-hl third" />
+              {/* the arrived hero's own lines, held invisible and ruled: a one-line name, the line about them, the counts */}
+              <div className="wall-sk-words">
+                <h1>&nbsp;</h1>
+                <p className="wall-intro">A life, in their own words.</p>
+                <p className="wall-counts">
+                  <WallCounts count={8} chapters={2} family={1} />
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -398,14 +436,7 @@ export default function Wall() {
               </p>
               {(count > 0 || family > 0) && (
               <p className="wall-counts" data-rise>
-                {/* each count stays whole; its dot travels with it, so a wrap never splits "1 from the family" */}
-                <span className="nw">{memories(count)}</span>
-                {chapters.length > 1 && <> <span className="nw">· {chapters.length} chapters</span></>}
-                {family > 0 && <> <span className="nw">· {family} from the family</span></>}
-                {/* on a narrow phone the tail takes its own line, so the line count never depends on the counts */}
-                <span className="wall-counts-tail">
-                  <span className="wall-counts-dot"> · </span>shared by the family<span className="wall-counts-more">, for anyone with the link</span>
-                </span>
+                <WallCounts count={count} chapters={chapters.length} family={family} />
               </p>
               )}
             </div>

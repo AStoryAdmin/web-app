@@ -757,14 +757,19 @@ html:has(.wall-bench, .start) { background-color: var(--chocolate); scrollbar-co
 .wall .hero .wall-hero-words h1 { font-family: var(--font-ui); font-weight: 700; font-size: 56px; line-height: 1.04; letter-spacing: -0.025em; color: var(--on-chocolate); text-wrap: balance; }
 .wall-intro { margin-top: var(--s-3); font: italic 400 22px/1.45 var(--book-body); color: var(--on-chocolate); max-width: 52ch; }
 .wall-counts { margin-top: var(--s-4); font: 400 14px/1.4 var(--font-ui); color: var(--on-chocolate-soft); }
-/* below 375px the "shared by the family" tail is its own line and the counts hold three lines; the waiting cloth holds
-   the same (Wall.tsx WallWait, the third hairline) */
-@media (max-width: 374.98px) {
-  .wall-counts { min-height: 3lh; }
+/* the counts and their tail: below 1100px the counts hold a fixed number of lines per band and the tail is its own line
+   (shortened below 375px, its dot gone), so the height never depends on the numbers; the waiting frame holds the same
+   markup (Wall.tsx WallCounts). The counts' lines per band are the worst case ("120 memories · 12 chapters · 14 from
+   the family") at the band's narrowest width. */
+.wall-counts-nums { --wc-lines: 1; }
+@media (max-width: 1100.98px) {
+  .wall-counts-nums { display: block; min-height: calc(var(--wc-lines) * 1lh); }
   .wall-counts-tail { display: block; }
-  .wall-counts-dot, .wall-counts-more { display: none; }
-  .wall-skel .wall-sk-hl.third { height: 59px; }
+  .wall-counts-dot { display: none; }
 }
+/* a phone: the worst case takes two lines at 320 and 375 (one from 500), so every phone holds two */
+@media (max-width: 760.98px) { .wall-counts-nums { --wc-lines: 2; } }
+@media (max-width: 374.98px) { .wall-counts-more { display: none; } }
 
 .wall-sheet.sheet-page { margin-top: -28px; }
 .wall-page.page { max-width: none; padding: var(--s-10) var(--bka-gutter) var(--s-16); display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--s-16); align-items: start; }
@@ -1001,10 +1006,11 @@ html:has(.wall-bench, .start) { background-color: var(--chocolate); scrollbar-co
 .start-sk-mark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .start-sk-mark .loading-mark { min-height: 0; }
 /* the wall: the portrait ring and two lines on the cloth, the contents column and leaf outlines on the sheet */
+/* the waiting hero's words: the arrived lines held invisible, a hairline under each line box */
+.wall-sk-words > * { visibility: hidden; position: relative; }
+.wall-sk-words > *::after { content: ""; position: absolute; inset: 0; visibility: visible; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(1lh - 1px), color-mix(in srgb, var(--on-chocolate) 28%, transparent) calc(1lh - 1px) 1lh); }
 .wall-sk-ring { display: block; background: none; box-shadow: 0 0 0 1px color-mix(in srgb, var(--on-chocolate) 30%, transparent); }
-.wall-sk-hl { display: block; height: 32px; max-width: 52ch; border-bottom: 1px solid color-mix(in srgb, var(--on-chocolate) 28%, transparent); }
-.wall-sk-hl.tall { height: 58px; width: 60%; margin-bottom: var(--s-3); }
-.wall-sk-hl.third { height: 36px; }
 .wall-skel .wall-contents .bka-sk-label { margin-bottom: var(--s-3); }
 .wall-sk-row { height: 44px; }
 .wall-sk-head { margin-bottom: var(--s-6); }
@@ -1025,6 +1031,4 @@ html:has(.wall-bench, .start) { background-color: var(--chocolate); scrollbar-co
   /* a phone: the heart sits near the top of the first outline, so it is in the first screen */
   .wall-sk-leaf:first-child { place-items: start center; padding-top: var(--s-16); }
   /* a phone sets the name smaller and the line about them over more lines; the contents sit above the leaves */
-  .wall-sk-hl, .wall-sk-hl.third { height: 39px; }
-  .wall-sk-hl.tall { height: 44px; }
 }
