@@ -2867,7 +2867,9 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 .folio-sheet::after { content: "  —"; white-space: pre; color: var(--foil); }
 
 /* 2. Type on the paper ─ the display face for every heading on the sheet (not the reader's, not the leaf's) */
-.sheet-page .page :is(h1, h2):not(.bk-reader *, .leaf-one *, .mem *, .print-card *) { font-family: var(--book-display); font-weight: 600; line-height: 1.08; letter-spacing: -0.005em; color: var(--sheet-ink); text-wrap: balance; text-transform: none; }
+.sheet-page .page :is(h1, h2):not(.bk-reader *, .leaf-one *, .mem *, .print-card *) { font-family: var(--book-display); font-weight: 600; color: var(--sheet-ink); text-wrap: balance; text-transform: none; }
+/* leading and tracking are defaults a page may set for itself */
+:where(.sheet-page .page) :is(h1, h2):where(:not(.bk-reader *, .leaf-one *, .mem *, .print-card *)) { line-height: 1.08; letter-spacing: -0.005em; }
 /* the sheet's default heading sizes; :where keeps the page part at zero weight, so a page's own heading rule (any class) wins */
 :where(.sheet-page .page) h1:where(:not(.bk-reader *, .leaf-one *)) { font-size: clamp(32px, calc(3vw / var(--zoom, 1)), 40px); }
 :where(.sheet-page .page) h2:where(:not(.bk-reader *, .leaf-one *, .mem *, .print-card *)) { font-size: 34px; }
