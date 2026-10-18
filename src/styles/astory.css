@@ -712,7 +712,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ───────────────────────── 19. Whose story (first run) ───────────────────────── */
 .start { min-height: 100vh; display: flex; flex-direction: column; }
-.start-head { padding: var(--s-6) var(--gutter); }
+.start-head { padding: 0 var(--s-12); }
 .start h1 { font-size: var(--t-display); margin-bottom: var(--s-3); }
 .start .sub { color: var(--ink-soft); margin-bottom: var(--s-8); font-size: var(--t-lead); }
 @media (max-width: 760px) { .start h1 { font-size: 34px; } }
@@ -764,13 +764,6 @@ ul { margin: 0; padding: 0; list-style: none; }
 .starters button:hover { color: var(--pen); border-color: var(--foil); }
 .signoff { text-align: right; margin: var(--s-4) 0 0; font-family: var(--font-story); font-style: italic; font-size: 18px; color: var(--ink-soft); }
 .signoff span { display: block; font-size: 26px; color: var(--pen); margin-top: 2px; }
-/* under the page: the seal and the help */
-.keeprow { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-6); flex-wrap: wrap; margin-top: var(--s-8); }
-.keeprow .keep { display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-start; }
-.keeprow .helps { display: flex; gap: var(--s-2); flex-wrap: wrap; justify-content: flex-end; align-items: center; max-width: 560px; }
-.keeprow .helps .btn.sm { min-height: 40px; font-size: 13px; }
-.keeprow .listening { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
-.keeprow .listening svg { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.18); opacity: 0.6; } }
 .seal-button { display: inline-flex; align-items: center; gap: var(--s-3); padding: 4px; border: 0; background: transparent; font: 700 17px var(--font-ui); color: var(--accent); cursor: pointer; }
 .seal-button .seal { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; border: 1.5px dashed var(--accent-border); color: var(--accent); transition: transform var(--dur-ui) var(--ease-out), background var(--dur-ui); }
@@ -779,9 +772,6 @@ ul { margin: 0; padding: 0; list-style: none; }
 .seal-button:disabled { color: var(--ink-faint); cursor: default; }
 .seal-button:disabled .seal { border-color: var(--line-strong); color: var(--ink-faint); }
 .seal-button.pressed .seal { background: var(--accent); color: #fff; border: 0; outline: 1.5px solid var(--brass); outline-offset: -5px; box-shadow: 0 2px 6px rgba(184,81,38,0.35), inset 0 -2px 0 rgba(0,0,0,0.2); transform: rotate(-8deg); }
-.keeprow small { font-size: 12px; color: var(--ink-faint); padding-left: 6px; }
-.keeprow small b { color: var(--ink-soft); font-weight: 600; }
-.keeprow small a { color: var(--ochre); }
 .asks { display: grid; gap: var(--s-2); margin-top: var(--s-5); max-width: 720px; }
 .asks .chip { white-space: normal; text-align: left; min-height: 48px; font-family: var(--font-story); font-size: var(--t-body); font-weight: 400; }
 /* afterwards: when, chapter, photographs, then what's next */
@@ -812,7 +802,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .after-next .nextq { font-size: clamp(24px, 2.6vw, 32px); margin: var(--s-4) 0 var(--s-6); max-width: 26ch; text-wrap: balance; }
 .after-next .acts { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
 /* focus mode: only the page */
-body.writing-focus .cloth, body.writing-focus .tabbar, body.writing-focus .keeprow .helps, body.writing-focus .asks { display: none; }
+body.writing-focus .cloth, body.writing-focus .tabbar, body.writing-focus .asks { display: none; }
 body.writing-focus .sheet-page { margin-top: 0; border-radius: 0; box-shadow: none; min-height: 100vh; }
 body.writing-focus .wbody { min-height: 60vh; }
 /* the ink stamp (lib/stamp) */
@@ -830,8 +820,6 @@ body.writing-focus .wbody { min-height: 60vh; }
   .wbody { min-height: 300px; font-size: 19px; }
   .wtitle { font-size: 22px; }
   .focusbtn { display: none; }
-  .keeprow { flex-direction: column; }
-  .keeprow .helps { justify-content: flex-start; }
   .after-card { padding: var(--s-5); }
   .after-head { flex-direction: column; gap: var(--s-2); }
   .after-state { text-align: left; }
@@ -1564,7 +1552,6 @@ body.writing-focus .wbody { min-height: 60vh; }
 .running-head { color: var(--ink-soft); }
 .after-grid .block > span:first-child { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
 .starters button { font-size: 16px; border-color: var(--line-strong); }
-.keeprow small { font-size: 12.5px; }
 .seal-button { font-weight: 600; font-size: 16px; }
 /* reading: a calmer drop cap, and the small links under the words */
 .rd-story p:first-child::first-letter { font-weight: 500; color: var(--heading); font-size: 66px; padding-top: 6px; }
@@ -1715,7 +1702,6 @@ small { font-size: 13px; }
 .label.quiet { color: var(--ink-soft); }
 .running-head, .folio, .starters .label { font-size: 13px; }
 .folio, .starters .label { color: var(--ink-soft); }
-.keeprow small { font-size: 13px; color: var(--ink-soft); }
 .after-state { font-weight: 600; }
 .next-call .day small { font-size: 13px; letter-spacing: 0; }
 .field-label { text-transform: none; letter-spacing: 0.01em; font-weight: 600; color: var(--ink-soft); }
@@ -1732,7 +1718,7 @@ small { font-size: 13px; }
 .sechead .more { min-height: 0; position: relative; }
 .sechead .more::before { content: ""; position: absolute; inset: -11px -6px; }
 /* links inside small print: ink with a hairline underline, never ochre at 14px */
-.meta a, .hint a, .keeprow small a, .acct-note a, .plans-note a, .wall-foot a, .land-foot a, .auth .legal a { color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.meta a, .hint a, .acct-note a, .plans-note a, .wall-foot a, .land-foot a, .auth .legal a { color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 .cloth .hero a:not([class]), .card.teal a:not([class]) { color: var(--brass); text-decoration-color: rgba(246, 240, 230, 0.4); }
 /* status chips: a dot carries the colour, the word stays grey (green on its tint was 4.49:1, terracotta 4.25:1) */
 .chip.green, .chip.accent { color: var(--ink-soft); }
@@ -1749,7 +1735,7 @@ small { font-size: 13px; }
 .tile.dark { border-color: var(--chocolate); }
 
 /* targets: 44px to press, without the layout moving */
-.btn.sm, .keeprow .helps .btn.sm { min-height: 44px; }
+.btn.sm { min-height: 44px; }
 .chip.big, .after-grid .chip.big { min-height: 44px; }
 .starters button { min-height: 44px; }
 .input .show { min-height: 44px; }
@@ -3392,9 +3378,8 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
    sheet behaves like the family book being read, in its own world (docs/research/atmosphere-2026.md): a short ribbon
    bookmark in the cloth's colour hangs from the running head in the margin (lib/atmosphere);
    the running head stays at the top of the page and names the section you are in; the ✦ rules draw themselves as
-   they come up. The writer's leaf gains the journal's
-   things: "Dear family,", a ribbon tail between the pages, a turned-down corner, the folio in small caps.
-   Nothing starts hidden; everything is transform and opacity; reduced motion keeps every object, still. */
+   they come up. The writer's leaf keeps the turned-down corner (6, below); the rest of the writer's journal (the salutation,
+   the ribbon, the folio) is in styles/pages/writer.css. Nothing starts hidden; everything is transform and opacity; reduced motion keeps every object, still. */
 
 /* 1. The running head stays at the top of the page: a band of the same paper, inside the foil frame, a foil hairline
       under it once the page has moved (JS: .stuck), the right-hand words crossing to the section in view */
@@ -3445,21 +3430,6 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .leaf-ear::before { content: ""; position: absolute; inset: 0; background: var(--page); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
 .leaf-ear::after { content: ""; position: absolute; inset: 0; background: var(--sheet); clip-path: polygon(0 0, 100% 0, 0 100%); }
 
-/* 7. The writer's leaf as the journal: "Dear family," above the words, the ribbon's tail hanging below the page from
-      between the leaves (it swings once on arrival, Write.tsx), the folio in the book's small caps */
-.leaf-one .dear { margin: var(--s-2) 0 calc(-1 * var(--s-2)); font-family: var(--book-body); font-style: italic; font-size: 19px; color: var(--ink-soft); }
-.leaf-one > .leaf-ribbon { position: absolute; z-index: -1; right: 84px; top: calc(100% - 14px); width: 12px; height: 62px; background: var(--chocolate);
-  border-left: 1px solid var(--chocolate-deep); border-right: 1px solid var(--chocolate-deep); box-sizing: border-box; transform-origin: 50% 0;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 9px), 0 100%); }
-.desk .leaf-one + .keeprow { margin-top: var(--s-16); }
-.leaf-one .folio { padding-top: var(--s-5); font: 600 11px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker-grey); }
-.leaf-one .folio span[aria-hidden] { color: var(--foil); }
-body.writing-focus .leaf-one > .leaf-ribbon { display: none; }
-
-@media (max-width: 760px) {
-  .leaf-one > .leaf-ribbon { right: 40px; height: 52px; }
-  .leaf-one .folio { font-size: 10.5px; letter-spacing: 0.12em; flex-wrap: wrap; row-gap: 6px; }
-}
 @media (prefers-reduced-motion: reduce) {
   .running-head-sheet .rh-right > span, .sheet-page .running-head-sheet::after { transition: none; }
   .running-head-sheet .rh-sec, .running-head-sheet.in-section .rh-page { transform: none; }

@@ -53,6 +53,8 @@
 /* a large window: the journal, and the help and the seal in the margin beside it, held in view */
 .w-grid.spread.rail { grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); grid-template-areas: "center tools"; column-gap: clamp(48px, calc(4vw / var(--zoom, 1)), 88px); align-items: start; }
 .w-grid.rail .w-side { position: sticky; top: calc(var(--top-h) + 40px); padding-top: 4px; }
+/* beside the margin, the left page's block pins at the margin's height, so the two columns' first lines sit level */
+.w-grid.rail .leaf-left > .leaf-left-in { top: calc(var(--top-h) + 40px); }
 
 /* headings in the margins: the book's display face, sentence case */
 .sheet-page .page.w-desk .w-kick { margin: 0 0 6px; font: 600 21px/1.2 var(--book-display); letter-spacing: 0; text-transform: none; color: var(--w-ink); }
@@ -164,7 +166,7 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 72px; }
   .w-desk .spread .w-dog { width: 84px; }
   .spread .leaf-left .w-sub, .spread .leaf-left .w-pencil:not(.asked) { display: none; }
-  .spread .leaf-left, .spread .leaf-left-in, .sheet-page .spread .w-book .leaf-one { gap: 6px; padding-top: 18px; padding-bottom: 8px; }
+  .spread .leaf-left, .spread .leaf-left-in, .sheet-page .spread .w-book .leaf-one { gap: 4px; padding-top: 16px; padding-bottom: 16px; } /* the folio's descenders clear the foil frame */
   .spread .leaf-left-in { padding: 0; }
   .spread .leaf-left .w-qhead { margin-top: 4px; }
   .spread .w-book .leaf-one .wtitle { margin-top: 2px; }
@@ -173,11 +175,19 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   .spread .w-book .leaf-one .folio { padding-top: 2px; }
   .spread .w-keep { margin-top: 4px; }
   .spread:not(.rail) .w-ribbon { display: none; } /* no room for a tail with its notch; better none than a nick */
-  .spread .leaf-left { padding-bottom: 8px; }
+  .spread .leaf-left { padding-bottom: 16px; }
+  .w-desk .spread .leaf-left > .leaf-left-in { margin-top: 8px; } /* the running head stands apart from the kicker */
+  .w-desk .spread .leaf-left .w-qkick { margin-bottom: 6px; }
+  .w-desk .spread .leaf-left .w-qs { margin-top: 14px; }
+  .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 2px; }
   .spread .w-book .leaf-one .wbody { min-height: var(--w-line); }
 }
 @media (max-height: 900px) {
   .spread .leaf-left .w-qhead { margin-top: 0; }
+  .spread .leaf-left > .leaf-left-in { margin-top: 12px; } /* the running head stands apart from the kicker */
+  .sheet-page .w-desk .spread .leaf-left .w-qs { margin-top: 14px; }
+  .sheet-page .w-desk .spread .leaf-left .w-qkick { margin-bottom: 8px; }
+  .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 4px; }
   .spread .leaf-left .w-pencil { margin-top: 8px; }
   .spread .leaf-left .w-orn { display: none; }
   .spread .leaf-left .w-q { padding: 6px 0; }
