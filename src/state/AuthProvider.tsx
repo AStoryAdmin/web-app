@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { getSupabase, hasStoredSession, isConfigured } from "../lib/supabase";
 import { currentUser, signOut as signOutRequest, type User } from "../data/auth";
 import { clearPhotoCache } from "../lib/photoUrls";
+import { clearCodesCache } from "../components/family/useMyCodes";
 import { afterSignIn, type SignInEffects } from "../data/session";
 import { AuthContext } from "./authContext";
 
@@ -38,6 +39,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       if (!session) {
         // signed out here or in another tab: no signed photograph survives into the next person's session
         clearPhotoCache();
+        clearCodesCache();
         effectsFor.current = null;
         setEffects(null);
         setUser(null);
@@ -70,6 +72,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     await signOutRequest();
     // signed photo addresses belong to this person: none survives into the next sign-in in this tab
     clearPhotoCache();
+    clearCodesCache();
     setUser(null);
   }, []);
 

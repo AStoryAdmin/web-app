@@ -8,8 +8,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { listMyCodes, type MyCode } from "../../data/familyWrites";
 
+/** The last list this session: an in-app visit draws with it at once, so the tree never refits when the codes come back. */
+let last: MyCode[] | null = null;
+/** Forget the list (sign-out), so the next account never starts from it. */
+export function clearCodesCache() {
+  last = null;
+}
+
 export function useMyCodes(enabled = true) {
-  const [codes, setCodes] = useState<MyCode[] | null>(null);
+  const [codes, setCodesState] = useState<MyCode[] | null>(last);
+  const setCodes = useCallback((next: MyCode[] | null | ((prev: MyCode[] | null) => MyCode[] | null)) => {
+    setCodesState((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      last = value;
+      return value;
+    });
+  }, []);
   const [failed, setFailed] = useState(false);
   const [version, setVersion] = useState(0);
   const [now, setNow] = useState(() => new Date(0));
@@ -29,7 +43,7 @@ export function useMyCodes(enabled = true) {
     return () => {
       live = false;
     };
-  }, [enabled, version]);
+  }, [enabled, version, setCodes]);
   const reload = useCallback(() => {
     setFailed(false);
     setVersion((v) => v + 1);

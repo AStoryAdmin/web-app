@@ -566,7 +566,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
                 {tier.decade && <span className="tp-dec">{tier.decade}</span>}
                 <h3 id={`tp-h-${tier.key}`}>
                   {tier.title}
-                  {tier.also && <><span className="tp-sp"> </span><span className="tp-also">{tier.also}</span></>}
+                  {tier.also && <><span className="tp-sp"> </span><span className="tp-also">{/* each owner phrase holds together; a line may break only before "and" */ tier.also.split(/ (?=and )/).map((x) => x.replace(/ /g, " ")).join(" ")}</span></>}
                 </h3>
               </div>
               {tier.asks.map((g) => {
