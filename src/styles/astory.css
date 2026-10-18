@@ -3816,3 +3816,39 @@ body.writing-focus .sheet-page > .headband { display: none; }
 @media (max-width: 1100px) {
   .hero-grid.home-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }
+
+/* ───────────────────────── 58. The audit's site-wide fixes (lead) ───────────────────────── */
+/* docs/audit/AUDIT-2026-10-17.md, site-wide items 1, 2, 7 and 8. */
+
+/* 7. On a phone the bar is an opaque strip of paper flush with the bottom edge, not a floating glass pill; the
+   sheet keeps clear of it. */
+@media (max-width: 760px) {
+  .tabbar { left: 0; right: 0; bottom: 0; gap: 8px; padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: var(--paper-print); border-top: 1px solid var(--sheet-rule); box-shadow: 0 -10px 24px -20px rgba(42, 35, 32, 0.4); }
+  .tabbar .tabs { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+  .tabbar .tabs a { font-size: 12px; min-height: 52px; border-radius: 12px; color: var(--ink-soft); }
+  .tabbar .tabs a[aria-current="page"] { background: var(--paper-tone); color: var(--sheet-ink); }
+  .tabbar .fab { width: 48px; height: 48px; box-shadow: none; }
+  .sheet-page { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* 1. Small print has a floor: 12px for the book's small caps, 13px for anything a person reads as words. */
+.running-head-sheet, .sheet-page .running-head-sheet { font-size: 12px; }
+.folio-sheet { font-size: 12px; }
+.sheet-page .label, .sheet-page .more, .sheet-page .pill.gold, .fr-kicker, .ribbon-day .wd { font-size: 12px; }
+.print-card .cap .kicker, .home-mem .print-card .cap .kicker { font-size: 11.5px; letter-spacing: 0.12em; }
+.print-card .cap .dateline, .home-mem .print-card .cap .dateline { font-size: 12px; }
+@media (max-width: 760px) {
+  .running-head-sheet, .sheet-page .running-head-sheet, .folio-sheet, .sheet-page .label, .sheet-page .more, .ribbon-day .wd { font-size: 12px; letter-spacing: 0.1em; }
+}
+
+/* 2. Words people read are never shouted: field labels and small chips are sentence case. Small caps stay only
+   for the running head, the folio and the chapter kickers. */
+.sheet-page .field > span:first-child { text-transform: none; letter-spacing: 0; font: 600 13px/1.3 var(--font-ui); color: var(--sheet-ink); }
+.sheet-page .chip:not(.big) { text-transform: none; letter-spacing: 0; font-size: 13px; }
+
+/* 8. A control that cannot be used yet is still legible: never under 0.6 opacity. */
+.btn:disabled, .btn[aria-disabled="true"], button:disabled { opacity: 0.6; }
+.ribbon-day.future { opacity: 1; }
+.ribbon-day.future .wd, .ribbon-day.future .num { color: var(--ink-faint); }
+.progress .end, .sheet-page .progress .end { font-size: 12px; }
