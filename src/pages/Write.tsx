@@ -969,7 +969,7 @@ function Writer({ story }: { story: Story }) {
             ))}
             {(question || editing) && (
               <li>
-                <Link className="w-q own" to="/write">
+                <Link className="w-q own" to={withId ? `/write?with=${encodeURIComponent(withId)}` : "/write"}>
                   Or something else, in your own words
                 </Link>
               </li>
