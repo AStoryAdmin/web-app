@@ -7,13 +7,17 @@
  *
  * `x` and `y` are a point on the screen (getBoundingClientRect), converted
  * to the zoomed page's CSS pixels (lib/zoom); `offsetX` is added after that,
- * in CSS pixels, so the stamp sits the same distance from the seal at any zoom.
+ * in CSS pixels, so the stamp sits the same distance away at any zoom. With
+ * `align: "start"` the stamp's left edge sits at that point (beside a
+ * button, never on its label); by default it is centred on it.
  */
+type Place = { offsetX?: number; align?: "center" | "start" };
 import gsap from "gsap";
 import { pageZoom } from "./zoom";
 import { OUT } from "./ease";
 
-export function inkStamp(x: number, y: number, word = "Kept", offsetX = 0): void {
+export function inkStamp(x: number, y: number, word = "Kept", { offsetX = 0, align = "center" }: Place = {}): void {
+  const xPercent = align === "start" ? 0 : -50;
   const quiet = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const el = document.createElement("div");
   el.className = "ink-stamp";
@@ -25,10 +29,10 @@ export function inkStamp(x: number, y: number, word = "Kept", offsetX = 0): void
   document.body.appendChild(el);
   const tl = gsap.timeline({ onComplete: () => el.remove() });
   if (quiet) {
-    tl.fromTo(el, { xPercent: -50, yPercent: -50, rotation: -6, opacity: 0 }, { opacity: 0.86, duration: 0.15, ease: "none" }).to(el, { opacity: 0, duration: 0.15, ease: "none" }, "+=1");
+    tl.fromTo(el, { xPercent, yPercent: -50, rotation: -6, opacity: 0 }, { opacity: 0.86, duration: 0.15, ease: "none" }).to(el, { opacity: 0, duration: 0.15, ease: "none" }, "+=1");
     return;
   }
-  tl.fromTo(el, { xPercent: -50, yPercent: -50, scale: 1.25, rotation: gsap.utils.random(-9, -4), opacity: 0 }, { scale: 1, opacity: 0.86, duration: 0.18, ease: OUT }).to(
+  tl.fromTo(el, { xPercent, yPercent: -50, scale: 1.25, rotation: gsap.utils.random(-9, -4), opacity: 0, transformOrigin: align === "start" ? "0% 50%" : "50% 50%" }, { scale: 1, opacity: 0.86, duration: 0.18, ease: OUT }).to(
     el,
     { opacity: 0, y: "-=6", duration: 0.6, ease: OUT },
     "+=0.8",

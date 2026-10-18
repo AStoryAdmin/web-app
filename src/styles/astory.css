@@ -3848,7 +3848,8 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .sheet-page .chip:not(.big) { text-transform: none; letter-spacing: 0; font-size: 13px; }
 
 /* 8. A control that cannot be used yet is still legible: never under 0.6 opacity. */
-.btn:disabled, .btn[aria-disabled="true"], button:disabled { opacity: 0.6; }
+/* :where keeps it at zero specificity, so a card-style button can fade only its object */
+:where(.btn:disabled, .btn[aria-disabled="true"], button:disabled) { opacity: 0.6; }
 .ribbon-day.future { opacity: 1; }
 .ribbon-day.future .wd, .ribbon-day.future .num { color: var(--ink-faint); }
 .progress .end, .sheet-page .progress .end { font-size: 12px; }
@@ -3871,7 +3872,7 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .pillnav a { min-height: 44px; }
 .top.stuck .pillnav a { min-height: 40px; }
 /* the two inks for small text, named as the builders and the reading spec use them */
-:root { --terracotta-ink: #9A4320; --sage-ink: #3F5B44; --sage-ink-bg: #E4E8DC; }
+:root { --terracotta-ink: #9A4320; --sage-ink: #3F5B44; --sage-ink-bg: #E4E8DC; --w-pencil: #6F665D; --w-gilt-b: #E6C77E; }
 
 /* ───────────────────────── 60. Links that act are read as words (lead) ───────────────────────── */
 /* "All 8 →", "Open the book →", "Invite someone →" are controls: sentence case, 14px, a 44px target, never broken

@@ -48,18 +48,19 @@ export default function OpenLeaf({ story }: { story: Story }) {
         else el.removeAttribute("data-awake");
       },
     });
-    // the arrow in the margin is drawn with the pencil as the leaf comes up; it is already drawn if the clock never runs
+    // the arrow in the margin is drawn with the pencil as it comes into view (triggered by the arrow itself, at once,
+    // so a drawn arrow never blinks out and back); it is already drawn if the trigger never fires
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const arrow = el.querySelector<SVGPathElement>(".ol-arrow path");
       if (!arrow) return;
       const len = arrow.getTotalLength();
       ScrollTrigger.create({
-        trigger: el,
-        start: "top 70%",
+        trigger: arrow,
+        start: "top bottom-=40",
         once: true,
         onEnter: () => {
-          gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, delay: 0.5, ease: MOVE, immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
+          gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, ease: MOVE, immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
         },
       });
     });

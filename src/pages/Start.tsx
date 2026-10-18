@@ -98,7 +98,7 @@ const WAYS: { key: Way; title: string; writes: string; body: string; act: string
     key: "other",
     title: "Someone in my family",
     writes: "You write, in their name",
-    body: "A parent or a grandparent who isn't on A Story yet, or would rather you did the typing. What you write is kept in their name, as told to you.",
+    body: "A parent or a grandparent who isn’t on A Story yet, or would rather you did the typing. What you write is kept in their name, as told to you.",
     act: "Start their story",
   },
   {
@@ -112,7 +112,7 @@ const WAYS: { key: Way; title: string; writes: string; body: string; act: string
     key: "join",
     title: "Someone already on A Story",
     writes: "They write; you add",
-    body: "Don't start a second story about them. Join theirs with their family code, and add what you remember under your own name.",
+    body: "Don’t start a second story about them. Join theirs with their family code, and add what you remember under your own name.",
     act: "Join their story",
   },
 ];

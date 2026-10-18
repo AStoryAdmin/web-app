@@ -47,6 +47,16 @@ function chaptersOf(story: WallStory): Chapter[] {
   return s.chapters.map((c) => ({ name: printedChapterName(c.era) as string, items: c.items }));
 }
 
+/** The opening of a memory, for the line set large beside a chapter's one leaf: short lines run together as a sentence. */
+function leadOf(body: string): string {
+  let out = "";
+  for (const p of paragraphs(body)) {
+    out = out ? `${out}${/[.!?…]$/.test(out) ? "" : "."} ${p}` : p;
+    if (out.length >= 60) break;
+  }
+  return out.length > 160 ? `${out.slice(0, out.lastIndexOf(" ", 156))}…` : out;
+}
+
 function Leaf({ m }: { m: WallMemory }) {
   const [open, setOpen] = useState(false);
   const paras = paragraphs(m.body);
@@ -240,7 +250,7 @@ export default function Wall() {
               <div className="wall-main">
                 {chapters.map((c, i) => {
                   const one = c.items.length === 1;
-                  const lead = one ? paragraphs(c.items[0].body)[0] : "";
+                  const lead = one ? leadOf(c.items[0].body) : "";
                   return (
                     <section key={c.name} id={anchor(c.name)} className={`wall-chapter${one ? " one" : ""}`} aria-labelledby={`${anchor(c.name)}-h`}>
                       <header className="wall-chapter-head">
@@ -250,9 +260,9 @@ export default function Wall() {
                         <h2 id={`${anchor(c.name)}-h`}>{c.name}</h2>
                         <span className="wall-chapter-count">{memories(c.items.length)}</span>
                         {/* a chapter of one memory: its first line, set large beside the leaf, so the row is not half blank */}
-                        {one && lead && lead.length > 24 && (
+                        {one && lead && (
                           <blockquote className="wall-chapter-quote" aria-hidden="true">
-                            <p>{lead.length > 160 ? `${lead.slice(0, lead.lastIndexOf(" ", 156))}…` : lead}</p>
+                            <p>{lead}</p>
                           </blockquote>
                         )}
                       </header>

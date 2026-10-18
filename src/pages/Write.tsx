@@ -313,8 +313,8 @@ function Afterwards({
   const nextRows: NextRow[] = [
     next && !editing
       ? { to: `/write?q=${encodeURIComponent(next.id)}`, title: next.question, line: unlimited ? "Another of today’s questions" : "The next of today’s questions" }
-      : { to: "/write", title: "Write another", line: editing ? "The changes are in the book" : "Today’s questions are answered; anything else is welcome" },
-    { to: `/archive/${kept.id}`, title: `Read memory No. ${number}`, line: "As it is set in the book" },
+      : { to: "/write", title: "Write another", line: "A new page, in your own words" },
+    { to: `/archive/${kept.id}`, title: "Read it in the book", line: "The page as the family will read it" },
     { to: "/", title: "Home", line: "Today, the week and the family" },
   ];
 
@@ -563,22 +563,59 @@ function Writer({ story }: { story: Story }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [kept]);
 
-  // The page grows with the words, in whole ruled lines; the title line grows too.
-  useEffect(() => {
+  // The page grows with the words, in whole ruled lines; the title line grows too. On two pages the right-hand page
+  // also stretches to the left one's height (CSS), so its minimum is small; one page starts with a few lines.
+  const minLines = focus ? 16 : spread ? 3 : 5;
+  const fitBody = useCallback(() => {
     const el = bodyRef.current;
     if (!el) return;
+    // measured unstretched (on two pages it also grows to the left page's foot, CSS)
+    el.style.flexGrow = "0";
     el.style.height = "auto";
     // one ruled line, as the stylesheet sets it for this width (36px, 32px on a phone)
     const line = parseFloat(getComputedStyle(el).lineHeight) || LINE;
     const lines = Math.ceil(el.scrollHeight / line) + 1;
-    el.style.height = `${Math.max(focus ? 16 : 10, lines) * line}px`;
-  }, [d.body, focus, dictation.interim, kept]);
-  useEffect(() => {
+    el.style.height = `${Math.max(minLines, lines) * line}px`;
+    el.style.flexGrow = "";
+  }, [minLines]);
+  const fitTitle = useCallback(() => {
     const el = titleRef.current;
     if (!el) return;
+    // empty, it is one line (Chrome counts a wrapped placeholder in scrollHeight)
+    if (!el.value) {
+      el.style.height = `${Math.max(44, parseFloat(getComputedStyle(el).lineHeight) || 44)}px`;
+      return;
+    }
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
-  }, [d.title, focus, kept]);
+  }, []);
+  useEffect(fitBody, [fitBody, d.body, dictation.interim, kept]);
+  useEffect(fitTitle, [fitTitle, d.title, focus, kept]);
+  // the measures go stale when the book's faces arrive or the page changes width
+  useEffect(() => {
+    if (kept) return;
+    let live = true;
+    document.fonts?.ready
+      .then(() => {
+        if (!live) return;
+        fitBody();
+        fitTitle();
+      })
+      .catch(() => {});
+    const book = bookRef.current;
+    const ro =
+      book && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            fitBody();
+            fitTitle();
+          })
+        : null;
+    if (book) ro?.observe(book);
+    return () => {
+      live = false;
+      ro?.disconnect();
+    };
+  }, [kept, fitBody, fitTitle]);
 
   // Focus mode: only the book; Esc leaves.
   useEffect(() => {
@@ -731,8 +768,11 @@ function Writer({ story }: { story: Story }) {
             gsap.fromTo(seal, { scale: 1.18, rotation: -14, opacity: 0.4 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.28, ease: OUT });
           });
         }
+        // beside the button, never on its label: from the button's right edge, in CSS px after the zoom (lib/stamp)
         const r = seal.getBoundingClientRect();
-        timers.current.push(window.setTimeout(() => inkStamp(r.left + r.width / 2, r.top + r.height / 2, "Kept", 150), reduced() ? 0 : 260));
+        const btn = sealRef.current?.getBoundingClientRect();
+        const right = btn ? btn.right : r.right;
+        timers.current.push(window.setTimeout(() => inkStamp(right, r.top + r.height / 2, "Kept", { offsetX: 16, align: "start" }), reduced() ? 0 : 260));
       }
       setFocus(false);
       timers.current.push(
@@ -770,7 +810,7 @@ function Writer({ story }: { story: Story }) {
             <p className="label" data-rise>
               Memory No. {n}
             </p>
-            <h1 className="story-q wq">
+            <h1>
               Kept in {bookName}
               <Stop />
             </h1>
@@ -825,7 +865,7 @@ function Writer({ story }: { story: Story }) {
   const questionHead = (
     <header className="w-qhead">
       <p className="w-qkick">{kicker}</p>
-      <h1 className="w-question" data-len={heading.length > 65 ? "long" : heading.length > 40 ? "mid" : undefined}>
+      <h1 className="w-question" data-len={heading.length > 72 ? "xlong" : heading.length > 65 ? "long" : heading.length > 40 ? "mid" : undefined}>
         {heading}
       </h1>
       {sub && <p className="w-sub">{sub}</p>}
@@ -861,9 +901,6 @@ function Writer({ story }: { story: Story }) {
   const pencil = (
     <p className={`w-pencil${asked ? " asked" : ""}`} aria-live="polite">
       <span>{asked ? asked : "A few lines is plenty."}</span>
-      <svg viewBox="0 0 70 34" width="70" height="34">
-        <path d="M4 6 C18 22 36 30 62 26 M62 26 L54 19 M62 26 L55 32" />
-      </svg>
     </p>
   );
   const tools = (
@@ -898,6 +935,11 @@ function Writer({ story }: { story: Story }) {
           </span>
         </button>
       </div>
+      {dictation.problem && (
+        <p className="w-note w-alert" role="alert">
+          {dictation.problem}
+        </p>
+      )}
       {empty && <p className="w-note w-help-off">Write a line and these can help.</p>}
       <div className="w-help-out" aria-live="polite">
         {spread && !rail && (toolState || asks.length > 0 || undo) && (
@@ -948,12 +990,20 @@ function Writer({ story }: { story: Story }) {
           <span className="seal" aria-hidden="true">
             <WaxSeal />
           </span>
-          {busy === "save" ? "Keeping…" : keepLabel}
+          {pressed ? "Kept" : busy === "save" ? "Keeping…" : keepLabel}
         </button>
+        {error && (
+          <p className="w-keep-error" role="alert">
+            <span>{error}</span>
+            {!empty && (
+              <button type="button" className="w-retry" onClick={() => void save()}>
+                Try again
+              </button>
+            )}
+          </p>
+        )}
         <p className="w-keep-note">
-          {empty ? (
-            <span>A line or two is enough to keep · </span>
-          ) : (
+          {!empty && (
             <span className="w-kbd-hint">
               {focus && (
                 <>
@@ -969,15 +1019,19 @@ function Writer({ story }: { story: Story }) {
       {spread && !rail && <div className="w-tools-row">{tools}</div>}
     </>
   );
+  // where the page leads, if it is put down for now
+  // (today's other questions are already on the page, so they are not offered again here)
+  const leaveRows: NextRow[] = [
+    { to: "/archive", title: "The Archive", line: "Every memory kept so far, by year" },
+    { to: "/book", title: "The book", line: "How the printed book stands today" },
+    { to: "/", title: "Home", line: "Today, the week and the family" },
+  ];
   // the open journal (two pages) where the window has room for it; the help in the margin beside it on a large window
   const layout = spread ? (rail ? "spread rail" : "spread") : "single";
 
   return (
     <Shell bare wide>
-      <div className={`page desk w-desk${focus ? " focus" : ""}`} ref={deskRef}>
-        {error && <Problem message={error} onDismiss={() => setError(null)} />}
-        {dictation.problem && <Problem message={dictation.problem} />}
-
+      <div className={`page desk w-desk${focus ? " focus" : ""}${empty ? "" : " writing"}`} ref={deskRef}>
         <div className={`w-grid ${layout}`}>
           {/* the book, open on the desk */}
           <div className="w-center">
@@ -1008,15 +1062,7 @@ function Writer({ story }: { story: Story }) {
                     <span>{focus ? "Leave focus" : "Focus"}</span>
                   </button>
                   <p className="running-head" aria-hidden="true">
-                    {chapterName(d.era) && (
-                      <>
-                        <span className="rh-chapter">{chapterName(d.era)}</span>
-                        <i>✦</i>
-                      </>
-                    )}
-                    <span className="rh-date">
-                      {shortDate()} · {partOfDay()}
-                    </span>
+                    <span>{chapterName(d.era) || (spread ? "A page for today" : bookName)}</span>
                   </p>
                   {/* with the cloth put away, the question comes onto the page */}
                   {focus && question && <p className="w-focus-q">{question.question}</p>}
@@ -1068,6 +1114,10 @@ function Writer({ story }: { story: Story }) {
                   </p>
                   <p className="folio">
                     <span>
+                      {shortDate()}, {partOfDay()}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>
                       {words} {words === 1 ? "word" : "words"}
                     </span>
                     <span aria-hidden="true">·</span>
@@ -1097,6 +1147,7 @@ function Writer({ story }: { story: Story }) {
             </aside>
           )}
         </div>
+        {!focus && <WhereNext rows={leaveRows} />}
       </div>
     </Shell>
   );

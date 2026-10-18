@@ -13,17 +13,20 @@
 
 .w-desk {
   --w-ink: var(--sheet-ink);                /* the book's ink, #2B2B2B: 12:1 on the paper (docs/research/reading-2026.md §3.3) */
-  --w-red: #9A4320;                         /* terracotta for text: 5.5:1; --wax-light stays for glyphs and rules */
+  --w-red: var(--terracotta-ink, #9A4320);  /* terracotta for text: 5.5:1; --wax-light stays for glyphs and rules */
   --w-rule: rgba(201, 161, 90, 0.34);       /* the ruled lines, in the foil */
-  --w-pencil: #6F665D;                      /* graphite: 5.3:1 on the leaf */
   --w-leaf: var(--card);                    /* the leaf's paper */
   --w-gilt-a: var(--foil-light);            /* the gilt edges: light, then burnished */
-  --w-gilt-b: #E6C77E;
   --w-gilt-line-a: rgba(150, 110, 45, 0.55);
   --w-gilt-line-b: rgba(130, 92, 34, 0.55);
   --w-gutter: rgba(70, 45, 20, 0.32);       /* the shade in the fold between the pages */
   --w-stitch: rgba(240, 214, 160, 0.32);    /* the thread of the board's stitched edge */
   --w-slip-shadow: 0 1px 2px rgba(42, 35, 32, 0.08), 0 18px 40px -22px rgba(42, 35, 32, 0.45);
+  --w-board-tint: rgba(74, 51, 39, 0.38);   /* the cloth's own tint over the bookcloth weave */
+  --w-board-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.06), 0 2px 3px rgba(42, 35, 32, 0.18), 0 30px 56px -26px rgba(42, 35, 32, 0.6);
+  --w-hover-foil: rgba(201, 161, 90, 0.14); /* a quiet hover on the page */
+  --w-fold-line: rgba(60, 50, 40, 0.14);    /* the fold between the two pages */
+  --w-pencil-rule: rgba(111, 102, 93, 0.3); /* a pencilled rule between the help's questions */
   --w-line: 36px;                           /* one ruled line; Write.tsx reads it and grows the page by whole lines */
   --w-size: 22px;                           /* the words: EB Garamond 22/36 on a laptop, 23 on a large window, 20/32 on a phone */
 }
@@ -32,7 +35,7 @@
 @media (max-width: 599px) { .w-desk { --w-size: 20px; --w-line: 32px; } }
 
 /* ── The desk ── */
-.sheet-page .page.w-desk { max-width: none; padding-top: 84px; padding-bottom: 96px; }
+.sheet-page .page.w-desk { max-width: none; padding-top: 56px; padding-bottom: 96px; }
 .w-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "center" "context" "tools"; gap: 48px; max-width: 760px; margin: 0 auto; }
 .w-center { grid-area: center; min-width: 0; }
 .w-tools { grid-area: tools; min-width: 0; }
@@ -63,18 +66,20 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .w-qkick { margin: 0 0 10px; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--w-red); }
 .sheet-page .page.w-desk .w-question { margin: 0; max-width: 22ch; font-family: var(--book-display); font-weight: 600; font-size: clamp(32px, calc(2.7vw / var(--zoom, 1)), 44px); line-height: 1.1; letter-spacing: -0.01em; color: var(--w-ink); text-wrap: balance; }
 /* the size follows the length, so a question stays at two lines or so */
-.sheet-page .page.w-desk .w-question[data-len="mid"] { font-size: clamp(28px, calc(2.1vw / var(--zoom, 1)), 31px); max-width: 26ch; }
-.sheet-page .page.w-desk .w-question[data-len="long"] { font-size: clamp(25px, calc(1.9vw / var(--zoom, 1)), 27px); max-width: 30ch; line-height: 1.15; }
-.w-sub { margin: 12px 0 0; max-width: 34em; font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.45; color: var(--ink-soft); }
+.sheet-page .page.w-desk .w-question[data-len] { max-width: none; }
+/* the left page's measure is about the same at every desktop size, so the stepped sizes are fixed */
+.sheet-page .page.w-desk .w-question[data-len="mid"] { font-size: 28px; }
+.sheet-page .page.w-desk .w-question:is([data-len="long"], [data-len="xlong"]) { font-size: 22px; line-height: 1.15; }
+.w-sub { margin: 8px 0 0; max-width: 34em; font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.45; color: var(--ink-soft); }
 /* one page: the question sits on the paper above the book, the dog's head between them */
 .w-grid.single .w-qhead { margin: 0 0 100px; }
-.sheet-page .page.w-desk .w-grid.single .w-question { max-width: 24ch; }
+.sheet-page .page.w-desk .w-grid.single .w-question:not([data-len]) { max-width: 24ch; }
 
 /* ── The book: a cloth board, a stitched edge, gold corners, gilt page edges ── */
 .w-book { position: relative; isolation: isolate; padding: 16px 20px 22px 16px; border-radius: 5px;
-  background: linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)), url("/book/bookcloth.jpg") 0 0 / 300px 300px, var(--chocolate);
+  background: linear-gradient(var(--w-board-tint), var(--w-board-tint)), url("/book/bookcloth.jpg") 0 0 / 300px 300px, var(--chocolate);
   background-blend-mode: normal, overlay, normal;
-  box-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.06), 0 2px 3px rgba(42, 35, 32, 0.18), 0 30px 56px -26px rgba(42, 35, 32, 0.6); }
+  box-shadow: var(--w-board-shadow); }
 .w-book::before { content: ""; position: absolute; inset: 6px; z-index: 0; border: 1px dashed var(--w-stitch); border-radius: 3px; pointer-events: none; }
 .w-corner { position: absolute; z-index: 2; width: 26px; height: 26px; pointer-events: none; }
 .w-corner path { fill: var(--foil); }
@@ -90,7 +95,7 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   background: var(--wax); border-left: 1px solid var(--wax-light); border-right: 1px solid var(--wax-shade); box-sizing: border-box;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 10px), 0 100%); }
 /* the dog, asleep with its chin on the board's edge; once the words start it covers its eyes */
-.w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 128px; aspect-ratio: 849 / 640; pointer-events: none; transition: transform 700ms var(--ease-out); }
+.w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 128px; aspect-ratio: 849 / 640; pointer-events: none; }
 .w-dog img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transition: opacity 520ms var(--ease-out); }
 .w-dog .awake { opacity: 0; }
 .w-dog[data-awake] .sleep { opacity: 0; }
@@ -99,15 +104,12 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 /* ── The right-hand page (or the only one) ── */
 .sheet-page .w-book .leaf-one { gap: 14px; padding: 46px clamp(28px, calc(4.2vw / var(--zoom, 1)), 64px) 34px; border-radius: 2px; box-shadow: none; color: var(--w-ink); }
 .w-book .leaf-one .page-frame { inset: 12px; }
-.w-book .leaf-one .running-head { display: flex; justify-content: center; align-items: baseline; gap: 12px; min-width: 0; margin: 0; padding: 0 44px; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); white-space: nowrap; }
-.w-book .leaf-one .running-head .rh-chapter { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.w-book .leaf-one .running-head .rh-date { flex: none; }
-.w-book .leaf-one .running-head i { flex: none; font-style: normal; letter-spacing: 0; color: var(--foil); }
+.w-book .leaf-one .running-head { display: block; min-width: 0; margin: 0; padding: 0 44px; text-align: center; text-wrap: balance; font: 600 12px/1.4 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); }
 .w-book .leaf-one .wtitle { min-height: 44px; margin-top: 18px; font-family: var(--book-display); font-weight: 600; font-size: clamp(28px, calc(2.3vw / var(--zoom, 1)), 36px); line-height: 1.15; letter-spacing: -0.005em; color: var(--w-ink); }
 .w-book .leaf-one .wtitle::placeholder { font-family: var(--book-display); font-style: italic; font-weight: 500; color: var(--w-pencil); }
 .w-book .leaf-one .wtitle:focus-visible { outline: none; box-shadow: 0 2px 0 var(--wax-light); }
 .w-book .leaf-one .dear { margin: 6px 0 -6px; font-family: var(--book-body); font-style: italic; font-size: 20px; color: var(--ink-soft); }
-.w-book .leaf-one .wbody { font-family: var(--book-body); font-size: var(--w-size); line-height: var(--w-line); font-variant-numeric: oldstyle-nums proportional-nums; font-variant-ligatures: common-ligatures; font-kerning: normal; color: var(--w-ink); min-height: calc(var(--w-line) * 6);
+.w-book .leaf-one .wbody { font-family: var(--book-body); font-size: var(--w-size); line-height: var(--w-line); font-variant-numeric: oldstyle-nums proportional-nums; font-variant-ligatures: common-ligatures; font-kerning: normal; color: var(--w-ink); min-height: calc(var(--w-line) * 2);
   background-image: linear-gradient(transparent calc(var(--w-line) - 1px), var(--w-rule) calc(var(--w-line) - 1px), var(--w-rule) var(--w-line), transparent var(--w-line)); background-size: 100% var(--w-line); }
 .w-book .leaf-one .wbody::placeholder { font-family: var(--book-body); font-style: italic; color: var(--w-pencil); }
 .w-book .leaf-one .wbody::selection, .w-book .leaf-one .wtitle::selection { background: var(--foil-pale); color: var(--w-ink); }
@@ -126,7 +128,7 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   color: var(--kicker-grey); cursor: pointer; transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .w-focus svg { width: 18px; height: 18px; }
 .w-focus span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.w-focus:hover { background: rgba(201, 161, 90, 0.14); color: var(--w-ink); }
+.w-focus:hover { background: var(--w-hover-foil); color: var(--w-ink); }
 .w-focus:active { transform: scale(0.97); }
 .w-focus:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; }
 
@@ -140,19 +142,34 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 
 /* ── The left-hand page (a laptop and up) ── */
 .spread .w-book { padding: 18px 22px 24px; }
+.spread .w-book .leaf-one .wbody { flex: 1 0 auto; }
+/* two pages on a laptop: the spread, the seal and its bar fit one screen at 1366×768 on arrival */
+.sheet-page .spread .w-book .leaf-one { gap: 10px; padding-top: 30px; padding-bottom: 20px; }
+.spread .w-book .leaf-one .wtitle { margin-top: 8px; }
+.spread .w-book .leaf-one .signoff { display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; margin-top: 4px; }
+.spread .w-book .leaf-one .signoff span { display: inline; margin: 0; }
+.spread .w-book .leaf-one .folio { padding-top: 8px; }
+.spread .w-begin-inpage button:nth-child(n + 3) { display: none; }
+.spread .w-keep { margin-top: 16px; }
+/* a laptop's short screen: the ornament goes and the list tightens, so the seal is in the first screen */
+@media (max-height: 900px) {
+  .spread .leaf-left .w-orn { display: none; }
+  .spread .leaf-left .w-q { padding: 8px 0; }
+  .spread .leaf-left .w-q.own { padding: 10px 0; }
+}
 .spread .w-pages { display: grid; grid-template-columns: minmax(0, 0.84fr) minmax(0, 1fr);
   box-shadow: -2px 2px 0 -1px var(--w-gilt-a), -2px 2px 0 0 var(--w-gilt-line-a), -4px 4px 0 -1px var(--w-gilt-b), -4px 4px 0 0 var(--w-gilt-line-b),
     2px 2px 0 -1px var(--w-gilt-a), 2px 2px 0 0 var(--w-gilt-line-a), 4px 4px 0 -1px var(--w-gilt-b), 4px 4px 0 0 var(--w-gilt-line-b); }
-.leaf-left { position: relative; display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 46px clamp(28px, calc(3vw / var(--zoom, 1)), 52px) 34px; border-radius: 2px 0 0 2px; color: var(--w-ink);
+.leaf-left { position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 30px clamp(28px, calc(3vw / var(--zoom, 1)), 52px) 20px; border-radius: 2px 0 0 2px; color: var(--w-ink);
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"), var(--w-leaf);
   box-shadow: inset -30px 0 30px -30px var(--w-gutter); }
 .leaf-left > :not(.page-frame) { position: relative; z-index: 1; }
 .leaf-left .page-frame { inset: 12px; }
-.spread .w-book .leaf-one { border-radius: 0 2px 2px 0; border-left: 1px solid rgba(60, 50, 40, 0.14); box-shadow: inset 30px 0 30px -30px var(--w-gutter); padding-left: clamp(28px, calc(3vw / var(--zoom, 1)), 52px); padding-right: clamp(28px, calc(3vw / var(--zoom, 1)), 52px); }
+.spread .w-book .leaf-one { border-radius: 0 2px 2px 0; border-left: 1px solid var(--w-fold-line); box-shadow: inset 30px 0 30px -30px var(--w-gutter); padding-left: clamp(28px, calc(3vw / var(--zoom, 1)), 52px); padding-right: clamp(28px, calc(3vw / var(--zoom, 1)), 52px); }
 .leaf-left .running-head.verso { display: flex; justify-content: space-between; gap: 12px; margin: 0; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); }
 .leaf-left .running-head.verso span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .leaf-left .w-qhead { margin-top: 10px; }
-.spread .w-dog { width: 116px; }
+.spread .w-dog { width: 104px; }
 .w-orn { display: flex; align-items: center; gap: 14px; margin: 0; color: var(--foil); }
 .w-orn::before, .w-orn::after { content: ""; flex: 1; height: 1px; background: var(--foil-soft); }
 .w-orn i { font-style: normal; font-size: 13px; }
@@ -179,8 +196,10 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .leaf-left .w-pencil.asked svg { display: none; }
 
 /* ── The seal, under the book (following the scroll) or in the margin ── */
-.w-keep { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin-top: 84px; }
-.w-grid:not(.rail) .w-keep { position: sticky; bottom: calc(var(--tabbar-h, 0px) + 12px); z-index: 6; padding: 8px 12px 8px 8px; border: 1px solid var(--sheet-rule); border-radius: 16px; background: var(--paper-print); box-shadow: var(--w-slip-shadow); }
+.w-keep { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin-top: 40px; }
+.w-grid:not(.rail) .w-keep { padding: 8px 12px 8px 8px; border: 1px solid var(--sheet-rule); border-radius: 16px; background: var(--paper-print); }
+/* on arrival the bar sits under the book; once there are words it follows the scroll, so the seal is always in reach */
+.w-desk.writing .w-grid:not(.rail) .w-keep { position: sticky; bottom: calc(var(--tabbar-h, 0px) + 12px); z-index: 6; box-shadow: var(--w-slip-shadow); }
 .w-keep.in-rail { margin-top: 8px; padding-top: 22px; border-top: 1px solid var(--sheet-rule); }
 .w-keep-seal { display: grid; gap: 0; justify-items: start; }
 .w-keep .seal-button { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 2px 10px 2px 2px; border: 0; border-radius: 999px; background: transparent; font: 600 18px/1 var(--font-ui); color: var(--w-red); cursor: pointer; transition: transform 120ms var(--ease-out); }
@@ -191,6 +210,14 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .w-keep-note { margin: -8px 0 0 68px; font: 400 13px/1.5 var(--font-ui); color: var(--ink-soft); }
 .w-keep-note a { display: inline-block; padding: 12px 2px; margin: -12px 0; color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 .w-keep-note a:hover { text-decoration-color: var(--heading); }
+/* a keep that failed says so beside the seal, with the way to try again */
+.w-keep-error { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0 4px 68px; font: 500 14px/1.45 var(--font-ui); color: var(--danger); max-width: 46ch; }
+.w-retry { min-height: 44px; padding: 0 2px; border: 0; background: transparent; cursor: pointer; font: 600 14px/1 var(--font-ui); color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.w-retry:hover { text-decoration-color: var(--heading); }
+.w-retry:active { transform: scale(0.97); }
+.w-retry:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; border-radius: 4px; }
+.w-note.w-alert { margin-top: 8px; color: var(--danger); }
+.w-tools-row .w-note.w-alert { width: 100%; text-align: right; }
 .w-keep-note kbd { font: 500 12px/1 var(--font-ui); padding: 3px 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; color: var(--ink); background: var(--paper-print); }
 /* the keyboard is taught only where there is one */
 .w-kbd-hint { display: none; }
@@ -249,7 +276,7 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .w-undo:hover { text-decoration-color: var(--heading); }
 .w-undo:focus-visible, .w-slip-close:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; border-radius: 4px; }
 .w-asks { display: grid; margin: 0; padding: 0; list-style: none; }
-.w-asks li + li { border-top: 1px dashed rgba(111, 102, 93, 0.3); }
+.w-asks li + li { border-top: 1px dashed var(--w-pencil-rule); }
 .w-asks button { position: relative; display: block; width: 100%; min-height: 44px; padding: 10px 0 10px 22px; border: 0; background: transparent; text-align: left; cursor: pointer;
   font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.35; color: var(--w-pencil); transition: color 160ms var(--ease-out); }
 .w-asks button::before { content: "–"; position: absolute; left: 4px; top: 10px; color: var(--w-pencil); font-style: normal; }
@@ -275,6 +302,10 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .w-tools-row .w-help-out > .w-note.done { padding-right: 56px; }
 .w-slip-close { position: absolute; top: 6px; right: 8px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; cursor: pointer; font: 600 13px/1 var(--font-ui); color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 .w-slip-close:hover { text-decoration-color: var(--heading); }
+
+/* step 1's Where to next: under the book, out of the writing area */
+.w-desk > .where-next { max-width: calc(var(--content-max) - 2 * var(--gutter)); margin: 120px auto 0; }
+.w-desk:has(.w-grid.single) > .where-next { max-width: 760px; }
 
 /* ── Focus mode: only the right-hand page, at the reading measure ── */
 .w-desk.focus .w-side, .w-desk.focus .leaf-left, .w-desk.focus .w-dog, .w-desk.focus .w-grid.single .w-qhead, .w-desk.focus .w-tools-row { display: none; }
@@ -319,6 +350,7 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
 .w-state { flex: none; display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 7ch; min-height: 24px; margin: 6px 0 0; font: 600 14px/1 var(--font-ui); color: var(--green); }
 .w-state svg { width: 16px; height: 16px; }
 .w-state.saving { color: var(--ink-soft); }
+.w-state:empty { position: absolute; width: 1px; height: 1px; min-height: 0; margin: 0; overflow: hidden; clip: rect(0 0 0 0); }
 /* the columns follow the space the choices have, not the window: two from about 560px, three from about 900px */
 .w-choice-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
 @container (min-width: 560px) {
@@ -377,8 +409,10 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   .sheet-page .page.w-desk.after-step { padding-top: 28px; }
   .w-grid { gap: 40px; }
   .w-grid.single .w-qhead { margin-bottom: 86px; }
-  .sheet-page .page.w-desk .w-question, .sheet-page .page.w-desk .w-question[data-len] { font-size: clamp(26px, calc(7.4vw / var(--zoom, 1)), 32px); max-width: none; }
-  .sheet-page .page.w-desk .w-question[data-len="long"] { font-size: 25px; }
+  .sheet-page .page.w-desk .w-grid .w-question, .sheet-page .page.w-desk .w-grid.single .w-question:not([data-len]) { font-size: clamp(26px, calc(7.4vw / var(--zoom, 1)), 32px); max-width: none; }
+  .sheet-page .page.w-desk .w-grid .w-question[data-len="mid"] { font-size: 25px; }
+  .sheet-page .page.w-desk .w-grid .w-question[data-len="long"] { font-size: 21px; }
+  .sheet-page .page.w-desk .w-grid .w-question[data-len="xlong"] { font-size: 19px; }
   /* the page wider on a phone, so a line holds 40 characters or more */
   .w-book { padding: 6px 8px 10px 6px; }
   .w-book::before { inset: 4px; }
@@ -387,6 +421,7 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   .w-book .leaf-one .page-frame { inset: 6px; }
   .w-book .leaf-one > .w-focus { display: none; }
   .w-book .leaf-one .running-head { padding: 0; letter-spacing: 0.1em; }
+  .w-keep-error { margin-left: 0; }
   .w-book .leaf-one .wtitle { font-size: 26px; margin-top: 10px; }
   .w-book .leaf-one .signoff span { font-size: 24px; }
   /* the folio's dot goes when its two parts stack */
@@ -410,7 +445,7 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .w-dog, .w-dog img, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
+  .w-dog img, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
   .w-tool.speak.listening > svg { animation: none; }
 }
 

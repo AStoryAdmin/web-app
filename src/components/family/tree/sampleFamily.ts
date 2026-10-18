@@ -11,8 +11,9 @@
 import type { Family, Person } from "../../../data/family";
 import type { Memory, Story } from "../../../data/stories";
 
-const IMG = import.meta.glob<string>("../../../../docs/mockups/tree/img/*.webp", { eager: true, query: "?url", import: "default" });
-const img = (name: string) => IMG[`../../../../docs/mockups/tree/img/${name}.webp`] || "";
+// Dev only: the dev server serves the library crops straight from docs/, and a
+// production build references none of them, so they are never emitted into dist.
+const img = (name: string) => (import.meta.env.DEV ? `/docs/mockups/tree/img/${name}.webp` : "");
 
 const ME = "sample-user-daniel";
 const STORY = "sample-story-rose";

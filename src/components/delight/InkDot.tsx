@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
+import { OUT } from "../../lib/ease";
 
 export default function InkDot({ ground }: { ground: RefObject<HTMLElement | null> }) {
   const dot = useRef<HTMLSpanElement>(null);
@@ -14,11 +15,11 @@ export default function InkDot({ ground }: { ground: RefObject<HTMLElement | nul
     const node = dot.current;
     if (!el || !node) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
-    const x = gsap.quickTo(node, "x", { duration: 0.45, ease: "power3.out" });
-    const y = gsap.quickTo(node, "y", { duration: 0.45, ease: "power3.out" });
+    const x = gsap.quickTo(node, "x", { duration: 0.45, ease: OUT });
+    const y = gsap.quickTo(node, "y", { duration: 0.45, ease: OUT });
     let dry = 0;
     let seen = false;
-    const fade = () => gsap.to(node, { opacity: 0, duration: 0.9, ease: "power1.in", overwrite: true });
+    const fade = () => gsap.to(node, { opacity: 0, duration: 0.9, ease: OUT, overwrite: true });
     const move = (e: PointerEvent) => {
       if (!seen) {
         seen = true;
