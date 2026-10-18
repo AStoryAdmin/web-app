@@ -2,17 +2,19 @@
  * A pressed leaf, the chapter mark of the archive, that drifts after the
  * pointer across the cloth and settles when you stop, the way a leaf
  * follows a hand brushed over a table. It lags, sways with its speed, and
- * comes to rest flat. It is never in the way: it keeps off the sheet, has
- * no pointer events, and is absent under reduced motion and on touch.
+ * comes to rest flat. It is never in the way: it has no pointer events, and
+ * is absent under reduced motion and on touch. With `page`, it follows the
+ * pointer over the whole page, cloth and cream alike, from a fixed layer.
  */
 import { useEffect, useRef, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { pageZoom } from "../../lib/zoom";
 
-export default function Leaf({ ground }: { ground: RefObject<HTMLElement | null> }) {
+export default function Leaf({ ground, page = false }: { ground?: RefObject<HTMLElement | null>; page?: boolean }) {
   const leaf = useRef<SVGSVGElement>(null);
   useEffect(() => {
-    const el = ground.current;
+    const el: HTMLElement | Window | null = page ? window : (ground?.current ?? null);
     const node = leaf.current;
     if (!el || !node) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
@@ -26,7 +28,7 @@ export default function Leaf({ ground }: { ground: RefObject<HTMLElement | null>
     const setO = gsap.quickSetter(node, "opacity");
 
     const move = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
+      const r = el instanceof Window ? { left: 0, top: 0 } : el.getBoundingClientRect();
       const z = pageZoom();
       // the leaf trails behind and a little below the pointer, like it is being drawn along
       target.x = (e.clientX - r.left) / z + 26;
@@ -62,19 +64,21 @@ export default function Leaf({ ground }: { ground: RefObject<HTMLElement | null>
     };
 
     gsap.ticker.add(tick);
-    el.addEventListener("pointermove", move, { passive: true });
-    el.addEventListener("pointerleave", leave);
+    const off = page ? document.documentElement : el;
+    el.addEventListener("pointermove", move as EventListener, { passive: true });
+    off.addEventListener("pointerleave", leave);
     return () => {
       gsap.ticker.remove(tick);
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("pointerleave", leave);
+      el.removeEventListener("pointermove", move as EventListener);
+      off.removeEventListener("pointerleave", leave);
     };
-  }, [ground]);
+  }, [ground, page]);
 
-  return (
-    <svg ref={leaf} className="leaf" viewBox="0 0 40 56" width="30" height="42" aria-hidden="true" focusable="false">
+  const svg = (
+    <svg ref={leaf} className={page ? "leaf page-leaf" : "leaf"} viewBox="0 0 40 56" width="30" height="42" aria-hidden="true" focusable="false">
       <path className="blade" d="M20 2 C34 14 38 30 30 44 C27 49 23 52 20 54 C17 52 13 49 10 44 C2 30 6 14 20 2 Z" />
       <path className="vein" d="M20 8 L20 50 M20 20 C24 22 27 25 29 30 M20 20 C16 22 13 25 11 30 M20 30 C24 32 27 35 28 39 M20 30 C16 32 13 35 12 39" />
     </svg>
   );
+  return page ? createPortal(svg, document.body) : svg;
 }

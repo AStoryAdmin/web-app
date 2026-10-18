@@ -75,9 +75,9 @@ export default function AuthFrame({ children, companion }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const spreadRef = useRef<HTMLDivElement>(null);
 
-  // The book is drawn at 1440 by 720. On a window larger than that it grows to fill the window
-  // (CSS zoom on the spread, so the type, the plate and the prints grow together); it never shrinks
-  // below its drawn size, where the fluid layout already fits. Measured in screen pixels so the
+  // The book is drawn at 1440 by 720 and scaled to fit the window, up or down (CSS zoom on the
+  // spread, so the type, the plate and the prints scale together); the page never scrolls on a
+  // desktop. On a phone the pages stack and scroll. Measured in screen pixels so the
   // html zoom steps and the browser's own zoom both count.
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
@@ -97,26 +97,23 @@ export default function AuthFrame({ children, companion }: Props) {
           return;
         }
         const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+        // on a desktop the book is always drawn at 1440 wide and scaled to the window, up or down, so the
+        // whole spread is on one screen and the page never scrolls
+        if (!spread.classList.contains("scaled")) {
+          spread.classList.add("scaled");
+          root.style.setProperty("--fit", fit.toFixed(3));
+        }
         const cs = getComputedStyle(wrap);
         const padX = (parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) * z;
         const padY = (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) * z;
         const w = wrap.getBoundingClientRect().width - padX;
         const h = window.innerHeight - padY;
         const r = spread.getBoundingClientRect();
-        const scale = z * fit;
-        const natW = r.width / scale;
-        const natH = Math.max(720, (r.height / scale) * (1440 / Math.max(natW, 1)));
-        const next = Math.max(1, Math.min(w / (1440 * z), h / (natH * z)));
-        if (Math.abs(next - fit) > 0.01) {
+        const natH = Math.max(720, r.height / (z * fit));
+        const next = Math.min(3, Math.max(0.6, Math.min(w / (1440 * z), h / (natH * z))));
+        if (Math.abs(next - fit) > 0.005) {
           fit = next;
-          if (fit > 1.01) {
-            root.style.setProperty("--fit", fit.toFixed(3));
-            spread.classList.add("scaled");
-          } else {
-            fit = 1;
-            root.style.removeProperty("--fit");
-            spread.classList.remove("scaled");
-          }
+          root.style.setProperty("--fit", fit.toFixed(3));
         }
         // the keepsake book lies on the cloth only when there is room for it beside the spread
         const after = spread.getBoundingClientRect();

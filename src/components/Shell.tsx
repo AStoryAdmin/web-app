@@ -214,7 +214,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
     <div className="shell" ref={root} key={location.pathname}>
       <div className={`cloth on-dark${compact ? " compact" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
         <span className="lamp" aria-hidden="true" />
-        <Leaf ground={cloth} />
+        <Leaf page />
         <header className="top">
           <div className="top-in">
             <NavLink className="brand" to="/" aria-label="Home" viewTransition>

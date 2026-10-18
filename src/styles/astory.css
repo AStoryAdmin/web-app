@@ -3251,3 +3251,21 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 .print-card .frame { aspect-ratio: 4 / 5; }
 .print-card.lead .frame, .mosaic-quote.lead .fromthebook { aspect-ratio: 3 / 2; }
 @media (min-width: 1100px) { .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ───────────────────────── 45. One screen, one leaf (lead) ───────────────────────── */
+/* The signed-out book is one screen on a desktop: it scales to the window (AuthFrame) and the page does not scroll.
+   Behind it, the cloth, never the cream. On a phone the pages stack and scroll as before. */
+body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.webp) 0 0 / 360px 360px; }
+@media (min-width: 761px) {
+  html:has(.auth.ritual), body:has(.auth.ritual) { overflow: hidden; height: 100%; }
+  .auth.ritual, .auth .spread-wrap { height: calc(100vh / var(--zoom)); min-height: 0; }
+  .auth .spread-wrap { overflow: hidden; }
+}
+/* the leaf follows the pointer over the whole page, cloth and cream, from a fixed layer above it */
+.page-leaf { position: fixed; left: 0; top: 0; z-index: 40; margin: -21px 0 0 -15px; pointer-events: none; opacity: 0; will-change: transform; filter: drop-shadow(0 5px 5px rgba(42, 35, 32, 0.25)); }
+.page-leaf .blade { fill: #D9A24A; fill-opacity: 0.92; }
+.page-leaf .vein { fill: none; stroke: rgba(74, 51, 39, 0.55); stroke-width: 1; stroke-linecap: round; }
+@media (hover: none), (prefers-reduced-motion: reduce) { .page-leaf { display: none; } }
+/* the archive search is a ruled line: focus darkens the rule, never draws a box around it */
+.sheet-page .arc-search .input:focus-within, .sheet-page .arc-search .input:has(input:focus-visible) { outline: none; box-shadow: none; border-color: transparent; border-bottom-color: var(--accent); }
+.sheet-page .arc-search .input input:focus-visible { outline: none; }
