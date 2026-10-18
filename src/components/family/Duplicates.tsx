@@ -130,11 +130,9 @@ export default function Duplicates({
               );
             return (
               <div key={x.id} className="acts">
+                {/* merging keeps the extra's ties, tags and credits; a one-tap remove beside it would throw them away */}
                 <Button variant="outline" small loading={busy === x.id} onClick={() => void merge(g.keep, x)}>
                   Merge into one
-                </Button>
-                <Button variant="quiet" small disabled={busy === x.id} onClick={() => void remove(x)}>
-                  Remove the extra
                 </Button>
                 {seeLink}
               </div>

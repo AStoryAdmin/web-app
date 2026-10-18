@@ -519,3 +519,61 @@
   .pp-main.bare .pp-extras .pk-list { grid-template-columns: minmax(0, 1fr); }
 }
 .pp2 .pp-more { align-items: center; }
+
+/* ── round 5 ─────────────────────────────────────────────────────────── */
+/* a failure is said in the danger colour wherever it sits, the keeping row's grey included */
+.fp-keep .meta.bad, .fp-quiet.bad, .st-empty.bad, .pp2 .meta.bad { color: var(--danger); }
+/* the first ruled line of the keeping row sits under the star's own rule: one hairline, not two 40px apart */
+.fp-keep-review > .review.none:first-child > .review-none:first-child { border-top: 0; padding-top: 4px; }
+/* small buttons and the dating line at the pages' small size, here only */
+:is(.fp, .pp2) .btn.sm { font-size: var(--fz-small); }
+.pp2 .arc-task { font-size: var(--fz-small); }
+/* the task comes first on the row, the archive link after it; it never wraps round its "·" */
+.pp2 .pp-more .arc-task { order: -1; white-space: nowrap; flex-basis: auto; margin-left: -10px; margin-right: -10px; }
+/* arrow links: one underline running under the words and the arrow (no flex gap splitting it in two) */
+.pp-write, .st-empty .st-act { display: inline-block; min-height: 44px; line-height: 44px; }
+.pp-write span, .st-empty .st-act span { display: inline; }
+
+/* the kept line on a person's page is set at display size: a short line never sits small in a wide frame */
+.pp-words-plate { width: fit-content; min-width: min(100%, 440px); max-width: 100%; }
+.pp-words-plate p { max-width: 30ch; font-family: var(--book-display); font-weight: 500; font-size: 31px; line-height: 1.28; letter-spacing: -0.003em; }
+.pp-words-plate.long p { max-width: 38ch; font-size: 26px; line-height: 1.32; }
+
+/* nothing with them yet: the empty state's words and a short ruled list of real questions about them */
+.pp-none { padding-top: 0; }
+.pp-none > div { flex: 1; min-width: 0; }
+.pp-prompts { list-style: none; margin: 22px 0 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
+.pp-prompts li { border-bottom: 1px solid var(--sheet-rule); }
+.pp-prompts a { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; min-height: 44px; padding: 13px 2px; color: var(--sheet-ink); text-decoration: none;
+  transition: color 160ms var(--ease-out); }
+.pp-q { font-family: var(--book-body); font-style: italic; font-size: var(--fz-words); line-height: 1.4; text-wrap: pretty; }
+.pp-q-a { flex: none; color: var(--accent); transition: transform 160ms var(--ease-out); }
+.pp-prompts a:active { transform: scale(0.99); }
+.pp-prompts a:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .pp-prompts a:hover { color: var(--accent-deep); }
+  .pp-prompts a:hover .pp-q-a { transform: translateX(3px); }
+}
+/* the empty state and their family side by side only where both have room; no leftover track beside it */
+@media (min-width: 1280px) {
+  .pp-main.bare { display: block; }
+}
+@media (min-width: 1600px) {
+  .pp-main.bare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); gap: 64px; }
+  .pp-main.bare:has(> .pp-extras:empty) { display: block; }
+}
+@media (max-width: 760px) {
+  .pp-words-plate { min-width: 0; }
+  .pp-words-plate p { font-size: 25px; }
+  .pp-words-plate.long p { font-size: 22px; }
+  .pp-prompts { margin-top: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-prompts a, .pp-q-a { transition: none; }
+}
+/* a large family on a big screen, snug: less air between the generations before any face gets smaller */
+.tp[data-snug] .tp-tier { padding-bottom: 4px; }
+.tp[data-snug] .tp-tier.rings { padding-bottom: 12px; }
+.tp[data-snug] .tp-face { margin-bottom: 4px; }
+.tp[data-snug] :is(.tp-rel, .tp-state) { margin-top: 0; }
+.tp[data-snug] .tp-tier:last-child { padding-bottom: 0; }

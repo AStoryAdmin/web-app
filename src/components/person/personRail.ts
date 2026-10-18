@@ -10,6 +10,7 @@ import { quoteFor } from "../../app-core/lib/memoryCard.js";
 import { opening } from "../../lib/resurface";
 import { smarten } from "../../lib/typography";
 import { keptLine, ownWords, tellerTurns } from "../archive/transcript";
+import { getAboutPrompts } from "../../app-core/data/interview.js";
 import type { Contribution } from "../../data/contributions";
 import type { Family, Person } from "../../data/family";
 import { relationTo, type Index } from "../family/familyView";
@@ -140,3 +141,26 @@ export function kinOf(person: Person, family: Family | null, index: Index): { pe
   }
   return out;
 }
+
+/**
+ * A few real questions to write about somebody nobody has written about yet, from the interview bank's
+ * "about" wordings ("Which of Ty's homes do you know best?"): gentle ones only (no sensitive topics, first
+ * depth), chosen by the person so the same person always gets the same three, each from a different topic.
+ */
+export function promptsAbout(person: Person, n = 3): { id: string; question: string }[] {
+  const pool = (getAboutPrompts(firstNameOf(person)) as { id: string; question: string; sensitive: unknown; depth: number; topic: string }[]).filter((p) => !p.sensitive && p.depth <= 1);
+  if (!pool.length) return [];
+  let seed = 0;
+  for (const ch of person.id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const out: { id: string; question: string }[] = [];
+  const topics = new Set<string>();
+  for (let i = 0; i < pool.length && out.length < n; i++) {
+    const p = pool[(seed + i * 7) % pool.length];
+    if (topics.has(p.topic) || out.some((q) => q.id === p.id)) continue;
+    topics.add(p.topic);
+    out.push({ id: p.id, question: p.question });
+  }
+  return out;
+}
+
+const firstNameOf = (p: Person) => String(p.givenName || "").trim() || "them";

@@ -18,6 +18,7 @@ import { Button } from "../ui";
 import Portrait from "./Portrait";
 import { whenLabel } from "./familyView";
 import { useHold } from "./useHold";
+import HeldLine from "./HeldLine";
 
 function Pic({ url, alt }: { url: string; alt: string }) {
   const src = usePhotoUrl(url);
@@ -56,7 +57,7 @@ function Item({ item, story, now, busy, onKeep, onSkip }: { item: Contribution; 
           <Button small loading={busy} onClick={onKeep}>
             {item.kind === "memory" ? "Add to the archive" : item.memoryId ? "Add to the memory" : "Keep it"}
           </Button>
-          <Button variant="quiet" small disabled={busy} onClick={onSkip}>
+          <Button variant="quiet" small disabled={busy} onClick={onSkip} data-undo-to={item.id}>
             Not this one
           </Button>
         </div>
@@ -70,12 +71,15 @@ export default function ReviewQueue({
   onKept,
   asked,
   askedCount = 0,
+  askedFailed = false,
 }: {
   story: Story;
   onKept?: () => void;
   /** What the family asked (to join, to change a detail), shown above what they sent. */
   asked?: ReactNode;
   askedCount?: number;
+  /** The asks couldn't be reached: then "nothing waiting" can't be said; their own line says what went wrong. */
+  askedFailed?: boolean;
 }) {
   const { saveMemory } = useAccount();
   const [items, setItems] = useState<Contribution[] | null>(null);
@@ -124,6 +128,7 @@ export default function ReviewQueue({
     hold(
       item.id,
       `Set aside ${who}'s ${item.kind === "memory" ? "memory" : "note"}`,
+      `Setting aside ${who}'s ${item.kind === "memory" ? "memory" : "note"}…`,
       () => rejectContribution(item.id),
       () => setItems((prev) => (prev || []).filter((i) => i.id !== item.id)),
     );
@@ -154,7 +159,7 @@ export default function ReviewQueue({
   if (items !== null && count === 0 && !error)
     return (
       <section className="review none" aria-label="Waiting for your review">
-        <p className="review-none">Nothing waiting for your review. What the family asks or sends lands here first.</p>
+        {!askedFailed && <p className="review-none">Nothing waiting for your review. What the family asks or sends lands here first.</p>}
         {asked}
       </section>
     );
@@ -178,12 +183,7 @@ export default function ReviewQueue({
       )}
       {items?.map((item) =>
         held[item.id] ? (
-          <p key={item.id} className="held" role="status">
-            {held[item.id]} ·{" "}
-            <button type="button" className="fp-retry" onClick={() => undo(item.id)}>
-              Undo
-            </button>
-          </p>
+          <HeldLine key={item.id} held={held[item.id]} onUndo={() => undo(item.id)} />
         ) : (
           <Item key={item.id} item={item} story={story} now={now} busy={busy === item.id} onKeep={() => void keep(item)} onSkip={() => skip(item)} />
         ),

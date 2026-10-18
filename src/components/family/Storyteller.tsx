@@ -37,7 +37,8 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
   const q = preview ? "?preview=tree" : "";
 
   // The family's lines: approved contributions, and memories that carry a contributor's name (one became the other).
-  const [contributions, setContributions] = useState<Contribution[]>([]);
+  // null while they load (the sample has none to load)
+  const [contributions, setContributions] = useState<Contribution[] | null>(preview ? [] : null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
   const voices = useMemo<Voice[]>(() => {
     const seen = new Set<string>();
     const out: Voice[] = [];
-    for (const c of contributions) {
+    for (const c of contributions || []) {
       if (!c.body.trim() || seen.has(c.id)) continue;
       seen.add(c.id);
       out.push({ id: c.id, personId: c.personId, name: c.contributorName, relationship: c.relationship, text: c.body, createdAt: c.createdAt, memoryId: c.memoryId });
@@ -145,18 +146,23 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
             );
           })
         ) : failed ? (
-          <p className="st-empty" role="alert">
+          <p className="st-empty bad" role="alert">
             The family's lines couldn't be reached just now.{" "}
             <button
               type="button"
               className="st-act"
               onClick={() => {
                 setFailed(false);
+                setContributions(null);
                 setAttempt((a) => a + 1);
               }}
             >
               Try again
             </button>
+          </p>
+        ) : contributions === null ? (
+          <p className="st-empty" aria-busy="true">
+            Looking for the family's lines…
           </p>
         ) : (
           <div className="st-empty">

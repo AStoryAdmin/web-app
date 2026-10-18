@@ -50,7 +50,7 @@ function MyCodes({ people, mine }: { people: Person[]; mine: ReturnType<typeof u
   const [notTaken, setNotTaken] = useState<string | null>(null);
   if (failed && codes === null)
     return (
-      <p className="fp-quiet" role="alert">
+      <p className="fp-quiet bad" role="alert">
         The codes you've sent couldn't be reached just now.{" "}
         <button type="button" className="fp-retry" onClick={reload}>
           Try again
@@ -110,6 +110,8 @@ export default function Family() {
   const [error, setError] = useState<string | null>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
   const onAskedCount = useCallback((n: number) => setAskedCount(n), []);
+  const [askedFailed, setAskedFailed] = useState(false);
+  const onAskedFailed = useCallback((f: boolean) => setAskedFailed(f), []);
 
   const mine = useMyCodes(!preview);
   const shownFamily = sample ? sample.family : family;
@@ -130,7 +132,7 @@ export default function Family() {
 
   if (account === undefined)
     return (
-      <Shell bare wide>
+      <Shell bare wide book={preview ? "A sample family" : undefined}>
         {/* the mark draws itself over a hairline sketch of the page to come: the name, the plate, three generations */}
         <div className="page fp fp-skel" aria-busy="true">
           <span className="sk-line w30 tall" />
@@ -180,7 +182,7 @@ export default function Family() {
   };
 
   return (
-    <Shell bare wide>
+    <Shell bare wide book={preview ? "A sample family" : undefined}>
       <div className="page fp">
         <header className="fp-head" data-rise>
           <div className="fp-name">
@@ -220,7 +222,7 @@ export default function Family() {
             onAdd={(anchor, kind) => !preview && setInvite({ anchor, kind })}
             onPlace={place}
             canPlace={(p) => !preview && canEdit(p, family, meId)}
-            coded={sample ? null : mine.coded}
+            coded={sample ? null : mine.codes === null ? "unknown" : mine.coded}
           />
         </div>
 
@@ -229,7 +231,12 @@ export default function Family() {
             <Star />
             {/* what waits for a yes runs across the top; with nothing waiting it is one ruled line */}
             <div className="fp-keep-review" ref={reviewRef} id="review">
-              <ReviewQueue story={story} askedCount={askedCount} asked={<Asked story={story} family={family} meId={meId} keeper onCount={onAskedCount} onChanged={afterWrite} />} />
+              <ReviewQueue
+                story={story}
+                askedCount={askedCount}
+                askedFailed={askedFailed}
+                asked={<Asked story={story} family={family} meId={meId} keeper onCount={onAskedCount} onFailed={onAskedFailed} onChanged={afterWrite} />}
+              />
               <WaitingOnOthers meId={meId} family={family} />
             </div>
 

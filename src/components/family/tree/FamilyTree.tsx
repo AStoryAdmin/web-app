@@ -41,12 +41,13 @@ type Props = {
   onAdd: (anchor: Person | null, kind: string | null) => void;
   onPlace: (person: Person, anchor: Person, kind: GhostKind) => void;
   canPlace: (person: Person) => boolean;
-  /** People a live family code was made for (useMyCodes): they are "invited · waiting for them". */
-  coded?: Set<string> | null;
+  /** People a live family code was made for (useMyCodes): they are "invited · waiting for them".
+      "unknown" while the codes are loading or couldn't be reached: then nobody is called "not on A Story yet". */
+  coded?: Set<string> | null | "unknown";
 };
 
 /** The live codes, for every face in the plate without threading a prop through each one. */
-const Coded = createContext<Set<string> | null>(null);
+const Coded = createContext<Set<string> | null | "unknown">(null);
 
 const isReal = (p: Person | null | undefined): p is Person => !!p && !p.id.startsWith("story:");
 const count = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
@@ -86,9 +87,11 @@ function StateWords({ words }: { words: string }) {
 function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; story: Story; meId: string | null | undefined; preview?: boolean; hot: Set<string> | null; onHot: (id: string | null) => void }) {
   const p = node.person;
   const coded = useContext(Coded);
-  const state = shownState(p, meId, coded);
+  const unknown = coded === "unknown";
+  const state = shownState(p, meId, unknown ? null : coded);
   const gone = !!p.deathYear;
-  const stateLine = gone ? "" : state === "you" ? "you" : stateWords(state);
+  // until the codes are known, a "listed" person might be invited: say nothing rather than the wrong thing
+  const stateLine = gone || (unknown && state === "listed") ? "" : state === "you" ? "you" : stateWords(state);
   const by = memoriesBy(p, story).length;
   const within = memoriesWith(p, story).length;
   const name = personName(p);
@@ -333,6 +336,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     // fewer keeps its faces at the middle size or larger rather than shrinking to fit).
     let i = start;
     el.dataset.size = SIZES[i];
+    delete el.dataset.snug;
     while (i < SIZES.length - 1 && wraps(el)) el.dataset.size = SIZES[++i];
     const docTop = (n: HTMLElement | null) => {
       let y = 0;
@@ -349,6 +353,15 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     const tooTall = () => bottom(tiers().pop()) > fold;
     const homeLow = () => bottom(el.querySelector<HTMLElement>(".tp-tier.home") || undefined) > fold;
     while (i < SIZES.length - 1 && ((i < floor && tooTall()) || homeLow())) el.dataset.size = SIZES[++i];
+    // On a big screen a large family at its floor still reaching past the fold first gives up the air between
+    // its generations, and only then a size, so its youngest generation ends above the fold (baos 7).
+    if (pageZoom() > 1.15 && getComputedStyle(svg).display !== "none" && tooTall()) {
+      el.dataset.snug = "1";
+      if (drawn > 6 && i < SIZES.length - 1 && tooTall()) {
+        el.dataset.size = SIZES[i + 1];
+        if (!tooTall()) delete el.dataset.snug;
+      }
+    }
     if (getComputedStyle(svg).display === "none") {
       setThreads((prev) => (prev.length ? [] : prev));
       return;

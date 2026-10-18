@@ -29,7 +29,7 @@ import WhereNext from "../components/book/WhereNext";
 import { useMyCodes } from "../components/family/useMyCodes";
 import { buildPlate } from "../components/family/tree/plateModel";
 import { treePeople } from "../components/family/tree/treeModel";
-import { kinOf, railFor, relatedFor, saidLine, spanLine, splitRail, type Found } from "../components/person/personRail";
+import { kinOf, promptsAbout, railFor, relatedFor, saidLine, spanLine, splitRail, type Found } from "../components/person/personRail";
 import type { Teller } from "../components/person/MemoryRail";
 import { sampleFamily } from "../components/family/tree/sampleFamily";
 import { useAuth } from "../state/authContext";
@@ -102,7 +102,7 @@ export default function Person() {
   const back = preview ? "/family?preview=tree" : "/family";
   if (account === undefined)
     return (
-      <Shell wide back={back}>
+      <Shell wide back={back} book={preview ? "A sample family" : undefined}>
         {/* the mark draws itself over a hairline sketch of the page to come */}
         <div className="page pp2 pp-skel" aria-busy="true">
           <span className="sk-plate" />
@@ -118,7 +118,7 @@ export default function Person() {
   if (!story) return <Navigate to="/start" replace />;
   if (!person || !res) {
     return (
-      <Shell compact title="Family">
+      <Shell compact title="Family" book={preview ? "A sample family" : undefined}>
         <div className="page pp-missing">
           <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
           <div>
@@ -140,6 +140,8 @@ export default function Person() {
   const rel = teller ? relationTo(index, person.id, teller.id) : "";
   const isTeller = person.storyId === story.id;
   const stateKey = shownState(person, meId, preview ? null : mine.coded);
+  // Until the codes are known, somebody not on A Story might be invited: say neither (BAOS 29).
+  const codesUnknown = !preview && mine.codes === null && stateKey === "listed";
   const liveCode = preview ? null : mine.codes?.find((c) => c.personId === person.id) || null;
   const editable = !preview && canEdit(person, family, meId);
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
@@ -155,7 +157,8 @@ export default function Person() {
     const n = credit || `${f.story.name} ${f.story.lastName}`.trim();
     return { name: n, given: n.split(" ")[0], family: n.split(" ").slice(1).join(" ") };
   };
-  const life = lifeLine(person) as string;
+  // "Born 1972" never breaks between the word and the year
+  const life = (lifeLine(person) as string).replace(/(Born|Passed away) (\d)/g, "$1\u00a0$2");
   const span = spanLine(rail);
   const whose = teller && teller.userId && teller.userId === meId ? "your" : `${story.name}'s`;
   // The kicker already says "Storyteller"; the line under the name says what they are to the storyteller, and their years.
@@ -171,6 +174,7 @@ export default function Person() {
   // every memory of theirs with no year yet, not only the ones shown: the same task the Archive sets
   const undated = rail.filter((f) => !(memoryDate(f.memory) as { dated: boolean }).dated).map((f) => f.memory);
   const kin = kinOf(person, family, index);
+  const prompts = rail.length ? [] : promptsAbout(person);
   // A third column only when it carries enough; otherwise the people and lines flow under the memories.
   const three = kin.length + related.length >= 3;
   // a group whose only memory is the one the plate above quotes says nothing new: leave it out
@@ -260,6 +264,7 @@ export default function Person() {
     <Shell
       back={back}
       wide
+      book={preview ? "A sample family" : undefined}
       hero={
         <div className="phero">
           <div className="phero-words">
@@ -294,8 +299,14 @@ export default function Person() {
                   Add a photograph of {first} <span aria-hidden="true">→</span>
                 </Link>
               )}
-              <p className={`pp-state ${tone}`}>
-                {words ? (
+              <p className={`pp-state ${codesUnknown ? "off" : tone}`} aria-busy={codesUnknown && !mine.failed ? true : undefined}>
+                {codesUnknown ? (
+                  mine.failed ? (
+                    "Not known just now"
+                  ) : (
+                    "Checking for an invitation…"
+                  )
+                ) : words ? (
                   <>
                     <i aria-hidden="true" />
                     {stateKey === "you" ? "You · on A Story" : words}
@@ -308,7 +319,17 @@ export default function Person() {
               </p>
               {span && <p className="pp-span">{span}</p>}
 
-              {inviteable && !edit && (
+              {inviteable && !edit && codesUnknown && mine.failed && (
+                <div className="pp-invite">
+                  <p className="meta bad" role="alert">
+                    Couldn't check for an invitation just now.{" "}
+                    <button type="button" className="fp-retry" onClick={mine.reload}>
+                      Try again
+                    </button>
+                  </p>
+                </div>
+              )}
+              {inviteable && !edit && !codesUnknown && (
                 <div className="pp-invite">
                   {sent ? (
                     <CodeCard code={sent.code} who={first} story={story} senderName={senderName} emailed={sent.emailed} email={sent.email} />
@@ -404,7 +425,7 @@ export default function Person() {
           <div className={`pp-main${rail.length === 0 ? " bare" : three ? " three" : ""}`}>
             <div className="pp-story">
               {said && (
-                <figure className="pp-words-plate" data-rise>
+                <figure className={`pp-words-plate${said.length > 120 ? " long" : ""}`} data-rise>
                   <blockquote>
                     <p>
                       {said}
@@ -477,6 +498,21 @@ export default function Person() {
                     <Link className="pp-write" to={`/write?with=${encodeURIComponent(person.id)}`}>
                       Write a memory with {first} <span aria-hidden="true">→</span>
                     </Link>
+                    {/* somewhere to start: three real questions from the bank, each opening the writer with them named */}
+                    {prompts.length > 0 && (
+                      <ul className="pp-prompts" aria-label={`Something to write about ${first}`}>
+                        {prompts.map((q) => (
+                          <li key={q.id}>
+                            <Link to={preview ? "#" : `/write?with=${encodeURIComponent(person.id)}`} onClick={preview ? (e) => e.preventDefault() : undefined}>
+                              <span className="pp-q">{q.question}</span>
+                              <span className="pp-q-a" aria-hidden="true">
+                                →
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               )}

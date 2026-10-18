@@ -20,6 +20,7 @@ import { Button } from "../ui";
 import Portrait from "./Portrait";
 import { canEdit, personName, whenLabel } from "./familyView";
 import { useHold } from "./useHold";
+import HeldLine from "./HeldLine";
 
 type Shape = { joins: JoinRequest[]; suggestions: Suggestion[] };
 
@@ -34,6 +35,7 @@ export function Asked({
   meId,
   keeper,
   onCount,
+  onFailed,
   onChanged,
 }: {
   story: Story;
@@ -42,6 +44,8 @@ export function Asked({
   /** Whether this account keeps the story (owner or active manager): only keepers see join requests. */
   keeper: boolean;
   onCount?: (n: number) => void;
+  /** Whether the asks couldn't be reached, so the review above never says "nothing waiting" over the failure. */
+  onFailed?: (failed: boolean) => void;
   onChanged?: () => Promise<void>;
 }) {
   const [items, setItems] = useState<Shape | null>(null);
@@ -76,6 +80,9 @@ export function Asked({
   useEffect(() => {
     if (items) onCount?.(items.joins.length + items.suggestions.length);
   }, [items, onCount]);
+  useEffect(() => {
+    onFailed?.(failed && !items);
+  }, [failed, items, onFailed]);
 
   // A decline is held six seconds with an Undo before it is sent; an accept goes at once.
   const declineJoin = (r: JoinRequest, who: string) => {
@@ -83,6 +90,7 @@ export function Asked({
     hold(
       r.id,
       `Declined ${who}'s request`,
+      `Declining ${who}'s request…`,
       async () => {
         const res = await answerJoinRequest(r.id, false);
         if (!res.ok) throw new Error(res.error);
@@ -96,18 +104,12 @@ export function Asked({
     hold(
       s.id,
       `Declined ${s.byName.split(" ")[0]}'s suggestion`,
+      `Declining ${s.byName.split(" ")[0]}'s suggestion…`,
       () => resolveSuggestion(s.id, false, meId),
       () => setItems((prev) => (prev ? { ...prev, suggestions: prev.suggestions.filter((x) => x.id !== s.id) } : prev)),
     );
   };
-  const heldLine = (id: string) => (
-    <p key={id} className="held" role="status">
-      {held[id]} ·{" "}
-      <button type="button" className="fp-retry" onClick={() => undo(id)}>
-        Undo
-      </button>
-    </p>
-  );
+  const heldLine = (id: string) => <HeldLine key={id} held={held[id]} onUndo={() => undo(id)} />;
 
   const answerJoin = async (r: JoinRequest, yes: boolean) => {
     setBusy(r.id);
@@ -181,7 +183,7 @@ export function Asked({
                 <Button small loading={busy === r.id} onClick={() => void answerJoin(r, true)}>
                   Accept
                 </Button>
-                <Button variant="quiet" small disabled={busy === r.id} onClick={() => declineJoin(r, who)}>
+                <Button variant="quiet" small disabled={busy === r.id} onClick={() => declineJoin(r, who)} data-undo-to={r.id}>
                   Decline
                 </Button>
               </div>
@@ -204,7 +206,7 @@ export function Asked({
                 <Button small loading={busy === s.id} onClick={() => void answerSuggestion(s, true)}>
                   Accept
                 </Button>
-                <Button variant="quiet" small disabled={busy === s.id} onClick={() => declineSuggestion(s)}>
+                <Button variant="quiet" small disabled={busy === s.id} onClick={() => declineSuggestion(s)} data-undo-to={s.id}>
                   Decline
                 </Button>
               </div>
@@ -222,6 +224,7 @@ type Mine = { joins: { id: string; label: string; at: string }[]; suggestions: S
 export function WaitingOnOthers({ meId, family }: { meId: string | null | undefined; family: Family | null }) {
   const [mine, setMine] = useState<Mine | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => new Date(0));
   const people = family?.people || [];
 
@@ -234,6 +237,7 @@ export function WaitingOnOthers({ meId, family }: { meId: string | null | undefi
         if (live) setFailed(true);
         return;
       }
+      if (live) setFailed(false);
       const [joins, all] = got;
       const cards = await Promise.all(joins.map((r) => storyCard(r.storyId)));
       if (!live) return;
@@ -251,12 +255,22 @@ export function WaitingOnOthers({ meId, family }: { meId: string | null | undefi
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- people is derived from family
-  }, [meId, family]);
+  }, [meId, family, attempt]);
 
   if (failed && !mine)
     return (
       <p className="meta bad" role="alert">
-        What you asked of others couldn't be reached just now.
+        What you asked of others couldn't be reached just now.{" "}
+        <button
+          type="button"
+          className="fp-retry"
+          onClick={() => {
+            setFailed(false);
+            setAttempt((n) => n + 1);
+          }}
+        >
+          Try again
+        </button>
       </p>
     );
   if (!mine || (!mine.joins.length && !mine.suggestions.length)) return null;
