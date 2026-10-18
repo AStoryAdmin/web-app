@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AuthFrame from "./auth/AuthFrame";
 import PlateSay from "./auth/PlateSay";
+import { smarten } from "../lib/typography";
 import { Button, ButtonLink, Field } from "../components/ui";
 import { CloseIcon } from "../components/icons";
 import LoadingMark from "../components/delight/LoadingMark";
@@ -54,8 +55,8 @@ function Person({ info }: { info: Info }) {
         <i className="cb-rule" aria-hidden="true" />
         <ul className="cb-what">
           <li>Their family reads what you send before anything else happens.</li>
-          <li>When they keep it, it joins {info.name}'s book under your name.</li>
-          <li>You don't need an account to send it.</li>
+          <li>When they keep it, it joins {info.name}’s book under your name.</li>
+          <li>You don’t need an account to send it.</li>
         </ul>
       </div>
     </div>
@@ -122,7 +123,7 @@ export default function Contribute() {
       }
       setPhotos((p) => [...p, ...urls]);
     } catch (err) {
-      setError(`A photograph didn't go up (${(err as Error)?.message || "no connection"}). The words are safe; try it again.`);
+      setError(`A photograph didn’t go up (${(err as Error)?.message || "no connection"}). The words are safe; try it again.`);
     } finally {
       setBusy("");
       if (fileRef.current) fileRef.current.value = "";
@@ -150,13 +151,13 @@ export default function Contribute() {
     try {
       const ok = await submitAnonymous({ slug, contributorName: name.trim(), relationship: relationship.trim(), kind, title: kind === "memory" ? title.trim() : "", body: body.trim(), photos, contributorEmail: email });
       if (!ok) {
-        setError("This link isn't taking memories right now. The family may have closed it.");
+        setError("This link isn’t taking memories right now. The family may have closed it.");
         return;
       }
       track("contribution_sent", { kind, photos: photos.length, with_email: !!email.trim() });
       setDone(true);
     } catch (err) {
-      setError(`That didn't send (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
+      setError(`That didn’t send (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
     } finally {
       setBusy("");
     }
@@ -175,7 +176,7 @@ export default function Contribute() {
   // the leaf's one line for what went wrong; it keeps its room, so an error never moves the page
   const errorLine = (
     <p id="cb-say" className={`cb-error${error ? " is-on" : ""}`} role={error ? "alert" : undefined} aria-live="polite">
-      {error}
+      {error && smarten(error)}
     </p>
   );
 
@@ -224,10 +225,10 @@ export default function Contribute() {
         <h1 className="cb-q">
           Thank you<span className="stop">.</span>
         </h1>
-        <p className="cb-p">It's with {info.name}'s family now. They read everything first, and it joins the book under your name when they keep it.</p>
+        <p className="cb-p">It’s with {info.name}’s family now. They read everything first, and it joins the book under your name when they keep it.</p>
         <div className="cb-claim">
           <h2>Your place in the family</h2>
-          <p className="cb-p">An account with the same email lets {info.name}'s family find you in their tree. If someone sent you a six-letter family code, type it when you make the account.</p>
+          <p className="cb-p">An account with the same email lets {info.name}’s family find you in their tree. If someone sent you a six-letter family code, type it when you make the account.</p>
           <div className="cb-row">
             <ButtonLink to={`/create-account?next=/`} viewTransition>
               Claim your place
@@ -250,7 +251,7 @@ export default function Contribute() {
         noValidate
       >
         <div className="cb-top">
-          <p className="cb-kicker">A page for {info.name}'s book</p>
+          <p className="cb-kicker">A page for {info.name}’s book</p>
           <div className="cb-kind" role="group" aria-label="What you are writing">
             <button type="button" aria-pressed={kind === "memory"} onClick={() => setKind("memory")}>
               A memory
@@ -260,7 +261,7 @@ export default function Contribute() {
             </button>
           </div>
         </div>
-        <h1 className="cb-q">{kind === "memory" ? `What do you remember about ${info.name}?` : `What would you like to tell ${info.name}'s family?`}</h1>
+        <h1 className="cb-q">{kind === "memory" ? `What do you remember about ${info.name}?` : `What would you like to tell ${info.name}’s family?`}</h1>
         {errorLine}
         {kind === "memory" && <input className="cb-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A title, if one comes to mind" aria-label="Title" maxLength={200} />}
         <textarea
@@ -294,7 +295,7 @@ export default function Contribute() {
             )}
           </div>
           <Button type="submit" disabled={busy === "photo"}>
-            Next: who it's from
+            Next: who it’s from
           </Button>
         </div>
       </form>
@@ -311,7 +312,7 @@ export default function Contribute() {
         noValidate
       >
         <div className="cb-top">
-          <p className="cb-kicker">A page for {info.name}'s book</p>
+          <p className="cb-kicker">A page for {info.name}’s book</p>
           <button type="button" className="linkish cb-back" onClick={() => setStep("words")}>
             ← Back to your words
           </button>
@@ -339,7 +340,7 @@ export default function Contribute() {
       <div className="cb">
         {page}
         <p className="cb-colophon">
-          A Story keeps a family's memories in their own words. <Link to="/welcome">About A Story</Link>
+          A Story keeps a family’s memories in their own words. <Link to="/welcome">About A Story</Link>
         </p>
       </div>
     </AuthFrame>

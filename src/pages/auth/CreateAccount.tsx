@@ -7,7 +7,7 @@
  * not as a field to fill in.
  */
 import { useRef, useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
 import type { CompanionFocus } from "../../components/delight/Companion";
@@ -30,7 +30,9 @@ export default function CreateAccount() {
   const given = looksLikeFamilyCode(prefilled) as boolean;
   const [step, setStep] = useState<"who" | "password">("who");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  // an address carried back from Verify's "Change" (router state, never the URL), ready to correct
+  const carried = (useLocation().state as { email?: string } | null)?.email;
+  const [email, setEmail] = useState(typeof carried === "string" ? carried : "");
   const [password, setPassword] = useState("");
   const [shown, setShown] = useState(false);
   const [focus, setFocus] = useState<CompanionFocus>(null);
@@ -55,7 +57,7 @@ export default function CreateAccount() {
     setError(null);
     setBad(null);
     if (!name.trim()) return fail("name", "Write your name on the plate first.");
-    if (!looksLikeEmail(email)) return fail("email", "That email doesn't look complete. Check it for a missing letter.");
+    if (!looksLikeEmail(email)) return fail("email", "That email doesn’t look complete. Check it for a missing letter.");
     setStep("password");
     setFocus(null);
     requestAnimationFrame(() => passwordRef.current?.focus());
@@ -67,7 +69,7 @@ export default function CreateAccount() {
     setBad(null);
     if (password.length < MIN_PASSWORD) return fail("password", `The password needs at least ${MIN_PASSWORD} characters.`);
     const cleaned = hasCode ? (normaliseFamilyCode(code) as string) : "";
-    if (cleaned && !looksLikeFamilyCode(cleaned)) return fail("code", "A family code is six letters and numbers. Check you have them all.");
+    if (cleaned && !looksLikeFamilyCode(cleaned)) return fail("code", "Check the code: it has six.");
     setBusy(true);
     const r = await createAccount({ name, email, password, code: cleaned });
     setBusy(false);

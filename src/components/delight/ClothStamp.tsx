@@ -2,7 +2,9 @@
  * Press the cloth and the A-mark is blind-stamped into it where you
  * pressed, the way a binder's brass die leaves its mark; it fades as the
  * cloth springs back. Pointer-downs on anything you can actually use (the
- * sheet, links, buttons) are left alone.
+ * sheet, links, buttons) are left alone. Under reduced motion there is no
+ * stamp at all. Its look is one rule for the sign-in and the front door
+ * (styles/pages/signed-out.css §1).
  */
 import { useEffect, useState, type RefObject } from "react";
 import { MARK_SVG } from "../brandArt";
@@ -18,6 +20,8 @@ export default function ClothStamp({ ground }: { ground: RefObject<HTMLElement |
     if (!el) return;
     const press = (e: PointerEvent) => {
       if (e.button !== 0) return;
+      // a delight, so none at all under reduced motion (never a still stamp that later pops off)
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       const t = e.target as HTMLElement;
       // only the cloth takes the stamp: the book, the leaf and anything you can use are left alone
       if (t.closest(".spread, .door-leaf, .door-book, .paper, .print, a, button, input, label, textarea")) return;

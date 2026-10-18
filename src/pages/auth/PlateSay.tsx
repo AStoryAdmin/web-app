@@ -6,11 +6,13 @@
  * aria-describedby="plate-say" and carry aria-invalid).
  */
 import type { ReactNode } from "react";
+import { smarten } from "../../lib/typography";
 
 export default function PlateSay({ error, children }: { error?: string | null; children?: ReactNode }) {
   return (
     <p id="plate-say" className={`plate-say${error ? " is-error" : ""}`} role={error ? "alert" : undefined} aria-live="polite">
-      {error || children}
+      {/* messages from the server and the app core come with straight quotes: set them as the book would */}
+      {error ? smarten(error) : typeof children === "string" ? smarten(children) : children}
     </p>
   );
 }

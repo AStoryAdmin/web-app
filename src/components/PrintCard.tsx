@@ -15,7 +15,6 @@
  */
 import { Link } from "react-router-dom";
 import { cardMeta } from "../app-core/lib/memoryCard.js";
-import { usePhotoUrl } from "../lib/photoUrls";
 import { useAccount } from "../state/accountContext";
 import { Mark } from "./Brand";
 import { MicIcon } from "./icons";
@@ -23,7 +22,7 @@ import WaxSeal from "./archive/WaxSeal";
 import { realChapter } from "./archive/photos";
 import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
-import { loadedRef, onLoaded } from "./archive/develop";
+import { loadedRef, onLoaded, usePrintPhoto } from "./archive/develop";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { smarten } from "../lib/typography";
@@ -73,7 +72,7 @@ export default function PrintCard({
 }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
-  const photo = usePhotoUrl(meta.photo, size === "lead" ? undefined : 600);
+  const { src: photo, frameRef, onError: onPhotoError } = usePrintPhoto(meta.photo);
   const dated = meta.date !== "No date yet";
   const said = meta.photo ? "" : words(memory);
   const people = (memory.personIds || [])
@@ -106,10 +105,10 @@ export default function PrintCard({
     >
       {treasured && <i className="glint" aria-hidden="true" />}
       {treasured && <WaxSeal size={34} className="print-seal" />}
-      <span className={`frame${marks ? " has-marks" : ""}`} aria-hidden="true">
+      <span className={`frame${marks ? " has-marks" : ""}`} aria-hidden="true" ref={frameRef}>
         {meta.photo ? (
           <>
-            <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onLoaded} />
+            <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onLoaded} onError={onPhotoError} />
             <span className="veil" />
           </>
         ) : (

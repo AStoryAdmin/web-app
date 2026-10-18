@@ -63,6 +63,13 @@ export function MemoryHead({
       )}
       <h1 className="mv-title" id="mv-title">
         {title}
+        {/* the house full stop in foil (Bao's Standard rule 33), ornament only: never after a title that already ends on
+            its own punctuation ("What did Nhi teach you to do?"); prints and cards, captions in a set, carry none */}
+        {!/[.?!…]["”’)]*$/.test(title.trim()) && (
+          <span className="mv-stop" aria-hidden="true">
+            .
+          </span>
+        )}
         {/* the seal sits inline after the last word, so it never narrows the title */}
         {treasured && (
           <>

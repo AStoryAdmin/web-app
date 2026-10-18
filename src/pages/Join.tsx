@@ -13,6 +13,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AuthFrame from "./auth/AuthFrame";
 import PlateSay from "./auth/PlateSay";
+import { smarten } from "../lib/typography";
 import { Button, ButtonLink } from "../components/ui";
 import LoadingMark from "../components/delight/LoadingMark";
 import { useAuth } from "../state/authContext";
@@ -230,7 +231,7 @@ export default function Join() {
     plate = (
       <div className="form">
         <h1>
-          {outcome.title || "You're in"}
+          {smarten(outcome.title || "You’re in")}
           <span className="stop">.</span>
         </h1>
         <PlateSay>{outcome.body}</PlateSay>

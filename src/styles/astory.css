@@ -686,21 +686,17 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* The pointer as a lamp (components/delight/Light): a broad sheen on the cloth. */
 .auth { overflow: hidden; }
 
-/* The binder's blind deboss of the mark where the cloth was pressed (components/delight/ClothStamp). */
-.auth .stamps { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-.auth .stamp { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; animation: deboss 3.2s var(--ease-out) both;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.16)) drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.32)); }
-.auth .stamp svg { width: 100%; height: 100%; display: block; }
-.auth .stamp svg * { fill: rgba(0, 0, 0, 0.34) !important; stroke: none; }
+/* The binder's blind deboss of the mark where the cloth was pressed (components/delight/ClothStamp): one rule for the
+   sign-in and the front door, in styles/pages/signed-out.css §1. */
 @keyframes deboss { 0% { opacity: 0; transform: scale(1.06); } 10% { opacity: 1; transform: scale(1); } 45% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
 
 /* The pressed leaf that drifts after the pointer over the cloth (components/delight/Leaf). */
 .auth .leaf { position: absolute; left: 0; top: 0; margin: -21px 0 0 -15px; pointer-events: none; z-index: 0; opacity: 0; will-change: transform; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.28)); }
 .auth .leaf .blade { fill: #D9A24A; fill-opacity: 0.92; }
 .auth .leaf .vein { fill: none; stroke: rgba(74, 51, 39, 0.55); stroke-width: 1; stroke-linecap: round; }
-@media (prefers-reduced-motion: reduce) { .lamp { display: none; } .auth .stamp { animation: none; opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .lamp { display: none; } }
 
-/* ───────────────────────── 19. Whose story (first run) ───────────────────────── */
+/* ───────────────────────── 19. Odds and ends: the picture-less memory card and the week dots (Start moved to pages/book-account.css) ───────────────────────── */
 .mem .pic.nopic { display: grid; place-items: center; background: var(--support-soft); color: var(--heading); }
 .mem .pic.nopic .story-q { font-size: 56px; }
 .week .d.has::after { opacity: var(--dot, 1); }
@@ -3419,7 +3415,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .home-mem .print-card:not(.invite) { padding: 6px 6px 8px; }
 .home-mem .print-card:not(.invite) .frame, .home-mem .print-card.lead:not(.invite) .frame { aspect-ratio: 1 / 1; }
 .home-mem .print-card:not(.invite) .cap { padding: 12px; gap: 2px; }
-.home-mem .print-card:not(.invite) .cap .title { font-size: 19px; line-height: 1.12; -webkit-line-clamp: 2; }
+.home-mem .print-card:not(.invite) .cap .title { font-size: 19px; line-height: 1.12; }
 .home-mem .print-card:not(.invite) .typed-in .wm { display: none; }
 .home-mem .print-card:not(.invite) .cues { left: 8px; top: 8px; }
 
@@ -3691,8 +3687,6 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .running-head-sheet, .sheet-page .running-head-sheet { font-size: 12px; }
 .folio-sheet { font-size: 12px; }
 .sheet-page .label, .sheet-page .more, .sheet-page .pill.gold, .fr-kicker, .ribbon-day .wd { font-size: 12px; }
-.print-card .cap .kicker, .home-mem .print-card .cap .kicker { font-size: 11.5px; letter-spacing: 0.12em; }
-.print-card .cap .dateline, .home-mem .print-card .cap .dateline { font-size: 12px; }
 @media (max-width: 760px) {
   .running-head-sheet, .sheet-page .running-head-sheet, .folio-sheet, .sheet-page .label, .sheet-page .more, .ribbon-day .wd { font-size: 12px; letter-spacing: 0.1em; }
 }

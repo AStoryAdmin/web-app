@@ -53,7 +53,8 @@ export default function Verify() {
     setAgain("sent");
   };
 
-  // a mistyped address is fixed by starting the account again with the right one
+  // a mistyped address is fixed by starting the account again with the right one; the address travels in the
+  // router's state (never in the URL), so Create account opens with it ready to correct
   const change = `/create-account?next=${encodeURIComponent(next)}${familyCode ? `&code=${encodeURIComponent(familyCode)}` : ""}`;
 
   if (!email) {
@@ -82,7 +83,7 @@ export default function Verify() {
           <span>
             The code went to <b>{email}</b>
           </span>
-          <Link className="linkish" to={change} viewTransition>
+          <Link className="linkish" to={change} state={{ email }} viewTransition>
             Change
           </Link>
         </p>

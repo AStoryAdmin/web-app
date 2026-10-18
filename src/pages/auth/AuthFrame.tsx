@@ -129,7 +129,7 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
           .to(paths, { fillOpacity: 1, duration: 0.2, ease: OUT }, 0.3);
         if (title) tl.to(title, { opacity: 0, duration: 0.15, ease: OUT }, 0.55);
         if (rule) tl.to(rule, { opacity: 0, duration: 0.15, ease: OUT }, 0.55);
-        tl.to([front, back].filter(Boolean), { opacity: 0, duration: 0.3, ease: OUT }, 0.7).set(board, { visibility: "hidden" }, 1.0);
+        tl.to([front, back, el.querySelector(".board-edge")].filter(Boolean), { opacity: 0, duration: 0.3, ease: OUT }, 0.7).set(board, { visibility: "hidden" }, 1.0);
         t0 = 0.75;
       } else {
         // the foil tools itself on, the rule draws, the lamp breathes over the board; then the board swings open on the
@@ -137,7 +137,8 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
         tl.to(paths, { strokeDashoffset: 0, duration: 0.6, ease: MOVE, stagger: 0.01 }, 0).to(paths, { fillOpacity: 1, duration: 0.35, ease: OUT, stagger: 0.006 }, 0.5);
         if (breath) tl.fromTo(breath, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: MOVE, yoyo: true, repeat: 1 }, 0.05);
         tl.to(rule, { scaleX: 1, duration: 0.4, ease: OUT }, 0.55).to(board, { rotateY: -180, duration: 0.9, ease: MOVE }, 0.9);
-        if (back) tl.to(back, { opacity: 0, duration: 0.25, ease: OUT }, 1.75);
+        const edge = el.querySelector<HTMLElement>(".board-edge");
+        if (back) tl.to([back, edge].filter(Boolean), { opacity: 0, duration: 0.25, ease: OUT }, 1.75);
         tl.set(board, { visibility: "hidden" }, 2.0);
         t0 = 1.75;
       }
@@ -174,7 +175,7 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
       <div className="spread-wrap" ref={wrapRef}>
         <div className={`spread${isStacked() ? "" : " scaled"}`} ref={spreadRef}>
           {/* the inside of the front board: the endpaper, and what the page lays on it */}
-          <section className="leaf-l endpaper" aria-label={leftLabel || "Photographs from a family's book"}>
+          <section className="leaf-l endpaper" aria-label={leftLabel || "Photographs from a family’s book"}>
             <span className="ep-pattern" aria-hidden="true" />
             <span className="ep-linen" aria-hidden="true" />
             {left ?? (
@@ -213,6 +214,7 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
 
           {stage === "closed" && (
             <div className="board" aria-hidden="true">
+              <i className="board-edge" />
               <div className="board-face board-front">
                 <span className="board-breath" aria-hidden="true" />
                 <Lockup className="foil-title" height={120} />

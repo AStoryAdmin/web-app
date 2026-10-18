@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getSupabase, hasStoredSession, isConfigured } from "../lib/supabase";
 import { currentUser, signOut as signOutRequest, type User } from "../data/auth";
+import { clearPhotoCache } from "../lib/photoUrls";
 import { afterSignIn, type SignInEffects } from "../data/session";
 import { AuthContext } from "./authContext";
 
@@ -65,6 +66,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await signOutRequest();
+    // signed photo addresses belong to this person: none survives into the next sign-in in this tab
+    clearPhotoCache();
     setUser(null);
   }, []);
 

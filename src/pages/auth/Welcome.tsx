@@ -52,8 +52,8 @@ export default function Welcome() {
   const canvas = useRef<HTMLDivElement>(null);
   const sweepFrom = useRef<number | null>(null);
   useLight(ground);
-  // the bench is drawn at 1520 by 690 and fitted to the window like the sign-in's book
-  useFit(ground, wrap, canvas, 1520, 690);
+  // the bench is drawn at 1560 by 740 and fitted to the window like the sign-in's book
+  useFit(ground, wrap, canvas, 1560, 740);
   const navigate = useNavigate();
   const album = useRef<Promise<unknown> | null>(null);
   // The three fictional families of the samples page, each in its own cover colour until a swatch is chosen.
@@ -156,7 +156,7 @@ export default function Welcome() {
                 </Link>
               </p>
               {/* the family dog beside the way in, its paws on the leaf's foil rule, watching the pointer as on the sign-in */}
-              <Companion focus={null} shown={false} rest="watch" />
+              <Companion focus={null} shown={false} rest="watch" poses={["watch"]} />
             </div>
           </main>
 

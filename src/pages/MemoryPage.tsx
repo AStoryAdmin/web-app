@@ -27,7 +27,7 @@ import LedgeNote from "../components/archive/LedgeNote";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
 import { isRunOfLines, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
-import { ASKED, cleanTranscript, findTakeaway, opensOn, soundsSpoken, takeaway } from "../components/archive/transcript";
+import { ASKED, JOIN, cleanTranscript, findTakeaway, opensOn, soundsSpoken, takeaway } from "../components/archive/transcript";
 import { useServerTidy } from "../components/archive/serverTidy";
 import { tellerParts, wasSpoken } from "../lib/memoryDisplay";
 import WhereNext from "../components/book/WhereNext";
@@ -206,15 +206,18 @@ export default function MemoryPage() {
   // the memory's one takeaway: the same line as its print, its List card and Home's quote
   const kept = smarten(takeaway(raw.join("\n")));
   // where the takeaway stands decides how often it is set (twice at most, never twice in a row):
-  // - the words open on it: nothing under the title; the opening sentence carries the gold mark, and a short memory
-  //   has no coda
-  // - the words end on it: no coda
+  // - the words open on it (first two sentences or 200 characters): nothing under the title; it carries the gold mark
+  //   in place
+  // - the words end on it, or are under 1,200 characters (one or two screens): no coda
   // - a memory that is only its takeaway ("How to end the chat.") is set once, as its words
   const opens = !!kept && opensOn(body.find((p) => !p.startsWith(ASKED)) || "", kept);
   const whole = body.length === 1 && body[0].length <= kept.length + 12;
   const keptHead = whole || opens ? "" : kept;
   const markIn = !!kept && !whole;
-  const coda = !!kept && !whole && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept) && !(opens && body.join(" ").length < 700);
+  const coda = !!kept && !whole && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept) && body.join(" ").length >= 1200;
+  // typed lines joined into the takeaway ("We live in a small city · It's in Vietnam") are marked line by line
+  const keptLines = kept.includes(JOIN) ? kept.split(JOIN).map((l) => l.trim()) : [];
+  const firstWords = body.findIndex((p) => !p.startsWith(ASKED));
   // one rule for who told it, shared with the cards and "From the book": "Told by Bao in conversation"
   const { verb: told, name: toldName, rest: toldRest } = tellerParts(memory, story);
 
@@ -309,7 +312,13 @@ export default function MemoryPage() {
               <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
-                    {markIn ? withMark(line, kept) : withLang(line)}
+                    {markIn && keptLines.length && k === firstWords && j < keptLines.length && line.trim() === keptLines[j] ? (
+                      <mark className="mv-mark">{withLang(line)}</mark>
+                    ) : markIn ? (
+                      withMark(line, kept)
+                    ) : (
+                      withLang(line)
+                    )}
                     {j < arr.length - 1 && <br />}
                   </span>
                 ))}

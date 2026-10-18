@@ -71,7 +71,7 @@ const sentencesOf = (s: string) => s.match(/[^.!?…]+(?:[.!?…]+["”’)]*|$)
 /** "Like" as filler goes ("I taught like teenagers" → "I taught teenagers"); the verb and the comparison stay. */
 function dropFillerLike(s: string): string {
   return s
-    .replace(/,\s*like,\s*/gi, (m: string, at: number, all: string) => (HEDGES_AMOUNT.test(all.slice(at + m.length)) ? m : ", "))
+    .replace(/,\s*like,\s*/gi, (m: string, at: number, all: string) => (HEDGES_AMOUNT.test(all.slice(at + m.length)) || quotesOrFeels(all.slice(0, at), all.slice(at + m.length)) ? m : " "))
     .replace(/\blike\b,?\s*/gi, (m: string, at: number, all: string) => (isFillerLike(all, at) ? "" : m))
     .replace(/\s{2,}/g, " ");
 }
@@ -102,11 +102,11 @@ function punctuateRunOn(s: string): string[] {
 }
 
 /**
- * A clause said and then restarted: "That's how we got, that's how we
- * built…" → "that's how we built…"; "So we did a, we built…" → "we built…".
- * The first try goes when it is short (six words or fewer) and the next
- * clause starts again on the same word, or the first try breaks off on a
- * little word ("a", "to", "the") and the next picks up a word from it.
+ * A clause said and then restarted, dropped only when that is certain (the founder's ruling on rule 29):
+ * - it is a true prefix of the next clause ("we went to, we went to the market" → "we went to the market");
+ * - it is short (six words or fewer) and breaks off on a little word ("So we did a, we built…" → "we built…").
+ * A clause is never dropped because it opens on the same word as the next: "We laughed, we cried, we sang",
+ * "We had nothing, we had each other" and "I felt like, I was alone" are all said, and all stay.
  */
 function dropRestarts(s: string): string {
   const parts = s.split(/,\s+/);
@@ -116,27 +116,34 @@ function dropRestarts(s: string): string {
     const a = parts[i];
     const b = parts[i + 1];
     if (b) {
-      const aw = a.toLowerCase().split(/\s+/).filter(Boolean);
-      const bw = b.toLowerCase().split(/\s+/).filter(Boolean);
-      const short = aw.length <= 6;
-      const sameStart = aw[0] && aw[0] === bw[0];
-      const brokeOff = /\b(?:a|an|the|to|of|like|and|so)$/i.test(a) && aw.includes(bw[0]);
-      if (short && (sameStart || brokeOff)) continue;
+      const na = norm(a);
+      const nb = norm(b);
+      const prefix = !!na && nb.length > na.length && nb.startsWith(`${na} `);
+      const brokeOff = a.trim().split(/\s+/).length <= 6 && BREAKS_OFF.test(a.trim());
+      if (prefix || brokeOff) continue;
     }
     out.push(a);
   }
   return out.join(", ");
 }
 
+/** A clause that stops on a word that cannot end one: an article, "to", "of", a possessive ("we did a,"). */
+const BREAKS_OFF = /\b(?:a|an|the|to|of|my|our|their|your)$/i;
+
 /** A word said twice on purpose: emphasis ("very, very"), grammar ("had had", "that that"), a refusal ("no, no"). */
 const MEANT_TWICE = /^(?:very|really|so|much|many|more|most|far|long|had|that|is|no|yes|bye|ha|again|over|round|on|now|go|come|well|never|ever|too)$/i;
 /** A repeat joined by a conjunction is said on purpose ("worse and worse and then", "again and again and finally"). */
 const JOINED = /\b(?:and|or|but|after|by|then|upon|over)$/i;
-/** A start broken off by a filler and said again, on a little word only ("my so my mom", "the uh the house"). */
-const LITTLE_RESTART = /\b(my|the|a|an|I|we|our|his|her|their|he|she|they|it|to|in|on|at|of|for|with|this|that)\s+(?:so|uh|um)\s+\1\b/gi;
+/** A phrase that is itself a conjunction ("and then and then") is a stammer, not "X and X". */
+const CONJ_START = /^(?:and|or|but|so|then|after|by|because)\b/i;
+/**
+ * An exact adjacent repeat of a word or a phrase of up to three words, any number of times ("I, I", "we we we",
+ * "and then and then", "he was, he was"): collapsed to one.
+ */
+const STUTTER = /\b((?:[\w'’]+\s+){0,2}[\w'’]+)(?:,?\s+\1\b)+/gi;
+/** Kept whole, at its full length: a doubling that means something ("very, very", "no, no, no"), or "X and X and". */
+const meantTwice = (x: string) => MEANT_TWICE.test(x) || (/\s/.test(x) && JOINED.test(x) && !CONJ_START.test(x));
 
-/** "My dad so I started…" → "I started…": a start abandoned before "so I" / "so we". */
-const ABANDONED = /^(?:[\w'’]+\s+){1,3}so\s+(?=(?:I|we)\b)/i;
 
 const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
 
@@ -161,11 +168,9 @@ export function cleanSpeech(text: string, { answer = false }: { answer?: boolean
         .replace(FILLER, "$1")
         // stutters and false starts: a word or a short phrase said twice ("I, I", "so I, so I"); a doubling that
         // means something ("very, very", "had had", "that that", "no, no") is the speaker's and stays
-        .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, (m: string, x: string) => (MEANT_TWICE.test(x) || JOINED.test(x) ? m : x))
-        // a false start across a filler, on a little word only: "my so my mom" → "my mom"; never "X and X"
-        // ("faster and faster", "more and more", "over and over" say something)
-        .replace(LITTLE_RESTART, "$1")
-        .replace(ABANDONED, "")
+        .replace(STUTTER, (m: string, x: string) => (meantTwice(x) ? m : x))
+        // (a false start across a filler sound, "my uh my mom", is a stutter once the "uh" has gone; across a word such
+        // as "so" or "and" nothing is dropped: "faster and faster" and "my dad so I started" are both said)
         .replace(/^[\s,;:]+/, ""),
     )
     .map(dropFillerLike)
@@ -323,9 +328,21 @@ function fillerLike(s: string): boolean {
  */
 const HEDGES_AMOUNT = /^,?\s*(?:[$£€]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|billions?|dozens?|half|nothing|none|every|everything|everyone|all|almost|about|maybe|most|some|several|not|no|never|barely|hardly|only)\b|(?:a|an)\s+(?:few|couple|lot|hundred|thousand|million|billion|dozen|half|bunch|ton|year|month|week|day|hour|minute|mile)s?\b)/i;
 
-/** Whether the "like" at `at` in `s` is filler: neither the verb ("I'd like to"), a comparison ("like a teacher"), nor a hedge on an amount ("like ten"). */
+/**
+ * The words after which "like" quotes or feels, and stays: "she was like, you have to go", "he's like, why",
+ * "I was like oh my god", "I felt like, I was alone", "it seemed like".
+ */
+const BE_OR_GO = /^(?:was|were|is|am|are|be|been|being|go|goes|went|going)$|['’]s$/i;
+const FEELS = /^(?:felt|feel|feels|feeling|seemed|seem|seems|looked|look|looks|sounded|sound|sounds)$/i;
+/** What opens a quote after "was like": a comma, a quotation mark, a pronoun or an exclamation ("oh my god"). */
+const QUOTE_NEXT = /^\s*(?:,|["“‘']|(?:i|you|he|she|we|they|oh|wow|what|why|how|no|yes|yeah|okay|ok|hey|wait|um|uh)\b)/i;
+const quotesOrFeels = (before: string, after: string) => FEELS.test(lastWord(before)) || (BE_OR_GO.test(lastWord(before)) && QUOTE_NEXT.test(after));
+const lastWord = (s: string) => s.trim().split(/\s+/).pop()?.toLowerCase().replace(/[^\p{L}'’]/gu, "") || "";
+
+/** Whether the "like" at `at` in `s` is filler: not the verb ("I'd like to"), a comparison ("like a teacher"), a hedge on an amount ("like ten"), nor a quote or a feeling ("she was like,", "I felt like"). */
 function isFillerLike(s: string, at: number): boolean {
   if (HEDGES_AMOUNT.test(s.slice(at + 4))) return false;
+  if (quotesOrFeels(s.slice(0, at), s.slice(at + 4))) return false;
   const before = s.slice(0, at).trim().split(/\s+/).pop()?.toLowerCase() || "";
   const after = s.slice(at + 4).trim().split(/[\s,.!?]+/)[0]?.toLowerCase() || "";
   const verb = /^(i|we|they|you|he|she|would|'d|i'd|we'd|really|to|did|didn't|don't|do|not|feel|felt|looks?|looked|sounds?|liked?)$/.test(before);
@@ -373,12 +390,18 @@ export function keptLine(text: string, { max = 170, min = 50, needFeeling = true
   sentences.forEach((s, i) => {
     const len = s.length;
     if (len < min || len > max || /\?["”’)]*$/.test(s) || !/^[A-Z“"‘]/.test(s)) return;
-    const feels = FEELING.test(s);
-    // a takeaway carries a feeling or a judgement; a plain fact ("I've taken just under $300,000…") is not one
-    if (needFeeling && !feels) return;
     // judged as it will be shown, without the joint ("So you always have to…" is shown "You always have to…")
     const shown = s.replace(OUT_OF_CONTEXT, "");
+    // a takeaway carries a feeling or a judgement; a plain fact ("I've taken just under $300,000…") is not one, and
+    // "always" or "never" alone feel only in a lesson ("You always have to…") or a life the teller is in ("I never…", "she always kept
+    // the lamp on for us"), not in a fact about someone else ("My co-founder has never jumped…")
+    const strong = FEELING.test(s.replace(/\b(?:always|never)\b/gi, ""));
+    const feels = strong || (FEELING.test(s) && (GENERAL_YOU.test(shown) || /\b(?:I|we|us|me)\b/i.test(shown)));
+    if (needFeeling && !feels) return;
     if (weakOpening(shown, feels) || (OPENS_SOFT.test(shown) && !feels) || dangles(s) || fillerLike(s)) return;
+    // a line that points back ("That's always been the dream…", "It's been…") needs what came before it: under a
+    // title, on a card, it can read as the opposite of what was meant, so it is never the kept line
+    if (POINTS_BACK.test(shown)) return;
     if (cleanSpeech(s) !== s) return;
     // a feeling or a judgement outweighs who is speaking; a plain fact scores low
     let score = 0;
@@ -442,8 +465,8 @@ export function takeaway(text: string): string {
     if (len < 30 || len > 140 || /\?["”’)]*$/.test(x) || !/^[A-Z“"‘]/.test(x) || dangles(x) || fillerLike(x)) return;
     const feels = FEELING.test(x);
     if (weakOpening(x, feels)) return;
-    // a line that points back ("That paid for an engineer…") needs what came before it; only a feeling carries it alone
-    if (POINTS_BACK.test(x) && !feels) return;
+    // a line that points back ("That paid for an engineer…", "That's always been the dream…") needs what came before it
+    if (POINTS_BACK.test(x)) return;
     let score = 0;
     if (feels) score += 2;
     if (/\b(I|we|my|our|me|us)\b/.test(x)) score += 2;
@@ -451,6 +474,10 @@ export function takeaway(text: string): string {
     if (/^["“‘]?(?:I|We|My|Our)\b/.test(x)) score += 2;
     if (len >= 45 && len <= 110) score += 2;
     if (/\$|\d{3,}/.test(x)) score -= 1;
+    // a long run with no pause in it is a run-on of speech ("…he's just very connected I did not grow up in…"), and a
+    // start broken off before "so I" ("My dad so I started…") stays in the words but is never set alone
+    if (len > 70 && !/[,;:—–]/.test(x)) score -= 3;
+    if (/^(?:[\w'’]+\s+){1,3}so\s+(?:I|we)\b/i.test(x)) score -= 6;
     score -= i * 0.1;
     if (score > bestScore) {
       bestScore = score;
@@ -458,7 +485,9 @@ export function takeaway(text: string): string {
     }
   });
   const first = sentences[0] ? cap(dropFillerLike(sentences[0])) : "";
-  return best || (first.length <= 140 ? first : "");
+  // a short memory with no full stop ("Poker night at 2315") is its own takeaway, whole
+  const whole = t.replace(/\s+/g, " ");
+  return best || (first.length <= 140 ? first : "") || (whole.length <= 140 ? whole : "");
 }
 
 /** Whether the shown paragraph holds the takeaway, ignoring case and punctuation (so it still matches once tidied). */
@@ -477,12 +506,14 @@ export function findTakeaway(paragraph: string, line: string): [number, number] 
 }
 
 /**
- * Whether the words open on the takeaway: it is their first sentence, or, for words typed line by line, their first
- * lines. The page then neither marks it in place nor repeats it, since the reader has just read it.
+ * Whether the words open on the takeaway: it is in their first two sentences or first 200 characters, or, for words
+ * typed line by line, it is their first lines. The page then sets nothing under the title and marks it in place.
  */
 export function opensOn(words: string, line: string): boolean {
   if (!line || !words) return false;
-  const first = words.match(/^[^.!?…]+[.!?…]+["”’)]*/)?.[0];
-  if (first && findTakeaway(first, line)) return true;
+  // within the first two sentences or the first 200 characters, the reader has only just read it
+  const at = findTakeaway(words, line);
+  const two = words.match(/^(?:[^.!?…]+[.!?…]+["”’)]*\s*){1,2}/)?.[0].length ?? 0;
+  if (at && (at[0] <= 200 || at[0] < two)) return true;
   return norm(words).startsWith(norm(line));
 }

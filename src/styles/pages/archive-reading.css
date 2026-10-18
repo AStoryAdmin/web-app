@@ -219,9 +219,8 @@
 .mv-retry:focus-visible { outline: 2px solid var(--mv-terra); outline-offset: 2px; }
 @keyframes mv-menu-in { from { opacity: 0; transform: scale(0.96) translateY(-2px); } }
 .mv-menu-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 4px; background: transparent; color: var(--mv-ink); font: 500 14px/1.25 var(--font-ui); text-align: left; cursor: pointer; transition: background-color 120ms var(--ease-out); }
-.mv-menu-item:focus-visible { background: var(--paper-tone); outline: none; }
+.mv-menu-item:focus-visible { background: var(--paper-tone); outline: none; box-shadow: inset 0 0 0 2px var(--mv-terra); }
 @media (hover: hover) and (pointer: fine) { .mv-menu-item:hover { background: var(--paper-tone); } }
-.mv-menu-item:focus-visible { box-shadow: inset 0 0 0 2px var(--mv-terra); }
 .mv-menu-item:disabled { opacity: 0.6; cursor: not-allowed; }
 .mv-menu-ico { display: grid; place-items: center; width: 17px; }
 .mv-menu-ico:empty { display: none; }
@@ -273,7 +272,8 @@
 .mv-turn-link.next .mv-turn-arrow { grid-column: 2; grid-row: 1 / span 2; align-self: center; font: 400 22px/1 var(--font-ui); color: var(--accent); transition: transform 160ms var(--ease-out); }
 .mv-turn-k { font: 600 13px/1.2 var(--font-ui); color: var(--mv-terra); }
 .mv-turn-k span { display: inline-block; transition: transform 160ms var(--ease-out); }
-.mv-turn-link i { font-family: var(--book-body); font-style: italic; font-size: 17px; line-height: 1.3; color: var(--mv-ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* the page-turn titles run whole and balanced, never clamped */
+.mv-turn-link i { display: block; font-family: var(--book-body); font-style: italic; font-size: 17px; line-height: 1.3; color: var(--mv-ink); text-wrap: balance; }
 .mv-turn-pos { font: 500 13px/1.2 var(--font-ui); color: var(--mv-soft); white-space: nowrap; }
 @media (hover: hover) and (pointer: fine) { .mv-turn-link:hover { background: var(--paper-tone); } }
 @media (hover: hover) and (pointer: fine) { .mv-turn-link.prev:hover .mv-turn-k span { transform: translateX(-3px); } }
@@ -417,7 +417,7 @@
 .arc-page .mem:active, .print-card:active { transform: scale(0.98); transition-duration: 120ms; }
 @media (prefers-reduced-motion: reduce) { .arc-page .mem, .arc-page .mem:active, .print-card:active { transition: none; transform: none; } }
 
-.arc-tools + .arc-prints, .arc-tools ~ .arc-prints { margin-top: var(--s-6); }
+.arc-tools ~ .arc-prints { margin-top: var(--s-8); }
 .arc-tools ~ section > .arc-prints { margin-top: var(--s-6); }
 /* on a phone the storyteller's switcher already says whose archive this is */
 @media (max-width: 760px) { .hero .arc-hero-name { display: none; } }
@@ -448,8 +448,10 @@
 .arc-yrow-note { font-family: var(--book-body); font-style: italic; font-size: 17px; line-height: 1.4; color: var(--ink-soft); }
 .sheet-page .arc-page .arc-year > .arc-task, .arc-task { display: inline-flex; align-items: center; gap: 0; column-gap: 0.3em; min-height: 44px; padding: 0 10px; margin-right: -10px; border-radius: 999px; color: var(--sheet-ink); text-decoration: none; font: 600 14px/1.2 var(--font-ui); white-space: nowrap;
   transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
-.arc-task .arc-task-t { font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
-.arc-task .arc-task-arrow { margin-left: 8px; color: var(--accent); transition: transform 160ms var(--ease-out); }
+/* the task sits in the year heading, whose spans are small caps: its own spans read as words */
+.sheet-page .arc-page .arc-year .arc-task span { font: inherit; letter-spacing: 0; text-transform: none; }
+.arc-task .arc-task-t, .sheet-page .arc-page .arc-year .arc-task .arc-task-t { font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+.arc-task .arc-task-arrow, .sheet-page .arc-page .arc-year .arc-task .arc-task-arrow { margin-left: 8px; color: var(--accent); transition: transform 160ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) { .arc-task:hover { background: var(--paper-tone); } }
 @media (hover: hover) and (pointer: fine) { .arc-task:hover .arc-task-arrow { transform: translateX(3px); } }
 .arc-task:active { transform: scale(0.98); }
@@ -462,7 +464,6 @@
   .sheet-page .arc-page .arc-year > .arc-task, .arc-task { display: block; min-height: 44px; padding: 11px 0 0; margin: 0; white-space: normal; line-height: 1.5; border-radius: 0; }
   .arc-task .arc-task-arrow { display: inline; }
 }
-.arc-tools ~ .arc-prints { margin-top: var(--s-8); }
 .arc-page .where-next { margin-top: calc(var(--s-16) + 16px); }
 
 @media (prefers-reduced-motion: reduce) { .arc-task, .arc-task .arc-task-arrow { transition: none; } }
@@ -516,9 +517,6 @@
 .print-card.typed .cap .kicker { color: var(--sage-ink); }
 .print-card.typed .cap .dateline.dated { color: var(--terracotta-ink); }
 .print-card .cue { font-size: 12px; }
-.sheet-page .arc-page .arc-year .arc-task span { font: inherit; letter-spacing: 0; text-transform: none; }
-.sheet-page .arc-page .arc-year .arc-task .arc-task-t { font-weight: 500; color: var(--ink-soft); }
-.sheet-page .arc-page .arc-year .arc-task .arc-task-arrow { color: var(--accent); }
 
 /* ═════════════════════════ The memory page at its edges: the kept line's sizes, the tidy note, the phone's tools, loading ═════════════════════════ */
 @media (min-width: 1680px) { .mv-kept { font-size: 26px; } }
@@ -583,11 +581,7 @@
   .arc-prints .print-card.typed .cap { min-height: 0; }
   .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:not(.invite):has(.cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 2; }
 }
-
-
 /* the page turn: titles balanced, three lines on a phone */
-.mv-turn-link i { text-wrap: balance; }
-@media (max-width: 599px) { .mv-turn-link i { -webkit-line-clamp: 3; } }
 
 /* the tidy note: the separator is drawn before the link; on a phone the link takes its own line and the dot goes */
 .mv-tidy-act::before { content: "· "; color: var(--mv-soft); }
@@ -600,7 +594,7 @@
 .ledge-dog img { display: block; width: 100%; height: auto; }
 .ledge-line { display: block; width: min(320px, 80%); height: 1px; background: var(--foil); opacity: 0.7; }
 .sheet-page .ledge-title { margin: 22px 0 0; font-family: var(--book-display); font-weight: 600; font-size: 36px; line-height: 1.1; letter-spacing: -0.01em; color: var(--sheet-ink); text-wrap: balance; }
-.ledge-stop { color: var(--foil); }
+.ledge-stop, .mv-stop { color: var(--foil); }
 .ledge-text { margin: 12px 0 0; max-width: 30em; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
 .ledge-acts { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 /* the not-found page: the group sits in the middle of the sheet's height on a desktop, not at its top */

@@ -93,11 +93,9 @@ describe("round four of the transcript rules", () => {
     expect(out.join(" ")).not.toContain("Wait");
     expect(out.some((p) => p.startsWith(ASKED))).toBe(false);
   });
-  it("lets a feeling carry an It's opener", async () => {
+  it("never keeps a line that opens on a word pointing back, even with a feeling (round 8)", async () => {
     const { keptLine } = await import("./transcript");
-    expect(keptLine("My co-founder has never jumped full time to another company. It's been challenging, but I think it's why we have the opportunity to get it.")).toBe(
-      "It's been challenging, but I think it's why we have the opportunity to get it.",
-    );
+    expect(keptLine("My co-founder has never jumped full time to another company. It's been challenging, but I think it's why we have the opportunity to get it.")).not.toMatch(/^It's/);
   });
 });
 
@@ -110,14 +108,15 @@ describe("a card's words", () => {
 });
 
 describe("round five of the transcript rules", () => {
-  it("keeps a sentence said twice once, and drops a restarted clause", async () => {
+  it("keeps a sentence said twice once, and keeps a clause that is not a true prefix (the ruling)", async () => {
     const { cleanSpeech } = await import("./transcript");
     expect(cleanSpeech("I was working a corporate job, the eSports job. I was working a corporate job. So I left.")).toBe("I was working a corporate job, the eSports job. So I left.");
-    expect(cleanSpeech("That's how we got, that's how we built the company.")).toBe("That's how we built the company.");
+    expect(cleanSpeech("That's how we got, that's how we built the company.")).toBe("That's how we got, that's how we built the company.");
+    expect(cleanSpeech("We went to, we went to the market.")).toBe("We went to the market.");
   });
-  it("drops a start abandoned before so I", async () => {
+  it("keeps a start abandoned before 'so I': only filler sounds and exact repeats go (the ruling)", async () => {
     const { cleanSpeech } = await import("./transcript");
-    expect(cleanSpeech("My dad so I started my career as a middle school teacher.")).toBe("I started my career as a middle school teacher.");
+    expect(cleanSpeech("My dad so I started my career as a middle school teacher.")).toBe("My dad so I started my career as a middle school teacher.");
   });
   it("never credits the asker's words to the teller after a lifted question", async () => {
     const { cleanTranscript, ASKED } = await import("./transcript");
@@ -150,9 +149,10 @@ describe("tidying never changes what was meant (rule 29)", () => {
     const { FASTER } = await import("./__fixtures__/calls");
     expect(cleanTranscript([FASTER]).join(" ")).toContain("faster and faster");
   });
-  it("still drops a little word restarted across a filler", async () => {
+  it("drops a little word restarted across a filler sound, never across a word (the ruling)", async () => {
     const { cleanSpeech } = await import("./transcript");
-    expect(cleanSpeech("And then my so my mom worked at the plant.")).toBe("And then my mom worked at the plant.");
+    expect(cleanSpeech("And then my uh my mom worked at the plant.")).toBe("And then my mom worked at the plant.");
+    expect(cleanSpeech("And then my so my mom worked at the plant.")).toBe("And then my so my mom worked at the plant.");
   });
   it("never cuts a 'not only … but' thought into a fragment", async () => {
     const { cleanTranscript } = await import("./transcript");
@@ -197,7 +197,9 @@ describe("finding the takeaway in the words", () => {
     const { opensOn } = await import("./transcript");
     expect(opensOn("I just lost my grandparents this year. And I was very close to them.", "I just lost my grandparents this year.")).toBe(true);
     expect(opensOn("We live in a small city\nIt’s in Vietnam\nMom was a teacher", "We live in a small city · It’s in Vietnam")).toBe(true);
-    expect(opensOn("I was close to them. I just lost my grandparents this year.", "I just lost my grandparents this year.")).toBe(false);
+    expect(opensOn("I was close to them. I just lost my grandparents this year.", "I just lost my grandparents this year.")).toBe(true);
+    const far = "We lived by the river for years. My father fished every morning before work. My mother sold the fish at the market by the old bridge in town. Everyone knew her stall. Then the floods came and the market closed. I just lost my grandparents this year.";
+    expect(opensOn(far, "I just lost my grandparents this year.")).toBe(false);
   });
 });
 
@@ -250,5 +252,65 @@ describe("round 7: the takeaway of 0ced", () => {
     const { takeaway } = await import("./transcript");
     const { FASTER } = await import("./__fixtures__/calls");
     expect(takeaway(FASTER)).toMatch(/very tight bondings with my grandparents/);
+  });
+});
+
+/**
+ * Round 8: the founder's ruling on rule 29. The cleaner removes only filler sounds, exact adjacent repeats (a stutter,
+ * any length, to one; a doubling that means something is kept whole) and a clause that is a true prefix of the next
+ * or breaks off on a little word. Every example from the round-7 reviews, with what the page shows.
+ */
+export const RULING_FIXTURES: [string, string][] = [
+  // baos 1: clauses that open like the next one are said, and stay
+  ["We laughed, we cried, we sang all night", "We laughed, we cried, we sang all night."],
+  ["We had nothing, we had each other", "We had nothing, we had each other."],
+  ["I thought, I would never see her again", "I thought, I would never see her again."],
+  ["My mom cooked, my dad cleaned", "My mom cooked, my dad cleaned."],
+  ["The war came, the house was gone", "The war came, the house was gone."],
+  ["He loved her, he really did", "He loved her, he really did."],
+  ["I hoped, I prayed, I waited", "I hoped, I prayed, I waited."],
+  ["I was scared, I was alone", "I was scared, I was alone."],
+  // baos 2: the quoting and the feeling "like" stay; ", like," goes with both commas
+  ["And she was like, you have to go home now", "And she was like, you have to go home now."],
+  ["He's like, why would you do that", "He's like, why would you do that."],
+  ["So we were like, we need to raise money", "So we were like, we need to raise money."],
+  ["I was like oh my god", "I was like oh my god."],
+  ["I felt like, I was alone", "I felt like, I was alone."],
+  ["It was, like, the hardest thing I ever did", "It was the hardest thing I ever did."],
+  // baos 10: stutters collapse to one, a run of three too; a doubling that means something stays whole
+  ["And then and then our engineers from El Salvador", "And then our engineers from El Salvador."],
+  ["We we we moved to Saigon", "We moved to Saigon."],
+  ["no, no, no, you can't go", "No, no, no, you can't go."],
+  // skills 2: a stammered conjunction collapses, and nothing before it is lost
+  ["I went to the store and, and I bought bread.", "I went to the store and I bought bread."],
+  ["We were poor but, but we were happy together.", "We were poor but we were happy together."],
+  ["Then then we moved to Saigon", "Then we moved to Saigon."],
+  // still kept, from earlier rounds
+  ["It got worse and worse and then she left.", "It got worse and worse and then she left."],
+  ["We tried again and again and finally it worked.", "We tried again and again and finally it worked."],
+];
+
+describe("round 8: the ruling on tidying, every reviewer example", () => {
+  it.each(RULING_FIXTURES)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+});
+
+describe("round 8: the takeaway", () => {
+  it("is never a line that points back ('That's always been the dream…')", async () => {
+    const { takeaway } = await import("./transcript");
+    const said = "I specifically PhD of finance. And that's always been the dream because I love teaching. I love to become a professor one day. That was the original goal.";
+    expect(takeaway(said)).not.toMatch(/^That's always/);
+  });
+  it("is a short typed memory with no full stop, whole", async () => {
+    const { takeaway } = await import("./transcript");
+    expect(takeaway("Poker night at 2315")).toBe("Poker night at 2315");
+    expect(takeaway("Dad taught me to fish")).toBe("Dad taught me to fish");
+    expect(takeaway("We moved to Saigon in 1975")).toBe("We moved to Saigon in 1975");
+  });
+  it("opens the words when it is in their first two sentences (4592's opening)", async () => {
+    const { opensOn } = await import("./transcript");
+    expect(opensOn("I specifically PhD of finance. And that's always been the dream because I love teaching. I love to become a professor one day.", "That's always been the dream because I love teaching.")).toBe(true);
   });
 });

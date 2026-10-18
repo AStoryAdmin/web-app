@@ -59,28 +59,32 @@ export default function Prints({ active = true, prints = ALBUM }: { active?: boo
     const el = box.current;
     if (!el || !active) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-    const els = gsap.utils.toArray<HTMLElement>(el.querySelectorAll(".print"));
-    // The drift is a few pixels in the page's own coordinates: the page is scaled (html zoom, the book's fit),
-    // so the movement scales with the prints and stays the same share of them at any window size.
-    const movers = els.map((p) => ({
-      d: Number(p.dataset.depth || 1),
-      x: gsap.quickTo(p, "x", { duration: 1.1, ease: OUT }),
-      y: gsap.quickTo(p, "y", { duration: 1.1, ease: OUT }),
-    }));
-    const move = (e: PointerEvent) => {
-      // clientX and innerWidth are both in screen pixels, so the ratio is the same at any zoom
-      const dx = (e.clientX / window.innerWidth - 0.5) * 2;
-      const dy = (e.clientY / window.innerHeight - 0.5) * 2;
-      for (const m of movers) {
-        m.x(gsap.utils.clamp(-4, 4, -dx * 3 * m.d));
-        m.y(gsap.utils.clamp(-4, 4, -dy * 3 * m.d));
-      }
-    };
-    window.addEventListener("pointermove", move, { passive: true });
+    // the six movers live in one context, so leaving (or StrictMode's second run) reverts them whole, finished or not
+    let move: ((e: PointerEvent) => void) | null = null;
+    const ctx = gsap.context(() => {
+      const els = gsap.utils.toArray<HTMLElement>(el.querySelectorAll(".print"));
+      // The drift is a few pixels in the page's own coordinates: the page is scaled (html zoom, the book's fit),
+      // so the movement scales with the prints and stays the same share of them at any window size.
+      const movers = els.map((p) => ({
+        d: Number(p.dataset.depth || 1),
+        x: gsap.quickTo(p, "x", { duration: 1.1, ease: OUT }),
+        y: gsap.quickTo(p, "y", { duration: 1.1, ease: OUT }),
+      }));
+      move = (e: PointerEvent) => {
+        // clientX and innerWidth are both in screen pixels, so the ratio is the same at any zoom
+        const dx = (e.clientX / window.innerWidth - 0.5) * 2;
+        const dy = (e.clientY / window.innerHeight - 0.5) * 2;
+        for (const m of movers) {
+          m.x(gsap.utils.clamp(-4, 4, -dx * 3 * m.d));
+          m.y(gsap.utils.clamp(-4, 4, -dy * 3 * m.d));
+        }
+      };
+    }, el);
+    const onMove = (e: PointerEvent) => move?.(e);
+    window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
-      window.removeEventListener("pointermove", move);
-      gsap.killTweensOf(els);
-      gsap.set(els, { x: 0, y: 0 });
+      window.removeEventListener("pointermove", onMove);
+      ctx.revert();
     };
   }, [active]);
 

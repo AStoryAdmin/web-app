@@ -46,48 +46,64 @@ type Pose = {
   dx: number;
   /** lowered this share of the box's height behind the plate (a sitting pose's chest); 0 = the paws on the rule */
   sink: number;
+  /** where his weight meets the plate, as a share of the box's width: the head tilts about this point on the rule */
+  pivot: number;
   /** an optional closed-eye frame of the same pose, for a blink; none yet */
   blink?: string;
 };
+export type PoseName = Pose["name"];
 
 /**
  * Measured from public/dog/*.webp (nose blobs: watch 106 px wide centred at 543, 424; cover 91 at 410, 450; peek
- * 82 at 336, 392; curious 92 at 327, 422; sleep 117 at 466, 497). dx = (watch's nose x − 0.5) − (nose x − 0.5) ×
- * w × scale / 802; sink for a sitting pose = (1 − nose y) × h × scale / 640 − watch's 0.3375. Peek keeps its resting
- * paw on the rule (sink 0), so its head rises a little; the plate leaves room for it (signed-out.css --dogroom).
+ * 82 at 336, 392; curious 92 at 327, 422; sleep 117 at 466, 497). scale = 106 / nose width (sleep keeps its own
+ * height, see below). dx = (watch's nose x − 0.5) − (nose x − 0.5) × w × scale / 802. The nose stands at one height
+ * above the rule in every pose of a page: watch's (640 − 424) / 640 − watch's sink; a pose's sink = its nose's height
+ * above its own foot, (h − nose y) × scale / 640, minus that. So cover's chest, curious's chest and peek's resting paw
+ * go down behind the plate. Watch is lowered a little (sink 0.008) so both paws (the art's lowest rows at x 360–630:
+ * 637 and 634 of 640) sit on the rule. Sleep lives alone on Verify, chin on paws, paws on the rule (sink 0).
+ * pivot = the middle of the paws (watch 360–630 of 802), or the chest where it meets the plate.
  */
+const WATCH_SINK = 0.008;
+const NOSE_ABOVE_RULE = (640 - 424) / 640 - WATCH_SINK;
+const sinkFor = (h: number, noseY: number, scale: number) => +(((h - noseY) * scale) / 640 - NOSE_ABOVE_RULE).toFixed(4);
 const POSES: Pose[] = [
-  { name: "watch", w: 802, h: 640, scale: 1, dx: 0, sink: 0 },
-  { name: "cover", w: 738, h: 710, scale: 1.165, dx: 0.118, sink: 0.137 },
-  { name: "peek", w: 689, h: 734, scale: 1.293, dx: 0.191, sink: 0 },
-  { name: "curious", w: 765, h: 949, scale: 1.152, dx: 0.257, sink: 0.611 },
-  { name: "sleep", w: 781, h: 622, scale: 0.906, dx: 0.093, sink: 0 },
+  { name: "watch", w: 802, h: 640, scale: 1, dx: 0, sink: WATCH_SINK, pivot: 0.617 },
+  { name: "cover", w: 738, h: 710, scale: 1.165, dx: 0.118, sink: sinkFor(710, 450, 1.165), pivot: 0.62 },
+  { name: "peek", w: 689, h: 734, scale: 1.293, dx: 0.191, sink: sinkFor(734, 392, 1.293), pivot: 0.66 },
+  { name: "curious", w: 765, h: 949, scale: 1.152, dx: 0.257, sink: sinkFor(949, 422, 1.152), pivot: 0.72 },
+  { name: "sleep", w: 781, h: 622, scale: 0.906, dx: 0.093, sink: 0, pivot: 0.6 },
 ];
+/** The head turns toward the pointer by this much at most, about the paws, so they never lift off the rule. */
+const TILT = 1.5;
 const BOX_H = 640;
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pointer = () => matchMedia("(hover: hover) and (pointer: fine)").matches;
 type To = (v: number) => void;
 
-export default function Companion({ focus, shown, rest = "watch" }: CompanionState) {
+export default function Companion({ focus, shown, rest = "watch", poses }: CompanionState & { poses?: PoseName[] }) {
   const box = useRef<HTMLDivElement>(null);
   const head = useRef<HTMLDivElement>(null);
   // the two movers, made once for the dog's life (inside a context, so leaving reverts them whole)
   const to = useRef<{ hr: To; hy: To } | null>(null);
-  const mood: Pose["name"] = focus === "password" ? (shown ? "peek" : "cover") : rest;
+  // the poses this page can show: its rest pose, and the two the password field asks for (the front door: watch only)
+  const can = poses ?? [rest, "cover", "peek"];
+  const wanted: PoseName = focus === "password" ? (shown ? "peek" : "cover") : rest;
+  // never switch to a pose whose picture has not arrived: hold the last one that has, until it has
+  const [loaded, setLoaded] = useState<Set<PoseName>>(() => new Set());
+  const [held, setHeld] = useState<PoseName>(rest);
+  const mood: PoseName = loaded.has(wanted) ? wanted : loaded.has(held) ? held : wanted;
+  if (mood !== held && loaded.has(mood)) setHeld(mood);
   const awake = mood === "watch" || mood === "curious";
-  // the poses this page rests in load at once; the others follow when the page is idle, or the moment they are needed
-  const [all, setAll] = useState(false);
+  // the rest pose loads at once; the others start the moment it has decoded
+  const more = loaded.has(rest);
+  const arrived = (name: PoseName) => setLoaded((had) => (had.has(name) ? had : new Set(had).add(name)));
   const [blinking, setBlinking] = useState(false);
   const latest = useRef(mood);
   useEffect(() => {
     latest.current = mood;
   });
 
-  useEffect(() => {
-    const t = window.setTimeout(() => setAll(true), 1500);
-    return () => window.clearTimeout(t);
-  }, []);
 
   useEffect(() => {
     const h = head.current;
@@ -95,7 +111,7 @@ export default function Companion({ focus, shown, rest = "watch" }: CompanionSta
     const ctx = gsap.context(() => {
       const still = reduced();
       to.current = {
-        hr: gsap.quickTo(h, "rotation", { duration: still ? 0 : 0.6, ease: OUT }),
+        hr: gsap.quickTo(h, "rotation", { duration: still ? 0 : 0.6, ease: OUT, modifiers: { rotation: gsap.utils.clamp(-TILT, TILT) } }),
         hy: gsap.quickTo(h, "y", { duration: still ? 0 : 0.6, ease: OUT }),
       };
     }, box);
@@ -110,13 +126,13 @@ export default function Companion({ focus, shown, rest = "watch" }: CompanionSta
     const m = to.current;
     if (!m) return;
     if (!awake) {
-      m.hr(mood === "peek" ? 2 : 0);
+      m.hr(0);
       m.hy(0);
       return;
     }
     if (focus) {
-      m.hr(focus === "email" ? -4 : focus === "other" ? 3 : -2);
-      m.hy(2);
+      m.hr(focus === "email" ? -TILT : focus === "other" ? TILT : -TILT / 2);
+      m.hy(0);
       return;
     }
     m.hy(0);
@@ -128,7 +144,7 @@ export default function Companion({ focus, shown, rest = "watch" }: CompanionSta
     const move = (ev: PointerEvent) => {
       // clientX, the rect and innerWidth are all screen pixels, so the ratio holds at any zoom
       const r = h.getBoundingClientRect();
-      m.hr(gsap.utils.clamp(-4, 4, ((ev.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)) * 5));
+      m.hr(gsap.utils.clamp(-TILT, TILT, ((ev.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)) * 2));
     };
     window.addEventListener("pointermove", move, { passive: true });
     return () => window.removeEventListener("pointermove", move);
@@ -158,8 +174,8 @@ export default function Companion({ focus, shown, rest = "watch" }: CompanionSta
 
   return (
     <div className="companion" ref={box} data-mood={mood} data-awake={awake || undefined} data-blinking={blinking || undefined} aria-hidden="true">
-      <div className="head" ref={head}>
-        {POSES.filter((p) => all || p.name === mood || p.name === rest).map((p) => {
+      <div className="head" ref={head} style={{ transformOrigin: `${((POSES.find((p) => p.name === mood)?.pivot ?? 0.6) * 100).toFixed(1)}% 100%` }}>
+        {POSES.filter((p) => can.includes(p.name) && (more || p.name === rest)).map((p) => {
           const style = { height: `${(p.h * p.scale * 100) / BOX_H}%`, bottom: `${-p.sink * 100}%`, left: `${50 + p.dx * 100}%` };
           return [
             <img
@@ -167,13 +183,17 @@ export default function Companion({ focus, shown, rest = "watch" }: CompanionSta
               className={`state ${p.name}`}
               src={`/dog/${p.name}.webp`}
               srcSet={`/dog/${p.name}-420.webp 420w, /dog/${p.name}.webp ${p.w}w`}
-              sizes="(min-width: 2400px) 480px, 240px"
+              sizes="(max-width: 760px) 130px, 180px"
               alt=""
               width={p.w}
               height={p.h}
               decoding="async"
               fetchPriority={p.name === rest ? "high" : "low"}
               style={style}
+              ref={(img) => {
+                if (img?.complete && img.naturalWidth) arrived(p.name);
+              }}
+              onLoad={() => arrived(p.name)}
             />,
             p.blink ? <img key={`${p.name}-blink`} className={`state-blink ${p.name}`} src={p.blink} alt="" decoding="async" style={style} /> : null,
           ];

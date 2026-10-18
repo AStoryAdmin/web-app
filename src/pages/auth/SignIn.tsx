@@ -90,7 +90,7 @@ export default function SignIn() {
         </Button>
         <p className="plate-links">
           <Link to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} viewTransition>
-            Forgot your password?
+            Forgot password?
           </Link>
           <Link to={`/create-account?next=${encodeURIComponent(next)}`} viewTransition>
             Create an account
