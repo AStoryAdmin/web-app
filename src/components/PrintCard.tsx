@@ -13,6 +13,7 @@
  * faces of the people in it; a mic when it was a call. A treasured memory wears a wax seal on its corner and gilt
  * edges instead of a badge (decoration D4, D2). No badges, no streaks.
  */
+import { useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { cardMeta } from "../app-core/lib/memoryCard.js";
 import { useAccount } from "../state/accountContext";
@@ -45,6 +46,52 @@ function freshness(memory: Memory, now = new Date()): string | null {
   if (days === 1) return "Yesterday";
   if (days > 300 && kept.getMonth() === now.getMonth() && kept.getDate() === now.getDate()) return yearsAgo(now.getFullYear() - kept.getFullYear());
   return null;
+}
+
+/** "New from Bao Ngo Gia Vo" → "New from Bao": the phone's cue, first names only (the full line is in the card's name). */
+function firstNames(line: string): string {
+  const who = line.replace(/^New from /, "").split(" and ");
+  return `New from ${who.map((n) => (n === "the family" || /^\d+ others$/.test(n) ? n : n.split(/\s+/)[0])).join(" and ")}`;
+}
+
+/** The type steps a typed print's words take on the smallest phones, size and ruled line, until they fit its 3:4. */
+const FIT_STEPS: [number, number][] = [[15, 21], [14, 20], [13.5, 19], [13, 18]];
+const SMALLEST = "(max-width: 359.98px)";
+
+/**
+ * Below 360px a typed print's words are never clamped: they step down to fit the print at its 3:4, as the titles do,
+ * and only when they still do not fit at 13px does the print grow (its row's prints grow with it, level).
+ */
+function useFitWords(text: string) {
+  const said = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const words = said.current;
+    const frame = words?.closest<HTMLElement>(".frame");
+    const inner = words?.parentElement;
+    const cap = frame?.querySelector<HTMLElement>(".cap");
+    if (!text || !words || !frame || !inner || !cap || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia(SMALLEST);
+    const clear = () => { frame.style.removeProperty("--lh"); frame.style.removeProperty("--said-size"); };
+    const fit = () => {
+      clear();
+      if (!mq.matches) return;
+      const room = (frame.offsetWidth * 4) / 3;
+      const pad = parseFloat(getComputedStyle(inner).paddingTop) + parseFloat(getComputedStyle(inner).paddingBottom);
+      for (const [size, lh] of FIT_STEPS) {
+        frame.style.setProperty("--said-size", `${size}px`);
+        frame.style.setProperty("--lh", `${lh}px`);
+        if (pad + words.offsetHeight + cap.offsetHeight <= room + 0.5) return;
+      }
+    };
+    fit();
+    let width = frame.offsetWidth;
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => { if (frame.offsetWidth !== width) { width = frame.offsetWidth; fit(); } });
+    ro?.observe(frame);
+    mq.addEventListener?.("change", fit);
+    document.fonts?.ready.then(fit).catch(() => {});
+    return () => { ro?.disconnect(); mq.removeEventListener?.("change", fit); clear(); };
+  }, [text]);
+  return said;
 }
 
 export default function PrintCard({
@@ -86,6 +133,7 @@ export default function PrintCard({
   if (memory.audio?.length) cues.push("mic");
   const show = new Set(cues.slice(0, 3));
   const marks = show.has("faces") || show.has("mic");
+  const saidRef = useFitWords(said);
 
   return (
     <Link
@@ -94,7 +142,7 @@ export default function PrintCard({
       to={`/archive/${memory.id}`}
       style={rise ? { animationDelay: `${Math.min(index, 6) * 60}ms` } : undefined}
       onClick={() => markSeen(memory.id, sides.length)}
-      aria-label={`${smarten(meta.title)}${dated ? `, ${meta.date}` : ""}${treasured ? ", treasured" : ""}`}
+      aria-label={`${smarten(meta.title)}${dated ? `, ${meta.date}` : ""}${treasured ? ", treasured" : ""}${show.has("new") && newLine ? `, ${newLine}` : ""}`}
     >
       {treasured && <i className="glint" aria-hidden="true" />}
       {treasured && <WaxSeal size={34} className="print-seal" />}
@@ -107,7 +155,11 @@ export default function PrintCard({
         ) : (
           <span className="typed-in">
             <Mark className="wm" height={140} />
-            {said && <span className="said">{said}</span>}
+            {said && (
+              <span className="said" ref={saidRef}>
+                {said}
+              </span>
+            )}
           </span>
         )}
         {(show.has("new") || show.has("fresh")) && (
@@ -115,7 +167,8 @@ export default function PrintCard({
             {show.has("new") && (
               <span className="cue new">
                 <i className="dot" />
-                {newLine}
+                <span className="cue-long">{newLine}</span>
+                <span className="cue-short">{newLine && firstNames(newLine)}</span>
               </span>
             )}
             {show.has("fresh") && <span className="cue fresh">{fresh}</span>}

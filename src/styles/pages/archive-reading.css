@@ -653,13 +653,39 @@
 .sheet-page .mv .mv-tool.mv-share { min-width: 6.6em; justify-content: flex-start; }
 .mv-state:has(.mv-share[data-result="fail"]), .mv-state:has([aria-busy="true"]) { flex-wrap: wrap; }
 
-/* the smallest phones (below 360px): a typed print's words are never clamped. The words and the caption sit in the
-   flow, one under the other, and the print grows to hold them (never shorter than its 3:4), so a kicker or a date under
-   the words never cuts the line short and nothing overlaps */
+/* the "New from …" cue on a typed print: the words start below it, never under it. On a phone the cue gives first names
+   ("New from Bao"; the print's name carries the whole line) and may take a second line rather than run past the print.
+   A typed print's ruled words begin under it, and a photograph's cue sits on the picture as before */
+.arc-prints .print-card.typed .frame:has(> .cues), .home-mem .print-card.typed:not(.invite) .frame:has(> .cues) { --top: 44px; }
+.print-card .cue .cue-short { display: none; }
+@media (max-width: 760.98px) {
+  .print-card .cue .cue-long { display: none; }
+  .print-card .cue .cue-short { display: inline; }
+  .print-card .cue { white-space: normal; line-height: 1.2; gap: 5px; padding: 4px 8px 4px 7px; }
+  .arc-prints .print-card.typed .frame:has(> .cues), .home-mem .print-card.typed:not(.invite) .frame:has(> .cues) { --top: 38px; }
+  .print-card .frame > .cues, .print-card.tall .frame > .cues { max-width: calc(100% - 14px); }
+  /* beside the faces or the mic at the top right there is no room: the cue takes the line under them */
+  .print-card .frame.has-marks:has(> .cues) > .cues { top: 40px; max-width: calc(100% - 14px); }
+  .arc-prints .print-card.typed .frame.has-marks:has(> .cues), .home-mem .print-card.typed:not(.invite) .frame.has-marks:has(> .cues) { --top: 76px; }
+}
+
+/* the smallest phones (below 360px): every print in a mosaic is its cell's width and at least its 3:4, its frame filling
+   the card, so the prints of a row stay level and none is ever wider than its column. A typed print's words are never
+   clamped: they sit in the flow above the caption and step down to fit the 3:4 (PrintCard measures, 15px to 13px);
+   only when they still do not fit does the print grow, and its row with it. The frame clips (it never scrolls), so the
+   cue stays inside it */
 @media (max-width: 359.98px) {
-  .arc-prints .print-card.typed .frame, .home-mem .print-card.typed:not(.invite) .frame { display: flex; flex-direction: column; height: auto; overflow: visible; }
-  .arc-prints .print-card.typed .typed-in, .home-mem .print-card.typed:not(.invite) .typed-in { position: relative; inset: auto; flex: 1 0 auto; padding-bottom: 12px; box-sizing: border-box; }
-  .arc-prints .print-card.typed .cap, .home-mem .print-card.typed:not(.invite) .cap { position: relative; inset: auto; }
+  .arc-prints .print-card:not(.invite), .home-mem .print-card:not(.invite) { display: flex; flex-direction: column; }
+  .arc-prints .print-card:not(.invite) .frame, .home-mem .print-card:not(.invite) .frame { flex: 1 0 auto; width: 100%; height: auto; overflow: clip; }
+  .arc-prints .print-card.typed .frame, .home-mem .print-card.typed:not(.invite) .frame { display: flex; flex-direction: column; }
+  .arc-prints .print-card.typed .typed-in, .home-mem .print-card.typed:not(.invite) .typed-in { position: relative; inset: auto; flex: 1 0 auto; padding-bottom: 6px; box-sizing: border-box; }
+  .arc-prints .print-card.typed .cap, .home-mem .print-card.typed:not(.invite) .cap { position: relative; inset: auto; padding-top: 8px; }
+  /* the cue on a typed print stands in the flow above the words, one line or two, so it never sits on them */
+  .arc-prints .print-card.typed .frame > .cues, .home-mem .print-card.typed:not(.invite) .frame > .cues { position: relative; left: auto; top: auto; order: -1; margin: 6px 4px 0; max-width: none; }
+  .arc-prints .print-card.typed .frame > .cues .cue, .home-mem .print-card.typed:not(.invite) .frame > .cues .cue { padding-left: 5px; padding-right: 6px; }
+  .arc-prints .print-card.typed .frame:has(> .cues), .home-mem .print-card.typed:not(.invite) .frame:has(> .cues),
+  .arc-prints .print-card.typed .frame.has-marks:has(> .cues), .home-mem .print-card.typed:not(.invite) .frame.has-marks:has(> .cues) { --top: 14px; }
+  .arc-prints .print-card.typed .frame.has-marks:has(> .cues) > .cues, .home-mem .print-card.typed:not(.invite) .frame.has-marks:has(> .cues) > .cues { top: auto; margin-top: 40px; }
   .arc-prints .print-card.typed .typed-in .said, .home-mem .print-card.typed:not(.invite) .typed-in .said,
-  .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:not(.invite):has(.cap .dateline.dated) .typed-in .said { display: block; -webkit-line-clamp: unset; overflow: visible; }
+  .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:not(.invite):has(.cap .dateline.dated) .typed-in .said { display: block; font-size: var(--said-size, 15px); -webkit-line-clamp: unset; overflow: visible; }
 }

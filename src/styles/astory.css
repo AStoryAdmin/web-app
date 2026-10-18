@@ -3358,11 +3358,16 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .running-head-sheet .rh-sec { opacity: 0; transform: translateY(4px); }
 .running-head-sheet.in-section .rh-page { opacity: 0; transform: translateY(-4px); }
 .running-head-sheet.in-section .rh-sec { opacity: 1; transform: none; }
-/* the label that is hidden never sizes the cell (it sits out of the flow), so the book's name keeps its room; on the
-   smallest phones the book's name steps aside while a section's name shows */
-.running-head-sheet .rh-right { position: relative; }
-.running-head-sheet:not(.in-section) .rh-sec, .running-head-sheet.in-section .rh-page { position: absolute; top: 0; right: 0; }
-@media (max-width: 359.98px) { .running-head-sheet.in-section > span:first-child { display: none; } }
+/* the label that is hidden never sizes the cell (it sits out of the flow), so the book's name keeps its room. While it
+   fades out it runs to its own length from the right edge, never cut to an ellipsis in the other label's cell */
+.running-head-sheet .rh-right { position: relative; margin-left: auto; }
+.running-head-sheet:not(.in-section) .rh-sec, .running-head-sheet.in-section .rh-page { position: absolute; top: 0; right: 0; max-width: none; overflow: visible; text-overflow: clip; }
+/* on phones the book's name fades aside while a section's name shows (both names need about 420px), and fades back in
+   just after the section's name has gone */
+@media (max-width: 479.98px) {
+  .running-head-sheet > span:first-child { transition: opacity 240ms var(--ease-out) 120ms, visibility 0s linear 0s; }
+  .running-head-sheet.in-section > span:first-child { position: absolute; opacity: 0; visibility: hidden; transition: opacity 160ms var(--ease-out), visibility 0s linear 160ms; }
+}
 /* what sticks under the band moves down by its height; jumps land below it */
 .sheet-page .arc-decades, .sheet-page .mp-left { top: 56px; }
 .sheet-page .arc-year, .sheet-page .sechead { scroll-margin-top: 64px; }
@@ -3401,6 +3406,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 
 @media (prefers-reduced-motion: reduce) {
   .running-head-sheet .rh-right > span, .sheet-page .running-head-sheet::after { transition: none; }
+  .running-head-sheet > span:first-child, .running-head-sheet.in-section > span:first-child { transition: none; }
   .running-head-sheet .rh-sec, .running-head-sheet.in-section .rh-page { transform: none; }
 }
 

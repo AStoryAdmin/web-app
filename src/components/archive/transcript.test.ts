@@ -18,8 +18,8 @@ describe("the clean transcript", () => {
   });
 
   it("leaves a paragraph of only back-channel out", () => {
-    // "Yeah, right." (not the reaction "Yeah, right?") opens the teller's words: its first word goes (a), the rest stays
-    expect(cleanTranscript(["Yeah, right.", "We lived by the river."])).toEqual(["Right.", "We lived by the river."]);
+    // "Yeah, right." (not the reaction "Yeah, right?") opening the teller's words stays whole (lead ruling, round 14)
+    expect(cleanTranscript(["Yeah, right.", "We lived by the river."])).toEqual(["Yeah, right.", "We lived by the river."]);
   });
 
   it("knows speech from typed prose", () => {
@@ -844,7 +844,10 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       // between two commas the sound and one comma go: never both commas
       // between two commas both go, unless a list goes on (the next word capitalised or a number, or "and" / "or" within
       // the next three words): then the comma before stays
-      const listGoesOn = /^\s*(?:[\p{Lu}\d]|(?:\S+\s+){0,2}(?:and|or)\b)/u.test(after);
+      // a list goes on: the next word capitalised or a number, or a comma, "and" or "or" within the next three words;
+      // never after a form of be or have, where the words go on from it
+      const beHave = /\b(?:am|is|are|was|were|be|been|being|have|has|had|having|['’]s|['’]m|['’]re|['’]ve|['’]d)\s*$/i.test(said.slice(0, a + (m[1]?.length ?? 0)).replace(/,\s*$/, ""));
+      const listGoesOn = !beHave && /^\s*(?:[\p{Lu}\d]|(?:\S+\s+){0,2}(?:and|or)\b|(?:\S+\s+){0,2}\S*,)/u.test(after);
       if (m[1] && m[3] && listGoesOn) return "both commas taken where a list goes on";
       if (m[3] && !m[1] && /,\s*$/.test(before) && !listGoesOn) return "a comma left where no list goes on";
       return "";
@@ -855,6 +858,7 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       if (!/^(yeah|well|okay|so),\s*$/i.test(text)) return `not yeah/well/okay/so with a comma: "${text}"`;
       // never before its own double ("So, so happy")
       if (new RegExp(`^${text.match(/^\w+/)![0]}\\b`, "i").test(after)) return "the word is said again: emphasis";
+      if (/^right\b/i.test(after)) return `"Yeah, right" stays whole`;
       return "";
     }
     case "a-later": {
@@ -863,14 +867,16 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       if (!/^(?:[Yy]eah|[Ss]o yeah),\s*$/.test(text)) return `not "Yeah," or "So yeah,": "${text}"`;
       if (/\?["”’)']*$/.test(prev) || (si === 0 && ctx.answer)) return "follows a question";
       if (/^right\b/i.test(after)) return `"Yeah, right" stays`;
+      if (/^yeah\b/i.test(after)) return `"Yeah, yeah" stays`;
       return "";
     }
     case "b-like": {
       // "like" with a comma on both sides
       if (!/^,\s*like,$/.test(text)) return `not ", like,": "${text}"`;
       // after a form of be, go or say it quotes; before an amount it hedges: both stay
-      if (/\b(?:am|is|are|was|were|be|been|being|['’]s|['’]m|['’]re|go|goes|went|going|gone|say|says|said|saying)\s*$/i.test(before)) return "after be / go / say: it quotes";
-      if (/^\s*(?:[$£€¥]|\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|half)\b|a (?:few|couple|hundred|thousand|million|dozen)\b)/i.test(after)) return "before an amount: it hedges";
+      if (/\b(?:am|is|are|was|were|be|been|being|['’]s|['’]m|['’]re|go|goes|went|going|gone|say|says|said|saying|think|thinks|thought|thinking)(?:,?\s+(?:all|just|kind of|sort of))?\s*$/i.test(before)) return "after be / go / say / think: it quotes";
+      if (/\b(?:feel|feels|felt|feeling|look|looks|looked|looking|seem|seems|seemed|sound|sounds|sounded)\s*$/i.test(before)) return "after feel / look / seem / sound: it feels";
+      if (/^\s*(?:[$£€¥]|\d|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|half|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|week|month|year|decade|mile|kilometre|kilometer|quarter|third|pound|kilo|dollar|bowl|cup)s?\b)/i.test(after)) return "before an amount: it hedges";
       return "";
     }
     case "c-slip": {
@@ -889,6 +895,9 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       // the sentence as written: one in quotation marks is someone in the story speaking, never the listener
       const bare = text.trim();
       if (/["“”‘’']/.test(bare.replace(/(?<=\p{L})['’](?=\p{L})/gu, ""))) return "inside quotation marks";
+      // a sentence in the middle of a quotation carries no mark of its own: count the quotes before it
+      const open = (before.match(/“/g) || []).length - (before.match(/”/g) || []).length;
+      if (open > 0 || (before.match(/"/g) || []).length % 2 === 1) return "inside a quotation";
       if (REACTION_SET.test(bare)) return "";
       const prevSpan = spans[si - 1];
       const prevIsReaction = !!prevSpan && ctx.cuts.some((c) => c[2] === "e-reaction" && c[0] === prevSpan[0] && c[1] === prevSpan[1] && REACTION_SET.test(said.slice(c[0], c[1]).trim()));
@@ -907,7 +916,7 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
 function breaksKeptLine(words: string, line: string): string {
   if (!line) return "";
   const n = (x: string) => x.toLowerCase().replace(/[’]/g, "'").replace(/[^\p{L}\p{N}'\s]/gu, " ").replace(/\s+/g, " ").trim();
-  const sentences = (words.match(/[^.!?…]+[.!?…]+["”’)]*/g) || [words]).map((x) => x.trim());
+  const sentences = (words.match(/[^.!?…]+[.!?…]+["”’)']*/g) || [words]).map((x) => x.trim());
   for (const s of sentences) {
     if (n(s) === n(line)) return "";
     const joint = s.match(/^(so|and|but)(,\s*|\s+)(?=(i|you|he|she|we|they|it|the)\b|)/i);
@@ -1204,6 +1213,182 @@ describe("round 13: the rulings added to 17a, every reviewer string", () => {
     ];
     for (const [said, cut, ctx] of forbidden) {
       if (!breaksRule(said, cut, { opening: !!ctx.opening, answer: false, named: false, cuts: [[0, 4, "e-reaction"], cut] })) failures.push(`the checker accepts a forbidden cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
+    }
+    expect(failures).toEqual([]);
+  });
+});
+
+/* ───────── Round 14: the rulings of c3990db, every reviewer string, and the inputs for the 25 surviving mutants ───────── */
+
+export const R14_KEEP: string[] = [
+  // baos 2 / skills 5: a hedging "like" before an amount, ages and units included
+  "I left home at, like, sixteen.",
+  "I got married at, like, nineteen.",
+  "We waited, like, an hour for the bus.",
+  "We walked, like, a mile every day.",
+  "We lived there for, like, a year.",
+  "It took, like, a week to get there.",
+  "We had, like, a quarter of the rice left.",
+  "We stayed there for, like, fifteen years.",
+  "We left in, like, nineteen seventy-five.",
+  "We stayed, like, a year in the camp.",
+  "We had, like, several hundred dollars.",
+  "We went, like, twice a year.",
+  // baos 3: a reaction inside a quotation of several sentences
+  "He read it and said, “Okay. Wow. That's amazing.” Then he left.",
+  "She said, “Really? Wait, were you? I never knew.”",
+  'He said, "Oh. Wow. Yeah. I see." And he left.',
+  // baos 4: the feeling "like" after feel / look
+  "It felt, like, a dream.",
+  "It felt, like, home to us.",
+  "It looked, like, a palace to me.",
+  // baos 6 / skills 8: "Yeah, yeah" stays
+  "We had to leave everything. Yeah, yeah, it was hard.",
+  "So yeah, yeah, that was it.",
+  "Yeah, yeah, I remember.",
+  // for the lead, ruled: the quoting "like" with all / just / kind of, and after think
+  "I was just, like, wow.",
+  "She was all, like, no.",
+  "She was just, like, get out.",
+  "I was kind of, like, okay.",
+  "I thought, like, this is it.",
+  // skills 6: T3–T6 the quoting "like" after go / say / 'm / are; T9–T10 the amounts; T21 a single-quoted reaction
+  "She goes, like, no way.",
+  "He said, like, get out.",
+  "I'm, like, so tired.",
+  "They are, like, the best.",
+  "We paid, like, thirty dollars.",
+  "We had, like, half a bowl.",
+  "We walked, like, a thousand miles.",
+  "'Wow.' That was all.",
+];
+
+export const R14_CUT: [string, string][] = [
+  // baos 5: a list that goes on with commas keeps one comma
+  ["We sold pho, um, banh mi, che.", "We sold pho, banh mi, che."],
+  ["We had rice, um, beans, fish, everything.", "We had rice, beans, fish, everything."],
+  // skills 6: T15 / T17 / T18, the list window; after have the words go on (both commas go)
+  ["We had, um, rice beans and fish.", "We had rice beans and fish."],
+  ["We had, um, 20 dollars.", "We had 20 dollars."],
+  ["We had tea, um, coffee or milk.", "We had tea, coffee or milk."],
+  ["We were, uh, poor and hungry.", "We were poor and hungry."],
+  // still cut
+  ["It was, like, the hardest thing. And then, like, we left.", "It was, like, the hardest thing. And then we left."],
+];
+
+export const R14_OPENING: [string, string][] = [
+  ["Yeah, yeah, yeah, we know.", "Yeah, yeah, yeah, we know."],
+  ["Yeah, right. We never got it back.", "Yeah, right. We never got it back."],
+  ["Yeah, I remember.", "I remember."],
+];
+
+export const R14_TRANSCRIPT: [string[], string[]][] = [
+  // skills 4: a question in single quotes is answered
+  [["He asked me, 'Were you there?' Yeah, I was there the whole time."], ["He asked me, 'Were you there?' Yeah, I was there the whole time."]],
+  [["He asked me, 'Were you there?'", "Yeah, I was there the whole time."], ["He asked me, 'Were you there?'", "Yeah, I was there the whole time."]],
+  // lead: a teller's question followed by "Our…" is never lifted
+  [["Did Mom like it? Our house was tiny. Yes. She loved it anyway."], ["Did Mom like it? Our house was tiny. Yes. She loved it anyway."]],
+  // lead: "A Story:" mid-sentence is the founder's company, not a label
+  [["Me: I started a company called A Story: it keeps memories. AI: What do you remember?"], ["I started a company called A Story: it keeps memories.", "⁣What do you remember?"]],
+  // skills 6: R29 first person, N21 a tag, T28 "should", T27 words that only mention a label
+  [["Do I need to apply? Because our plan is to find a student. Yes. We did."], ["Do I need to apply? Because our plan is to find a student. Yes. We did."]],
+  [["Was it good, right? Because our school was small. Yes. It was."], ["Was it good, right? Because our school was small. Yes. It was."]],
+  [["Should they open to everyone? Because our plan is to find a student. Yes."], ["Should they open to everyone? Because our plan is to find a student. Yes."]],
+  [["I asked the AI: should we go? It said nothing."], ["I asked the AI: should we go? It said nothing."]],
+  // skills 6: T23 a quoted reaction on the asker's line, T32 a "Me:" mid-sentence, T33/T45 a line break, T34 mid-line, T35 after a comma
+  [["Interviewer: 'Wow.' Really?"], ["⁣'Wow.' Really?"]],
+  [["AI: Tell Me: what happened?"], ["⁣Tell Me: what happened?"]],
+  [["AI: What did you eat\nMe: Rice and fish every day."], ["⁣What did you eat", "Rice and fish every day."]],
+  [["You: Hi there AI: Hello. What do you remember?"], ["Hi there.", "⁣Hello. What do you remember?"]],
+  [["Me: We went there, Me: the north road."], ["We went there, Me: the north road."]],
+];
+
+describe("round 14: the rulings of c3990db, every reviewer string", () => {
+  it.each(R14_KEEP)("keeps %s", async (said) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(said);
+  });
+  it.each(R14_CUT)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+  it.each(R14_OPENING)("%s (the teller's first words)", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said, { opening: true })).toBe(shown);
+  });
+  it.each(R14_TRANSCRIPT)("%s", async (said, shown) => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(said)).toEqual(shown);
+  });
+  it("a typed takeaway is a sentence as typed, its ', like,' kept (N26)", async () => {
+    const { takeaway } = await import("./transcript");
+    const typed = "We were poor, like, really poor. I loved my mother more than anything.";
+    const line = takeaway(typed);
+    expect(line).not.toBe("");
+    expect(typed).toContain(line);
+  });
+  it("the kept line is never a sentence the tidy would change (N31)", async () => {
+    const { keptLine } = await import("./transcript");
+    const said = "So yeah I mean it was hard. I loved my grandmother more than anything, um, in the whole wide world, always. Yeah, right? Um, so I went home and I never forgot it.";
+    expect(keptLine(said)).not.toMatch(/\bum\b/);
+  });
+  it("the kept line, the takeaway and the mark keep a straight closing quote (T41–T43)", async () => {
+    const { keptLine, takeaway, findTakeaway } = await import("./transcript");
+    const said = "I remember she said, 'I will always love you, my dear little one.' Then she left and we never saw her again.";
+    for (const line of [keptLine(said), takeaway(said)].filter((l) => l.startsWith("I remember"))) {
+      expect(line.endsWith("one.'")).toBe(true);
+      const at = findTakeaway(said, line);
+      expect(at && said.slice(at[0], at[1]).endsWith("'")).toBe(true);
+    }
+    expect(takeaway(said)).not.toBe("");
+  });
+  it("the contract holds on every round-14 string, with and without opening, and the checker rejects the forbidden cuts", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    const failures: string[] = [];
+    for (const said of [...R14_KEEP, ...R14_CUT.map(([x]) => x), ...R14_OPENING.map(([x]) => x)]) {
+      for (const opening of [false, true]) {
+        const { said: base, out, cuts } = cleanSpeech(said, { opening, explain: true });
+        for (const cut of cuts) {
+          const why = breaksRule(base, cut, { opening, answer: false, named: false, cuts });
+          if (why) failures.push(`${said} (opening ${opening}) :: ${cut[2]} "${base.slice(cut[0], cut[1])}" :: ${why}`);
+        }
+        if (!onlyCutsRemoved(base, out, cuts)) failures.push(`${said} :: words changed outside the cuts: "${out}"`);
+      }
+    }
+    // each forbidden cut is placed exactly on the words it would take, and each is one the code once made
+    const at = (said: string, piece: string, rule: string, from = 0): Cut => {
+      const i = said.indexOf(piece, from);
+      if (i < 0) throw new Error(`"${piece}" not in "${said}"`);
+      return [i, i + piece.length, rule];
+    };
+    const forbidden: [string, Cut, { opening?: boolean }][] = [
+      ["I left home at, like, sixteen.", at("I left home at, like, sixteen.", ", like,", "b-like"), {}],
+      ["We waited, like, an hour for the bus.", at("We waited, like, an hour for the bus.", ", like,", "b-like"), {}],
+      ["It felt, like, a dream.", at("It felt, like, a dream.", ", like,", "b-like"), {}],
+      ["I was just, like, wow.", at("I was just, like, wow.", ", like,", "b-like"), {}],
+      ["I thought, like, this is it.", at("I thought, like, this is it.", ", like,", "b-like"), {}],
+      ["He read it and said, “Okay. Wow. That's amazing.” Then he left.", at("He read it and said, “Okay. Wow. That's amazing.” Then he left.", "Wow.", "e-reaction"), {}],
+      ['He said, "Oh. Wow. Yeah. I see." And he left.', at('He said, "Oh. Wow. Yeah. I see." And he left.', "Wow.", "e-reaction"), {}],
+      ["We sold pho, um, banh mi, che.", at("We sold pho, um, banh mi, che.", ", um,", "a-filler"), {}],
+      ["We had, um, 20 dollars.", at("We had, um, 20 dollars.", "um,", "a-filler"), {}],
+      ["We had to leave everything. Yeah, yeah, it was hard.", at("We had to leave everything. Yeah, yeah, it was hard.", "Yeah, ", "a-later"), {}],
+      ["Yeah, right. We never got it back.", at("Yeah, right. We never got it back.", "Yeah, ", "a-opening"), { opening: true }],
+      ["Yeah, yeah, yeah, we know.", at("Yeah, yeah, yeah, we know.", "Yeah, ", "a-opening"), { opening: true }],
+    ];
+    for (const [said, cut, ctx] of forbidden) {
+      if (!breaksRule(said, cut, { opening: !!ctx.opening, answer: false, named: false, cuts: [cut] })) failures.push(`the checker accepts a forbidden cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
+    }
+    // and accepts the allowed ones, so the rejections above are for the rule, not for a misplaced span
+    const allowed: [string, Cut, { opening?: boolean }][] = [
+      ["It was hard, and, like, really hard.", at("It was hard, and, like, really hard.", ", like,", "b-like"), {}],
+      ["We were, uh, poor.", at("We were, uh, poor.", ", uh,", "a-filler"), {}],
+      ["We sold pho, um, banh mi, che.", at("We sold pho, um, banh mi, che.", "um,", "a-filler"), {}],
+      ["We moved. Yeah, it was hard.", at("We moved. Yeah, it was hard.", "Yeah, ", "a-later"), {}],
+      ["Wow. We moved.", at("Wow. We moved.", "Wow.", "e-reaction"), {}],
+    ];
+    for (const [said, cut, ctx] of allowed) {
+      const why = breaksRule(said, cut, { opening: !!ctx.opening, answer: false, named: false, cuts: [cut] });
+      if (why) failures.push(`the checker refuses an allowed cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}" :: ${why}`);
     }
     expect(failures).toEqual([]);
   });
