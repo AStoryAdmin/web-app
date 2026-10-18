@@ -30,3 +30,9 @@ You do not build. You judge, precisely and without flattery, and you return work
   - the fix, in one sentence.
 
 Be specific. "Looks plain" is not a finding. "The Archive's book card is 260px tall to show one number already shown in the hero (rule 9, rule 19)" is.
+
+## Where the report goes
+
+
+
+Also write your full report, word for word as you return it, to `web-app/docs/agents/reviews/<pages>-r<round>-<baos|skills>.md` (for example `family-r1-baos.md`), creating the folder if needed. The builder reads it from there.

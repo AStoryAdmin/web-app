@@ -35,3 +35,9 @@ Then go skill by skill and ask what the skill requires that this change does or 
 ## What you return
 
 **APPLIED**, or a list of gaps. Each gap gives the skill and its rule, where in the code (file and line), what to change, and its severity: blocker, ugly or polish.
+
+## Where the report goes
+
+
+
+Also write your full report, word for word as you return it, to `web-app/docs/agents/reviews/<pages>-r<round>-<baos|skills>.md` (for example `family-r1-baos.md`), creating the folder if needed. The builder reads it from there.
