@@ -163,6 +163,8 @@
 .auth .companion, .auth .companion .head, .door .companion, .door .companion .head { overflow: visible; }
 @media (prefers-reduced-motion: reduce) {
   .auth .companion .state, .door .companion .state { transition: opacity 150ms linear !important; }
+  /* a print held until its picture decodes crosses in like Bond, never pops */
+  .auth .print-face, .auth .print-cap, .loose, .cb-print, .inv-print { transition: opacity 150ms linear !important; }
 }
 
 /* the right page without a plate: the contribute leaf takes the page */
@@ -749,6 +751,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .door-leaf { padding: 36px 26px 30px; }
   .door-leaf h1 { font-size: 38px; }
   .door-how dt { font-size: 21px; }
+  .door-foot { row-gap: 12px; } /* his ears clear the Sign in pill above him */
   .door .companion { --cw: 70px; margin-bottom: -16px; } /* the leaf's foot is 30px here: his paws on its foil rule, 14px in */
   .door-acts { flex-direction: column; }
   .door-acts .btn { width: 100%; }
