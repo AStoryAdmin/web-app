@@ -3736,3 +3736,9 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
 .home-mem .print-card .typed-in .said { font-size: 15px; -webkit-line-clamp: 3; }
 .home-mem .print-card.typed .cap .kicker { display: none; }
 @media (max-width: 760px) { .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ───────────────────────── 55. Small print that can be read (lead) ───────────────────────── */
+/* docs/research/reading-2026.md measured the small-caps kickers and links below 4.5:1 on the paper (terracotta
+   4.18:1, sage pill 4.19:1). The tokens that carry small text are darkened: terracotta 5.55:1, sage 6.05:1. The
+   brighter terracotta stays for dots, discs and fills (--accent); ochre, foil and the faint grey carry no text. */
+:root { --kicker-terracotta: #9A4320; --kicker-sage: #3F5B44; --book-sage: #3F5B44; }

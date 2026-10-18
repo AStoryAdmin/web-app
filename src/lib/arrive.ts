@@ -26,14 +26,24 @@ export function belowFold(el: HTMLElement): boolean {
 
 /**
  * Hands `items` to `play` as they enter the viewport, once each. Items
- * that enter in the same frame come as one batch, so neighbours stagger
- * together instead of each starting alone. Returns a disconnect.
+ * that enter together come as one batch, so neighbours stagger together
+ * instead of each starting alone. Returns a disconnect.
  */
 export function onEnter(items: HTMLElement[], play: (batch: HTMLElement[]) => void, rootMargin = "0px 0px -6% 0px"): () => void {
-  if (!items.length || typeof IntersectionObserver === "undefined") {
-    if (items.length) play(items);
+  if (!items.length) return () => {};
+  if (typeof IntersectionObserver === "undefined") {
+    play(items);
     return () => {};
   }
+  // Each item plays once, whichever witness sees it first: the observer, or a measure on scroll, resize and a timer.
+  // An observer may never fire in an embedded view whose frames have stopped, and nothing may be left hidden waiting
+  // for it (docs/BAOS-STANDARD.md rule 25).
+  const waiting = new Set(items);
+  const playOnce = (batch: HTMLElement[]) => {
+    const fresh = batch.filter((el) => waiting.delete(el));
+    if (fresh.length) play(fresh);
+    if (!waiting.size) stop();
+  };
   const io = new IntersectionObserver(
     (entries) => {
       const batch: HTMLElement[] = [];
@@ -42,12 +52,31 @@ export function onEnter(items: HTMLElement[], play: (batch: HTMLElement[]) => vo
         io.unobserve(e.target);
         batch.push(e.target as HTMLElement);
       }
-      if (batch.length) play(batch);
+      if (batch.length) playOnce(batch);
     },
     { rootMargin, threshold: 0.01 },
   );
   items.forEach((el) => io.observe(el));
-  return () => io.disconnect();
+  let timer = 0;
+  const check = () => {
+    timer = 0;
+    const h = window.innerHeight;
+    playOnce([...waiting].filter((el) => el.getBoundingClientRect().top < h * 0.94));
+  };
+  const soon = () => {
+    if (!timer) timer = window.setTimeout(check, 120);
+  };
+  window.addEventListener("scroll", soon, { passive: true });
+  window.addEventListener("resize", soon);
+  const first = window.setTimeout(check, 700);
+  function stop() {
+    io.disconnect();
+    window.removeEventListener("scroll", soon);
+    window.removeEventListener("resize", soon);
+    window.clearTimeout(timer);
+    window.clearTimeout(first);
+  }
+  return stop;
 }
 
 /** The rise every page uses for what arrives later: 14px up and in, a short stagger, props cleared after. */
