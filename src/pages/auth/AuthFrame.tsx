@@ -32,7 +32,7 @@ import { Link, useLocation } from "react-router-dom";
 import gsap from "gsap";
 import { Lockup } from "../../components/Brand";
 import ClothStamp from "../../components/delight/ClothStamp";
-import Companion, { type CompanionRest, type CompanionState } from "../../components/delight/Companion";
+import Companion, { type CompanionRest, type CompanionState, type PoseName } from "../../components/delight/Companion";
 import Leaf from "../../components/delight/Leaf";
 import Prints from "../../components/delight/Prints";
 import { useLight } from "../../components/delight/Light";
@@ -46,6 +46,8 @@ type Props = {
   companion?: CompanionState;
   /** What the dog does at rest; by default it follows the route (asleep on verify, curious on a new account). */
   rest?: CompanionRest;
+  /** Bond's poses this page can show (the password poses only where there is a password field). */
+  poses?: PoseName[];
   /** The endpaper's content instead of the album. */
   left?: ReactNode;
   /** The title page's line; the promise by default. */
@@ -60,7 +62,7 @@ type Props = {
   leftLabel?: string;
 };
 
-export default function AuthFrame({ children, companion, rest: restProp, left, promise, title, lettered = false, plate = true, leftLabel }: Props) {
+export default function AuthFrame({ children, companion, rest: restProp, poses, left, promise, title, lettered = false, plate = true, leftLabel }: Props) {
   const ground = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState<"closed" | "open">(() => {
     if (seenOpening()) return "open";
@@ -197,7 +199,7 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
                 {title ? <h1 className="promise-line">{title}</h1> : <p className="promise-line">{promise ?? <>Every life holds a story <span className="keep">worth keeping.</span></>}</p>}
                 <i className="tp-rule" aria-hidden="true" />
                 <div className="plate-wrap">
-                  <Companion focus={state.focus} shown={state.shown} progress={state.progress} rest={rest} />
+                  <Companion focus={state.focus} shown={state.shown} progress={state.progress} rest={rest} poses={poses} />
                   {/* the engraved Ex Libris plate is the frame: blank (public/book/bookplate-blank.webp), or lettered "This book belongs to" over a name */}
                   <div className={`plate${lettered ? " lettered" : ""}`}>
                     <main className="paper">{children}</main>

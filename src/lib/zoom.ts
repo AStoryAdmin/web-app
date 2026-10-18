@@ -20,14 +20,24 @@ export function pageZoom(): number {
   return parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
 }
 
-function apply(): void {
+/** The zoom step for a window of w by h CSS pixels, the one formula: anything that needs the zoom a window will have
+ * (before the resize timer below has applied it) computes it here instead of reading the computed style. */
+export function zoomFor(w: number, h: number): number {
   // the smaller of the two: a short window never scales up, so a screen keeps as much on it as at 1600 by 1000
-  const z = Math.min(MAX, Math.max(1, Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H)));
+  return +Math.min(MAX, Math.max(1, Math.min(w / BASE_W, h / BASE_H))).toFixed(4);
+}
+
+/** Fired on window after the html zoom has changed, for whatever measures against it. */
+export const ZOOM_EVENT = "astory:zoom";
+
+function apply(): void {
+  const z = zoomFor(window.innerWidth, window.innerHeight);
   const root = document.documentElement;
   const value = z.toFixed(4);
   if (root.style.zoom === value) return;
   root.style.zoom = value;
   root.style.setProperty("--zoom", value);
+  window.dispatchEvent(new Event(ZOOM_EVENT));
 }
 
 let started = false;

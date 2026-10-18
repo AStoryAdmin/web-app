@@ -17,6 +17,7 @@
  * print and controls keep it legible.
  */
 import { useLayoutEffect, type RefObject } from "react";
+import { ZOOM_EVENT, zoomFor } from "../../lib/zoom";
 
 export { MOVE, OUT } from "../../lib/ease";
 
@@ -64,7 +65,8 @@ export function useFit(root: RefObject<HTMLElement | null>, wrap: RefObject<HTML
     let timer = 0;
     const apply = () => {
       if (isStacked()) return paint(el, art, null);
-      const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+      // the zoom this window has (or is about to have: lib/zoom applies it on its own timer), from the same formula
+      const z = zoomFor(window.innerWidth, window.innerHeight);
       const cs = getComputedStyle(box);
       const padX = (parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) * z;
       const padY = (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) * z;
@@ -79,10 +81,12 @@ export function useFit(root: RefObject<HTMLElement | null>, wrap: RefObject<HTML
       timer = window.setTimeout(apply, 40);
     };
     window.addEventListener("resize", later);
+    window.addEventListener(ZOOM_EVENT, apply);
     void document.fonts?.ready.then(later);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("resize", later);
+      window.removeEventListener(ZOOM_EVENT, apply);
     };
   }, [root, wrap, canvas, designW, designH]);
 }

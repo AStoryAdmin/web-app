@@ -290,7 +290,7 @@ export default function Join() {
   ) : undefined;
 
   return (
-    <AuthFrame left={<Invitation />} leftLabel="What joining means" rest={outcome?.ok ? "watch" : "curious"} promise={promise}>
+    <AuthFrame left={<Invitation />} leftLabel="What joining means" poses={["curious", "watch"]} rest={outcome?.ok ? "watch" : "curious"} promise={promise}>
       {plate}
     </AuthFrame>
   );

@@ -184,7 +184,7 @@ export default function Contribute() {
   if (info === null || info === "failed") {
     const offline = info === "failed";
     return (
-      <AuthFrame rest="curious">
+      <AuthFrame rest="curious" poses={["curious"]}>
         <div className="form">
           <h1>
             {offline ? "The family’s book didn’t open" : "This link isn’t available"}

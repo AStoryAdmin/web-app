@@ -3519,7 +3519,8 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
 @keyframes vt-settle { to { opacity: 0; transform: translateY(14px) scale(0.992); } }
 @keyframes vt-rise { from { opacity: 0; transform: translateY(28px); } }
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  /* the signed-out pages (.auth, .door) set their own 150 ms crossfade in styles/pages/signed-out.css §3 */
+  :root:not(:has(.auth, .door))::view-transition-group(*), :root:not(:has(.auth, .door))::view-transition-old(*), :root:not(:has(.auth, .door))::view-transition-new(*) { animation: none !important; }
 }
 
 /* bare: no hero band, only cloth under the bar; the sheet starts near the top of the window */

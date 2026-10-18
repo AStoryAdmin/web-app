@@ -87,13 +87,15 @@ export default function Companion({ focus, shown, rest = "watch", poses }: Compa
   // the two movers, made once for the dog's life (inside a context, so leaving reverts them whole)
   const to = useRef<{ hr: To; hy: To } | null>(null);
   // the poses this page can show: its rest pose, and the two the password field asks for (the front door: watch only)
-  const can = poses ?? [rest, "cover", "peek"];
+  const asked = poses ?? [rest, "cover", "peek"];
   const wanted: PoseName = focus === "password" ? (shown ? "peek" : "cover") : rest;
   // never switch to a pose whose picture has not arrived: hold the last one that has, until it has
   const [loaded, setLoaded] = useState<Set<PoseName>>(() => new Set());
   const [held, setHeld] = useState<PoseName>(rest);
   const mood: PoseName = loaded.has(wanted) ? wanted : loaded.has(held) ? held : wanted;
   if (mood !== held && loaded.has(mood)) setHeld(mood);
+  // the pose being held stays mounted until the new one has arrived (a new rest pose never leaves a blank)
+  const can: PoseName[] = asked.includes(held) ? asked : [...asked, held];
   const awake = mood === "watch" || mood === "curious";
   // the rest pose loads at once; the others start the moment it has decoded
   const more = loaded.has(rest);
@@ -173,7 +175,8 @@ export default function Companion({ focus, shown, rest = "watch", poses }: Compa
   }, [canBlink]);
 
   return (
-    <div className="companion" ref={box} data-mood={mood} data-awake={awake || undefined} data-blinking={blinking || undefined} aria-hidden="true">
+    // data-mood only once that pose has arrived, so the first picture fades in (220 ms) instead of popping
+    <div className="companion" ref={box} data-mood={loaded.has(mood) ? mood : undefined} data-awake={awake || undefined} data-blinking={blinking || undefined} aria-hidden="true">
       <div className="head" ref={head} style={{ transformOrigin: `${((POSES.find((p) => p.name === mood)?.pivot ?? 0.6) * 100).toFixed(1)}% 100%` }}>
         {POSES.filter((p) => can.includes(p.name) && (more || p.name === rest)).map((p) => {
           const style = { height: `${(p.h * p.scale * 100) / BOX_H}%`, bottom: `${-p.sink * 100}%`, left: `${50 + p.dx * 100}%` };

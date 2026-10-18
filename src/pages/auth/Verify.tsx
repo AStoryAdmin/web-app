@@ -59,7 +59,7 @@ export default function Verify() {
 
   if (!email) {
     return (
-      <AuthFrame>
+      <AuthFrame poses={["sleep"]}>
         <div className="form">
           <h1>Which email was it?</h1>
           <PlateSay>This page needs the address the code went to. Sign in with it and we’ll send a fresh code; it takes a minute.</PlateSay>
@@ -74,7 +74,7 @@ export default function Verify() {
   }
 
   return (
-    <AuthFrame>
+    <AuthFrame poses={["sleep"]}>
       <form className="form" onSubmit={submit} noValidate>
         <h1>
           Check your email<span className="stop">.</span>
