@@ -57,6 +57,37 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 30. **The family is not a chart.** It is a register of portraits, organised by generation relative to the storyteller, with their voices present.
 31. **Public and private are always clear,** both per memory and for the wall.
 
+## 7. What the founder's own sites teach (October 2026)
+
+From docs/research/founder-sites-2026.md (Project Reboot, gbaonvo.com, Kiyo, Shiori, the marketing site).
+
+**Hierarchy and words**
+
+32. **Every page says what to remember.** Use four levels: the primary idea, the key takeaway, the explanation and the metadata. "LEVEL 2 — KEY TAKEAWAY … The thing a skimming visitor should remember." On a memory, the takeaway is one line of the person's own words, the kept line, set large, marked in gold, used as the card's excerpt and repeated as the closing coda. Never a summary.
+33. **One emphasis per headline, on the human word.** "Each composition should usually have only 1–3 emphasized concepts." Display titles end with the house full stop in foil or terracotta, as on every site the founder has made.
+34. **Missing information is a small task, never repeated noise.** Never print "No date yet" or a fallback chapter on card after card. Gather them into one row with the time it takes ("Give 8 memories a year · about 2 minutes").
+35. **Numbers have a unit and a meaning, or they go.** Set the unit in serif italic beside the figure. "Don't invent metrics." Never a count that can be misread (a year labelled as a quantity).
+
+**Structure**
+
+36. **Each place is a different room.** No two signed-in pages open on the same composition. Each place gets its own object on the cloth, from real photographs or founder-generated art.
+37. **Today answers "what next?"** Home leads with one thing to do, then a short numbered plan built from real data, with minutes on each row, then a ruled ledger in plain words. "Don't replace the ruled workspace with a grid of decorative statistic cards."
+38. **Every page ends with "Where to next."** Three ruled rows: a title, one line, a round arrow. A memory also has named Previous and Next ("← *title* · Memory 8 of 9 · *title* →").
+39. **Choices are big and carry a specimen.** Any choice between ways (Start, Join, the three ways to be in a story) is set as large cards, each with an object on the left, one or two lines, and the step ("Step 1 of 3").
+40. **Change the ground once on a long page.** A long sheet takes one tipped-in leaf or plate for the family's voices, so the chapters can be felt. Keep one coloured plane per screen: "Allow one coloured plane per screen."
+
+**States**
+
+41. **Empty states have a pose, a sentence, the time it takes and one action.** "No lessons finished yet. Begin one from Today. The first takes about twelve minutes." The dog's pose matches the moment.
+42. **Failure wears the house style.** Not found, not shared, expired, offline and storage errors each get the cloth, one sheet, the dog, one headline in the house voice, one line of cause and remedy, and one action. Loading draws the mark on the sheet over the page's hairline skeleton. Nothing stays on "Checking…".
+
+**Interaction and delight**
+
+43. **Teach an interaction once, in one quiet line.** "Use the controls, arrow keys, or swipe from a page edge." Give the keyboard a layer: `W` to write, `/` to search, `←/→` between memories and pages, `?` for the shortcuts, and "Press ? for shortcuts" in the footer of the sheet.
+44. **The companion gives something real and never blocks.** The dog may return a real memory when pressed. It "never block[s] a click" and never covers words.
+45. **Delight is a layer the person can turn off.** Seasonal and playful touches are "decoration over the real interface", with pointer events off. They are skipped under reduced motion and under the person's own "Quiet pages" switch in Account.
+46. **Time and season are present, quietly.** The greeting knows the hour. The question and the open leaf know the season. Nothing ever counts days or scolds.
+
 ## 6. The checklist every page passes
 
 - At all four sizes and when zoomed out: no horizontal scroll, no clipped or overlapping text, no empty screens, and the ratio holds.
@@ -66,4 +97,5 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 - Motion is present, finishes, and can be reduced. The bar follows. Pointer effects line up.
 - Empty, loading, error and success states are designed, not blank.
 - Every interactive element has hover, focus-visible, active, disabled, loading, error and success states, and a touch target of at least 44px.
+- Every page has a clear takeaway, ends with "Where to next", has designed empty and failure states (rules 32–46).
 - The page could sit beside Kiyo, Shiori or the marketing site without embarrassment.
