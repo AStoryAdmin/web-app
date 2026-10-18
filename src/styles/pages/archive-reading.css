@@ -9,10 +9,7 @@
    1.6 leading, 25.4em to the line ≈ 66 characters, 0.8em between paragraphs, the full ink), the photograph as a
    straight mounted print at its own ratio, the family's lines as text with hairlines, one quiet tool row. */
 
-/* the colours this sheet adds, named once (the album's black paper, the full-view ground, the print's white) */
-:root { --album-black: #3B291D; --album-black-deep: #241912; --album-black-sheen: #2E2219; --print-white: #FFFDF8; --night: rgba(23, 18, 16, 0.96); --night-veil: rgba(23, 18, 16, 0.6); --night-ink: #F3EBDD; --night-soft: #D9CFC2; --night-rule: rgba(243, 235, 221, 0.35);
-  --shadow-lift: 0 1px 2px rgba(42, 35, 32, 0.1), 0 18px 36px -18px rgba(42, 35, 32, 0.45); --shadow-print-lift: 0 1px 2px rgba(42, 35, 32, 0.12), 0 26px 40px -20px rgba(42, 35, 32, 0.5);
-  --cloth-rule: rgba(246, 240, 230, 0.16); --cloth-track: rgba(246, 240, 230, 0.22); --cloth-object-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.4)); }
+/* the tokens this sheet uses (album black, the full view's night, the lifts, the cloth's hairlines) live in astory.css §1 */
 
 .mv { --marker: color-mix(in srgb, var(--foil) 55%, transparent); --mv-ink: var(--sheet-ink); --mv-soft: var(--ink-soft); --mv-terra: var(--terracotta-ink); --mv-sage: var(--sage-ink);
   --mv-fs: 20px; --mv-lh: 1.6; --mv-col: calc(var(--mv-fs) * 25.4); --mv-gap: 64px; }
@@ -206,8 +203,8 @@
 .sheet-page .mv .mv-more-btn { min-width: 44px; justify-content: center; padding: 0 10px; letter-spacing: 0.1em; font-weight: 700; }
 .mv-confirm { max-width: var(--mv-col); margin-top: 28px; padding: 20px 0; border: 0; border-top: 1px solid var(--sheet-rule); border-bottom: 1px solid var(--sheet-rule); border-radius: 0; background: transparent; }
 .mv-confirm-h { margin: 0; font: 600 16px/1.35 var(--font-ui); color: var(--mv-ink); }
-.sheet-page .btn.mv-danger-fill { background: var(--danger); border-color: var(--danger); color: var(--print-white); }
-@media (hover: hover) and (pointer: fine) { .sheet-page .btn.mv-danger-fill:hover { background: color-mix(in srgb, var(--danger) 86%, black); } }
+.sheet-page .btn.mv-danger-fill { background: var(--danger); border-color: var(--danger); color: var(--paper-print); }
+@media (hover: hover) and (pointer: fine) { .sheet-page .btn.mv-danger-fill:hover { background: var(--danger-deep); } }
 
 /* the small menus (••• and Public/Private): a sheet of the print paper under the tool, growing from it */
 .mv-menuwrap { position: relative; display: inline-flex; }
@@ -345,7 +342,7 @@
 .sheet-page .arc-tools .arc-chips .chip.big[aria-pressed="true"] { border-bottom: 0; box-shadow: inset 0 -2px 0 var(--kicker-terracotta); }
 .sheet-page .arc-tools .arc-chips .chip.big:focus-visible { outline-offset: -2px; }
 .arc-tools .arc-view { margin-left: auto; flex: none; }
-.sheet-page .arc-tools .arc-view .chip.big { min-height: 36px; font: 600 13px/1 var(--font-ui); letter-spacing: 0; text-transform: none; }
+.sheet-page .arc-tools .arc-view .chip.big { min-height: 44px; font: 600 13px/1 var(--font-ui); letter-spacing: 0; text-transform: none; }
 .sheet-page .arc-tools .arc-view .chip.big:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
 .arc-page .arc-filters { margin-top: var(--s-4); }
 @media (max-width: 760px) {
@@ -356,22 +353,15 @@
 }
 
 
-/* prints: square, compact, as many across as fit at about 220px each (four at 1366, six at 1920, two on a phone) */
+/* prints: square and compact; four across from 1100px, two on a phone (see "The prints" below for their words) */
 .arc-prints .mosaic { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 16px; }
 .arc-prints .print-card { padding: 6px 6px 8px; }
 .arc-prints .print-card .frame, .arc-prints .print-card.lead .frame { aspect-ratio: 1 / 1; }
 .arc-prints .print-card .cap { padding: 12px; gap: 3px; }
-.arc-prints .print-card.typed .frame { --lh: 25px; --top: 30px; }
-.arc-prints .print-card .typed-in { padding: var(--top) 14px 100px; }
-.arc-prints .print-card .typed-in .said { font-size: 17px; -webkit-line-clamp: 2; }
-@media (min-width: 1700px) { .arc-prints .print-card .typed-in .said { -webkit-line-clamp: 3; } }
 .arc-prints .print-card .typed-in .wm { display: none; }
 .arc-prints .print-card .cues { left: 8px; top: 8px; }
 @media (max-width: 760px) {
   .arc-prints .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .arc-prints .print-card .cap .title { font-size: 17px; }
-  .arc-prints .print-card .typed-in .said { font-size: 15.5px; -webkit-line-clamp: 2; }
-  .arc-prints .print-card.typed .frame { --lh: 22px; --top: 24px; }
 }
 
 /* the list: two columns on a wide screen, the rail keeps its decade and year dots, the per-card dots step aside */
@@ -473,28 +463,20 @@
 .print-card .frame.has-marks .cap, .home-mem .print-card .frame.has-marks .cap, .arc-prints .print-card .frame.has-marks .cap { padding-right: 12px; padding-bottom: 12px; }
 .print-card .marks, .arc-prints .print-card .marks { top: 10px; right: 10px; bottom: auto; left: auto; }
 .print-card.treasured .marks, .arc-prints .print-card.treasured .marks { right: 30px; }
-.print-card .cap .title, .home-mem .print-card .cap .title, .arc-prints .print-card .cap .title { -webkit-line-clamp: 3; }
 .print-card .cap .kicker, .home-mem .print-card .cap .kicker, .arc-prints .print-card .cap .kicker { font-size: 12px; letter-spacing: 0.12em; }
 .print-card .cap .dateline, .home-mem .print-card .cap .dateline, .arc-prints .print-card .cap .dateline { font-size: 13px; letter-spacing: 0.02em; font-variant-caps: normal; text-transform: none; }
 .print-card.typed .cap .kicker { color: var(--sage-ink); }
 .print-card.typed .cap .dateline.dated { color: var(--terracotta-ink); }
-.print-card .typed-in .said { color: var(--sheet-ink); }
 .print-card .cue { font-size: 12px; }
 .sheet-page .arc-page .arc-year .arc-task span { font: inherit; letter-spacing: 0; text-transform: none; white-space: inherit; }
 .sheet-page .arc-page .arc-year .arc-task .arc-task-t { font-weight: 500; color: var(--ink-soft); }
 .sheet-page .arc-page .arc-year .arc-task .arc-task-arrow { color: var(--accent); }
-@media (max-width: 760px) { .arc-prints .print-card .cap .title { -webkit-line-clamp: 4; } }
 
 /* ═════════════════════════ Round 3 (reviewers' findings) ═════════════════════════ */
 /* every control 44px: the Prints/List switch and the chapter tabs, at every width */
-.sheet-page .arc-tools .arc-view .chip.big, .sheet-page .arc-tools .arc-chips .chip.big, .sheet-page .arc-decaderow .chip.big { min-height: 44px; }
+.sheet-page .arc-tools .arc-chips .chip.big, .sheet-page .arc-decaderow .chip.big { min-height: 44px; }
 .sheet-page .arc-tools .arc-view { padding: 0 4px; }
 
-/* the prints' titles: 21px under a card of about 240px, three lines, never cut mid-word */
-.arc-prints .print-card .cap .title { font-size: 21px; line-height: 1.1; overflow-wrap: normal; word-break: normal; hyphens: manual; }
-.arc-prints .print-card.typed .cap { min-height: 104px; align-content: end; }
-/* the typed card reserves its caption: the words stop above it */
-.arc-prints .print-card .typed-in { padding-bottom: 112px; }
 
 /* the list: three columns from 1680 */
 @media (min-width: 1680px) { .arc-page .arc-rail .arc-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -519,14 +501,6 @@
   /* the year task is one inline run under the heading, not two ragged columns */
   .sheet-page .arc-page .arc-year > .arc-task, .arc-task { display: block; min-height: 44px; padding: 11px 0 0; margin: 0; white-space: normal; line-height: 1.5; border-radius: 0; }
   .arc-task .arc-task-arrow { display: inline; }
-  /* the prints: titles at most three lines, the typed card's words stop well above the caption */
-  .arc-prints .print-card .cap .title { font-size: 17px; -webkit-line-clamp: 3; }
-  .arc-prints .print-card .typed-in { padding-bottom: 108px; }
-  .arc-prints .print-card .typed-in .said { -webkit-line-clamp: 1; }
-  .arc-prints .print-card.typed .cap { min-height: 0; }
-  .home-mem .print-card .typed-in { padding-bottom: 108px; }
-  .home-mem .print-card .typed-in .said { -webkit-line-clamp: 1; }
-  .home-mem .print-card .cap .title { -webkit-line-clamp: 3; }
 }
 
 /* ═════════════════════════ Round 4 (reviewers' findings) ═════════════════════════ */
@@ -555,9 +529,6 @@
 .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 16px; }
 .sk-grid i { display: block; aspect-ratio: 1; border: 1px solid var(--sheet-rule); border-radius: 6px; background: var(--paper-tone); }
 
-/* not here: the dog looks up from the paper, one line of cause and remedy, one way back */
-.mv-missing { justify-items: start; }
-.mv-missing-dog { width: 150px; height: auto; margin: 0 0 4px -8px; }
 
 /* ── the Archive ── */
 /* the chapter tabs and the Prints/List switch sit on one line (the shared chip row's own margin is reset) */
@@ -571,17 +542,8 @@
   .sheet-page .arc-tools .arc-chips.chiprow.scroll { order: 2; }
 }
 
-/* the prints: titles run whole; the kept line is never cut mid-sentence (cards prefer a sentence of 45 characters or fewer) */
-.print-card .cap .title, .home-mem .print-card .cap .title, .arc-prints .print-card .cap .title { display: block; -webkit-line-clamp: unset; overflow: visible; }
-.arc-prints .print-card .typed-in .said, .home-mem .print-card .typed-in .said { -webkit-line-clamp: 3; }
-@media (max-width: 760px) {
-  .arc-prints .print-card .typed-in .said, .home-mem .print-card .typed-in .said { -webkit-line-clamp: 2; }
-  .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 1; }
-  .arc-prints .print-card .cap .title.long, .home-mem .print-card .cap .title.long { font-size: 16px; line-height: 1.12; }
-}
 
 /* the list's cards: no shadow at rest (a step of tone), one hover signal (2px) for a pointer, and every card answers a press */
-.arc-page .mem, .sheet-page .arc-page .mem { box-shadow: none; transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out); }
 .arc-page .mem:hover, .sheet-page .arc-page .mem:hover { box-shadow: none; transform: none; }
 .arc-page .mem:hover .print { transform: rotate(-1.2deg); }
 @media (hover: hover) and (pointer: fine) {
@@ -589,17 +551,90 @@
 }
 .arc-page .mem:active, .print-card:active { transform: scale(0.98); transition-duration: 120ms; }
 @media (prefers-reduced-motion: reduce) { .arc-page .mem, .arc-page .mem:active, .print-card:active { transition: none; transform: none; } }
-/* a typed card whose caption also carries a chapter or a date has a line less of words */
+
+/* ═════════════════════════ The prints (Home's and the Archive's): one rule per property ═════════════════════════
+   Titles run whole. A typed card's words are the memory's takeaway, whole, never an ellipsis: the card
+   reserves its caption and gives the words their lines; a caption that also carries a chapter or a date
+   takes a line of words. On a phone every print is 3:4 so rows stay even and a typed card holds its line. */
+.print-card .cap .title, .home-mem .print-card .cap .title, .arc-prints .print-card .cap .title { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: normal; hyphens: manual; }
+.arc-prints .print-card .cap .title { font-size: 21px; line-height: 1.1; }
+.print-card .typed-in .said { color: var(--sheet-ink); }
+.arc-prints .print-card.typed .frame { --lh: 22px; --top: 24px; }
+.arc-prints .print-card .typed-in { padding: var(--top) 14px 112px; }
+.arc-prints .print-card .typed-in .said { font-size: 16px; -webkit-line-clamp: 3; }
+.arc-prints .print-card.typed .cap { min-height: 104px; align-content: end; }
+.home-mem .print-card .typed-in .said { -webkit-line-clamp: 3; }
 .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 2; }
-/* the Archive's typed cards at about 200px: three whole lines of words at 16/22 above a caption whose title runs whole */
-@media (min-width: 761px) and (max-width: 1599px) {
-  .arc-prints .print-card.typed .frame { --lh: 22px; --top: 24px; }
-  .arc-prints .print-card .typed-in .said { font-size: 16px; }
+/* from 1600px a typed card is 375px or more: the words are its picture, so they are at least the title's size */
+@media (min-width: 1600px) {
+  .arc-prints .print-card.typed .frame { --lh: 30px; --top: 36px; }
+  .arc-prints .print-card .typed-in { padding-bottom: 120px; }
+  .arc-prints .print-card .typed-in .said { font-size: 22px; -webkit-line-clamp: 5; }
+  .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 4; }
+  /* Home's prints are 330px or more here: the same rule, a step smaller for its smaller titles */
+  .home-mem .print-card.typed .frame { --lh: 29px; --top: 32px; }
+  .home-mem .print-card .typed-in .said { font-size: 20px; -webkit-line-clamp: 4; }
 }
-/* the phone: two prints across are 160px wide, too small a square for a whole kept line; every print is 3:4, so rows stay even
-   and a typed card holds its sentence above a title that runs whole */
 @media (max-width: 760px) {
   .arc-prints .print-card .frame, .arc-prints .print-card.lead .frame, .home-mem .print-card .frame, .home-mem .print-card.lead .frame { aspect-ratio: 3 / 4; }
-  .arc-prints .print-card .typed-in .said, .home-mem .print-card .typed-in .said { -webkit-line-clamp: 3; }
+  .arc-prints .print-card .cap .title { font-size: 17px; }
+  .arc-prints .print-card .cap .title.long, .home-mem .print-card .cap .title.long { font-size: 16px; line-height: 1.12; }
+  .arc-prints .print-card.typed .frame, .home-mem .print-card.typed .frame { --lh: 21px; --top: 22px; }
+  .arc-prints .print-card .typed-in, .home-mem .print-card .typed-in { padding-bottom: 96px; }
+  .arc-prints .print-card .typed-in .said, .home-mem .print-card .typed-in .said { font-size: 15px; -webkit-line-clamp: 4; }
+  .arc-prints .print-card.typed .cap { min-height: 0; }
   .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 2; }
 }
+
+/* the List view's cards: GSAP owns their rise, so the resting card has no transform transition; it is declared only
+   where the hover lift and the press use it */
+.arc-page .mem, .sheet-page .arc-page .mem { box-shadow: none; transition: background-color 160ms var(--ease-out); }
+.arc-page .mem:is(:hover, :active), .sheet-page .arc-page .mem:is(:hover, :active) { transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out); }
+/* the List view: two columns from 1100px, four from 1600 (eight memories make two even rows), the excerpt whole */
+/* the typed print: a memory without a photograph, its words on the print's paper where the photograph would be; only the widest List shows it */
+.mem .print.typed { display: none; }
+@media (min-width: 1600px) {
+  .arc-page .arc-rail .arc-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .arc-page .arc-cards .mem, .arc-page .arc-cards .mem.text { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; align-content: start; }
+  .arc-page .arc-cards .mem .print { width: 100%; max-width: 220px; }
+  .arc-page .arc-cards .mem .print.typed { display: flex; align-items: center; box-sizing: border-box; aspect-ratio: 220 / 222; padding: 20px 20px 22px; background: var(--paper-print); }
+  .arc-page .arc-cards .mem .typed-words { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 7; overflow: hidden; font: italic 400 20px/1.4 var(--book-body); color: var(--sheet-ink); text-wrap: pretty; }
+  .arc-page .arc-cards .mem.text .excerpt { display: none; }
+}
+.arc-page .mem .excerpt { -webkit-line-clamp: unset; display: block; overflow: visible; }
+
+/* the page turn: titles balanced, three lines on a phone */
+.mv-turn-link i { text-wrap: balance; }
+@media (max-width: 599px) { .mv-turn-link i { -webkit-line-clamp: 3; } }
+
+/* the tidy note: the separator is drawn before the link; on a phone the link takes its own line and the dot goes */
+.mv-tidy-act::before { content: "· "; color: var(--mv-soft); }
+@media (max-width: 599px) { .mv-tidy-act { display: block; } .mv-tidy-act::before { content: none; } }
+
+/* the year task: a gap the flex box keeps, and the time and arrow never part */
+.arc-task, .sheet-page .arc-page .arc-year > .arc-task { column-gap: 0.3em; }
+.arc-task .arc-task-t, .arc-task .arc-task-arrow { white-space: nowrap; }
+
+/* Bond on a ledge: not here, a failed load, an empty archive. Centred on the sheet; the art fades out at his foot onto the
+   foil hairline where he sits; one headline with the foil full stop, one line, one action */
+.ledge-note { display: grid; justify-items: center; text-align: center; max-width: 560px; margin: 24px auto 0; padding: 0 0 8px; }
+.ledge-dog { display: block; width: 190px; margin-bottom: -6px; }
+.ledge-dog img { display: block; width: 100%; height: auto; }
+.ledge-line { display: block; width: min(320px, 80%); height: 1px; background: var(--foil); opacity: 0.7; }
+.sheet-page .ledge-title { margin: 22px 0 0; font-family: var(--book-display); font-weight: 600; font-size: 36px; line-height: 1.1; letter-spacing: -0.01em; color: var(--sheet-ink); text-wrap: balance; }
+.ledge-stop { color: var(--foil); }
+.ledge-text { margin: 12px 0 0; max-width: 30em; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--ink-soft); text-wrap: pretty; }
+.ledge-acts { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.mv-missing-page { padding-top: 56px; }
+.arc-empty-note { margin-top: 40px; }
+@media (max-width: 599px) {
+  .ledge-dog { width: 150px; }
+  .sheet-page .ledge-title { font-size: 28px; }
+  .ledge-text { font-size: 17px; }
+}
+/* Home's empty print: Bond asleep on the card's top edge, in place of the sample picnic */
+.print-card.invite .invite-dog { position: absolute; right: 24px; top: 18px; width: 120px; height: auto; opacity: 0.95; pointer-events: none; }
+@media (max-width: 599px) { .print-card.invite .invite-dog { width: 88px; right: 12px; } }
+
+/* the family's lines that failed to load: what failed and the way to try again */
+.mv .fv-failed { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-style: normal; font-family: var(--font-ui); font-size: 14px; }

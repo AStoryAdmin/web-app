@@ -3397,8 +3397,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
    sheet behaves like the family book being read, in its own world (docs/research/atmosphere-2026.md): a short ribbon
    bookmark in the cloth's colour hangs from the running head in the margin (lib/atmosphere);
    the running head stays at the top of the page and names the section you are in; the ✦ rules draw themselves as
-   they come up; and the foot of the Archive (and of Home, placed by the lead) is an open leaf with today's question, "Dear family,", a nib on the ruled lines, a pencilled note, "Write it"
-   and the family dog asleep on the page's edge, who wakes when you reach it. The writer's leaf gains the journal's
+   they come up. The writer's leaf gains the journal's
    things: "Dear family,", a ribbon tail between the pages, a turned-down corner, the folio in small caps.
    Nothing starts hidden; everything is transform and opacity; reduced motion keeps every object, still. */
 
@@ -3417,7 +3416,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .running-head-sheet.in-section .rh-sec { opacity: 1; transform: none; }
 /* what sticks under the band moves down by its height; jumps land below it */
 .sheet-page .arc-decades, .sheet-page .mp-left { top: 56px; }
-.sheet-page .arc-year, .sheet-page .sechead, .sheet-page .open-leaf { scroll-margin-top: 64px; }
+.sheet-page .arc-year, .sheet-page .sechead { scroll-margin-top: 64px; }
 @media (max-width: 760px) { .sheet-page { padding-top: 4px; } .sheet-page .running-head-sheet { padding-top: 14px; padding-bottom: 12px; } }
 
 /* 2. The ribbon bookmark: a short silk ribbon in the cloth's colour (teal on the Book) with a notched tail, hanging
@@ -3445,45 +3444,11 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
   }
 }
 
-/* 5. The open leaf at the foot of Home and the Archive: a blank page of the book with today's question, waiting */
-.open-leaf { position: relative; width: 100%; max-width: 760px; margin: calc(var(--s-24) + 64px) auto 0; justify-self: center; align-self: center; }
-.ol-page { position: relative; isolation: isolate; padding: 56px 64px 44px; border: 1px solid var(--sheet-rule); border-radius: 4px; background: var(--paper-print);
-  box-shadow: 0 3px 0 -1px var(--paper-print), 0 3px 0 0 var(--sheet-rule), 0 6px 0 -1px var(--paper-print), 0 6px 0 0 var(--sheet-rule); }
-.ol-page > :not(.page-frame, .ol-ear) { position: relative; z-index: 1; }
-.ol-head { display: flex; justify-content: center; gap: var(--s-3); margin: 0; font: 600 11px/1 var(--font-ui); letter-spacing: 0.18em; text-transform: uppercase; color: var(--kicker-grey); }
-.ol-head i { font-style: normal; letter-spacing: 0; color: var(--foil); }
-.ol-dear { margin: var(--s-8) 0 0; font-family: var(--book-body); font-style: italic; font-size: 19px; color: var(--ink-soft); }
-.ol-q { margin: var(--s-2) 0 0; max-width: 32ch; font-family: var(--book-body); font-style: italic; font-size: 28px; line-height: 1.3; color: var(--sheet-ink); text-wrap: balance; }
-.ol-lines { margin-top: var(--s-3); }
-.ol-lines > span { display: block; height: 40px; border-bottom: 1px solid var(--foil-soft); }
-.ol-nib { position: absolute; right: 40px; top: 2px; width: 30px; height: auto; transform: rotate(38deg); pointer-events: none; }
-.ol-nib .body { fill: var(--foil-pale); stroke: var(--foil); stroke-width: 1.2; stroke-linejoin: round; }
-.ol-nib .slit { fill: none; stroke: var(--foil); stroke-width: 1; }
-.ol-nib .hole { fill: var(--paper-print); stroke: var(--foil); stroke-width: 1; }
-.ol-nib .collar { fill: var(--foil); }
-.ol-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-12); }
-.ol-act { position: relative; }
-.ol-note { position: absolute; left: calc(100% + 66px); top: -34px; margin: 0; white-space: nowrap; font-family: var(--font-script); font-weight: 500; font-size: 25px; line-height: 1; color: var(--ink-soft); transform: rotate(-4deg); }
-.ol-arrow { position: absolute; left: calc(100% + 4px); top: -18px; width: 64px; height: 40px; overflow: visible; }
-.ol-arrow path { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-.ol-sign { margin: 0; text-align: right; font-family: var(--book-body); font-style: italic; font-size: 18px; color: var(--ink-soft); }
-.ol-sign span { display: block; margin-top: 2px; font-size: 26px; color: var(--sheet-ink); }
-/* the dog: asleep with its chin on the page's top edge, paws over the border; it wakes and looks up at the end */
-.ol-dog { position: absolute; right: 84px; bottom: calc(100% - 12px); z-index: 2; width: 150px; aspect-ratio: 781 / 640; pointer-events: none; transition: transform 700ms var(--ease-out); }
-/* every pose on one scale (781 by 640 drawing-px); awake he peeks from behind the page's edge, the drawing cut at it;
-   the poses change without a double exposure: sleep goes in 120ms, the waking pose comes in over 200ms from 0.96 */
-.ol-dog img { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; object-fit: contain; object-position: 50% 100%; }
-.ol-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out); }
-.ol-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 12px 0); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
-.open-leaf[data-awake] .ol-dog { transform: translateY(-3px); }
-.open-leaf[data-awake] .ol-dog .sleep { opacity: 0; }
-.open-leaf[data-awake] .ol-dog .awake { opacity: 1; transform: none; transition-delay: 60ms; }
-
-/* 6. The turned-down corner (the open leaf and the writer's leaf): the sheet shows through where the corner was, the
+/* 6. The turned-down corner (the writer's leaf): the sheet shows through where the corner was, the
       back of the paper folded over it */
-.ol-ear, .leaf-one > .leaf-ear { position: absolute; right: -1px; bottom: -1px; z-index: 2; width: 26px; height: 26px; pointer-events: none; }
-.ol-ear::before, .leaf-ear::before { content: ""; position: absolute; inset: 0; background: var(--page); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-.ol-ear::after, .leaf-ear::after { content: ""; position: absolute; inset: 0; background: var(--sheet); clip-path: polygon(0 0, 100% 0, 0 100%); }
+.leaf-one > .leaf-ear { position: absolute; right: -1px; bottom: -1px; z-index: 2; width: 26px; height: 26px; pointer-events: none; }
+.leaf-ear::before { content: ""; position: absolute; inset: 0; background: var(--page); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.leaf-ear::after { content: ""; position: absolute; inset: 0; background: var(--sheet); clip-path: polygon(0 0, 100% 0, 0 100%); }
 
 /* 7. The writer's leaf as the journal: "Dear family," above the words, the ribbon's tail hanging below the page from
       between the leaves (it swings once on arrival, Write.tsx), the folio in the book's small caps */
@@ -3497,24 +3462,11 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 body.writing-focus .leaf-one > .leaf-ribbon { display: none; }
 
 @media (max-width: 760px) {
-  .open-leaf { margin-top: calc(var(--s-16) + 84px); }
-  .ol-page { padding: 44px 22px 32px; }
-  .ol-head { font-size: 10.5px; letter-spacing: 0.14em; }
-  .ol-head i, .ol-head i + span { display: none; }
-  .ol-q { font-size: 23px; }
-  .ol-lines > span { height: 36px; }
-  .ol-nib { right: 14px; width: 24px; }
-  .ol-foot { flex-direction: column; align-items: flex-start; gap: var(--s-5); margin-top: var(--s-8); }
-  .ol-note { position: static; margin-bottom: var(--s-3); font-size: 23px; transform: rotate(-2deg); }
-  .ol-arrow { display: none; }
-  .ol-sign { align-self: flex-end; }
-  .ol-dog { right: 28px; width: 116px; }
   .leaf-one > .leaf-ribbon { right: 40px; height: 52px; }
   .leaf-one .folio { font-size: 10.5px; letter-spacing: 0.12em; flex-wrap: wrap; row-gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .running-head-sheet .rh-right > span, .sheet-page .running-head-sheet::after, .ol-dog, .ol-dog img { transition: none; }
-  .ol-dog .awake { transform: none; }
+  .running-head-sheet .rh-right > span, .sheet-page .running-head-sheet::after { transition: none; }
   .running-head-sheet .rh-sec, .running-head-sheet.in-section .rh-page { transform: none; }
 }
 

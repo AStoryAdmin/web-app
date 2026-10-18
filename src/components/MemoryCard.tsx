@@ -7,8 +7,9 @@
  * the date in terracotta when there is one (undated memories say nothing
  * here; the Archive asks once); the person's kept line, their own words,
  * never the server's third-person summary; the faces of the people in it;
- * who told it as a small portrait. The paper is the memory's chosen
- * colour, else its chapter's tint.
+ * who told it as a small portrait. Every card is on the book's print paper
+ * (--paper-print): the chapter tint was decided against, because a tinted
+ * card on the sheet read as a coloured bubble (founder, 17 Oct).
  */
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
@@ -24,7 +25,7 @@ import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
 import { smarten } from "../lib/typography";
 import type { Memory, Story } from "../data/stories";
-import { paperFor, toldBy } from "../lib/memoryDisplay";
+import { toldBy } from "../lib/memoryDisplay";
 
 const minutes = (memory: Memory) => {
   const s = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
@@ -52,13 +53,18 @@ export default function MemoryCard({ memory, story, style, rise = true }: { memo
     .map((id) => family?.people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p)
     .slice(0, 4);
-  const paper = paperFor(memory);
   return (
-    <Link className={`mem${meta.photo ? "" : " text"}${paper ? ` ${paper}` : ""}${rise ? " rise" : ""}`} to={`/archive/${memory.id}`} style={style}>
+    <Link className={`mem${meta.photo ? "" : " text"}${rise ? " rise" : ""}`} to={`/archive/${memory.id}`} style={style}>
       {meta.photo && (
         <span className="print" aria-hidden="true">
           <img className="pic" src={photo ?? undefined} alt="" loading="lazy" />
           {meta.photoCount > 1 && <span className="n">+{meta.photoCount - 1}</span>}
+        </span>
+      )}
+      {/* a memory without a photograph sets its words where the photograph would be, so a four-across row keeps its titles on one line (shown by the Archive's widest List only; the excerpt below carries the words for everyone else) */}
+      {!meta.photo && words && (
+        <span className="print typed" aria-hidden="true">
+          <span className="typed-words">{words}</span>
         </span>
       )}
       <div className="body">

@@ -90,6 +90,7 @@ export default function FamilyVoices({
 }) {
   const [items, setItems] = useState<Contribution[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
@@ -107,7 +108,10 @@ export default function FamilyVoices({
         setItems(rows.filter((c) => c.memoryId === memory.id && (c.kind || "testimonial") === "testimonial"));
         setLoaded(true);
       })
-      .catch(() => live && setLoaded(true));
+      .catch((err) => {
+        console.warn("family lines not loaded", err);
+        if (live) setLoadFailed(true);
+      });
     return () => {
       live = false;
     };
@@ -166,7 +170,23 @@ export default function FamilyVoices({
     <section className="fv" aria-labelledby="voices-h">
       <div className="fv-head">
         <h2 id="voices-h">What the family remembers</h2>
-        {loaded && !approved.length && !pending.length && <p className="fv-empty">Nobody else has added their side yet.</p>}
+        {loadFailed ? (
+          <p className="fv-empty fv-failed" role="alert">
+            Couldn’t load what the family added.{" "}
+            <button
+              type="button"
+              className="mv-retry"
+              onClick={() => {
+                setLoadFailed(false);
+                setRefresh((n) => n + 1);
+              }}
+            >
+              Try again
+            </button>
+          </p>
+        ) : (
+          loaded && !approved.length && !pending.length && <p className="fv-empty">Nobody else has added their side yet.</p>
+        )}
       </div>
       {error && <Problem message={error} onDismiss={() => setError(null)} />}
       {(approved.length > 0 || pending.length > 0) && (

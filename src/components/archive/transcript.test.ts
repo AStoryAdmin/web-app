@@ -128,8 +128,13 @@ describe("round five of the transcript rules", () => {
     expect(asked).toContain("Because our strategy right now");
     expect(out.filter((p) => !p.startsWith(ASKED)).join(" ")).not.toContain("our strategy");
   });
+  it("opens the words on the teller, not on a reply to an unseen question", async () => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(["No, I just lost my grandparents last year and it was really hard on all of us."])[0]).toMatch(/^I just lost/);
+  });
   it("gives every memory a whole takeaway, without its throat-clearing", async () => {
     const { takeaway } = await import("./transcript");
     expect(takeaway("I mean, that was awesome and we did all these cool things together that year.")).toBe("That was awesome and we did all these cool things together that year.");
+    expect(takeaway("And that's always been the dream because I love teaching kids every single day.")).toMatch(/^That's always/);
   });
 });

@@ -98,8 +98,8 @@ export default function Mosaic({
 
 /**
  * The empty state: one large typed card inviting the first memory, and
- * nothing else. The sample family's picnic sits behind the words, very
- * faint, so the card already looks like what it will hold.
+ * nothing else: Bond asleep on the card's edge, one line of what to write,
+ * and the time it takes.
  */
 export function InvitePrint({ story }: { story: Story }) {
   const own = story.relationship === "Myself";
@@ -108,7 +108,7 @@ export function InvitePrint({ story }: { story: Story }) {
       <Link className="print-card lead typed invite" to="/write" data-rise>
         <span className="frame" aria-hidden="true">
           <span className="typed-in">
-            <img className="sample" src="/photos/family-04.webp" alt="" />
+            <img className="invite-dog" src="/dog/sleep-paper.webp" alt="" width={781} height={622} />
             <span className="said">Nothing here yet.</span>
             <span className="line">{own ? "Answer the question above, or write about anything at all: a kitchen, a road, a song on the radio." : `Answer today’s question for ${story.name}, or write about anything at all: a kitchen, a road, a song on the radio.`}</span>
           </span>
@@ -116,7 +116,7 @@ export function InvitePrint({ story }: { story: Story }) {
             <span className="title">
               <PenIcon /> Keep the first memory
             </span>
-            <span className="dateline">The first one is the hardest; after that they come.</span>
+            <span className="dateline">A few lines is plenty; about five minutes.</span>
           </span>
         </span>
       </Link>

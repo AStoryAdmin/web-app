@@ -23,6 +23,7 @@ import Treasure from "../components/archive/Treasure";
 import FamilyVoices from "../components/archive/FamilyVoices";
 import ToolMenu from "../components/archive/ToolMenu";
 import { MemoryHead, PageTurn, Plate } from "../components/archive/MemoryLead";
+import LedgeNote from "../components/archive/LedgeNote";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
 import { isRunOfLines, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
@@ -106,15 +107,12 @@ function useSpread(): boolean {
 function Missing() {
   return (
     <Shell bare title="Memory">
-      <div className="page mv">
-        <div className="mp-missing mv-missing">
-          <img className="mv-missing-dog" src="/dog/curious-paper.webp" alt="" width={150} height={126} />
-          <h1>That memory isn’t here</h1>
-          <p className="meta">It may have been removed, or it belongs to a story this account can’t see. The rest of the archive is where it was.</p>
+      <div className="page mv mv-missing-page">
+        <LedgeNote title="That memory isn’t here" line="It may have been removed, or it belongs to a story this account can’t see. The rest of the archive is where it was.">
           <ButtonLink to="/archive" variant="outline">
             Back to the archive
           </ButtonLink>
-        </div>
+        </LedgeNote>
       </div>
     </Shell>
   );
@@ -207,8 +205,10 @@ export default function MemoryPage() {
   const tidied = spoken && tidyNow.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
   // the memory's one takeaway: the same line as its print, its List card and Home's quote
   const kept = smarten(takeaway(raw.join("\n")));
-  // when it stands in the last paragraph the coda is the repeat, so the body leaves it unmarked (said once nearby, not three times)
-  const markIn = kept && !findTakeaway(body[body.length - 1] || "", kept);
+  // when it stands in the last paragraph the words already end on it, so there is no coda to repeat it (said twice, not three times)
+  const coda = !!kept && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept);
+  // a memory that is only its takeaway ("How to end the chat.") is not set twice, under the title and as the words
+  const keptHead = body.length === 1 && body[0].length <= kept.length + 12 ? "" : kept;
   // one rule for who told it, shared with the cards and "From the book": "Told by Bao in conversation"
   const { verb: told, name: toldName, rest: toldRest } = tellerParts(memory, story);
 
@@ -303,7 +303,7 @@ export default function MemoryPage() {
               <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
-                    {markIn ? withMark(line, kept) : withLang(line)}
+                    {keptHead ? withMark(line, keptHead) : withLang(line)}
                     {j < arr.length - 1 && <br />}
                   </span>
                 ))}
@@ -355,7 +355,7 @@ export default function MemoryPage() {
             people={people}
             stillWriting={memory.status === "in_progress"}
             actions={headTools}
-            kept={kept}
+            kept={keptHead}
             treasured={isTreasured(memory)}
           />
 
@@ -370,7 +370,7 @@ export default function MemoryPage() {
 
             {words}
 
-            {kept && body.length > 1 && (
+            {coda && (
               <p className="mv-coda">
                 <span className="mv-coda-mark" aria-hidden="true">
                   ✦

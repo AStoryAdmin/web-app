@@ -200,11 +200,16 @@ function liftQuestions(paragraph: string): string[] {
 
 /** Every paragraph tidied; a paragraph that was only back-channel disappears; the other person's questions stand apart. */
 export function cleanTranscript(paragraphs: string[]): string[] {
-  return paragraphs
+  const out = paragraphs
     .flatMap((p) => liftQuestions(tellerTurns(p.replace(/\s*\n\s*/g, " "))))
     .map((p) => (p.startsWith(ASKED) ? p : cleanSpeech(p)))
     .filter((p) => p.replace(ASKED, "").trim());
+  // the words open on the teller, not on a reply to a question the page never shows ("No, I just lost my grandparents…")
+  if (out.length && !out[0].startsWith(ASKED)) out[0] = cap(out[0].replace(OPENING_REPLY, ""));
+  return out;
 }
+
+const OPENING_REPLY = /^(?:no|yes|yeah|yep|right|sure|exactly|definitely|absolutely)[,.]\s+(?=\S)/i;
 
 /**
  * Breaks a block that runs on without a full stop: before "and then", "so",
@@ -348,7 +353,7 @@ export function keptLine(text: string, { max = 170, min = 50, needFeeling = true
 }
 
 /** A line shown out of its context loses its throat-clearing: "I mean, that was awesome." → "That was awesome." */
-const OUT_OF_CONTEXT = /^(?:i mean|so|and so|well|yeah|okay|ok|you know|like)[,]?\s+/i;
+const OUT_OF_CONTEXT = /^(?:i mean|so|and so|and|well|yeah|okay|ok|you know|like)[,]?\s+/i;
 
 /**
  * The memory's takeaway (Bao's Standard rule 32), one function for every
@@ -365,7 +370,8 @@ const OUT_OF_CONTEXT = /^(?:i mean|so|and so|well|yeah|okay|ok|you know|like)[,]
  */
 export function takeaway(text: string): string {
   const kept = keptLine(text);
-  if (kept) return kept;
+  // lifted out of the talk, a line does not open on the joint that tied it to the last one ("And that's always been the dream…")
+  if (kept) return cap(kept.replace(OUT_OF_CONTEXT, ""));
   const t = String(text || "").replace(/\r\n?/g, "\n").trim();
   if (!t) return "";
   const spoken = soundsSpoken(t);
@@ -406,7 +412,11 @@ export function findTakeaway(paragraph: string, line: string): [number, number] 
   const want = norm(line);
   if (!want) return null;
   for (const m of paragraph.matchAll(/[^.!?…]+[.!?…]+["”’)]*\s*/g)) {
-    if (norm(m[0]) === want || norm(m[0]).endsWith(want)) return [m.index ?? 0, (m.index ?? 0) + m[0].trimEnd().length];
+    if (norm(m[0]) === want || norm(m[0]).endsWith(want)) {
+      // the mark starts where the takeaway does, past the joint it was lifted without ("So that paid…" marks "that paid…")
+      const lead = norm(m[0]) === want ? 0 : (m[0].match(OUT_OF_CONTEXT)?.[0].length ?? 0);
+      return [(m.index ?? 0) + lead, (m.index ?? 0) + m[0].trimEnd().length];
+    }
   }
   return null;
 }

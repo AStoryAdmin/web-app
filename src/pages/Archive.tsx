@@ -3,7 +3,7 @@
  * rail beside it on a laptop. Search, chapter chips, the book's progress,
  * and the family's contributions waiting for a look. Nothing to configure.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import { archiveStats } from "../app-core/lib/timeline.js";
@@ -11,6 +11,7 @@ import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
 import WhereNext, { Stop } from "../components/book/WhereNext";
+import LedgeNote from "../components/archive/LedgeNote";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
 import { InProgressGroup, PrintsFlow, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useCrossfade, useInkIn, useRiseOnScroll } from "../components/archive/motion";
@@ -42,6 +43,20 @@ function storedView(): ArchiveView {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "list" : "prints";
 }
 
+/** A phone's search shares its row with Prints/List, so its placeholder is the short one (the label keeps the full sentence). */
+const NARROW = "(max-width: 760px)";
+function useNarrow(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(NARROW);
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
+}
+
 const decadeLabel = (d: number) => `${String(d).slice(2)}s`;
 
 const matches = (m: Memory, q: string) => {
@@ -60,6 +75,7 @@ export default function Archive() {
   const [wallCopied, setWallCopied] = useState<string | null>(null);
   const [activeDecade, setActiveDecade] = useState<number | null>(null);
   const [view, setView] = useState<ArchiveView>(storedView);
+  const narrow = useNarrow();
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -239,9 +255,10 @@ export default function Archive() {
   if (account === null && loadError) {
     return (
       <Shell compact title="The Archive">
-        <div className="page">
-          <Problem message="We couldn’t reach the archive just now." onRetry={reload} />
-          <p className="meta">It’s kept safe on our side. Check the connection and try again.</p>
+        <div className="page arc-page">
+          <LedgeNote title="The archive didn’t open" line="It’s kept safe on our side; this was the connection. Check it, then try again.">
+            <Button onClick={reload}>Try again</Button>
+          </LedgeNote>
         </div>
       </Shell>
     );
@@ -346,16 +363,17 @@ export default function Archive() {
         </div>
 
         {nothingAtAll ? (
-          <section className="card arc-empty" aria-label="Nothing here yet">
-            <img src="/book/closed-640.webp" alt="" width={160} />
-            <div>
-              <h2>{own ? "Your archive starts with one memory." : `${story.name}’s archive starts with one memory.`}</h2>
-              <p>Anything at all: a kitchen, a road, a song on the radio. Three memories and the first chapter appears.</p>
-              <ButtonLink to="/write" icon={<PenIcon />}>
-                Write the first memory
-              </ButtonLink>
-            </div>
-          </section>
+          <LedgeNote
+            pose="sleep"
+            level={2}
+            className="arc-empty-note"
+            title={own ? "Your archive starts with one memory" : `${story.name}’s archive starts with one memory`}
+            line="Anything at all: a kitchen, a road, a song on the radio. A few lines is plenty; about five minutes."
+          >
+            <ButtonLink to="/write" icon={<PenIcon />}>
+              Write the first memory
+            </ButtonLink>
+          </LedgeNote>
         ) : (
           <div className="arc-body">
             <DecadeRail decades={decades} active={activeDecade} onPick={jump} />
@@ -373,7 +391,7 @@ export default function Archive() {
                 >
                   <label className="input">
                     <span className="sr-only">Search {whose} memories</span>
-                    <input ref={searchRef} type="search" placeholder={`Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+                    <input ref={searchRef} type="search" placeholder={narrow ? "Search memories" : `Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
                     {query && (
                       <button type="button" className="clear" onClick={() => setQuery("")} aria-label="Clear the search">
                         <CloseIcon width={20} height={20} />
