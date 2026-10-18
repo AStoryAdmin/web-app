@@ -1,26 +1,26 @@
 /**
- * The family dog, chin on the top edge of the bookplate (public/dog/*.png:
- * one image per state, trimmed to the ledge under its paws). The states
- * cross-fade on one box, anchored at the bottom so the paws stay on the
- * plate's border. At rest it watches (sign in), looks up curious (create
- * account, join) or sleeps (verify). While it watches, a small catchlight
- * sits in each eye and follows the pointer a pixel or two either way, so
- * the gaze moves without the eyes ever being washed over; the offsets are in
- * the dog's own coordinates, so they scale with it under the page zoom and
- * the book's fit. The head tilts a few degrees toward the field being typed
- * in; paper-coloured lids blink every four to seven seconds. Password: it
- * covers its eyes. "Show": it peeks. Focus leaves: it rests again. On touch
- * and under reduced motion it is a still dog with one blink; the states
- * still answer the password field.
+ * Bond, the family dog (docs/mascot/BOND.md), behind the top edge of the
+ * bookplate. One picture per pose, cross-faded on one box: at rest he
+ * watches (sign in), looks up curious (create account, join) or sleeps
+ * (verify); on the password he covers his eyes, and on "Show" he peeks.
+ * His head tilts a few degrees toward the field being typed in, and
+ * otherwise a little toward the pointer; the drawing's own painted
+ * catchlights are his eyes' light, so nothing is laid over them. He blinks
+ * only where a pose has a drawn closed-eye frame (`blink` in ART), as a
+ * 120 ms cross-fade; none is supplied yet, so today he does not blink. On
+ * touch and under reduced motion he holds still and the poses still answer
+ * the password field.
  *
- * The art is about to change (docs/mascot/BOND.md: Bond replaces the
- * samoyed). Everything that depends on the drawing is in `ART` below: the
- * file widths and the eye positions. Re-measure the eyes there when the new
- * images land; the state names stay the same.
+ * Everything that depends on the drawing is in ART, measured from the art:
+ * each picture's size, and a per-pose `scale` and `dx` that hold his face at
+ * one size and in one place across poses (normalised by the nose's width
+ * and its centre, against watch), and `sink`, how far a sitting pose goes
+ * down behind the plate (its chest), so that lying poses keep their paws on
+ * the plate's rule. A second set of drawings needs only new numbers here.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { OUT, MOVE } from "../../lib/ease";
+import { OUT } from "../../lib/ease";
 
 export type CompanionFocus = "email" | "password" | "other" | null;
 export type CompanionRest = "watch" | "curious" | "sleep";
@@ -29,171 +29,155 @@ export type CompanionState = {
   focus: CompanionFocus;
   /** Whether the password is shown in clear. */
   shown: boolean;
-  /** How far along the line the typing is, 0..1 (the gaze tracks it). */
+  /** How far along the line the typing is, 0..1 (kept for the callers; the head does not track it). */
   progress?: number;
   /** What it does when nothing is happening. */
   rest?: CompanionRest;
 };
 
-type Eye = { x: number; y: number };
-type Art = { name: string; w: number; h: number; sink: number };
-/**
- * The drawing, in one place (Bond, docs/mascot/BOND.md; public/dog/*.webp, all five at one scale, watch 640 tall).
- * `w` and `h` are each image's size at that scale; the box keeps watch's shape (802 / 640), and every state is drawn
- * at its own height against it (h / 640 of the box), bottom-anchored and centred, so his head keeps one size.
- * `sink` (a fraction of the box's height) lowers a sitting pose so its chest goes behind the plate and his head stays
- * where it was when he lay down: watch and sleep lie with the paws on the edge (0). `eyes` are the pupils' centres
- * as fractions of each image, for the states whose eyes are open; the catchlights and the lids sit there.
- */
-const ART: { states: Art[]; eyes: Partial<Record<string, { left: Eye; right: Eye }>> } = {
-  states: [
-    { name: "watch", w: 802, h: 640, sink: 0 },
-    { name: "cover", w: 738, h: 710, sink: 0.08 },
-    { name: "peek", w: 689, h: 734, sink: 0.13 },
-    { name: "curious", w: 765, h: 949, sink: 0.4 },
-    { name: "sleep", w: 781, h: 622, sink: 0 },
-  ],
-  eyes: {
-    watch: { left: { x: 0.449, y: 0.484 }, right: { x: 0.686, y: 0.38 } },
-    curious: { left: { x: 0.468, y: 0.272 }, right: { x: 0.642, y: 0.408 } },
-  },
+type Pose = {
+  name: "watch" | "cover" | "peek" | "curious" | "sleep";
+  /** the picture's size at the set's one scale (watch is 640 tall) */
+  w: number;
+  h: number;
+  /** drawn at this multiple of that scale, so the face keeps watch's size (watch's nose width / this pose's) */
+  scale: number;
+  /** moved this share of the box's width, so the nose lands where watch's does */
+  dx: number;
+  /** lowered this share of the box's height behind the plate (a sitting pose's chest); 0 = the paws on the rule */
+  sink: number;
+  /** an optional closed-eye frame of the same pose, for a blink; none yet */
+  blink?: string;
 };
-const BOX_W = 802;
+
+/**
+ * Measured from public/dog/*.webp (nose blobs: watch 106 px wide centred at 543, 424; cover 91 at 410, 450; peek
+ * 82 at 336, 392; curious 92 at 327, 422; sleep 117 at 466, 497). dx = (watch's nose x − 0.5) − (nose x − 0.5) ×
+ * w × scale / 802; sink for a sitting pose = (1 − nose y) × h × scale / 640 − watch's 0.3375. Peek keeps its resting
+ * paw on the rule (sink 0), so its head rises a little; the plate leaves room for it (signed-out.css --dogroom).
+ */
+const POSES: Pose[] = [
+  { name: "watch", w: 802, h: 640, scale: 1, dx: 0, sink: 0 },
+  { name: "cover", w: 738, h: 710, scale: 1.165, dx: 0.118, sink: 0.137 },
+  { name: "peek", w: 689, h: 734, scale: 1.293, dx: 0.191, sink: 0 },
+  { name: "curious", w: 765, h: 949, scale: 1.152, dx: 0.257, sink: 0.611 },
+  { name: "sleep", w: 781, h: 622, scale: 0.906, dx: 0.093, sink: 0 },
+];
 const BOX_H = 640;
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pointer = () => matchMedia("(hover: hover) and (pointer: fine)").matches;
 type To = (v: number) => void;
 
-export default function Companion({ focus, shown, progress = 0, rest = "watch" }: CompanionState) {
+export default function Companion({ focus, shown, rest = "watch" }: CompanionState) {
+  const box = useRef<HTMLDivElement>(null);
   const head = useRef<HTMLDivElement>(null);
-  const glints = useRef<HTMLDivElement>(null);
-  const lids = useRef<HTMLDivElement>(null);
-  // the four movers, made once for the dog's life and only called after (never rebuilt per keystroke)
-  const to = useRef<{ gx: To; gy: To; hr: To; hy: To } | null>(null);
-  const mood = focus === "password" ? (shown ? "peek" : "cover") : rest;
+  // the two movers, made once for the dog's life (inside a context, so leaving reverts them whole)
+  const to = useRef<{ hr: To; hy: To } | null>(null);
+  const mood: Pose["name"] = focus === "password" ? (shown ? "peek" : "cover") : rest;
   const awake = mood === "watch" || mood === "curious";
+  // the poses this page rests in load at once; the others follow when the page is idle, or the moment they are needed
+  const [all, setAll] = useState(false);
+  const [blinking, setBlinking] = useState(false);
   const latest = useRef(mood);
   useEffect(() => {
     latest.current = mood;
   });
 
   useEffect(() => {
-    const g = glints.current;
+    const t = window.setTimeout(() => setAll(true), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
     const h = head.current;
-    if (!g || !h) return;
-    const still = reduced();
-    to.current = {
-      gx: gsap.quickTo(g, "x", { duration: still ? 0 : 0.5, ease: OUT }),
-      gy: gsap.quickTo(g, "y", { duration: still ? 0 : 0.5, ease: OUT }),
-      hr: gsap.quickTo(h, "rotation", { duration: still ? 0 : 0.6, ease: OUT }),
-      hy: gsap.quickTo(h, "y", { duration: still ? 0 : 0.6, ease: OUT }),
-    };
+    if (!h) return;
+    const ctx = gsap.context(() => {
+      const still = reduced();
+      to.current = {
+        hr: gsap.quickTo(h, "rotation", { duration: still ? 0 : 0.6, ease: OUT }),
+        hy: gsap.quickTo(h, "y", { duration: still ? 0 : 0.6, ease: OUT }),
+      };
+    }, box);
     return () => {
       to.current = null;
-      gsap.killTweensOf([g, h]);
-      gsap.set([g, h], { clearProps: "transform" });
+      ctx.revert();
     };
   }, []);
 
-  // The gaze and the head: toward the line being typed, otherwise a little toward the pointer.
+  // The head: a few degrees toward the line being typed, otherwise a little toward the pointer.
   useEffect(() => {
     const m = to.current;
     if (!m) return;
     if (!awake) {
-      m.gx(0);
-      m.gy(0);
       m.hr(mood === "peek" ? 2 : 0);
-      m.hy(mood === "sleep" ? 0 : 2);
+      m.hy(0);
       return;
     }
     if (focus) {
-      m.gx(gsap.utils.clamp(-1.6, 1.6, -1.6 + progress * 3.2));
-      m.gy(1.2);
       m.hr(focus === "email" ? -4 : focus === "other" ? 3 : -2);
       m.hy(2);
       return;
     }
     m.hy(0);
     if (reduced() || !pointer()) {
-      m.gx(0);
-      m.gy(0);
       m.hr(0);
       return;
     }
-    const g = glints.current!;
+    const h = head.current!;
     const move = (ev: PointerEvent) => {
-      // clientX, the rect and innerWidth are all screen pixels, so the ratios hold at any zoom
-      const r = g.getBoundingClientRect();
-      const dx = (ev.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2);
-      const dy = (ev.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2);
-      m.gx(gsap.utils.clamp(-1.6, 1.6, dx * 2.4));
-      m.gy(gsap.utils.clamp(-1.2, 1.4, dy * 2));
-      m.hr(gsap.utils.clamp(-4, 4, dx * 5));
+      // clientX, the rect and innerWidth are all screen pixels, so the ratio holds at any zoom
+      const r = h.getBoundingClientRect();
+      m.hr(gsap.utils.clamp(-4, 4, ((ev.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)) * 5));
     };
     window.addEventListener("pointermove", move, { passive: true });
     return () => window.removeEventListener("pointermove", move);
-  }, [awake, mood, focus, progress]);
+  }, [awake, mood, focus]);
 
-  // The blink: one on arrival, then every four to seven seconds while awake.
+  // The blink, only for a pose with a drawn closed-eye frame: every four to seven seconds, 120 ms each way.
+  const canBlink = POSES.some((p) => p.blink);
   useEffect(() => {
-    const el = lids.current;
-    if (!el) return;
-    const still = reduced();
-    const ovals = el.querySelectorAll(".lid");
-    gsap.set(ovals, { scaleY: 0, transformOrigin: "50% 10%" });
+    if (!canBlink || reduced()) return;
     let timer = 0;
-    const blink = (twice = false) => {
-      const tl = gsap.timeline();
-      tl.to(ovals, { scaleY: 1, duration: 0.08, ease: MOVE }).to(ovals, { scaleY: 0, duration: 0.14, ease: OUT });
-      if (twice) tl.to(ovals, { scaleY: 1, duration: 0.08, ease: MOVE }, "+=0.1").to(ovals, { scaleY: 0, duration: 0.14, ease: OUT });
-    };
+    let open = 0;
     const next = () => {
       timer = window.setTimeout(() => {
-        if (latest.current === "watch" || latest.current === "curious") blink(Math.random() < 0.18);
+        if (POSES.find((p) => p.name === latest.current)?.blink) {
+          setBlinking(true);
+          open = window.setTimeout(() => setBlinking(false), 160);
+        }
         next();
       }, gsap.utils.random(4000, 7000));
     };
-    const first = window.setTimeout(() => blink(), 900);
-    if (!still) next();
+    next();
     return () => {
-      clearTimeout(first);
-      clearTimeout(timer);
-      gsap.killTweensOf(ovals);
-      gsap.set(ovals, { scaleY: 0 });
+      window.clearTimeout(timer);
+      window.clearTimeout(open);
     };
-  }, []);
+  }, [canBlink]);
 
-  const drawn = ART.states.find((a) => a.name === mood && ART.eyes[a.name]) ?? ART.states[0];
-  const eyes = ART.eyes[drawn.name]!;
-  // an eye's place in the box, from its place in its own image (drawn h / 640 of the box tall, centred, sunk)
-  const at = (e: Eye) => ({
-    left: `${50 + ((e.x - 0.5) * drawn.w * 100) / BOX_W}%`,
-    top: `${100 + drawn.sink * 100 - ((1 - e.y) * drawn.h * 100) / BOX_H}%`,
-  });
   return (
-    <div className="companion" data-mood={mood} data-awake={awake || undefined} aria-hidden="true">
+    <div className="companion" ref={box} data-mood={mood} data-awake={awake || undefined} data-blinking={blinking || undefined} aria-hidden="true">
       <div className="head" ref={head}>
-        {ART.states.map((s) => (
-          <img
-            key={s.name}
-            className={`state ${s.name}`}
-            src={`/dog/${s.name}.webp`}
-            alt=""
-            width={s.w}
-            height={s.h}
-            decoding="async"
-            style={{ height: `${(s.h * 100) / BOX_H}%`, bottom: `${-s.sink * 100}%` }}
-          />
-        ))}
-        <div className="glints" ref={glints}>
-          <span className="glint" style={at(eyes.left)} />
-          <span className="glint" style={at(eyes.right)} />
-        </div>
-        <div className="lids" ref={lids}>
-          <span className="lid" style={at(eyes.left)} />
-          <span className="lid" style={at(eyes.right)} />
-        </div>
+        {POSES.filter((p) => all || p.name === mood || p.name === rest).map((p) => {
+          const style = { height: `${(p.h * p.scale * 100) / BOX_H}%`, bottom: `${-p.sink * 100}%`, left: `${50 + p.dx * 100}%` };
+          return [
+            <img
+              key={p.name}
+              className={`state ${p.name}`}
+              src={`/dog/${p.name}.webp`}
+              srcSet={`/dog/${p.name}-420.webp 420w, /dog/${p.name}.webp ${p.w}w`}
+              sizes="(min-width: 2400px) 480px, 240px"
+              alt=""
+              width={p.w}
+              height={p.h}
+              decoding="async"
+              fetchPriority={p.name === rest ? "high" : "low"}
+              style={style}
+            />,
+            p.blink ? <img key={`${p.name}-blink`} className={`state-blink ${p.name}`} src={p.blink} alt="" decoding="async" style={style} /> : null,
+          ];
+        })}
       </div>
     </div>
   );

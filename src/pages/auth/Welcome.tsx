@@ -35,9 +35,9 @@ import { isStacked, markOpened, OUT, useFit } from "./bookFit";
 
 /** The sign-in's album: decoded before the page turns into the open book, so its prints never arrive as grey boxes. */
 const ALBUM = ["/photos/27-1200.webp", "/photos/02-1200.webp", "/photos/18-1200.webp"];
-/** The three papers a book is printed on, as the swatches under "The book arrives". */
 /** At most 400 ms: the album being decoded, or nothing to wait for. */
 const albumReady = (album: { current: Promise<unknown> | null }) => Promise.race([album.current, new Promise((done) => setTimeout(done, 400))]);
+/** The three papers a book is printed on, as the swatches under "The book arrives". */
 const PAPERS = BOOK_PRINT.papers as Record<string, { page: string }>;
 const PAPER_NAMES: [string, string][] = [
   ["classic", "Classic"],
@@ -52,8 +52,8 @@ export default function Welcome() {
   const canvas = useRef<HTMLDivElement>(null);
   const sweepFrom = useRef<number | null>(null);
   useLight(ground);
-  // the bench is drawn at 1520 by 660 and fitted to the window like the sign-in's book
-  useFit(ground, wrap, canvas, 1520, 660);
+  // the bench is drawn at 1520 by 690 and fitted to the window like the sign-in's book
+  useFit(ground, wrap, canvas, 1520, 690);
   const navigate = useNavigate();
   const album = useRef<Promise<unknown> | null>(null);
   // The three fictional families of the samples page, each in its own cover colour until a swatch is chosen.
@@ -141,40 +141,40 @@ export default function Welcome() {
               </div>
             </dl>
             <div className="door-foot">
-            <div className="door-acts">
-              <ButtonLink to="/create-account" onClick={into}>
-                Begin a book
-              </ButtonLink>
-              <ButtonLink to="/sign-in" variant="outline" onClick={into}>
-                Sign in
-              </ButtonLink>
-            </div>
-            <p className="door-code">
-              Have a family code?{" "}
-              <Link to="/create-account?code=" onClick={into}>
-                Use it here
-              </Link>
-            </p>
-            {/* the family dog beside the way in, its paws on the leaf's foil rule, watching the pointer as on the sign-in */}
-            <Companion focus={null} shown={false} rest="watch" />
+              <div className="door-acts">
+                <ButtonLink to="/create-account" onClick={into}>
+                  Begin a book
+                </ButtonLink>
+                <ButtonLink to="/sign-in" variant="outline" onClick={into}>
+                  Sign in
+                </ButtonLink>
+              </div>
+              <p className="door-code">
+                Have a family code?{" "}
+                <Link to="/create-account?code=" onClick={into}>
+                  Use it here
+                </Link>
+              </p>
+              {/* the family dog beside the way in, its paws on the leaf's foil rule, watching the pointer as on the sign-in */}
+              <Companion focus={null} shown={false} rest="watch" />
             </div>
           </main>
 
           <section className="door-book" aria-label="A sample book you can read">
             <div className="door-picks">
               <div className="door-pickcol">
-              <p className="door-note">Three sample families, their books and photographs, printed exactly the way yours will be.</p>
-              <div className="sb-books" role="group" aria-label="Choose a sample book">
-                {SAMPLE_BOOKS.map((b) => (
-                  <button key={b.key} type="button" aria-pressed={b.key === family} onClick={() => setFamily(b.key)}>
-                    <i style={{ background: coverColour(colours[b.key] || b.coverColor).board }} aria-hidden="true" />
-                    <span>
-                      <b>{b.full}</b>
-                      <small>{b.subtitle}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
+                <p className="door-note">Three sample families, their books and photographs, printed exactly the way yours will be.</p>
+                <div className="sb-books" role="group" aria-label="Choose a sample book">
+                  {SAMPLE_BOOKS.map((b) => (
+                    <button key={b.key} type="button" aria-pressed={b.key === family} onClick={() => setFamily(b.key)}>
+                      <i style={{ background: coverColour(colours[b.key] || b.coverColor).board }} aria-hidden="true" />
+                      <span>
+                        <b>{b.full}</b>
+                        <small>{b.subtitle}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
               <CoverSwatches
                 tone="dark"

@@ -290,7 +290,7 @@ export default function Join() {
 
   return (
     <AuthFrame left={<Invitation />} leftLabel="What joining means" rest={outcome?.ok ? "watch" : "curious"} promise={promise}>
-      <div aria-live="polite">{plate}</div>
+      {plate}
     </AuthFrame>
   );
 }

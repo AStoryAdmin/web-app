@@ -21,9 +21,11 @@
  * front board over the right page; the foil title tools itself on, a gold
  * rule draws, the cloth breathes under the lamp; then the board swings
  * open on the spine (0.9 s) and lands as the left page, the prints settle
- * onto it, the dog looks up: 2.4 s in all, and any press skips to the end.
- * Under reduced motion the book is simply open; on a phone the board is a
- * half-second beat and a fade.
+ * onto it, the dog looks up: 2.5 s in all, and any press, key or focus skips
+ * to the end.
+ * Under reduced motion the book is simply open. Stacked (a phone, a tablet)
+ * the closed cover lies over the whole title page: the title tools on and
+ * leaves, then the cover fades, in about a second.
  */
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -118,12 +120,17 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
       });
       let t0: number;
       if (phone) {
-        // a half-second beat: the title tools on, then the front face fades (never the 3D parent's opacity)
+        // stacked, the board lies over the whole title page (it is the book's cover, closed over the form); the title
+        // tools on, then leaves first, so no foil is ever over the form; then the cover fades (never the 3D parent)
+        const page = spread.querySelector<HTMLElement>(".leaf-r");
+        if (page) gsap.set(board, { height: page.offsetHeight, bottom: "auto", aspectRatio: "auto" });
+        const title = el.querySelector<HTMLElement>(".foil-title");
         tl.to(paths, { strokeDashoffset: 0, duration: 0.4, ease: MOVE }, 0)
-          .to(paths, { fillOpacity: 1, duration: 0.2, ease: OUT }, 0.3)
-          .to([front, back].filter(Boolean), { opacity: 0, duration: 0.3, ease: OUT }, 0.5)
-          .set(board, { visibility: "hidden" }, 0.8);
-        t0 = 0.55;
+          .to(paths, { fillOpacity: 1, duration: 0.2, ease: OUT }, 0.3);
+        if (title) tl.to(title, { opacity: 0, duration: 0.15, ease: OUT }, 0.55);
+        if (rule) tl.to(rule, { opacity: 0, duration: 0.15, ease: OUT }, 0.55);
+        tl.to([front, back].filter(Boolean), { opacity: 0, duration: 0.3, ease: OUT }, 0.7).set(board, { visibility: "hidden" }, 1.0);
+        t0 = 0.75;
       } else {
         // the foil tools itself on, the rule draws, the lamp breathes over the board; then the board swings open on the
         // spine and lies as the left page, whose back (the endpaper) then gives way to the page under it
@@ -135,18 +142,22 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
         t0 = 1.75;
       }
       // the left page is there once the board has passed the spine
-      if (leafL) tl.set(leafL, { visibility: "visible" }, phone ? 0.5 : 1.35);
+      if (leafL) tl.set(leafL, { visibility: "visible" }, phone ? 0.7 : 1.35);
       // the prints settle onto the endpaper one after another, and the dog looks up (2.5 s in all)
       if (settle.length) tl.fromTo(settle, { y: -20, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: OUT, stagger: 0.08, clearProps: "scale,opacity,y" }, t0);
-      if (dog) tl.fromTo(dog, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: OUT, clearProps: "all" }, phone ? 0.75 : 1.55);
+      if (dog) tl.fromTo(dog, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: OUT, clearProps: "all" }, phone ? 0.95 : 1.55);
       // any press skips to the open book
       skip = () => {
         tl.progress(1);
       };
     }, el);
-    el.addEventListener("pointerdown", skip, { once: true });
+    // any press, key or focus (a keyboard user tabbing in) skips to the open book
+    const events = ["pointerdown", "keydown", "focusin"] as const;
+    for (const ev of events) el.addEventListener(ev, skip, { once: true });
+    window.addEventListener("keydown", skip, { once: true });
     return () => {
-      el.removeEventListener("pointerdown", skip);
+      for (const ev of events) el.removeEventListener(ev, skip);
+      window.removeEventListener("keydown", skip);
       ctx.revert();
     };
   }, [stage]);

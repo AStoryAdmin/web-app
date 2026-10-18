@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
+import { useCodeAria } from "./useCodeAria";
 import { Button, CodeInput } from "../../components/ui";
 import { CODE_LEN, resendSignupCode, safeNext, verifySignupCode } from "../../data/auth";
 
@@ -16,6 +17,8 @@ export default function Verify() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [again, setAgain] = useState<"wait" | "ready" | "busy" | "sent">("wait");
+  const codeRef = useRef<HTMLDivElement>(null);
+  useCodeAria(codeRef, !!error);
 
   // Another code can be asked for after a little while; no clock is shown, the link simply appears.
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function Verify() {
           </Link>
         </p>
         <PlateSay error={error}>Six digits, from the email we just sent.</PlateSay>
-        <div className={error ? "code-wrap is-bad" : "code-wrap"} aria-describedby="plate-say">
+        <div className={error ? "code-wrap is-bad" : "code-wrap"} ref={codeRef}>
           <CodeInput value={code} onChange={setCode} autoFocus />
         </div>
         <Button type="submit" block loading={busy}>

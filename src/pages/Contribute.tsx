@@ -270,6 +270,8 @@ export default function Contribute() {
           onChange={(e) => setBody(e.target.value)}
           placeholder={kind === "memory" ? "Begin anywhere: a place, a smell, something they said." : "A few lines is plenty."}
           aria-label={kind === "memory" ? "Your memory" : "Your note"}
+          aria-invalid={error && !body.trim() && !photos.length ? true : undefined}
+          aria-describedby={error && !body.trim() && !photos.length ? "cb-say" : undefined}
           maxLength={10000}
         />
         <div className="cb-foot">
@@ -334,7 +336,7 @@ export default function Contribute() {
 
   return (
     <AuthFrame plate={false} left={info ? <Person info={info} /> : <span />} leftLabel={info ? `Whose story: ${info.name} ${info.last_name}` : undefined}>
-      <div className="cb" aria-live="polite">
+      <div className="cb">
         {page}
         <p className="cb-colophon">
           A Story keeps a family's memories in their own words. <Link to="/welcome">About A Story</Link>

@@ -25,10 +25,15 @@ export default function ClothStamp({ ground }: { ground: RefObject<HTMLElement |
       const z = pageZoom();
       const s = { id: ++seq, x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z, rot: 0 };
       setStamps((all) => [...all.slice(-11), s]);
-      setTimeout(() => setStamps((all) => all.filter((k) => k.id !== s.id)), 2800);
+      // gone when its deboss has finished fading (astory.css: 3.2 s), never popped off mid-fade
+      timers.add(window.setTimeout(() => setStamps((all) => all.filter((k) => k.id !== s.id)), 3250));
     };
+    const timers = new Set<number>();
     el.addEventListener("pointerdown", press);
-    return () => el.removeEventListener("pointerdown", press);
+    return () => {
+      el.removeEventListener("pointerdown", press);
+      for (const t of timers) window.clearTimeout(t);
+    };
   }, [ground]);
   return (
     <div className="stamps" aria-hidden="true">

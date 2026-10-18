@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
+import { useCodeAria } from "./useCodeAria";
 import type { CompanionFocus } from "../../components/delight/Companion";
 import { Button, CodeInput, Field } from "../../components/ui";
 import { CODE_LEN, MIN_PASSWORD, requestPasswordReset, resetPassword } from "../../data/auth";
@@ -22,6 +23,8 @@ export default function ForgotPassword() {
   const [again, setAgain] = useState<"" | "busy" | "sent">("");
   const [error, setError] = useState<string | null>(null);
   const [bad, setBad] = useState<Bad>(null);
+  const codeRef = useRef<HTMLDivElement>(null);
+  useCodeAria(codeRef, bad === "code");
 
   const fail = (field: Bad, message: string) => {
     setBad(field);
@@ -116,7 +119,7 @@ export default function ForgotPassword() {
             </button>
           </p>
           <PlateSay error={error}>Type the six digits, then your new password.</PlateSay>
-          <div className={bad === "code" ? "code-wrap is-bad" : "code-wrap"} aria-describedby={bad === "code" ? "plate-say" : undefined}>
+          <div className={bad === "code" ? "code-wrap is-bad" : "code-wrap"} ref={codeRef}>
             <CodeInput value={code} onChange={setCode} autoFocus />
           </div>
           <Field

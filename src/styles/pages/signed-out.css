@@ -5,7 +5,7 @@
  * The signed-out pages are the family book on the bookbinder's bench (AuthFrame), and the front door is the
  * same bench with one leaf of paper and the sample book lying on it (Welcome). On a desktop each is drawn at a
  * fixed design size and scaled to the window with `zoom: var(--fit)` (bookFit.ts): the book 1440 by 720, the
- * bench 1520 by 660. Below a comfortable scale (a short laptop window, a portrait tablet, a narrow window) the
+ * bench 1520 by 690. Below a comfortable scale (a short laptop window, a portrait tablet, a narrow window) the
  * pages stack and scroll at their own size instead: `STACKED` in bookFit.ts, mirrored in §7.
  *
  * Because the canvas is scaled, every small size has a floor in screen pixels: `--floor` keeps small print at 13px
@@ -45,9 +45,12 @@
   /* the page-block's gilt edge, along the fore-edge and the foot (decoration D2b) */
   --edge-fore: 1px 1px 0 var(--gilt-1), 2px 2px 0 var(--gilt-2), 3px 3px 0 var(--gilt-3), 4px 4px 0 var(--foil), 5px 5px 0 var(--foil-deep);
   --edge-fore-left: -1px 1px 0 var(--gilt-1), -2px 2px 0 var(--gilt-2), -3px 3px 0 var(--gilt-3), -4px 4px 0 var(--foil), -5px 5px 0 var(--foil-deep);
-  --lie: 0 1px 1px rgba(0, 0, 0, 0.3), 0 1.8cqmin 3.2cqmin -1.2cqmin rgba(0, 0, 0, 0.62); /* book material: a print lying on cloth */
+  --lie: 0 1px 1px rgba(0, 0, 0, 0.3), 0 1.8cqmin 3.2cqmin -1.2cqmin rgba(0, 0, 0, 0.62); /* taste-skill-ignore: book material: a print lying on cloth */
   --placeholder: var(--ink-soft);
-  --bond-fur: #96603A; /* Bond's coat beside his eyes, for the blinking lids */
+  --chocolate-line: rgba(74, 51, 39, 0.34);  /* an outline on the paper */
+  --cream-line: rgba(246, 240, 230, 0.32);   /* an outline on the cloth */
+  --cream-line-strong: rgba(246, 240, 230, 0.7);
+  --danger-line: rgba(176, 58, 46, 0.3);
 }
 .auth .stop, .door .stop { color: var(--accent); }
 .auth .nw, .door .nw { white-space: nowrap; }
@@ -69,7 +72,7 @@
    smaller side, so a page taller than it is wide is still filled to the foot */
 .auth .leaf-l { container-type: size; }
 .auth .print { left: var(--l); top: var(--t); width: var(--w); }
-.auth .print-face, .auth .print-back { padding: 1.5cqmin; background: var(--print-white); box-shadow: var(--lie); }
+.auth .print-face, .auth .print-back { padding: 1.5cqmin; background: var(--print-white); box-shadow: var(--lie); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 .auth .print-face img { aspect-ratio: var(--ratio, 1); background: var(--photo-blank); }
 .auth .pc { width: 3.8cqmin; height: 3.8cqmin; background: var(--photo-corner); }
 .auth .pc.tl { left: -0.3cqmin; top: -0.3cqmin; } .auth .pc.tr { right: -0.3cqmin; top: -0.3cqmin; }
@@ -83,7 +86,7 @@
 @media (hover: none), (pointer: coarse) { .auth .print-in { transition: none; } }
 /* the line on the endpaper: one plain sentence set like an epigraph under a brass rule, and the one disclosure */
 .auth .ep-how { position: absolute; left: 58.5%; right: 5.5%; top: 64%; bottom: auto; z-index: 2; margin: 0; text-align: left; color: var(--cream-ink); }
-.auth .ep-how::before { content: ""; display: block; width: 9cqmin; height: 1px; margin: 0 0 2.6cqmin; background: var(--brass); opacity: 0.75; }
+.auth .ep-how::before { content: ""; display: block; width: 9cqmin; height: 1px; margin: 0 0 2.6cqmin; background: var(--brass); opacity: 0.75; } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 .auth .ep-how p { margin: 0; font-family: var(--book-body); font-size: max(17px, 3.1cqmin); line-height: 1.4; text-wrap: pretty; }
 .auth .ep-note, .auth .ep-how .ep-note { margin: 2.2cqmin 0 0; font-family: var(--font-ui); font-size: max(13px, 1.8cqmin, var(--floor)); line-height: 1.4; color: var(--on-chocolate-soft); }
 
@@ -91,7 +94,7 @@
 .auth .titlepg { padding: 4.5% 6% 3.5%; justify-content: flex-start; }
 .auth .promise-line { margin: 0; font-size: 36px; line-height: 1.1; white-space: nowrap; max-width: none; flex: none; }
 .auth .tp-rule { width: 12cqw; margin: 14px 0 0; flex: none; }
-.auth .plate-wrap { --pw: min(88cqw, 500px); --cw: 150px; --dogh: calc(var(--cw) / 1.2531); --dogroom: calc(var(--dogh) * 1.07 - var(--pw) * 0.089 + 6px);
+.auth .plate-wrap { --pw: min(88cqw, 500px); --cw: 136px; --dogh: calc(var(--cw) / 1.2531); --dogroom: calc(var(--dogh) * 1.16 - var(--pw) * 0.089 + 6px);
   width: var(--pw); margin: auto 0; padding-top: var(--dogroom); flex: none; }
 /* the plate is the blank engraved frame; "This book belongs to" stays only where a name is written under it */
 .auth .plate { border-image-source: url("/book/bookplate-blank.webp"); }
@@ -100,24 +103,28 @@
 /* the plate's last line stays above the engraved corner flourishes, and inside them */
 .auth .plate .paper { padding-bottom: calc(var(--pw) * 0.075); }
 
-/* Bond lies behind the plate's top edge, between its left corner flourish and the heart: lying down (watch, sleep)
-   his paws rest on the plate's printed rule (8.9% of the plate's width below its top); sitting up (cover, peek,
-   curious) his chest goes behind the plate and his head stays where it was (Companion's ART: each pose's height and
-   sink). The box keeps watch's shape, 802 / 640; the tallest pose rises 1.07 box-heights above the rule, which is the
-   room the plate leaves above itself (--dogroom). Re-measure with ART if the art changes. */
-.auth .companion { margin: 0; left: calc(var(--pw) * 0.12); top: calc(var(--dogroom) + var(--pw) * 0.089 - var(--dogh)); bottom: auto;
-  width: var(--cw); height: var(--dogh); z-index: 0; }
+/* Bond lies behind the plate's top edge, between its left corner flourish and the heart. The box is exactly watch's
+   shape (802 / 640): its width is --cw, its height --dogh, and nothing else sizes it. Each pose is drawn inside it at
+   its own height × its ART scale, bottom-anchored, centred and moved by its ART dx, so his face keeps one size and
+   one place; lying down (watch, sleep, and peek's resting paw) the picture's foot is on the plate's printed rule (8.9%
+   of the plate's width below its top); sitting up (cover, curious) his chest goes behind the plate. --dogroom leaves
+   1.16 box-heights above the rule, the most any resting pose rises; peek rises 0.32 more, into the free page above. */
+.auth .companion { position: absolute; margin: 0; left: calc(var(--pw) * 0.12); top: calc(var(--dogroom) + var(--pw) * 0.089 - var(--dogh)); bottom: auto; right: auto;
+  width: var(--cw); height: var(--dogh); z-index: 0; pointer-events: none; }
 .auth .plate-wrap > .plate { position: relative; z-index: 1; }
-.auth .companion .head { aspect-ratio: auto; }
-/* each pose at its own height, bottom-anchored and centred (heights and sinks inline, from ART); nothing clips it */
-.auth .companion .state, .door .companion .state { top: auto; right: auto; width: auto; max-width: none; left: 50%; transform: translateX(-50%); object-fit: contain;
-  filter: drop-shadow(0 2px 3px rgba(74, 51, 39, 0.12)); /* book material: a drawing lying on paper */ }
+.auth .companion .head, .door .companion .head { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
+/* each pose at its own height (inline, from ART), bottom-anchored and centred; nothing clips it */
+.auth .companion .state, .auth .companion .state-blink, .door .companion .state, .door .companion .state-blink { position: absolute; top: auto; right: auto; width: auto; max-width: none; transform: translateX(-50%); object-fit: contain; opacity: 0;
+  transition: opacity 220ms var(--ease-out); filter: drop-shadow(0 2px 3px rgba(74, 51, 39, 0.12)); /* taste-skill-ignore: book material, a drawing lying on paper */ }
+.auth .companion[data-mood="watch"] .state.watch, .auth .companion[data-mood="cover"] .state.cover, .auth .companion[data-mood="peek"] .state.peek, .auth .companion[data-mood="curious"] .state.curious, .auth .companion[data-mood="sleep"] .state.sleep,
+.door .companion[data-mood="watch"] .state.watch, .door .companion[data-mood="curious"] .state.curious { opacity: 1; }
+/* a blink, where a pose has a drawn closed-eye frame (ART `blink`): 120 ms each way */
+.auth .companion .state-blink, .door .companion .state-blink { transition-duration: 120ms; }
+.auth .companion[data-blinking][data-mood="watch"] .state-blink.watch, .auth .companion[data-blinking][data-mood="curious"] .state-blink.curious, .door .companion[data-blinking] .state-blink.watch { opacity: 1; }
 .auth .companion, .auth .companion .head, .door .companion, .door .companion .head { overflow: visible; }
-/* a catchlight in each eye (Bond's eyes are about 10% of the picture wide), and lids in his own fur */
-.auth .companion .glint, .door .companion .glint { width: 2.6%; height: 3.2%; margin: 0; transform: translate(-75%, -90%); border-radius: 50%; background: radial-gradient(circle, var(--print-white) 0 45%, transparent 75%); }
-/* centred on the eye by margins (in % of the box's width; GSAP owns the lids' transform for the blink) */
-.auth .companion .lid, .door .companion .lid { animation: none; opacity: 1; width: 12%; height: 13%; margin: -4.6% 0 0 -6%; translate: none; transform-origin: 50% 0; border-radius: 50% 50% 46% 46%; background: var(--bond-fur);
-  box-shadow: inset 0 -1.5px 0 rgba(50, 26, 10, 0.55); }
+@media (prefers-reduced-motion: reduce) {
+  .auth .companion .state, .door .companion .state { transition: opacity 150ms linear !important; }
+}
 
 /* the right page without a plate: the contribute leaf takes the page */
 .auth .titlepg.leaf-only { padding: 6% 7.5% 5%; align-items: stretch; }
@@ -127,11 +134,13 @@
    fore-edge and foot, and a ribbon marker hanging from the gutter below the foot (decoration D3, D2b, D10) */
 .auth .spread-band { position: absolute; left: calc(50% - 32px); top: -3px; width: 64px; height: 5px; z-index: 7; pointer-events: none; border-radius: 2px;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><rect width='8' height='5' fill='%233B291D'/><rect x='1.1' y='.4' width='2.6' height='4.2' rx='1.3' transform='skewX(-16)' fill='%23C9A15A'/><rect x='5.1' y='.4' width='2.6' height='4.2' rx='1.3' transform='skewX(-16)' fill='%23B85126'/></svg>") 0 0 / 8px 5px repeat-x;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); /* book material */ }
-.auth .leaf-r { box-shadow: var(--edge-fore); }
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); /* taste-skill-ignore: book material */ }
+.auth .leaf-r { box-shadow: var(--edge-fore); } /* taste-skill-ignore: book material, the page-block gilt edge */
+/* the board's back is the endpaper: a size container like the left page, so its pattern is the same size when it lies there */
+.auth .board-back { container-type: size; }
 .auth .spread-ribbon { position: absolute; left: calc(50% + 14px); top: calc(100% - 8px); width: 12px; height: 48px; z-index: 7; pointer-events: none; transform-origin: 50% 0;
-  background: var(--accent-deep) repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px); /* book material: grosgrain */
-  box-shadow: inset 5px 0 0 -4px rgba(255, 255, 255, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.45); /* book material */
+  background: var(--accent-deep) repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px); /* taste-skill-ignore: book material: grosgrain */
+  box-shadow: inset 5px 0 0 -4px rgba(255, 255, 255, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.45); /* taste-skill-ignore: book material */
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); }
 @media (prefers-reduced-motion: no-preference) { .auth[data-stage="open"] .spread-ribbon { animation: ribbon-swing 900ms cubic-bezier(0.23, 1, 0.32, 1) both; } }
 @keyframes ribbon-swing { from { transform: rotate(5deg); } to { transform: rotate(0deg); } }
@@ -139,20 +148,20 @@
 
 /* the closed board reads as an object before it opens: a step deeper than the bench, its tooled frame, and the
    page-block's gilt along its fore-edge and foot; the lamp's breath is a child's opacity, not a painted property */
-.auth .board { box-shadow: var(--edge-fore), 0 2px 3px rgba(0, 0, 0, 0.4), 0 40px 70px -30px rgba(0, 0, 0, 0.7); /* book material */ }
-.auth .board-front { background: linear-gradient(rgba(24, 14, 8, 0.32), rgba(24, 14, 8, 0.32)), url("/book/cloth-chocolate.webp") 0 0 / 512px 512px, var(--chocolate-deep); /* a flat tint: one colour, no ramp */ }
+.auth .board { box-shadow: var(--edge-fore), 0 2px 3px rgba(0, 0, 0, 0.4), 0 40px 70px -30px rgba(0, 0, 0, 0.7); /* taste-skill-ignore: book material */ }
+.auth .board-front { background: linear-gradient(rgba(24, 14, 8, 0.32), rgba(24, 14, 8, 0.32)), url("/book/cloth-chocolate.webp") 0 0 / 512px 512px, var(--chocolate-deep); /* a flat tint: one colour, no ramp */ } /* taste-skill-ignore: book material: ruled paper, a flat tint, the gutter or lamplight */
 .auth .board-front::before { display: none; }
 .auth .board-breath { position: absolute; inset: 0; pointer-events: none; opacity: 0;
-  background: radial-gradient(520px circle at 50% 45%, rgba(255, 244, 220, 0.16), transparent 62%); /* book material: lamplight */ }
-.auth .board-front::after { inset: 5%; border-color: rgba(243, 235, 221, 0.22); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.34), inset 0 0 0 6px transparent, inset 0 0 0 7px rgba(239, 199, 94, 0.18); }
+  background: radial-gradient(520px circle at 50% 45%, rgba(255, 244, 220, 0.16), transparent 62%); /* taste-skill-ignore: book material: lamplight */ }
+.auth .board-front::after { inset: 5%; border-color: rgba(243, 235, 221, 0.22); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.34), inset 0 0 0 6px transparent, inset 0 0 0 7px rgba(239, 199, 94, 0.18); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 
 /* ───────────────────────── 2. The plate's form ───────────────────────── */
 .auth.ritual .form h1, .auth.ritual .form .plate-head { font-family: var(--book-display); font-weight: 600; font-size: 30px; line-height: 1.1; letter-spacing: -0.005em; margin: 0 0 6px; color: var(--chocolate); text-align: center; text-wrap: balance; }
 /* the plate's one line: what the form is for, or what went wrong, in the same room either way (PlateSay) */
-.auth.ritual .plate-say { margin: 0 0 12px; padding: 3px 0; min-height: calc(1.4em + 8px); border-top: 1px solid transparent; border-bottom: 1px solid transparent;
+.auth.ritual .plate-say { margin: 0 0 12px; padding: 3px 0; min-height: calc(1.4em + 8px); border-top: 1px solid transparent; border-bottom: 1px solid transparent; /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
   font-family: var(--book-body); font-size: max(17px, var(--floor)); line-height: 1.4; color: var(--ink-soft); text-align: center; text-wrap: balance; }
-.auth.ritual .plate-say b { font-family: var(--font-ui); font-size: 0.86em; font-weight: 600; color: var(--sheet-ink); overflow-wrap: anywhere; }
-.auth.ritual .plate-say.is-error { color: var(--danger); border-color: rgba(176, 58, 46, 0.3); }
+.auth.ritual .plate-say b { font-family: var(--font-ui); font-size: max(0.86em, var(--floor)); font-weight: 600; color: var(--sheet-ink); overflow-wrap: anywhere; }
+.auth.ritual .plate-say.is-error { color: var(--danger); border-color: var(--danger-line); }
 .auth.ritual .form .sub { font-family: var(--book-body); font-size: max(17px, var(--floor)); line-height: 1.4; color: var(--ink-soft); margin: 0 0 12px; text-align: center; text-wrap: balance; }
 .auth.ritual .field { margin-bottom: 10px; }
 .auth.ritual .field > span:first-child { font-size: max(14px, var(--floor)); font-weight: 600; letter-spacing: 0.01em; color: var(--ink-soft); }
@@ -166,7 +175,7 @@
 .auth.ritual .btn { min-height: var(--tap); font-size: var(--ctl); }
 .auth.ritual .btn.primary { background: var(--chocolate); color: var(--on-chocolate); border-color: var(--chocolate); }
 .auth.ritual .btn.primary:hover:not(:disabled) { background: var(--chocolate-deep); }
-.auth.ritual .btn.outline { background: transparent; color: var(--chocolate); border: 1px solid rgba(74, 51, 39, 0.34); }
+.auth.ritual .btn.outline { background: transparent; color: var(--chocolate); border: 1px solid var(--chocolate-line); }
 .auth.ritual .btn.outline:hover { border-color: var(--chocolate); background: rgba(74, 51, 39, 0.04); }
 .auth.ritual .btn:disabled { opacity: 0.6; }
 .auth.ritual .acts { display: grid; gap: 10px; margin-top: 4px; }
@@ -174,7 +183,7 @@
 .auth .phone-only, .auth.ritual .plate-links.phone-only { display: none; }
 
 /* the links under the plate's button, each with a 44px hit area that does not move the line */
-.auth.ritual .plate-links { padding: 0 4%; display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; margin: 10px 0 0; font-size: max(15px, var(--floor)); }
+.auth.ritual .plate-links { padding: 0 4%; display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; margin: calc((var(--tap) - 1.3em) / 2 + 3px) 0 0; font-size: max(15px, var(--floor)); }
 .auth.ritual .plate-links.one { justify-content: center; }
 .auth.ritual .plate-links a, .auth.ritual .switch a, .auth.ritual .legal a, .auth.ritual .linkish { position: relative; white-space: nowrap; color: var(--sheet-ink); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(74, 51, 39, 0.3); text-underline-offset: 4px; transition: text-decoration-color 160ms var(--ease-out), color 160ms var(--ease-out); }
 .auth.ritual .plate-links a::before, .auth.ritual .legal a::before { content: ""; position: absolute; inset: calc((var(--tap) - 1.3em) / -2 - 1px) -6px; }
@@ -204,6 +213,11 @@
 .auth.ritual .given { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 10px; margin: -2px 0 2px; font-size: max(14px, var(--floor)); color: var(--ink-soft); }
 .auth.ritual .given b { color: var(--sheet-ink); font-weight: 600; overflow-wrap: anywhere; }
 .auth.ritual .given .linkish { font-weight: 500; color: var(--ink-soft); }
+.auth.ritual .given.with-code { margin: 8px 0 12px; }
+/* the plate's line may carry a link (the terms): a 44px hit area that stays inside the line's own room */
+.auth.ritual .plate-say a { position: relative; color: var(--sheet-ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--chocolate-line); text-underline-offset: 3px; }
+.auth.ritual .plate-say a:hover { text-decoration-color: var(--chocolate); }
+.auth.ritual .plate-say a:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; border-radius: 2px; }
 .auth.ritual .code-ask { margin: 0 0 6px; }
 .auth.ritual .form .check { min-height: var(--tap); font-size: max(15px, var(--floor)); color: var(--ink-soft); }
 .auth.ritual .form .check i { width: 22px; height: 22px; border-radius: 4px; border: 1.5px solid rgba(74, 51, 39, 0.45); background: transparent; display: inline-grid; place-items: center; margin-right: 10px; vertical-align: -5px; }
@@ -242,24 +256,25 @@
 @keyframes vt-cut-out { to { opacity: 0; } }
 @keyframes vt-cut-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes plate-rise { from { opacity: 0; transform: translateY(6px); } }
-/* reduced motion: nothing travels; old and new cross in 150 ms of opacity */
+/* reduced motion: nothing travels, and still never two forms at once: the old words go in 75 ms, the new come in the
+   next 75 ms, opacity only */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(auth-book), ::view-transition-group(auth-title), ::view-transition-group(auth-plate), ::view-transition-group(auth-line) { animation-duration: 0s !important; }
-  ::view-transition-old(auth-book), ::view-transition-old(auth-title), ::view-transition-old(auth-plate), ::view-transition-old(auth-line) { animation: 150ms linear both vt-fade !important; mix-blend-mode: plus-lighter; }
-  ::view-transition-new(auth-book), ::view-transition-new(auth-title), ::view-transition-new(auth-plate), ::view-transition-new(auth-line) { animation: 150ms linear both vt-appear !important; mix-blend-mode: plus-lighter; }
+  ::view-transition-old(auth-book), ::view-transition-old(auth-title), ::view-transition-old(auth-plate), ::view-transition-old(auth-line) { animation: 75ms linear both vt-fade !important; }
+  ::view-transition-new(auth-book), ::view-transition-new(auth-title), ::view-transition-new(auth-plate), ::view-transition-new(auth-line) { animation: 75ms linear 75ms both vt-appear !important; }
 }
 
 /* ───────────────────────── 4. The invitation (/join) and the code ───────────────────────── */
 /* The left page: a cream card tucked into the endpaper by four black photo corners, set like a page of the book
    (Cormorant heads, EB Garamond words), two prints of a sample family beside it, and the one disclosure. */
 .inv { position: absolute; inset: 0; z-index: 1; }
-.inv-print { position: absolute; left: 66%; top: 8%; width: 28cqmin; margin: 0; padding: 1.5cqmin; background: var(--print-white); transform: rotate(2.6deg); box-shadow: var(--lie); }
+.inv-print { position: absolute; left: 66%; top: 8%; width: 28cqmin; margin: 0; padding: 1.5cqmin; background: var(--print-white); transform: rotate(2.6deg); box-shadow: var(--lie); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 .inv-print img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 35% 50%; background: var(--photo-blank); }
 .inv-print.two { left: 67%; top: 47%; width: 26cqmin; transform: rotate(-2.4deg); }
 .inv-print.two img { aspect-ratio: 4 / 5; object-position: 50% 30%; }
 .inv-note { position: absolute; left: 66%; right: 5%; top: 85%; margin: 0; }
 .inv-card { position: absolute; left: 6%; top: 50%; translate: 0 -50%; width: 55cqmin; padding: 5cqmin; background: var(--card-ivory); color: var(--sheet-ink); transform: rotate(-1.2deg);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.28), 0 2cqmin 4cqmin -1.6cqmin rgba(0, 0, 0, 0.6); /* book material */ }
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.28), 0 2cqmin 4cqmin -1.6cqmin rgba(0, 0, 0, 0.6); /* taste-skill-ignore: book material */ }
 .inv-card::before { content: ""; position: absolute; inset: 1.4cqmin; border: 1px solid rgba(201, 161, 90, 0.55); pointer-events: none; }
 .inv .pc { position: absolute; width: 3.8cqmin; height: 3.8cqmin; background: var(--photo-corner); }
 .inv .pc.tl { left: -0.3cqmin; top: -0.3cqmin; clip-path: polygon(0 0, 100% 0, 0 100%); }
@@ -278,7 +293,7 @@
 
 /* the code, set like the title on a spine: large, spaced, between two foil rules */
 .auth.ritual .codeseal { margin: 0 auto 12px; padding: 8px 0 6px; width: fit-content; min-width: 70%; text-align: center; font-family: var(--book-display); font-weight: 600; font-size: 44px; line-height: 1; letter-spacing: 0.14em; color: var(--chocolate);
-  border-top: 1px solid rgba(201, 161, 90, 0.7); border-bottom: 1px solid rgba(201, 161, 90, 0.7); font-variant-numeric: lining-nums; }
+  border-top: 1px solid rgba(201, 161, 90, 0.7); border-bottom: 1px solid rgba(201, 161, 90, 0.7); font-variant-numeric: lining-nums; } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 /* waiting on the plate: the mark draws itself over a short line, never a word left alone */
 .auth.ritual .plate-wait { display: grid; justify-items: center; gap: 4px; padding: 14px 0 18px; }
 .auth.ritual .plate-wait .loading-mark { min-height: 0; }
@@ -294,7 +309,7 @@
    the endpaper, and three plain lines on what happens to what you send. Right page: a leaf to write on, the
    question on top, a title line, the words on ruled lines, the photographs as small prints, and the next step. */
 .cb-person { position: absolute; inset: 0; z-index: 1; display: grid; grid-template-columns: 44cqmin minmax(0, 1fr); gap: 6cqmin; align-items: center; padding: 0 7% 0 8%; color: var(--cream-ink); }
-.cb-print { position: relative; margin: 0; padding: 1.6cqmin; background: var(--print-white); transform: rotate(-2deg); box-shadow: var(--lie); }
+.cb-print { position: relative; margin: 0; padding: 1.6cqmin; background: var(--print-white); transform: rotate(-2deg); box-shadow: var(--lie); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 .cb-print img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--photo-blank); }
 .cb-person .pc { position: absolute; width: 3.8cqmin; height: 3.8cqmin; background: var(--photo-corner); }
 .cb-person .pc.tl { left: -0.3cqmin; top: -0.3cqmin; clip-path: polygon(0 0, 100% 0, 0 100%); }
@@ -302,12 +317,12 @@
 .cb-person .pc.bl { left: -0.3cqmin; bottom: -0.3cqmin; clip-path: polygon(0 0, 100% 100%, 0 100%); }
 .cb-person .pc.br { right: -0.3cqmin; bottom: -0.3cqmin; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
 .cb-seal { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: var(--card-ivory);
-  box-shadow: inset 0 0 0 1.2cqmin var(--card-ivory), inset 0 0 0 1.4cqmin rgba(201, 161, 90, 0.8), 0 2cqmin 3.6cqmin -1.2cqmin rgba(0, 0, 0, 0.6); /* book material */ }
+  box-shadow: inset 0 0 0 1.2cqmin var(--card-ivory), inset 0 0 0 1.4cqmin rgba(201, 161, 90, 0.8), 0 2cqmin 3.6cqmin -1.2cqmin rgba(0, 0, 0, 0.6); /* taste-skill-ignore: book material */ }
 .cb-seal span { font-family: var(--book-display); font-weight: 600; font-size: 15cqmin; line-height: 1; letter-spacing: 0.04em; color: var(--chocolate); }
 .cb-who { min-width: 0; }
 .cb-for { margin: 0 0 1.4cqmin; font: 500 max(14px, 2.2cqmin, var(--floor))/1.3 var(--font-ui); letter-spacing: 0.01em; color: var(--brass); }
 .cb-name { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: max(30px, 6.4cqmin); line-height: 1.02; letter-spacing: -0.005em; color: var(--cream-ink-strong); text-wrap: balance; overflow-wrap: anywhere; }
-.cb-rule { display: block; width: 9cqmin; height: 1px; margin: 3cqmin 0; background: var(--brass); opacity: 0.75; }
+.cb-rule { display: block; width: 9cqmin; height: 1px; margin: 3cqmin 0; background: var(--brass); opacity: 0.75; } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 .cb-what { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.8cqmin; }
 .cb-what li { font-family: var(--book-body); font-size: max(16px, 2.6cqmin, var(--floor)); line-height: 1.4; color: var(--cream-ink); text-wrap: pretty; }
 
@@ -327,7 +342,7 @@
 .cb-kind button[aria-pressed="true"] { background: var(--chocolate); color: var(--on-chocolate); }
 .cb-kind button:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
 /* the title line and the ruled words; each rule one screen pixel, on a whole-pixel pitch, at any scale */
-.cb-title { width: 100%; min-height: var(--tap); border: 0; border-bottom: 1px solid var(--sheet-rule); background: transparent; padding: 4px 0 6px; margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.2; color: var(--sheet-ink); outline: none; transition: border-color 160ms var(--ease-out); }
+.cb-title { width: 100%; min-height: var(--tap); border: 0; border-bottom: 1px solid var(--sheet-rule); background: transparent; padding: 4px 0 6px; margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.2; color: var(--sheet-ink); outline: none; transition: border-color 160ms var(--ease-out); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 .cb-title::placeholder { color: var(--placeholder); opacity: 1; }
 .cb-title:hover { border-bottom-color: rgba(74, 51, 39, 0.4); }
 .cb-title:focus-visible { border-bottom-color: var(--chocolate); outline: 2px solid var(--ochre); outline-offset: 4px; border-radius: 2px; }
@@ -336,18 +351,19 @@
   font-family: var(--book-body); font-size: max(20px, var(--floor)); line-height: var(--lh); color: var(--sheet-ink);
   /* ruled paper: one hard-stopped line per text line, on the line's foot, so the first rule is a full line below the
      title's rule and each rule is one screen pixel on a whole-pixel pitch */
-  background-image: linear-gradient(to bottom, transparent calc(var(--lh) - var(--rule)), rgba(60, 50, 40, 0.2) calc(var(--lh) - var(--rule)));
+  background-image: linear-gradient(to bottom, transparent calc(var(--lh) - var(--rule)), rgba(60, 50, 40, 0.2) calc(var(--lh) - var(--rule))); /* taste-skill-ignore: book material: ruled paper, a flat tint, the gutter or lamplight */
   background-size: 100% var(--lh); background-position: 0 0; background-repeat: repeat-y; background-attachment: local; }
 .cb-body::placeholder { color: var(--placeholder); opacity: 1; font-style: italic; }
 .cb-body:focus-visible { outline: 2px solid var(--ochre); outline-offset: 4px; border-radius: 2px; }
 /* the photographs as small white prints, and the next step */
-.cb-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-top: 14px; margin-top: 8px; border-top: 1px solid var(--sheet-rule); }
+.cb-form:has(.cb-body) .cb-foot { border-top: 0; padding-top: 8px; }
+.cb-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-top: 14px; margin-top: 8px; border-top: 1px solid var(--sheet-rule); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 .cb-photos { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
-.cb-thumb { position: relative; margin: 0; width: 64px; padding: 4px 4px 6px; background: var(--print-white); box-shadow: 0 1px 2px rgba(42, 35, 32, 0.2), 0 8px 14px -8px rgba(42, 35, 32, 0.4); /* book material */ transform: rotate(-2deg); }
+.cb-thumb { position: relative; margin: 0; width: 64px; padding: 4px 4px 6px; background: var(--print-white); box-shadow: 0 1px 2px rgba(42, 35, 32, 0.2), 0 8px 14px -8px rgba(42, 35, 32, 0.4); /* taste-skill-ignore: book material */ transform: rotate(-2deg); }
 .cb-thumb:nth-child(2) { transform: rotate(1.5deg); }
 .cb-thumb img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
 .cb-thumb .x { position: absolute; right: -14px; top: -14px; z-index: 1; isolation: isolate; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: var(--sheet-ink); }
-.cb-thumb .x::before { content: ""; position: absolute; inset: 12px; border-radius: 50%; background: var(--print-white); box-shadow: var(--contact); z-index: -1; }
+.cb-thumb .x::before { content: ""; position: absolute; inset: 12px; border-radius: 50%; background: var(--card-ivory); border: 1px solid var(--sheet-rule); z-index: -1; }
 .cb-thumb .x:hover::before { background: var(--card-ivory); }
 .cb-thumb .x:focus-visible { outline: 2px solid var(--ochre); outline-offset: -6px; border-radius: 50%; }
 .cb .linkish { appearance: none; background: none; border: 0; padding: 0; font: 600 max(15px, var(--floor))/1.2 var(--font-ui); color: var(--sheet-ink); text-decoration: underline; text-decoration-color: rgba(74, 51, 39, 0.3); text-underline-offset: 4px; cursor: pointer; min-height: var(--tap); display: inline-flex; align-items: center; transition: text-decoration-color 160ms var(--ease-out); }
@@ -362,12 +378,12 @@
 .cb .btn:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; }
 .cb .btn.primary { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
 .cb .btn.primary:hover:not(:disabled) { background: var(--chocolate-deep); }
-.cb .btn.outline { background: transparent; border: 1px solid rgba(74, 51, 39, 0.34); color: var(--chocolate); }
+.cb .btn.outline { background: transparent; border: 1px solid var(--chocolate-line); color: var(--chocolate); }
 .cb .btn.outline:hover { border-color: var(--chocolate); }
 .cb .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .cb .btn[aria-busy="true"] { opacity: 0.8; cursor: progress; }
 /* the second step: their words quoted back, three ruled fields */
-.cb-quote { margin: 0 0 14px; padding-left: 16px; border-left: 1px solid var(--foil); font-family: var(--book-body); font-style: italic; font-size: max(18px, var(--floor)); line-height: 1.5; color: var(--sheet-ink); }
+.cb-quote { margin: 0 0 14px; padding-left: 16px; border-left: 1px solid var(--foil); font-family: var(--book-body); font-style: italic; font-size: max(18px, var(--floor)); line-height: 1.5; color: var(--sheet-ink); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 .cb-fields { display: grid; gap: 2px; }
 .cb .field { margin-bottom: 12px; }
 .cb .field > span:first-child { font-size: max(14px, var(--floor)); font-weight: 600; color: var(--ink-soft); }
@@ -381,15 +397,15 @@
 .cb .input input::placeholder { color: var(--placeholder); opacity: 1; }
 .cb .hint { font-size: max(14px, var(--floor)) !important; color: var(--ink-soft); }
 /* the leaf's one line for what went wrong: always there, so an error never moves the page */
-.cb-error { margin: 0 0 8px; padding: 4px 0; min-height: calc(1.4em + 10px); border-top: 1px solid transparent; border-bottom: 1px solid transparent; color: var(--danger); font-family: var(--book-body); font-size: max(16px, var(--floor)); line-height: 1.4; }
-.cb-error.is-on { border-color: rgba(176, 58, 46, 0.3); }
+.cb-error { margin: 0 0 8px; padding: 4px 0; min-height: calc(1.4em + 10px); border-top: 1px solid transparent; border-bottom: 1px solid transparent; color: var(--danger); font-family: var(--book-body); font-size: max(16px, var(--floor)); line-height: 1.4; } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
+.cb-error.is-on { border-color: var(--danger-line); }
 .cb-row { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-top: 8px; }
-.cb-claim { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--sheet-rule); }
+.cb-claim { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--sheet-rule); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 .cb-claim h2 { margin: 0 0 8px; font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.1; color: var(--sheet-ink); }
 .cb-wait { align-items: center; justify-content: center; text-align: center; }
 .cb-wait .loading-mark { min-height: 0; }
 /* the colophon at the foot of the leaf: what A Story is, once */
-.cb-colophon { margin: 14px 0 0; font-size: max(14px, var(--floor)); color: var(--legal-ink); }
+.cb-colophon { margin: calc((var(--tap) - 1.3em) / 2 + 4px) 0 0; font-size: max(14px, var(--floor)); color: var(--legal-ink); }
 .cb-colophon a { position: relative; color: var(--sheet-ink); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(74, 51, 39, 0.3); text-underline-offset: 3px; }
 .cb-colophon a::before { content: ""; position: absolute; inset: calc((var(--tap) - 1.3em) / -2 - 1px) -6px; }
 .cb-colophon a:hover { text-decoration-color: var(--chocolate); }
@@ -398,17 +414,17 @@
 /* ───────────────────────── 6. The front door (/welcome) ───────────────────────── */
 /* The bench: the chocolate cloth, one leaf of the book's paper on the left (the title page), and the real sample
    book lying on the cloth to its right with the three families and the cover colours in one row above it. Drawn at
-   1520 by 660 and scaled to the window by useFit, so it is one screen at every desktop size. */
+   1520 by 690 and scaled to the window by useFit, so it is one screen at every desktop size. */
 .door { position: relative; isolation: isolate; min-height: calc(100vh / var(--zoom)); color: var(--on-chocolate); overflow: hidden;
   background: url("/book/cloth-chocolate.webp") 0 0 / 512px 512px var(--chocolate); }
 body:has(.door) { background: var(--chocolate) url(/book/cloth-chocolate.webp) 0 0 / 360px 360px; }
 html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overflow: hidden; height: 100%; }
 .door[data-layout="book"] { height: calc(100vh / var(--zoom)); }
 .door .stamps { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-.door .stamp { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; animation: deboss 3.2s var(--ease-out) both; filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.16)) drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.32)); }
+.door .stamp { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; animation: deboss 3.2s var(--ease-out) both; filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.16)) drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.32)); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 .door .stamp svg { width: 100%; height: 100%; display: block; }
 .door .stamp svg * { fill: rgba(0, 0, 0, 0.34) !important; stroke: none; }
-.door .leaf { position: absolute; left: 0; top: 0; margin: -21px 0 0 -15px; pointer-events: none; z-index: 5; opacity: 0; will-change: transform; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.28)); }
+.door .leaf { position: absolute; left: 0; top: 0; margin: -21px 0 0 -15px; pointer-events: none; z-index: 5; opacity: 0; will-change: transform; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.28)); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 .door .leaf .blade { fill: var(--gold); fill-opacity: 0.92; }
 .door .leaf .vein { fill: none; stroke: rgba(74, 51, 39, 0.55); stroke-width: 1; stroke-linecap: round; }
 
@@ -417,33 +433,35 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 
 .door-wrap { position: relative; z-index: 1; height: 100%; display: grid; place-items: center; padding: clamp(74px, calc(9vh / var(--zoom)), 100px) clamp(16px, 3vw, 56px) clamp(16px, calc(3vh / var(--zoom)), 36px); }
 .door-canvas { position: relative; width: 100%; display: grid; grid-template-columns: 500px minmax(0, 1fr); gap: 60px; align-items: stretch; }
-.door-canvas.scaled { width: 1520px; height: 660px; zoom: var(--fit, 1); }
+.door-canvas.scaled { width: 1520px; height: 690px; zoom: var(--fit, 1); }
 
 /* the leaf: a sheet of the book's ivory, a foil frame inset with corner flourishes, set like the title page; it runs the
    full height of the bench, its words at the top and the way in at the foot */
-.door-leaf { position: relative; isolation: isolate; display: flex; flex-direction: column; padding: 50px 48px 38px; color: var(--sheet-ink); background: var(--paper-ivory); border-radius: 3px;
-  box-shadow: var(--edge-fore), 0 2px 3px rgba(0, 0, 0, 0.35), 0 40px 70px -30px rgba(0, 0, 0, 0.65); /* book material */ }
+.door-leaf { position: relative; isolation: isolate; display: flex; flex-direction: column; padding: 44px 46px 38px; color: var(--sheet-ink); background: var(--paper-ivory); border-radius: 3px;
+  box-shadow: var(--edge-fore), 0 2px 3px rgba(0, 0, 0, 0.35), 0 40px 70px -30px rgba(0, 0, 0, 0.65); /* taste-skill-ignore: book material */ }
 .door-leaf::before { content: ""; position: absolute; inset: 14px; z-index: -1; pointer-events: none; border: 1px solid rgba(201, 161, 90, 0.5);
   background:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") top 3px left 3px / 24px no-repeat,
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1' transform='translate(32 0) scale(-1 1)'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") top 3px right 3px / 24px no-repeat,
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1' transform='translate(0 32) scale(1 -1)'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") bottom 3px left 3px / 24px no-repeat,
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='none' stroke='%23c9a15a' stroke-width='1' transform='translate(32 32) scale(-1 -1)'><path d='M2 30 V12 C2 6 6 2 12 2 H30'/><path d='M7 30 V14 C7 10 10 7 14 7 H30' stroke-width='.7'/><circle cx='12' cy='12' r='1.6' fill='%23c9a15a' stroke='none'/></g></svg>") bottom 3px right 3px / 24px no-repeat; }
-.door-leaf::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 12%; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, 0.1), transparent); /* book material: the gutter's shade */ z-index: -1; }
+.door-leaf::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 12%; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, 0.1), transparent); /* taste-skill-ignore: book material: the gutter's shade */ z-index: -1; }
 .door-leaf h1 { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 45px; line-height: 1.02; letter-spacing: -0.01em; color: var(--chocolate); text-wrap: balance; }
 .door-leaf h1 .keep { color: var(--ochre); }
-.door-rule { display: block; width: 64px; height: 1px; margin: 20px 0; background: var(--gold); opacity: 0.85; }
-.door-how { margin: 0 0 24px; display: grid; gap: 14px; }
+.door-rule { display: block; width: 64px; height: 1px; margin: 16px 0; background: var(--gold); opacity: 0.85; } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
+.door-how { margin: 0 0 18px; display: grid; gap: 10px; }
 .door-how div { display: grid; gap: 2px; }
 .door-how dt { font-family: var(--book-display); font-weight: 600; font-size: 23px; line-height: 1.15; color: var(--sheet-ink); }
 .door-how dd { margin: 0; font-family: var(--book-body); font-size: max(17px, var(--floor)); line-height: 1.45; color: var(--sheet-ink); text-wrap: pretty; }
-.door-foot { margin-top: auto; display: grid; grid-template-columns: minmax(0, 1fr) 118px; column-gap: 6px; align-items: end; }
-.door-foot > .door-acts, .door-foot > .door-code { grid-column: 1; }
-.door-acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.door-foot { margin-top: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 6px; align-items: end; }
+/* the two ways in on one line across the leaf; the code line and Bond share the row under them */
+.door-foot > .door-acts { grid-column: 1 / -1; grid-row: 1; }
+.door-foot > .door-code { grid-column: 1; grid-row: 2; align-self: end; margin-bottom: 4px; }
+.door-acts { display: flex; gap: 10px; flex-wrap: nowrap; }
 .door-acts .btn { min-height: max(52px, var(--tap)); padding: 0 22px; border-radius: 999px; font-size: var(--ctl); white-space: nowrap; transition: background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), transform 120ms var(--ease-out); }
 .door-acts .btn.primary { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
 .door-acts .btn.primary:hover { background: var(--chocolate-deep); }
-.door-acts .btn.outline { background: transparent; border: 1px solid rgba(74, 51, 39, 0.34); color: var(--chocolate); }
+.door-acts .btn.outline { background: transparent; border: 1px solid var(--chocolate-line); color: var(--chocolate); }
 .door-acts .btn.outline:hover { border-color: var(--chocolate); background: rgba(74, 51, 39, 0.04); }
 .door-acts .btn:active { transform: scale(0.97); }
 .door-acts .btn:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; }
@@ -462,7 +480,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 @media (max-width: 1599px) { .door .sb-books button small { display: none; } .door .sb-books button { min-height: var(--tap); } }
 .door .sb-books { gap: 4px; flex-wrap: nowrap; }
 .door .sb-books button { color: var(--on-chocolate); border: 1px solid transparent; min-height: max(52px, var(--tap)); padding: 6px 12px 6px 10px; text-align: left; }
-.door .sb-books button i { display: block; width: 14px; height: 20px; border-radius: 1px 3px 3px 1px; box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.4); /* book material */ flex: none; }
+.door .sb-books button i { display: block; width: 14px; height: 20px; border-radius: 1px 3px 3px 1px; box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.4); /* taste-skill-ignore: book material */ flex: none; }
 .door .sb-books button span { display: grid; gap: 1px; text-align: left; }
 .door .sb-books button b { font-family: var(--book-display); font-weight: 600; font-size: max(18px, var(--floor)); line-height: 1.1; color: var(--on-chocolate); text-align: left; }
 .door .sb-books button small { font-size: max(13px, var(--floor)); color: var(--on-chocolate-soft); text-align: left; }
@@ -483,18 +501,20 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 .door .bk-reader.samples .bk-spread { max-width: none; }
 /* the open book lies on the cloth as an object too: every page, the endpapers included, has its shadow, the gutter its
    shade and each fore-edge its gilt, so a dark cover's endpapers never read as a hole in the bench */
-.door .bk-spread > .bk-page:not(.blank), .door .bk-face > .bk-page { box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* book material */ }
-.door .bk-spread > .bk-page.right:not(.blank) { box-shadow: var(--edge-fore), inset 18px 0 22px -18px rgba(0, 0, 0, 0.38), 0 2px 3px rgba(0, 0, 0, 0.35), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* book material */ }
-.door .bk-spread > .bk-page.left:not(.blank) { box-shadow: var(--edge-fore-left), inset -18px 0 22px -18px rgba(0, 0, 0, 0.38), 0 2px 3px rgba(0, 0, 0, 0.35), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* book material */ }
-.door .bk-reader.closed-front .bk-spread > .bk-page.cover { box-shadow: var(--edge-fore), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* book material */ }
-.door .bk-reader.samples .bk-controls { margin-top: 18px; }
+.door .bk-spread > .bk-page:not(.blank), .door .bk-face > .bk-page { box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* taste-skill-ignore: book material */ }
+.door .bk-spread > .bk-page.right:not(.blank) { box-shadow: var(--edge-fore), inset 18px 0 22px -18px rgba(0, 0, 0, 0.38), 0 2px 3px rgba(0, 0, 0, 0.35), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* taste-skill-ignore: book material */ }
+.door .bk-spread > .bk-page.left:not(.blank) { box-shadow: var(--edge-fore-left), inset -18px 0 22px -18px rgba(0, 0, 0, 0.38), 0 2px 3px rgba(0, 0, 0, 0.35), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* taste-skill-ignore: book material */ }
+.door .bk-reader.closed-front .bk-spread > .bk-page.cover { box-shadow: var(--edge-fore), 0 30px 50px -24px rgba(0, 0, 0, 0.7); /* taste-skill-ignore: book material */ }
+.door .bk-reader.samples .bk-under > .bk-controls { margin: 0; flex-wrap: nowrap; align-items: center; }
+/* the chapter chips and the reading dashes stay on the Book page: on the bench, Back · where · Turn page moves through it */
+.door .bk-chapters, .door .bk-dots { display: none; }
 /* while the book is closed, "Back" is not there at all, so the row centres under the book */
 .door .bk-reader.closed-front .bk-controls > button:first-child { display: none; }
-.door .bk-reader .btn.outline { background: transparent; color: var(--on-chocolate); border: 1px solid rgba(246, 240, 230, 0.32); min-height: var(--tap); border-radius: 999px; font-size: max(14px, var(--ctl)); transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
+.door .bk-reader .btn.outline { background: transparent; color: var(--on-chocolate); border: 1px solid var(--cream-line); min-height: var(--tap); border-radius: 999px; font-size: max(14px, var(--ctl)); transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .door .bk-reader .btn.outline:active:not(:disabled) { transform: scale(0.97); }
 .door .bk-reader .btn.outline:disabled { opacity: 0.6; cursor: not-allowed; }
 .door .bk-reader .btn.outline:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
-@media (hover: hover) and (pointer: fine) { .door .bk-reader .btn.outline:hover:not(:disabled) { border-color: rgba(246, 240, 230, 0.7); background: rgba(246, 240, 230, 0.05); } }
+@media (hover: hover) and (pointer: fine) { .door .bk-reader .btn.outline:hover:not(:disabled) { border-color: var(--cream-line-strong); background: rgba(246, 240, 230, 0.05); } }
 .door .bk-reader .btn svg { width: 16px; height: 16px; }
 .door .bk-reader.samples .bk-where { color: var(--on-chocolate-soft); font-size: max(14px, var(--floor)); }
 .door .bk-dots { margin-top: 6px; gap: 0; }
@@ -517,24 +537,23 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
    then the dashes (the reader's markup is BookSpread's; only its placement is the front door's) */
 .door .bk-under { display: flex; flex-flow: row wrap; justify-content: center; align-items: center; gap: 8px 14px; margin-top: 12px; }
 .door .bk-under > .bk-caption { flex: 0 0 100%; margin: 0; }
-.door .bk-under > .bk-controls { margin: 0; flex-wrap: nowrap; }
-.door .bk-under > .bk-read { flex: none; width: auto; min-height: var(--tap); padding: 0 18px; border-radius: 999px; background: transparent; color: var(--on-chocolate); border: 1px solid rgba(246, 240, 230, 0.32); }
+.door .bk-under > .bk-read { flex: none; width: auto; min-height: var(--tap); align-self: center; margin: 0; padding: 0 18px; border-radius: 999px; background: transparent; color: var(--on-chocolate); border: 1px solid var(--cream-line); }
 .door .bk-under > .bk-read:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
-@media (hover: hover) and (pointer: fine) { .door .bk-under > .bk-read:hover { border-color: rgba(246, 240, 230, 0.7); } }
+@media (hover: hover) and (pointer: fine) { .door .bk-under > .bk-read:hover { border-color: var(--cream-line-strong); } }
 .door .bk-under > .bk-dots { flex: 0 0 100%; margin-top: 0; }
 .door .bk-caption span { max-width: 62ch; }
 /* the book a little narrower than its column, so the bench keeps its room above and below */
-.door-bench .bk-reader { max-width: 840px; margin: 0 auto; }
+.door-bench .bk-reader { max-width: 940px; margin: 0 auto; }
 /* the three papers, as small round swatches under "The book arrives" */
 .door-papers { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px !important; font: 500 max(14px, var(--floor))/1.2 var(--font-ui) !important; color: var(--ink-soft) !important; }
 .door-papers span { display: inline-flex; align-items: center; gap: 8px; }
-.door-papers i { width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(74, 51, 39, 0.25); }
+.door-papers i { width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(74, 51, 39, 0.25); } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
 
 /* loose prints on the bench beside the closed book, waiting to go in; when it opens, the book lies on them */
 .door-bench { position: relative; }
 .door-bench .bk-reader { position: relative; z-index: 1; }
 .loose { position: absolute; z-index: 0; margin: 0; padding: 8px 8px 10px; background: var(--print-white); pointer-events: none;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 16px 26px -12px rgba(0, 0, 0, 0.6); /* book material */ transition: opacity 400ms var(--ease-out) 300ms; }
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 16px 26px -12px rgba(0, 0, 0, 0.6); /* taste-skill-ignore: book material */ transition: opacity 400ms var(--ease-out) 300ms; }
 .loose img { display: block; width: 100%; object-fit: cover; background: var(--photo-blank); }
 .loose.l1 { left: 1%; top: 9%; width: 19%; rotate: -6deg; }
 .loose.l1 img { aspect-ratio: 4 / 5; object-position: 55% 50%; }
@@ -546,27 +565,21 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 
 /* the family dog beside the way in, on the paper (its watercolour is translucent, so it never sits on the cloth),
    the ledge under its paws on the leaf's bottom foil rule */
-.door .companion { --cw: 124px; position: relative; grid-column: 2; grid-row: 1 / span 2; align-self: end; margin-bottom: -12px; width: var(--cw); height: calc(var(--cw) / 1.2531); pointer-events: none; }
-.door .companion .head { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
-.door .companion .state { position: absolute; opacity: 0; transition: opacity 220ms var(--ease-out); }
-.door .companion[data-mood="watch"] .watch, .door .companion[data-mood="curious"] .curious { opacity: 1; }
-.door .companion .glints, .door .companion .lids { position: absolute; inset: 0; }
-.door .companion .glint, .door .companion .lid { position: absolute; }
-.door .companion .lid { transform: scaleY(0); }
+.door .companion { --cw: 124px; position: relative; grid-column: 2; grid-row: 2; align-self: end; margin: -6px 14px -24px 0; /* his paws on the leaf's inner foil rule (14px in, under the foot's 38px), clear of its corner bracket */ width: var(--cw); height: calc(var(--cw) / 1.2531); pointer-events: none; }
 
 /* ───────────────────────── 7. Stacked ───────────────────────── */
 /* A phone, a portrait tablet, or a window too narrow or short for the book to stay comfortable (bookFit STACKED): the
    pages stack, the title page first, at their own size, centred in a column no wider than a page; the page scrolls.
    astory.css §33 holds the phone's share of this below 760px; the rules here cover the whole stacked range. */
-@media (max-width: 1180px), (max-height: 690px), (max-aspect-ratio: 5/4) {
+@media (max-width: 1180px), (max-aspect-ratio: 5/4) {
   html:has(.auth.ritual), body:has(.auth.ritual) { overflow-x: clip; overflow-y: visible; height: auto; }
   .auth.ritual { height: auto; min-height: calc(100vh / var(--zoom)); overflow-x: clip; }
   .auth .spread-wrap { height: auto !important; min-height: 0; overflow: visible; display: block; padding: 84px 16px 64px; }
   .auth .spread { width: min(720px, 100%); margin: 0 auto; aspect-ratio: auto; grid-template-columns: minmax(0, 1fr); }
-  .auth .leaf-r { order: 1; border-radius: 3px 3px 0 0; box-shadow: none; }
+  .auth .leaf-r { order: 1; border-radius: 3px 3px 0 0; box-shadow: none; } /* taste-skill-ignore: book material: a print, leaf, board or seal lying on the cloth */
   .auth .leaf-l { order: 2; border-radius: 0 0 3px 3px; aspect-ratio: 1 / 1; min-height: 0; }
   .auth .tp-gutter { display: none; }
-  .auth .endpaper::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.05) 5%, transparent 11%); /* book material: the gutter's shade */ }
+  .auth .endpaper::after { background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.05) 5%, transparent 11%); /* taste-skill-ignore: book material: the gutter's shade */ }
   .auth .titlepg { padding: 7% 5% 6%; }
   .auth .promise-line { white-space: normal; font-size: 32px; line-height: 1.12; text-align: center; text-wrap: balance; max-width: 22ch; }
   .auth .plate-wrap { --pw: min(92cqw, 520px); margin: 18px 0 0; }
@@ -607,13 +620,15 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .loose { display: none; }
   .door-note { margin-top: 8px; }
 }
-/* a short window (a laptop with its browser's bars): the title page comes first and whole, so the form is on the
-   first screen without scrolling; the album follows below */
-@media (min-width: 761px) and (max-height: 690px) {
-  .auth .spread-wrap { padding-top: 12px; }
-  .auth .titlepg { padding: 22px 5% 22px; }
-  .auth .promise-line { font-size: 30px; }
-  .auth .plate-wrap { margin-top: 6px; }
+/* a short desktop window (a 1366 × 768 laptop with its browser's bars): the book keeps its spread, with less bench
+   above and below it so it scales as large as it can (the floors keep the controls legible) */
+@media (min-width: 1181px) and (max-height: 720px) {
+  .auth .spread-wrap { padding-top: 58px; padding-bottom: 22px; }
+  /* the plate's floors are larger in the book's own pixels at this scale: a smaller dog and title make the room */
+  .auth .plate-wrap { --cw: 118px; }
+  .auth .promise-line { font-size: 31px; }
+  .auth.ritual .plate-links { padding: 0; flex-wrap: nowrap; font-size: max(14px, var(--floor)); }
+  .door-wrap { padding-top: 76px; padding-bottom: 12px; }
 }
 /* phones: the title page's own proportions, the album as a tall page */
 @media (max-width: 760px) {
@@ -627,7 +642,11 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .auth .leaf-l { aspect-ratio: 1 / 2.15; }
   .auth .print[data-n="1"] { --l: 6% !important; --t: 2.5% !important; --w: 68cqmin !important; }
   .auth .print[data-n="2"] { --l: 45% !important; --t: 28% !important; --w: 48cqmin !important; }
-  .auth .print[data-n="3"] { --l: 7% !important; --t: 58% !important; --w: 64cqmin !important; }
+  .auth .print[data-n="3"] { --l: 7% !important; --t: 60% !important; --w: 64cqmin !important; }
+  /* the links under the button: one full-height row each, centred, no hit area reaching another */
+  .auth.ritual .plate-links { flex-direction: column; flex-wrap: nowrap; gap: 0; margin-top: 6px; padding: 0; }
+  .auth.ritual .plate-links a { display: inline-flex; align-items: center; min-height: var(--tap); }
+  .auth.ritual .plate-links a::before { display: none; }
   .auth .print-cap { font-size: 16px; }
   /* the sentence runs the page's width under the last print, a readable measure */
   .auth .ep-how { left: 7%; right: 7%; top: auto; bottom: 4%; }
@@ -640,7 +659,8 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .cb-state .cb-q { font-size: 32px; }
   .cb-person { grid-template-columns: 104px minmax(0, 1fr); gap: 16px; }
   .cb-name { font-size: 26px; }
-  .cb-what { display: none; }
+  /* on a phone the person keeps the one line a stranger needs */
+  .cb-what li:not(:last-child) { display: none; }
   .cb-foot { flex-direction: column; align-items: stretch; }
   .cb-foot .btn { width: 100%; }
   .cb-top .cb-kicker { display: none; }
@@ -650,7 +670,6 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .door-leaf h1 { font-size: 38px; }
   .door-how dt { font-size: 21px; }
   .door .companion { --cw: 100px; margin-bottom: -10px; }
-  .door-foot { grid-template-columns: minmax(0, 1fr) 96px; }
   .door-acts { flex-direction: column; }
   .door-acts .btn { width: 100%; }
   .door .bk-dots { display: none; }

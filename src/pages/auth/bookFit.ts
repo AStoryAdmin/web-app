@@ -11,17 +11,19 @@
  * still. It is computed before the first paint, on resize, and when the
  * faces arrive.
  *
- * Where the book would have to shrink below a comfortable size (a short
- * laptop window, a portrait tablet, a narrow window) the pages stack and
+ * On a phone, a narrow window or a portrait tablet the pages stack and
  * scroll instead, at their own size: `STACKED`, the same query the CSS uses.
+ * A short desktop window keeps the spread, scaled down; the floors on small
+ * print and controls keep it legible.
  */
 import { useLayoutEffect, type RefObject } from "react";
 
 export { MOVE, OUT } from "../../lib/ease";
 
 const KEY = "astory-opened";
-/** The pages stack (and scroll) on a phone, a narrow or short window, or a portrait screen. Mirrored in signed-out.css §7. */
-export const STACKED = "(max-width: 1180px), (max-height: 690px), (max-aspect-ratio: 5/4)";
+/** The pages stack (and scroll) on a phone, a narrow window or a portrait screen; a short desktop window keeps the
+ * spread and scales it (the floors keep its controls legible). Mirrored in signed-out.css §7. */
+export const STACKED = "(max-width: 1180px), (max-aspect-ratio: 5/4)";
 export const isStacked = () => typeof window !== "undefined" && window.matchMedia(STACKED).matches;
 
 export const seenOpening = () => {

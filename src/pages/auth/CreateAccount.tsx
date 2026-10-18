@@ -119,13 +119,16 @@ export default function CreateAccount() {
               Your name, as your family will see it
             </span>
           </label>
-          <PlateSay error={error}>Free to start. No card.</PlateSay>
+          <PlateSay error={error}>
+            {given ? (
+              <>
+                Joining with the code <b className="nw">{spacedCode(prefilled) as string}</b>. Free to start.
+              </>
+            ) : (
+              "Free to start. No card."
+            )}
+          </PlateSay>
           <Field label="Email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} onFocusChange={(w) => setFocus(w ? "email" : null)} required {...says("email")} />
-          {given && (
-            <p className="given">
-              With the family code <b>{spacedCode(prefilled) as string}</b>
-            </p>
-          )}
           <Button type="submit" block>
             Continue
           </Button>
@@ -148,7 +151,10 @@ export default function CreateAccount() {
               Change
             </button>
           </p>
-          <PlateSay error={error}>At least {MIN_PASSWORD} characters. Nobody else ever sees it.</PlateSay>
+          {/* the plate's one line carries the terms on this step, so the step fits the page with the code field open */}
+          <PlateSay error={error}>
+            Creating an account accepts the <a href="https://astoryapp.com/terms">terms</a> and <a href="https://astoryapp.com/privacy">privacy policy</a>.
+          </PlateSay>
           <Field
             ref={passwordRef}
             label="Password"
@@ -163,8 +169,8 @@ export default function CreateAccount() {
             {...says("password")}
           />
           {given ? (
-            <p className="given">
-              With the family code <b>{spacedCode(prefilled) as string}</b>
+            <p className="given with-code">
+              Joining with the family code <b>{spacedCode(prefilled) as string}</b>
             </p>
           ) : !hasCode ? (
             <div className="code-ask">
@@ -188,9 +194,6 @@ export default function CreateAccount() {
           <Button type="submit" block loading={busy}>
             Create account
           </Button>
-          <p className="legal">
-            Creating an account accepts the <a href="https://astoryapp.com/terms">terms</a> and <a href="https://astoryapp.com/privacy">privacy policy</a>.
-          </p>
         </form>
       )}
     </AuthFrame>
