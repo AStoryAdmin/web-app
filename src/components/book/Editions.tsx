@@ -71,7 +71,7 @@ export default function Editions({ storyId, memories }: { storyId: string; memor
       const { checkoutUrl } = await orderBook(storyId, id, 1);
       window.location.assign(checkoutUrl);
     } catch (err) {
-      setProblem((err as Error).message || "We couldn't start the order. Please try again.");
+      setProblem((err as Error).message || "We couldn’t start the order. Please try again.");
       setBusy(null);
     }
   };
@@ -92,7 +92,7 @@ export default function Editions({ storyId, memories }: { storyId: string; memor
           Editions<Stop />
         </h2>
         <p className="ed-lead">{lead}</p>
-        {fallback && <p className="meta">These are the listed prices; we couldn't check this family's offer just now.</p>}
+        {fallback && <p className="meta">These are the listed prices; we couldn’t check this family’s offer just now.</p>}
         {!loading && !printingOpen && (
           <div className="ed-wait">
             <p className="meta">Printed copies open once our printer is ready.</p>
@@ -123,7 +123,7 @@ export default function Editions({ storyId, memories }: { storyId: string; memor
           const note = included
             ? "Included with your plan"
             : credit
-              ? `Your plan's ${dollars(offer!.creditCents)} goes toward it`
+              ? `Your plan’s ${dollars(offer!.creditCents)} goes toward it`
               : e.extraCents
                 ? `${dollars(e.extraCents)} each further copy`
                 : e.id === "legacy"

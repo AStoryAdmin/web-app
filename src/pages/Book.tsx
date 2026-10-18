@@ -23,7 +23,7 @@ import { printAtHome } from "../components/book/printBook";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
-import { makeListenKey, normaliseDesign } from "../app-core/lib/bookDesign.js";
+import { KEEPSAKE_TITLE, makeListenKey, normaliseDesign } from "../app-core/lib/bookDesign.js";
 import { needsListenKey } from "../lib/qrLinks";
 import { listContributions, type Contribution } from "../data/contributions";
 import { track } from "../lib/analytics";
@@ -78,15 +78,41 @@ export default function Book() {
 
   if (account === undefined)
     return (
-      <Shell compact wide tone="teal" title="The Book">
-        {/* the desk's hairlines while the story arrives: the rail's ruled rows beside the open spread */}
+      <Shell
+        compact
+        wide
+        tone="teal"
+        title="The Book"
+        hero={
+          /* the cloth at its arrived height, its words held but not yet shown, so the sheet doesn't move when they come */
+          <div className="bkh bkh-skel" aria-hidden="true">
+            <div className="bkh-words">
+              <p className="label mobile-only">
+                <span className="teller-pick">&nbsp;</span>
+              </p>
+              <h1 className="bkh-title">
+                {KEEPSAKE_TITLE}
+                <Stop />
+              </h1>
+              <p className="bkh-line">&nbsp;</p>
+            </div>
+            <div className="bkh-edition">
+              <p className="bkh-headline">&nbsp;</p>
+              <div className="bkh-rule" />
+              <p className="bkh-end">First edition</p>
+            </div>
+          </div>
+        }
+      >
+        {/* the desk's hairlines while the story arrives: the contents label and its ruled rows beside the open spread */}
         <div className="page book-page bka-skel bk-skel" aria-busy="true">
-          <span className="bka-sk-col" aria-hidden="true">
-            <i className="bka-sk-line w40" />
+          <span className="bka-sk-col bk-skel-rail" aria-hidden="true">
+            <i className="bka-sk-label" />
             <i className="bka-sk-line" />
             <i className="bka-sk-line" />
             <i className="bka-sk-line" />
-            <i className="bka-sk-line w70" />
+            <i className="bka-sk-line" />
+            <i className="bka-sk-line" />
           </span>
           <span className="bka-sk-block" aria-hidden="true" />
         </div>
@@ -96,7 +122,7 @@ export default function Book() {
     return (
       <Shell compact tone="teal" title="The Book">
         <div className="page">
-          <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />
+          <Problem message={`We couldn’t reach your stories. ${loadError}`} onRetry={reload} />
         </div>
       </Shell>
     );
@@ -115,7 +141,7 @@ export default function Book() {
     try {
       await printAtHome(story, recordedBy);
     } catch (err) {
-      setProblem((err as Error).message || "The book couldn't be made just now. Please try again.");
+      setProblem((err as Error).message || "The book couldn’t be made just now. Please try again.");
     } finally {
       setPrinting(false);
     }
@@ -130,7 +156,7 @@ export default function Book() {
     try {
       await updateStory({ ...story, bookDesign: { ...design, cover: { ...design.cover, color } } });
     } catch (err) {
-      setProblem((err as Error).message || "The cover colour wasn't saved. Please try again.");
+      setProblem((err as Error).message || "The cover colour wasn’t saved. Please try again.");
     } finally {
       setCoverBusy(false);
     }

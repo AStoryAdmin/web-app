@@ -364,7 +364,7 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
 
   if (rail) {
     return (
-      <section className={cls} aria-label={`${book.name}'s book, as pages`} style={style}>
+      <section className={cls} aria-label={`${book.name}’s book, as pages`} style={style}>
         <aside className="bk-rail">
           <nav className="bk-contents" aria-label="Contents of the book">
             <p className="bk-rail-label">Contents</p>
@@ -387,7 +387,7 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
   }
 
   return (
-    <section className={cls} aria-label={`${book.name}'s book, as pages`} style={style}>
+    <section className={cls} aria-label={`${book.name}’s book, as pages`} style={style}>
       {reader}
 
       {chapters.length > 1 && (

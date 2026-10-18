@@ -124,7 +124,7 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
       </div>
       <div className="acct-sec-body">
       <h2 className="acct-sub">Your name</h2>
-      <p className="acct-lead">How the family sees you, in the book's colophon and beside what you add.</p>
+      <p className="acct-lead">How the family sees you, in the book’s colophon and beside what you add.</p>
       <form
         className="acct-form"
         onSubmit={(e) => {
@@ -302,7 +302,7 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
     try {
       await chooseStory(id);
     } catch (err) {
-      setNote({ error: (err as Error).message || "Couldn't switch just now." });
+      setNote({ error: (err as Error).message || "Couldn’t switch just now." });
     }
     setBusy(null);
   };
@@ -434,7 +434,7 @@ function WallSwitch({ story }: { story: Story }) {
       await updateStory({ ...story, isPublic: on, publicSlug: slug });
       setNote({ ok: on ? "The wall is on. Anyone with the link can read what is public." : "The wall is off. The link shows nothing now." });
     } catch (err) {
-      setNote({ error: (err as Error)?.message || "That didn't save." });
+      setNote({ error: (err as Error)?.message || "That didn’t save." });
     }
     setBusy(false);
   };
@@ -451,7 +451,7 @@ function WallSwitch({ story }: { story: Story }) {
 
   return (
     <div className="acct-wall">
-      <Switch on={story.isPublic} label={own ? "Your wall" : `${story.name}'s wall`} hint={story.isPublic ? `${shown} of ${story.memories.length} ${story.memories.length === 1 ? "memory" : "memories"} shown. Private ones never are.` : "Off. Nobody can open the link."} onChange={flip} busy={busy} />
+      <Switch on={story.isPublic} label={own ? "Your wall" : `${story.name}’s wall`} hint={story.isPublic ? `${shown} of ${story.memories.length} ${story.memories.length === 1 ? "memory" : "memories"} shown. Private ones never are.` : "Off. Nobody can open the link."} onChange={flip} busy={busy} />
       {story.isPublic && url && (
         <div className="acct-wall-link">
           <a href={url} target="_blank" rel="noreferrer">
@@ -517,7 +517,7 @@ function Trusted() {
     setNote(null);
     const { error } = await supabase().rpc("set_trusted_person", { uid: null, mail: mail.trim().toLowerCase() });
     if (error) {
-      setNote({ error: MISSING_FN.has(error.code) ? "This isn't switched on for your account yet." : error.message });
+      setNote({ error: MISSING_FN.has(error.code) ? "This isn’t switched on for your account yet." : error.message });
     } else {
       setHeir({ user_id: null, name: null, email: mail.trim().toLowerCase(), how: "trusted" });
       setMail("");
@@ -529,7 +529,7 @@ function Trusted() {
   const how = heir?.how === "trusted" ? "the person you chose" : heir?.how === "invited" ? "someone you invited to a story" : heir?.how === "family" ? "someone in your family tree" : "";
 
   return (
-    <Section title="Who looks after this if I can't" lead="Someone who would receive what you have written and the letters you have left, if you were no longer here." id="trusted">
+    <Section title="Who looks after this if I can’t" lead="Someone who would receive what you have written and the letters you have left, if you were no longer here." id="trusted">
       {heir ? (
         <p className="acct-value">
           <UserIcon /> {heir.name || heir.email}
@@ -578,7 +578,7 @@ function Export({ stories, recordedBy }: { stories: Story[]; recordedBy: string 
       await printAtHome(chosen, recordedBy);
       setNote({ ok: "The book opened in a new window. Choose “Save as PDF” there." });
     } catch (err) {
-      setNote({ error: (err as Error).message || "The book couldn't be made just now. Please try again." });
+      setNote({ error: (err as Error).message || "The book couldn’t be made just now. Please try again." });
     }
     setBusy(false);
   };
@@ -604,7 +604,7 @@ function Export({ stories, recordedBy }: { stories: Story[]; recordedBy: string 
           )}
           <div className="acct-acts">
             <Button variant="outline" small icon={<PrintIcon />} onClick={run} loading={busy}>
-              {withPages.length > 1 && chosen ? `Print or save ${chosen.name}'s book` : "Print or save as a PDF"}
+              {withPages.length > 1 && chosen ? `Print or save ${chosen.name}’s book` : "Print or save as a PDF"}
             </Button>
             <NoteLine note={note} />
           </div>
@@ -659,7 +659,7 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
     try {
       setHandoff(await whoInherits(stories.filter((s) => s.ownerId === user.id)));
     } catch (err) {
-      setNote({ error: `We couldn't check who keeps each story: ${(err as Error).message}` });
+      setNote({ error: `We couldn’t check who keeps each story: ${(err as Error).message}` });
     }
   };
 
@@ -669,7 +669,7 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
     const { data, error } = await supabase().functions.invoke("delete-account");
     const failed = error || (data && typeof data === "object" && "error" in data && (data as { error?: string }).error);
     if (failed) {
-      setNote({ error: `The account wasn't deleted: ${error?.message || (data as { error?: string })?.error || "please try again."}` });
+      setNote({ error: `The account wasn’t deleted: ${error?.message || (data as { error?: string })?.error || "please try again."}` });
       setBusy(false);
       return;
     }
@@ -696,15 +696,15 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
             <>
               {passing.map((h) => (
                 <p key={h.story.id}>
-                  <b>{h.story.name}'s story</b> passes to <b>{h.to}</b>, who has kept it longest. Nothing in it is lost.
+                  <b>{h.story.name}’s story</b> passes to <b>{h.to}</b>, who has kept it longest. Nothing in it is lost.
                 </p>
               ))}
               {gone.map((h) => (
                 <p key={h.story.id}>
-                  <b>{h.story.name}'s story</b> ({h.story.memories.length} {h.story.memories.length === 1 ? "memory" : "memories"}) has nobody else keeping it and is deleted with the account. Print it first if you want a copy.
+                  <b>{h.story.name}’s story</b> ({h.story.memories.length} {h.story.memories.length === 1 ? "memory" : "memories"}) has nobody else keeping it and is deleted with the account. Print it first if you want a copy.
                 </p>
               ))}
-              {kept.length > 0 && <p className="meta">{kept.map((s) => `${s.name}'s story`).join(", ")} belong to someone else and stay as they are.</p>}
+              {kept.length > 0 && <p className="meta">{kept.map((s) => `${s.name}’s story`).join(", ")} belong to someone else and stay as they are.</p>}
               {handoff !== null && handoff.length === 0 && kept.length === 0 && <p className="meta">This account keeps no stories.</p>}
             </>
           )}
@@ -733,7 +733,7 @@ const INDEX: { group: string; items: [string, string][] }[] = [
   { group: "You", items: [["profile", "Your name"], ["signing", "Signing in"]] },
   { group: "The stories", items: [["storytellers", "Whose stories"], ["wall", "The wall"], ["export", "A copy of everything"]] },
   { group: "Plan and privacy", items: [["plan", "Your plan"], ["privacy", "Privacy"]] },
-  { group: "If you can't", items: [["trusted", "Who looks after this"], ["delete", "Delete the account"]] },
+  { group: "If you can’t", items: [["trusted", "Who looks after this"], ["delete", "Delete the account"]] },
 ];
 
 /**
@@ -793,27 +793,37 @@ export default function Account() {
   if (user === undefined || account === undefined)
     return (
       <Shell bare wide title="Account">
-        {/* the index column and three ruled sections, in hairlines, while the account arrives */}
+        {/* the index column, the bookplate beside its lines, and three ruled sections, in hairlines, while the account arrives */}
         <div className="page acct-page bka-skel acct-skel" aria-busy="true">
-          <span className="bka-sk-col acct-skel-index" aria-hidden="true">
-            <i className="bka-sk-line w40" />
-            <i className="bka-sk-line w70" />
-            <i className="bka-sk-line w50" />
-            <i className="bka-sk-line w70" />
-            <i className="bka-sk-line w50" />
-          </span>
-          <span className="bka-sk-col" aria-hidden="true">
-            <i className="bka-sk-line tall w50" />
-            {[0, 1, 2].map((i) => (
-              <span key={i} className="acct-skel-sec">
+          <div className="bka-sk-col acct-skel-index" aria-hidden="true">
+            <i className="bka-sk-label" />
+            <i className="bka-sk-line nav w70" />
+            <i className="bka-sk-line nav w50" />
+            <i className="bka-sk-label" />
+            <i className="bka-sk-line nav w70" />
+            <i className="bka-sk-line nav w50" />
+          </div>
+          <div className="acct-body" aria-hidden="true">
+            <i className="bka-sk-line acct-skel-jump" />
+            <div className="acct-sec acct-sec-profile">
+              <div className="acct-exlibris bka-sk-block" />
+              <div className="acct-sec-body bka-sk-col">
+                <i className="bka-sk-line tall w50" />
+                <i className="bka-sk-line w85" />
+                <i className="bka-sk-line" />
                 <i className="bka-sk-line w70" />
-                <span className="bka-sk-col">
+              </div>
+            </div>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="acct-sec">
+                <i className="bka-sk-line w70" />
+                <div className="bka-sk-col">
                   <i className="bka-sk-line" />
                   <i className="bka-sk-line w85" />
-                </span>
-              </span>
+                </div>
+              </div>
             ))}
-          </span>
+          </div>
         </div>
       </Shell>
     );
@@ -862,7 +872,7 @@ export default function Account() {
         </aside>
 
         <div className="acct-body">
-          {loadError && <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />}
+          {loadError && <Problem message={`We couldn’t reach your stories. ${loadError}`} onRetry={reload} />}
           {/* on a phone the index folds into one control at the top of the page */}
           <label className="acct-jump">
             <span>Go to</span>
@@ -921,7 +931,7 @@ export default function Account() {
             rows={[
               { to: "/book", title: "Open the book", line: "Every page, as it will print." },
               { to: "/family", title: "The family", line: "Who is in the book, and who is invited." },
-              { to: "/", title: "Back to today", line: "Today's question is waiting." },
+              { to: "/", title: "Back to today", line: "Today’s question is waiting." },
             ]}
           />
         </div>

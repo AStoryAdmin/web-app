@@ -82,11 +82,15 @@ const BASE_LINES = 6;
 const WORTH_A_BUTTON = 2;
 /** The button's own height and the gap above it, in CSS px (min-height 44, margin-top s-1, the leaf's gap s-2). */
 const MORE_RESERVE = 44 + 4 + 8;
+/** A leaf of words that all fit is set larger, a letter filling its leaf, from the house 18px up to this. */
+const LETTER_MAX = 22;
 
 /**
  * Words are clamped to fill the leaf's row, not to a fixed count: a leaf of words beside a photograph runs down to
  * where the photograph leaves end, and the button shows only when words are really hidden (more than a couple of
- * lines; one or two hidden lines are simply shown). Measured after layout, and again, all leaves together and in
+ * lines; one or two hidden lines are simply shown). A leaf of words beside photographs whose whole text fits with
+ * room to spare is set a little larger instead (18px up to 22px), so the row is words, not blank paper. Measured
+ * after layout, and again, all leaves together and in
  * reading order, when the width changes, the fonts arrive or a print loads, so the result never depends on which
  * leaf happened to measure first.
  */
@@ -115,6 +119,7 @@ function useFill(leaf: React.RefObject<HTMLElement | null>, words: React.RefObje
     const w = words.current;
     if (!el || !w) return;
     const clear = () => {
+      w.style.removeProperty("font-size");
       w.style.removeProperty("-webkit-line-clamp");
       w.style.removeProperty("display");
       w.style.removeProperty("overflow");
@@ -148,6 +153,20 @@ function useFill(leaf: React.RefObject<HTMLElement | null>, words: React.RefObje
       if (fits) {
         w.style.setProperty("display", "block");
         w.style.setProperty("overflow", "visible");
+        // all of it shows: on a leaf of words alone, step the type up a pixel at a time while it still sits inside
+        if (!el.classList.contains("has-photo")) {
+          const base = parseFloat(getComputedStyle(w).fontSize) || 18;
+          let size = base;
+          while (size < LETTER_MAX) {
+            w.style.setProperty("font-size", `${size + 1}px`);
+            if (below() > floor + 0.5) {
+              if (size === base) w.style.removeProperty("font-size");
+              else w.style.setProperty("font-size", `${size}px`);
+              break;
+            }
+            size += 1;
+          }
+        }
       }
       const changed = shown.current === fits;
       shown.current = !fits;
@@ -167,6 +186,8 @@ function useFill(leaf: React.RefObject<HTMLElement | null>, words: React.RefObje
       }
     });
     if (el.parentElement) ro.observe(el.parentElement);
+    // fonts.ready is already settled after the first load, so this also runs on every later effect run: it is what
+    // fills the neighbours again when a leaf opens or folds, not only a one-time wait for the fonts
     document.fonts?.ready.then(again).catch(() => {});
     const imgs = Array.from(el.parentElement?.querySelectorAll("img") ?? []);
     imgs.forEach((i) => i.addEventListener("load", again));
@@ -229,6 +250,61 @@ function Bench({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * While the story is fetched: the wall's own frame in hairlines, the portrait ring and two lines on the cloth, the
+ * contents column and a row of leaf outlines on the sheet, with the mark drawing over them (Bao's Standard rule 42).
+ */
+function WallWait() {
+  const ground = useRef<HTMLDivElement>(null);
+  useLight(ground);
+  return (
+    <div className="wall wall-skel" aria-busy="true">
+      <div className="wall-cloth cloth on-dark" ref={ground}>
+        <span className="lamp" aria-hidden="true" />
+        <div className="wall-top">
+          <Link className="brand" to="/welcome" aria-label="A Story">
+            <Lockup height={28} />
+          </Link>
+        </div>
+        <div className="hero wall-hero" aria-hidden="true">
+          <div className="hero-in wall-hero-in">
+            <span className="wall-portrait wall-sk-ring" />
+            <div className="wall-hero-words">
+              <i className="wall-sk-hl tall" />
+              <i className="wall-sk-hl" />
+              <i className="wall-sk-hl third" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <main className="sheet-page wall-sheet">
+        <div className="page wall-page">
+          <div className="wall-contents" aria-hidden="true">
+            <i className="bka-sk-label" />
+            <i className="bka-sk-line wall-sk-row" />
+            <i className="bka-sk-line wall-sk-row" />
+            <i className="bka-sk-line wall-sk-row" />
+            <i className="bka-sk-line wall-sk-row" />
+          </div>
+          <div className="wall-main" aria-hidden="true">
+            <div className="wall-chapter">
+              <i className="bka-sk-line tall w40 wall-sk-head" />
+              <div className="wall-leaves">
+                <span className="wall-sk-leaf" />
+                <span className="wall-sk-leaf" />
+                <span className="wall-sk-leaf" />
+              </div>
+            </div>
+          </div>
+          <div className="wall-sk-mark">
+            <LoadingMark />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function Wall() {
   const { slug } = useParams();
   const [story, setStory] = useState<WallStory | null | undefined>(undefined);
@@ -255,14 +331,7 @@ export default function Wall() {
 
   const photo = usePrint(story?.photo_url ?? null);
 
-  if (story === undefined)
-    return (
-      <Bench>
-        <div className="wall-wait" aria-busy="true">
-          <LoadingMark />
-        </div>
-      </Bench>
-    );
+  if (story === undefined) return <WallWait />;
 
   if (story === null) {
     return (

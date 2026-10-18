@@ -63,7 +63,7 @@ export default function Talk() {
     return (
       <Shell compact title="Talk" back="/">
         <div className="page">
-          <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />
+          <Problem message={`We couldn’t reach your stories. ${loadError}`} onRetry={reload} />
         </div>
       </Shell>
     );
@@ -108,13 +108,13 @@ export default function Talk() {
             </li>
             <li>
               <b>The memory appears here</b>
-              <span>by evening, in {own ? "your" : `${story.name}'s`} own words.</span>
+              <span>by evening, in {own ? "your" : `${story.name}’s`} own words.</span>
             </li>
           </ol>
         </section>
 
-        <aside className="talk-card" aria-label={asked ? "The question you chose" : "Today's question"} data-rise>
-          <p className="talk-card-kicker">{asked ? "The question you chose" : "Today's question"}</p>
+        <aside className="talk-card" aria-label={asked ? "The question you chose" : "Today’s question"} data-rise>
+          <p className="talk-card-kicker">{asked ? "The question you chose" : "Today’s question"}</p>
           {/* the size steps with the question's length so it always sets in two lines, on the card's ruled lines */}
           <p className="talk-q" data-len={qLen(qText)}>
             {qText}
@@ -137,7 +137,7 @@ export default function Talk() {
         <WhereNext
           rows={[
             { to: "/", title: "Back to today", line: "Three questions, and the week so far." },
-            { to: "/archive", title: "Read what's kept", line: "Every memory by year." },
+            { to: "/archive", title: "Read what’s kept", line: "Every memory by year." },
             { to: "/book", title: "Open the book", line: "Every page, as it will print." },
           ]}
         />

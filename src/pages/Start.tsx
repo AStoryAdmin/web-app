@@ -64,7 +64,7 @@ function AskToJoin({ people, myName }: { people: Person[]; myName: string }) {
   return (
     <div className="askjoin">
       <p className="label quiet">Or ask, without a code</p>
-      <p className="meta">These stories are kept in your family already. Asking sends a note to whoever keeps them; they say yes, and you're in.</p>
+      <p className="meta">These stories are kept in your family already. Asking sends a note to whoever keeps them; they say yes, and you’re in.</p>
       <ul>
         {offered.map((p) => {
           const c = cards![p.id]!;
@@ -75,7 +75,7 @@ function AskToJoin({ people, myName }: { people: Person[]; myName: string }) {
               <Avatar src={undefined} name={p.givenName} size={40} />
               <span>
                 <strong>{personName(p)}</strong>
-                <span className="meta">{r === "asked" ? "asked · waiting for them" : r === "already" ? "you're already in this story" : r || about}</span>
+                <span className="meta">{r === "asked" ? "asked · waiting for them" : r === "already" ? "you’re already in this story" : r || about}</span>
               </span>
               {!r && (
                 <Button variant="outline" small loading={busy === p.id} onClick={() => void ask(p)}>
@@ -181,8 +181,44 @@ export default function Start() {
 
   if (account === undefined)
     return (
-      <div className="start" aria-busy="true">
-        <LoadingMark />
+      // the bench and its sheet at their arrived size, the three ways as frames only, the mark drawing over them
+      <div className="start start-skel" aria-busy="true">
+        <header className="start-head">
+          <Lockup height={32} />
+          {another && (
+            <span className="start-close" aria-hidden="true">
+              Not now
+            </span>
+          )}
+        </header>
+        <main className="start-sheet" aria-hidden="true">
+          <section>
+            <div className="start-top">
+              <p className="start-step-line">Step 1 of 2</p>
+              <h1>
+                Whose story is this<span className="stop">?</span>
+              </h1>
+              <p className="start-sub">There are three ways to be in a story, and nobody ever signs as somebody else. You can keep more than one; start with one person.</p>
+            </div>
+            <div className="start-ways">
+              {WAYS.map((w) => (
+                <div key={w.key} className={`start-way way-${w.key}`}>
+                  <span className="start-spec" />
+                  <span className="start-way-text">
+                    <span className="start-way-writes">{w.writes}</span>
+                    <span className="start-way-title">{w.title}</span>
+                    <span className="start-way-body">{w.body}</span>
+                  </span>
+                  <span className="start-way-act">{w.act}</span>
+                </div>
+              ))}
+            </div>
+            <p className="start-sample">See a sample book first</p>
+          </section>
+          <div className="start-sk-mark">
+            <LoadingMark />
+          </div>
+        </main>
       </div>
     );
   if (!another && stories.length > 0) return <Navigate to="/" replace />;
@@ -209,7 +245,7 @@ export default function Start() {
       track("story_created", { subject: self ? "self" : "other" });
       navigate("/", { replace: true });
     } catch (err) {
-      setError((err as Error)?.message || "That didn't save. Please try again.");
+      setError((err as Error)?.message || "That didn’t save. Please try again.");
     } finally {
       setBusy(false);
     }

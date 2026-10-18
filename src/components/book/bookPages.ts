@@ -187,7 +187,7 @@ export function voiceMinutes(memory: Memory): number {
 /** Where a memory came from, from what the data says; nothing is guessed. */
 export function sourceOf(story: Story, memory: Memory): Source | null {
   if (hasVoice(memory)) return { kind: "live", label: `Live conversation · ${voiceMinutes(memory)} min` };
-  if (memory.source === "memoir") return { kind: "memoir", label: `From ${story.name}'s memoir` };
+  if (memory.source === "memoir") return { kind: "memoir", label: `From ${story.name}’s memoir` };
   if (memory.contributor) return { kind: "family", label: "From the family" };
   return null;
 }

@@ -82,7 +82,7 @@ export default function BookPage({ page, side, teller }: { page: Page | null; si
         </p>
         <p className="sb-cv-date">{page.line}</p>
         {page.photos.length ? (
-          <div className={`sb-cv-collage${page.bw ? " bw" : ""}`} role="img" aria-label={`${teller}'s photographs`}>
+          <div className={`sb-cv-collage${page.bw ? " bw" : ""}`} role="img" aria-label={`${teller}’s photographs`}>
             {page.photos.slice(0, 3).map((u, i) => (
               <Print key={`${u}-${i}`} url={u} i={i} />
             ))}
@@ -339,7 +339,7 @@ export default function BookPage({ page, side, teller }: { page: Page | null; si
         {page.photos.length > 0 && (
           <div className={`sb-plate ${page.photos.length === 1 ? "one" : "many"}`}>
             {page.photos.slice(0, 4).map((u, i) => (
-              <Plate key={`${u}-${i}`} url={u} alt={`A photograph from ${teller}'s story`} />
+              <Plate key={`${u}-${i}`} url={u} alt={`A photograph from ${teller}’s story`} />
             ))}
           </div>
         )}
