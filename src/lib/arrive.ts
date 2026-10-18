@@ -88,17 +88,18 @@ export function riseIn(batch: HTMLElement[]): void {
 /**
  * Photographs develop as they come into view, and again whenever a new one
  * loads into the same frame (the memory page's large print changes when a
- * thumbnail is picked). The `develop` keyframe lives in CSS §20; the
- * class only starts it.
+ * thumbnail is picked). A GSAP opacity fade, not a CSS keyframe: the motion
+ * watchdog steps GSAP when the frame clock stalls, so a print can never be
+ * left half-developed (Bao's Standard rule 25). Opacity only.
  */
 function developPhotographs(root: HTMLElement): () => void {
   const photos = gsap.utils.toArray<HTMLImageElement>(root.querySelectorAll("img.rd-hero, .rd-strip img, img[data-develop]"));
   if (!photos.length) return () => {};
   const inView = new Set<HTMLImageElement>();
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const develop = (img: HTMLImageElement) => {
-    img.classList.remove("developing");
-    void img.offsetWidth; // restart the keyframe
-    img.classList.add("developing");
+    if (still) return;
+    gsap.fromTo(img, { opacity: 0.35 }, { opacity: 1, duration: 0.6, ease: OUT, overwrite: true, clearProps: "opacity" });
   };
   const onLoad = (e: Event) => {
     const img = e.currentTarget as HTMLImageElement;
@@ -123,7 +124,8 @@ function developPhotographs(root: HTMLElement): () => void {
     io.disconnect();
     photos.forEach((p) => {
       p.removeEventListener("load", onLoad);
-      p.classList.remove("developing");
+      gsap.killTweensOf(p, "opacity");
+      gsap.set(p, { clearProps: "opacity" });
     });
   };
 }
