@@ -155,3 +155,9 @@ The links for today's questions (`/write?q=…`) can stay as they are. Those are
 - **Drafts.** The only draft is `beeedb62…`, 370 characters before and after; I never opened it.
 - **What I didn't touch.** I didn't press Keep, the seal or any help button. I didn't sign out. I only checked that `astory-app-auth` was present.
 - **My tab.** I reset its viewport to desktop and closed it (tab-115).
+
+**Final verdict: APPLIED.** I checked P1 live after commit 8c95df1 (`Write.tsx:972`), in tab-119 at 1366×768:
+- **The route.** Ty's page → "Where was Ty born?" (`…&about=open-born-where`) → "Or something else, in your own words" (`/write?with=36cfd520…`).
+- **Where it lands.** "In your own words · with Ty" / "What would you like to keep today?".
+- **One click didn't take.** My first click on the row came before the page had finished arriving, and nothing happened. The second worked.
+- **Housekeeping.** I typed nothing and pressed nothing. The `beeedb62` draft is unchanged at 370 characters. I reset the tab's viewport and closed it.
