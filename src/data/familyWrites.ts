@@ -286,7 +286,7 @@ export async function inviteManager(input: { storyId: string; email: string; sto
   if (!to) return { ok: false, error: "Missing email." };
   const { error } = await supabase().from("story_managers").insert({ story_id: input.storyId, invited_email: to, role: "manager", status: "pending" });
   if (error && error.code !== "23505") {
-    if (error.code === "42501") return { ok: false, error: "Only the story's owner can invite people to it right now." };
+    if (error.code === "42501") return { ok: false, error: "Only the story’s owner can invite people to it right now." };
     return { ok: false, error: "Could not save the invite." };
   }
   // The email needs a six-letter code or the function refuses it (it used

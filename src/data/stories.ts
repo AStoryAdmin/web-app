@@ -194,13 +194,13 @@ export async function loadAccount(userId: string): Promise<Account> {
     .select("onboarding_complete, active_story_id")
     .eq("id", userId)
     .maybeSingle();
-  if (profileErr) throw new Error(`Couldn't load the account: ${profileErr.message}`);
+  if (profileErr) throw new Error(`We couldn’t load the account: ${profileErr.message}`);
 
   const { data: stories, error: storiesErr } = await sb
     .from("stories")
     .select(STORY_SELECT)
     .order("created_at", { ascending: true });
-  if (storiesErr) throw new Error(`Couldn't load the stories: ${storiesErr.message}`);
+  if (storiesErr) throw new Error(`We couldn’t load the stories: ${storiesErr.message}`);
 
   return {
     onboardingComplete: profile?.onboarding_complete ?? false,
@@ -212,6 +212,6 @@ export async function loadAccount(userId: string): Promise<Account> {
 /** One story, fresh, for a page that needs the latest copy (a memory just saved elsewhere). */
 export async function loadStory(storyId: string): Promise<Story | null> {
   const { data, error } = await supabase().from("stories").select(STORY_SELECT).eq("id", storyId).maybeSingle();
-  if (error) throw new Error(`Couldn't load the story: ${error.message}`);
+  if (error) throw new Error(`We couldn’t load the story: ${error.message}`);
   return data ? rowToStory(data as Row) : null;
 }

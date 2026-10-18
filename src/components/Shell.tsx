@@ -267,7 +267,9 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   const place = NAV.find((n) => (n.end ? path === n.to : path.startsWith(n.to)))?.label;
   const pageName = title ?? (path.startsWith("/account") ? "Account" : path.startsWith("/plans") ? "Plans" : path.startsWith("/talk") ? "Talk" : place ?? "");
   const bookName = book ?? (headStory ? (headStory.lastName ? `The ${headStory.lastName} book` : `${headStory.name}’s book`) : "A Story");
-  const runningHead = !busy && !path.startsWith("/write") && pageName !== "";
+  // the running head is part of the page's frame: it stands over the loading skeleton too (its words held back until the
+  // story is known), so the page never drops when it arrives
+  const runningHead = !path.startsWith("/write") && pageName !== "";
   // Each page has its own paper (docs/research/decoration-2026.md D13): laid for the day's pages, linen for the family,
   // a smooth plate for reading and the book, bond for the account and the writer.
   const paper = path === "/" || path === "/archive" ? "laid" : path.startsWith("/family") ? "linen" : path.startsWith("/archive/") || path.startsWith("/book") ? "plate" : "bond";
@@ -357,7 +359,7 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
         <span className="headband" aria-hidden="true" />
         {runningHead && (
           <p className="running-head-sheet" aria-hidden="true">
-            <span>{bookName}</span>
+            <span style={busy ? { visibility: "hidden" } : undefined}>{bookName}</span>
             <span className="rh-right">
               <span className="rh-page">{pageName}</span>
               <span className="rh-sec" />

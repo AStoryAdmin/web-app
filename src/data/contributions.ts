@@ -159,7 +159,7 @@ async function setStatus(id: string, status: "approved" | "rejected"): Promise<v
     .select("id");
   if (error) throw error;
   // Row-level security answers a refused update with no error and no rows.
-  if (!data?.length) throw new Error("That contribution couldn't be changed from this account.");
+  if (!data?.length) throw new Error("That contribution couldn’t be changed from this account.");
 }
 
 export const approveContribution = (id: string) => setStatus(id, "approved");

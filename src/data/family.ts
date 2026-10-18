@@ -152,9 +152,9 @@ export function duplicateFix(keep: Person, extra: Person, myStoryIds: string[]):
 export async function proposeStoryMerge(keep: string, fold: string): Promise<{ ok: true; done: boolean } | { ok: false; error: string }> {
   const { data, error } = await supabase().rpc("propose_story_merge", { keep, fold });
   if (error) {
-    if (missingFunction(error)) return { ok: false, error: "Merging stories isn't switched on for this family yet." };
+    if (missingFunction(error)) return { ok: false, error: "Merging stories isn’t switched on for this family yet." };
     if (error.code === "42501") return { ok: false, error: "Only the owner of one of these stories can ask." };
-    return { ok: false, error: "That didn't go through. Please try again." };
+    return { ok: false, error: "That didn’t go through. Please try again." };
   }
   return { ok: true, done: data === "done" };
 }
@@ -167,8 +167,8 @@ export async function proposeStoryMerge(keep: string, fold: string): Promise<{ o
 export async function mergePeople(keep: string, fold: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data, error } = await supabase().rpc("merge_people", { keep, fold });
   if (error) {
-    if (missingFunction(error)) return { ok: false, error: "Merging isn't switched on for this family yet." };
-    return { ok: false, error: "That didn't go through. Please try again." };
+    if (missingFunction(error)) return { ok: false, error: "Merging isn’t switched on for this family yet." };
+    return { ok: false, error: "That didn’t go through. Please try again." };
   }
   return data ? { ok: true } : { ok: false, error: "Only somebody who looks after both of them can merge them." };
 }
@@ -220,9 +220,9 @@ export async function listMyJoinRequests(userId: string): Promise<JoinRequest[]>
 export async function answerJoinRequest(id: string, yes: boolean): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data, error } = await supabase().rpc("answer_story_join", { rid: id, yes });
   if (error) {
-    if (missingFunction(error)) return { ok: false, error: "Answering isn't switched on for this family yet." };
+    if (missingFunction(error)) return { ok: false, error: "Answering isn’t switched on for this family yet." };
     if (error.code === "42501") return { ok: false, error: "Only a keeper of this story can answer." };
-    return { ok: false, error: "That didn't go through. Please try again." };
+    return { ok: false, error: "That didn’t go through. Please try again." };
   }
   return data ? { ok: true } : { ok: false, error: "That request was already answered." };
 }
@@ -231,9 +231,9 @@ export async function answerJoinRequest(id: string, yes: boolean): Promise<{ ok:
 export async function requestStoryJoin(storyId: string, myName: string): Promise<{ ok: true; already: boolean } | { ok: false; error: string }> {
   const { data, error } = await supabase().rpc("request_story_join", { sid: storyId, my_name: myName.slice(0, 60) });
   if (error) {
-    if (missingFunction(error)) return { ok: false, error: "Asking isn't switched on for this family yet." };
+    if (missingFunction(error)) return { ok: false, error: "Asking isn’t switched on for this family yet." };
     if (error.code === "42501") return { ok: false, error: "You can only ask to join a story kept in your own family. Ask them for their code instead." };
-    return { ok: false, error: "That didn't send. Please try again." };
+    return { ok: false, error: "That didn’t send. Please try again." };
   }
   return { ok: true, already: data === "already" };
 }
