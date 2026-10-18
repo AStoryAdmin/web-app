@@ -3881,3 +3881,6 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .sheet-page .more::after { font-size: 15px; }
 .home-mem .mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 760px) { .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* the loading placeholder's height under the page zoom */
+.sheet-page > .page[aria-busy="true"] { min-height: calc(40vh / var(--zoom, 1)); }
+.sheet-page > .page[aria-busy="true"] + .loading-mark { margin-top: calc(-40vh / var(--zoom, 1)); }
