@@ -277,7 +277,13 @@ function measure(plate: HTMLElement, links: PlateLink[]): Thread[] {
 function wraps(plate: HTMLElement): boolean {
   for (const row of plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) .tp-row")) {
     if (getComputedStyle(row).display === "grid") {
-      if (row.scrollWidth > row.clientWidth + 1) return true;
+      // a side whose faces need more room than its track (text running past a face's box doesn't count)
+      for (const zone of row.querySelectorAll<HTMLElement>(".tp-zone")) {
+        const kids = [...zone.children] as HTMLElement[];
+        const gap = parseFloat(getComputedStyle(zone).columnGap) || 0;
+        const need = kids.reduce((w, k) => w + k.offsetWidth, 0) + gap * Math.max(0, kids.length - 1);
+        if (need > zone.clientWidth + 1) return true;
+      }
       const left = row.querySelector<HTMLElement>(".tp-zone.left");
       const right = row.querySelector<HTMLElement>(".tp-zone.right");
       if (left && right && Math.abs(left.offsetWidth - right.offsetWidth) > 2) return true;
@@ -334,9 +340,10 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
       return y;
     };
     const fold = window.innerHeight / pageZoom() - 12;
-    // fitting the whole plate in the window never takes a small family below the middle size, nor a large one
-    // below the normal size: the youngest generation can take the scroll instead
-    const floor = Math.max(i, drawn <= 6 ? 1 : 2);
+    // Fitting the whole plate in the window never takes a small family below the middle size. A large family
+    // shrinks to fit on an ordinary screen, but on a big one (the page zoomed up, lib/zoom) it stays at the normal
+    // size and lets its youngest generation take the scroll: small faces on a big screen read as a mistake.
+    const floor = Math.max(i, drawn <= 6 ? 1 : pageZoom() > 1.15 ? 2 : SIZES.length - 1);
     const tiers = () => [...el.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf)")];
     const bottom = (t: HTMLElement | undefined) => (t ? docTop(t) + t.offsetHeight - parseFloat(getComputedStyle(t).paddingBottom || "0") : 0);
     const tooTall = () => bottom(tiers().pop()) > fold;

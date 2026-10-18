@@ -139,7 +139,7 @@
 .tp-threads path.dim { opacity: 0.22; }
 .tp-rail { position: absolute; left: 6px; top: 24px; bottom: 24px; width: 1.5px; background: var(--accent); opacity: 0.7; border-radius: 1px; pointer-events: none; }
 
-.tp-tier { position: relative; z-index: 1; display: grid; grid-template-columns: 184px minmax(0, 1fr); column-gap: 16px; padding-bottom: 22px; }
+.tp-tier { position: relative; z-index: 1; display: grid; grid-template-columns: 176px minmax(0, 1fr); column-gap: 16px; padding-bottom: 22px; }
 .tp-tier:last-child { padding-bottom: 0; }
 .tp-label { position: relative; padding: max(0px, calc(var(--pz) / 2 - 24px)) 0 0 30px; min-width: 0; }
 .tp-tier.home .tp-label { padding-top: calc(var(--pz-t) / 2 - 24px); }
@@ -162,7 +162,7 @@
 .tp-hint { margin: 6px 0 0; font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--ink-soft); }
 
 /* each tier in three parts; the centre is the storyteller's own line, so it sits on one axis all the way down */
-.tp-row { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); column-gap: 24px; align-items: start; min-width: 0; }
+.tp-row { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); column-gap: 20px; align-items: start; min-width: 0; }
 .tp-zone { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 16px 22px; min-width: 0; }
 .tp-zone.left { justify-content: flex-end; }
 .tp-zone.centre { justify-content: center; flex-wrap: nowrap; }
@@ -315,7 +315,7 @@
 .fp .chip:not(.big) { font: 500 var(--fz-small)/1 var(--font-ui); letter-spacing: 0; text-transform: none; min-height: 28px; }
 .sheet-page :is(.fp, .pp2) .field > span:first-child { font: 600 var(--fz-small)/1.4 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
 /* the family's dog, curious on the Invitations plate's top edge: someone new is coming (D11) */
-.fp-dog { position: absolute; right: 26px; bottom: calc(100% - 30px); z-index: 0; width: 112px; height: auto; pointer-events: none; user-select: none; }
+.fp-dog { position: absolute; right: 26px; bottom: calc(100% - 22px); z-index: 0; width: 112px; height: auto; pointer-events: none; user-select: none; }
 
 /* where to next: the shared component (components/book/WhereNext), given the room this page's rhythm wants */
 .page:is(.fp, .pp2) .where-next { margin-top: 88px; }
@@ -349,7 +349,7 @@
   .tp-face { margin-bottom: 10px; }
   .fp-keep { margin-top: 72px; }
   .fp-keep-cards { margin-top: 76px; }
-  .fp-dog { width: 96px; right: 18px; bottom: calc(100% - 26px); }
+  .fp-dog { width: 96px; right: 18px; bottom: calc(100% - 20px); }
   .fp-keep-col { padding: 24px 20px 20px; }
   .fp-codes li { grid-template-columns: minmax(0, 1fr) auto; }
   .fp-codes li .fp-quiet { grid-column: 1; }
@@ -452,7 +452,7 @@
 .pp2 .pp-more { margin-top: 18px; padding-left: 44px; }
 .pp-none { display: flex; align-items: flex-start; gap: 24px; padding: 20px 0 8px; }
 .pp-none p, .pp-missing p { margin: 10px 0 6px; max-width: 46ch; font-family: var(--book-body); font-size: var(--fz-words); line-height: 1.5; color: var(--sheet-ink); }
-.pp-dog { flex: none; width: 128px; margin-top: 4px; }
+.pp-dog { flex: none; width: 128px; height: auto; margin-top: 4px; }
 .pp-missing { display: flex; align-items: flex-start; gap: 24px; padding-top: 40px; padding-bottom: 80px; }
 .sheet-page .pp-missing h2 { margin: 0; font-size: var(--fz-section); }
 
