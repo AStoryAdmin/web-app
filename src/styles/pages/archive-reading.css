@@ -515,7 +515,6 @@
 .print-card .cap .dateline, .home-mem .print-card .cap .dateline, .arc-prints .print-card .cap .dateline { font-size: 13px; letter-spacing: 0.02em; font-variant-caps: normal; text-transform: none; }
 .print-card.typed .cap .kicker { color: var(--sage-ink); }
 .print-card.typed .cap .dateline.dated { color: var(--terracotta-ink); }
-.print-card .cue { font-size: 12px; }
 
 /* ═════════════════════════ The memory page at its edges: the kept line's sizes, the tidy note, the phone's tools, loading ═════════════════════════ */
 @media (min-width: 1680px) { .mv-kept { font-size: 26px; } }
@@ -639,5 +638,6 @@
   .home-side > .home-quote .fromthebook { height: 100%; box-sizing: border-box; align-content: center; }
 }
 
-/* a long memory title on a phone steps down a size, so every title holds two lines (DESIGN.md craft rules) */
-@media (max-width: 599px) { .sheet-page .page.mv h1.mv-title[data-long] { font-size: 27px; line-height: 1.12; } }
+/* a memory title on a phone holds two lines: MemoryLead fits it by measurement, 32px down to 22px; the treasured
+   seal after it scales with the type, so it never takes a line of its own */
+@media (max-width: 599px) { .mv-title .mv-seal { width: 1.15em !important; height: 1.15em !important; vertical-align: -0.12em; } }

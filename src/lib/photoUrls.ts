@@ -119,11 +119,15 @@ function requestRendition(bucket: string, path: string, width: number): Promise<
       cache.set(key, { url: data.signedUrl, expiresAt: Date.now() + SIGN_TTL_SECONDS * 1000 });
       return data.signedUrl;
     } catch (err) {
+      // a signing from before a sign-out answers nothing and changes nothing in the next session
+      if (gen !== generation) return null;
       console.warn("sign a smaller photo:", (err as Error)?.message || err);
       transformsOff = true;
       return original(bucket, path);
     }
-  }).finally(() => inflight.delete(key));
+  }).finally(() => {
+    if (inflight.get(key) === job) inflight.delete(key);
+  });
   inflight.set(key, job);
   return job;
 }

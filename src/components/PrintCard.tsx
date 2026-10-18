@@ -21,7 +21,7 @@ import { MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
 import { realChapter } from "./archive/photos";
 import Face from "./archive/Face";
-import { loadedRef, onLoaded, usePrintPhoto } from "./archive/develop";
+import { loadedRef, usePrintPhoto } from "./archive/develop";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { smarten } from "../lib/typography";
@@ -65,7 +65,7 @@ export default function PrintCard({
 }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
-  const { src: photo, frameRef, onError: onPhotoError } = usePrintPhoto(meta.photo);
+  const { src: photo, frameRef, onLoad: onPhotoLoad, onError: onPhotoError } = usePrintPhoto(meta.photo);
   const dated = meta.date !== "No date yet";
   const said = meta.photo ? "" : cardWords(memory);
   const people = (memory.personIds || [])
@@ -101,7 +101,7 @@ export default function PrintCard({
       <span className={`frame${marks ? " has-marks" : ""}`} aria-hidden="true" ref={frameRef}>
         {meta.photo ? (
           <>
-            <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onLoaded} onError={onPhotoError} />
+            <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onPhotoLoad} onError={onPhotoError} />
             <span className="veil" />
           </>
         ) : (

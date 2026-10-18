@@ -21,7 +21,7 @@ import { Avatar } from "./ui";
 import { LockIcon, MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
 import Face from "./archive/Face";
-import { loadedRef, onLoaded, usePrintPhoto } from "./archive/develop";
+import { loadedRef, usePrintPhoto } from "./archive/develop";
 import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
 import { smarten } from "../lib/typography";
@@ -37,7 +37,7 @@ const minutes = (memory: Memory) => {
 export default function MemoryCard({ memory, story, style, rise = true }: { memory: Memory; story: Story; style?: CSSProperties; /** Its own CSS arrival; off where the page’s scroll hook owns the entrance. */ rise?: boolean }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
-  const { src: photo, frameRef, onError: onPhotoError } = usePrintPhoto(meta.photo);
+  const { src: photo, frameRef, onLoad: onPhotoLoad, onError: onPhotoError } = usePrintPhoto(meta.photo);
   const tellerPhoto = usePhotoUrl(memory.contributor ? null : story.photo);
   const teller = memory.contributor ? memory.contributor.split(",")[0].trim() : story.name;
   const words = cardWords(memory);
@@ -53,7 +53,7 @@ export default function MemoryCard({ memory, story, style, rise = true }: { memo
       {isTreasured(memory) && <WaxSeal size={26} className="mem-seal" label="Treasured" />}
       {meta.photo && (
         <span className="print" aria-hidden="true" ref={frameRef}>
-          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onLoaded} onError={onPhotoError} />
+          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onPhotoLoad} onError={onPhotoError} />
           {meta.photoCount > 1 && <span className="n">+{meta.photoCount - 1}</span>}
         </span>
       )}

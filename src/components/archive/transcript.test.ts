@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { cleanSpeech, cleanTranscript, soundsSpoken } from "./transcript";
 
 describe("the clean transcript", () => {
-  it("drops fillers, stutters and false starts without rephrasing", () => {
-    expect(cleanSpeech("So I, so I took home um $50,000 and uh that lasted us for a year.")).toBe("So I took home $50,000 and that lasted us for a year.");
+  it("drops filler sounds and a slip word said twice, nothing else (closed list)", () => {
+    // a doubled phrase is not on the closed list: "so I, so I" stays; "I I" is a slip word said twice
+    expect(cleanSpeech("So I, so I took home um $50,000 and uh that lasted us for a year.")).toBe("So I, so I took home $50,000 and that lasted us for a year.");
     expect(cleanSpeech("I I went to New York City.")).toBe("I went to New York City.");
   });
 
@@ -39,15 +40,16 @@ describe("the kept line", () => {
 });
 
 describe("round three of the transcript rules", () => {
-  it("drops the throat-clearing at the start and a trailing but yeah", async () => {
+  it("drops the throat-clearing before the teller's first words, and a closing but yeah (closed list, a)", async () => {
     const { cleanSpeech } = await import("./transcript");
-    expect(cleanSpeech("Yeah well so my dad was an entrepreneur.")).toBe("My dad was an entrepreneur.");
+    expect(cleanSpeech("Yeah well so my dad was an entrepreneur.", { opening: true })).toBe("My dad was an entrepreneur.");
+    expect(cleanSpeech("Yeah well so my dad was an entrepreneur.")).toBe("Yeah well so my dad was an entrepreneur.");
     expect(cleanSpeech("So that doesn't count what my parents did, but yeah.")).toBe("So that doesn't count what my parents did.");
     expect(cleanSpeech("They won everything. Wow, that's amazing. So I'm like that too.")).toBe("They won everything. So I'm like that too.");
   });
-  it("lifts the other person’s question onto its own line, and keeps the answer", async () => {
-    const { cleanTranscript, ASKED } = await import("./transcript");
-    expect(cleanTranscript(["I won the challenge. Do they open to non-students as well? Yeah, definitely. They do."])).toEqual(["I won the challenge.", `${ASKED}Do they open to non-students as well?`, "Yeah, definitely. They do."]);
+  it("keeps a question in the teller's words, with its answer, unless the asker plainly goes on (closed list)", async () => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(["I won the challenge. Do they open to non-students as well? Yeah, definitely. They do."])).toEqual(["I won the challenge. Do they open to non-students as well? Yeah, definitely. They do."]);
   });
   it("breaks a block with no full stop before a clause word", async () => {
     const { splitRunOn } = await import("./transcript");
@@ -77,13 +79,13 @@ describe("a filler like", () => {
 });
 
 describe("round four of the transcript rules", () => {
-  it("punctuates a run-on by sense, drops filler like and a false start across a joining word", async () => {
+  it("punctuates a run-on by sense, and keeps every word not on the closed list", async () => {
     const { cleanSpeech } = await import("./transcript");
     const out = cleanSpeech(
       "I started my career as a middle school teacher so I taught like teenagers which is a five and then my so my mom did that and my dad was an entrepreneur and so I learned from him and he is just very connected",
     );
-    expect(out).not.toMatch(/\blike\b/);
-    expect(out).toContain("my mom did that");
+    expect(out).toContain("taught like teenagers");
+    expect(out).toContain("my so my mom did that");
     expect(out.split(". ").length).toBeGreaterThan(1);
     expect(out.endsWith("connected.")).toBe(true);
   });
@@ -110,9 +112,9 @@ describe("a card's words", () => {
 });
 
 describe("round five of the transcript rules", () => {
-  it("keeps a sentence said twice once, and keeps a clause that is not a true prefix (the ruling)", async () => {
+  it("keeps a sentence said twice, and keeps a clause that is not a true prefix (closed list)", async () => {
     const { cleanSpeech } = await import("./transcript");
-    expect(cleanSpeech("I was working a corporate job, the eSports job. I was working a corporate job. So I left.")).toBe("I was working a corporate job, the eSports job. So I left.");
+    expect(cleanSpeech("I was working a corporate job, the eSports job. I was working a corporate job. So I left.")).toBe("I was working a corporate job, the eSports job. I was working a corporate job. So I left.");
     expect(cleanSpeech("That's how we got, that's how we built the company.")).toBe("That's how we got, that's how we built the company.");
     expect(cleanSpeech("We went to, we went to the market.")).toBe("We went to the market.");
   });
@@ -129,9 +131,9 @@ describe("round five of the transcript rules", () => {
     expect(asked).toContain("Because our strategy right now");
     expect(out.filter((p) => !p.startsWith(ASKED)).join(" ")).not.toContain("our strategy");
   });
-  it("opens the words on the teller, not on a reply to an unseen question", async () => {
+  it("keeps a reply that opens the words: an answer stays (closed list)", async () => {
     const { cleanTranscript } = await import("./transcript");
-    expect(cleanTranscript(["No, I just lost my grandparents last year and it was really hard on all of us."])[0]).toMatch(/^I just lost/);
+    expect(cleanTranscript(["No, I just lost my grandparents last year and it was really hard on all of us."])[0]).toMatch(/^No, I just lost/);
   });
   it("gives every memory a whole takeaway, without its throat-clearing", async () => {
     const { takeaway } = await import("./transcript");
@@ -214,8 +216,10 @@ describe("round 7: tidying keeps what was meant", () => {
     expect(cleanSpeech("It cost like 300 dollars.")).toContain("like 300");
     expect(cleanSpeech("It cost like nothing back then.")).toContain("like nothing");
     expect(cleanSpeech("Investing in Michigan is like not non-existent.")).toContain("is like not non-existent");
-    // filler still goes
-    expect(cleanSpeech("I taught like teenagers in the city.")).toBe("I taught teenagers in the city.");
+    // not on the closed list: it stays
+    expect(cleanSpeech("I taught like teenagers in the city.")).toBe("I taught like teenagers in the city.");
+    // on it: before an intensifier, set off by commas
+    expect(cleanSpeech("It was like really hard.")).toBe("It was really hard.");
   });
   it("keeps 'like' before an amount in the real call", async () => {
     const { cleanTranscript } = await import("./transcript");
@@ -228,8 +232,8 @@ describe("round 7: tidying keeps what was meant", () => {
     expect(cleanSpeech("We tried again and again and finally it worked.")).toBe("We tried again and again and finally it worked.");
     expect(cleanSpeech("More and more and more people came.")).toBe("More and more and more people came.");
     expect(cleanSpeech("It got worse and worse and then she left.")).toBe("It got worse and worse and then she left.");
-    // a true stutter still goes
-    expect(cleanSpeech("I, I went home and he was, he was tired.")).toBe("I went home and he was tired.");
+    // a slip word said twice goes; a phrase said twice stays (closed list)
+    expect(cleanSpeech("I, I went home and he was, he was tired.")).toBe("I went home and he was, he was tired.");
   });
   it("never cuts a 'not just … but also' thought", async () => {
     const { cleanSpeech } = await import("./transcript");
@@ -280,7 +284,7 @@ export const RULING_FIXTURES: [string, string][] = [
   ["I felt like, I was alone", "I felt like, I was alone."],
   ["It was, like, the hardest thing I ever did", "It was the hardest thing I ever did."],
   // baos 10: stutters collapse to one, a run of three too; a doubling that means something stays whole
-  ["And then and then our engineers from El Salvador", "And then our engineers from El Salvador."],
+  ["And then and then our engineers from El Salvador", "And then and then our engineers from El Salvador."],
   ["We we we moved to Saigon", "We moved to Saigon."],
   ["no, no, no, you can't go", "No, no, no, you can't go."],
   // skills 2: a stammered conjunction collapses, and nothing before it is lost
@@ -360,7 +364,7 @@ export const RULE_17A_SPEECH: [string, string][] = [
   // still tidied: the true restart, the slip, the exact repeat
   ["So we did like a, we built an app", "We built an app."],
   ["I, I went home", "I went home."],
-  ["I was working a corporate job, the eSports job. I was working a corporate job. So I left.", "I was working a corporate job, the eSports job. So I left."],
+  ["I was working a corporate job, the eSports job. I was working a corporate job. So I left.", "I was working a corporate job, the eSports job. I was working a corporate job. So I left."],
 ];
 
 /** Round 9: answers and the teller's own questions, through the whole transcript. */
@@ -384,5 +388,207 @@ describe("round 9: rule 17a, every reviewer example", () => {
   it.each(RULE_17A_TRANSCRIPT)("%s", async (said, shown) => {
     const { cleanTranscript } = await import("./transcript");
     expect(cleanTranscript([said]).join(" ")).toBe(shown);
+  });
+});
+
+/**
+ * Round 10: the closed list (rule 17a, lead ruling of 2026-10-18, round 10). Every example from the round-9 reviews,
+ * with what the closed list leaves: everything that is not (a) to (e) stays, word for word.
+ */
+export const CLOSED_LIST_SPEECH: [string, string][] = [
+  // baos 2 / skills 1: the comparing and hedging "like" stays
+  ["We were like brothers.", "We were like brothers."],
+  ["We were like strangers after that.", "We were like strangers after that."],
+  ["It was like magic.", "It was like magic."],
+  ["It was like yesterday.", "It was like yesterday."],
+  ["I remember it like yesterday.", "I remember it like yesterday."],
+  ["We lived like kings.", "We lived like kings."],
+  ["They treated us like animals.", "They treated us like animals."],
+  ["The kitchen smelled like jasmine.", "The kitchen smelled like jasmine."],
+  ["It tasted like candy.", "It tasted like candy."],
+  ["She cooked like nobody else.", "She cooked like nobody else."],
+  ["Cities like Saigon were full.", "Cities like Saigon were full."],
+  ["They were like family to me, like brothers.", "They were like family to me, like brothers."],
+  ["Our village was like paradise", "Our village was like paradise."],
+  ["It was like heaven", "It was like heaven."],
+  ["It was like war", "It was like war."],
+  ["They were like children", "They were like children."],
+  ["We were like ghosts", "We were like ghosts."],
+  ["He was like Superman", "He was like Superman."],
+  ["It smelled like jasmine", "It smelled like jasmine."],
+  ["We fought like cats and dogs", "We fought like cats and dogs."],
+  ["We stayed like for a year", "We stayed like for a year."],
+  ["We walked like for hours", "We walked like for hours."],
+  ["I was like in my twenties", "I was like in my twenties."],
+  ["He came home like at six", "He came home like at six."],
+  ["We left like in 1975", "We left like in 1975."],
+  ["We waited like until midnight", "We waited like until midnight."],
+  ["It happened like right after the war", "It happened like right after the war."],
+  // baos 3: the quoting "like" stays
+  ["I'm like, why would you do that?", "I'm like, why would you do that?"],
+  ["We're like, let's go home.", "We're like, let's go home."],
+  ["My mom was just like, go home.", "My mom was just like, go home."],
+  ["He was all like, whatever.", "He was all like, whatever."],
+  ["I was kind of like, okay.", "I was kind of like, okay."],
+  // baos 5 / skills 2: doubles and refrains stay, unless a slip word
+  ["We had a big big house.", "We had a big big house."],
+  ["It was a tiny tiny room.", "It was a tiny tiny room."],
+  ["She was a sweet sweet girl.", "She was a sweet sweet girl."],
+  ["It was hot hot hot.", "It was hot hot hot."],
+  ["Never again. Never again.", "Never again. Never again."],
+  ["No. No. No.", "No. No. No."],
+  ["I loved her. I loved her.", "I loved her. I loved her."],
+  ["Thank you, thank you.", "Thank you, thank you."],
+  ["Every day, every day she called.", "Every day, every day she called."],
+  ["I miss her. I miss her.", "I miss her. I miss her."],
+  ["I'm sorry. I'm sorry.", "I'm sorry. I'm sorry."],
+  ["We were happy. We were happy.", "We were happy. We were happy."],
+  ["I love you, I love you", "I love you, I love you."],
+  ["So, so, so happy", "So, so, so happy."],
+  ["Okay, okay, I'll go", "Okay, okay, I'll go."],
+  // live 342e: a slip word said twice goes (c)
+  ["So that's, that's kind of why we chose to do that.", "So that's kind of why we chose to do that."],
+  // baos 6: a hedge before a time stays
+  ["We came here like in 1980.", "We came here like in 1980."],
+  ["It took like forever.", "It took like forever."],
+  ["It was like ages ago.", "It was like ages ago."],
+  // on the list, and removed
+  ["It was, like, the hardest thing I ever did", "It was the hardest thing I ever did."],
+  ["It was like really hard", "It was really hard."],
+  ["And like worked a corporate job", "And worked a corporate job."],
+  ["We um went to the uh market", "We went to the market."],
+  ["We we we moved to Saigon", "We moved to Saigon."],
+  ["So we did like a, we built an app", "We built an app."],
+  ["They won everything. Wow, that's amazing. She took home a lot.", "They won everything. She took home a lot."],
+];
+
+export const CLOSED_LIST_TRANSCRIPT: [string[], string[]][] = [
+  // baos 1: an answer that opens on "Because", "We were", "Our" is the teller's
+  [["We lived by the river. Why did your family leave Hanoi in 1954? Because the soldiers came for my father."], ["We lived by the river. Why did your family leave Hanoi in 1954? Because the soldiers came for my father."]],
+  [["What did your parents do for a living? We were rice farmers, all of us."], ["What did your parents do for a living? We were rice farmers, all of us."]],
+  [["What happened to the house after the war? Our cousins took it, and we never got it back."], ["What happened to the house after the war? Our cousins took it, and we never got it back."]],
+  [
+    ["Yeah so um we lived by the river. Why did your family leave Hanoi in 1954? Because the soldiers came for my father and we had one night to go. Yeah. I mean, I remember the boat."],
+    ["We lived by the river. Why did your family leave Hanoi in 1954? Because the soldiers came for my father and we had one night to go. I mean, I remember the boat."],
+  ],
+  // baos 4: the teller's own questions stay in their words
+  [["My father left us. What would become of us now? Nobody knew."], ["My father left us. What would become of us now? Nobody knew."]],
+  [["Who would take care of our children? My sister did."], ["Who would take care of our children? My sister did."]],
+  [["She died young. Why does God take the good ones? I still ask that."], ["She died young. Why does God take the good ones? I still ask that."]],
+  [["How do you forget something like that? You don't. You carry it."], ["How do you forget something like that? You don't. You carry it."]],
+  [["The war came. What could anyone do about it? Nothing. We waited."], ["The war came. What could anyone do about it? Nothing. We waited."]],
+  // skills 4: an answer across a paragraph break
+  [["Were you scared there?", "Yes. We had nothing."], ["Were you scared there?", "Yes. We had nothing."]],
+];
+
+describe("round 10: the closed list, every reviewer example", () => {
+  it.each(CLOSED_LIST_SPEECH)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+  it.each(CLOSED_LIST_TRANSCRIPT)("%s", async (said, shown) => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(said)).toEqual(shown);
+  });
+  it("sets 'We asked' in the 5963 shape only: the asker goes on, the teller answers with a back-channel", async () => {
+    const { cleanTranscript, ASKED } = await import("./transcript");
+    const { PITCH } = await import("./__fixtures__/calls");
+    const out = cleanTranscript(PITCH.split(/\n\s*\n/));
+    expect(out.filter((p) => p.startsWith(ASKED))).toEqual([
+      `${ASKED}Do they open to non-students as well? Because our strategy right now is we're going to find a student in schools around this area to partner with them with the competition and get some money.`,
+    ]);
+  });
+});
+
+/** The words of a text, lowercased, without punctuation: what the closed-list check compares. */
+const tokens = (s: string) => s.toLowerCase().replace(/[’]/g, "'").match(/[\p{L}\p{N}'-]+/gu) || [];
+/** Every word the closed list may remove: filler sounds and the opening, later and closing "yeah / so yeah / but yeah" (a), "like" (b), slip words (c), back-channel lines (e). */
+const REMOVABLE = new Set(
+  (
+    "um umm uh uhh er erm uhm hmm like yeah well okay ok so " +
+    "i you he she we they it me him her us them my our your his their its a an the and or but then because if " +
+    "that's it's i'm we're they're he's she's there's i've we've i'd you're i'll we'll was is " +
+    "yes yep yup right oh ah wait mm-hmm uh-huh for sure exactly totally definitely absolutely of course really true see got nice wow cool " +
+    "amazing awesome great incredible wild interesting fun were seriously huh"
+  ).split(/\s+/),
+);
+/** The words of `said` that `out` lost and the closed list does not name; and anything added or reordered. */
+function offList(said: string, out: string): string[] {
+  const a = tokens(said);
+  const b = tokens(out);
+  const removed: string[] = [];
+  let j = 0;
+  for (const w of a) {
+    if (b[j] === w) j++;
+    else removed.push(w);
+  }
+  if (j < b.length) removed.push(`(added or reordered: ${b.slice(j).join(" ")})`);
+  return removed.filter((w) => !REMOVABLE.has(w));
+}
+
+describe("round 10: nothing is removed except what the closed list names", () => {
+  const WIDE = [
+    "My grandmother always kept the lamp on for us when we came home late from school.",
+    "We were like brothers, and then the war came and took him.",
+    "I remember the smell of the market, like fish and jasmine and smoke.",
+    "She was like, you have to go home now, and I went.",
+    "We stayed like for a year in the camp before the boat.",
+    "It was a big, big house with a little garden, and we were happy there.",
+    "Never, never again would I see my father's face.",
+    "I wanted to, but I couldn't, because my mother needed me.",
+    "Why did I leave? Because there was nothing left for us.",
+    "Were you happy there? Yes. We were.",
+    "Um, so, we moved to Seattle and uh my husband started working.",
+    "And like worked a corporate job, the eSports job, for two years.",
+    "That's, that's kind of why we chose to do that.",
+    "We had like ten kids in one room, like literally ten.",
+    "He was like a really good fan of the team.",
+    "I love you, I love you, she said, and then she was gone.",
+    "Thank you, thank you, dad, for everything.",
+    "The first time I won, I've won every pitch competition I've been in.",
+    "We went faster and faster and then we stopped at the river.",
+    "No, no, no, you can't go.",
+  ];
+  it.each(WIDE)("%s", async (said) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(offList(said, cleanSpeech(said))).toEqual([]);
+  });
+  it("holds on the real calls and every fixture", async () => {
+    const { cleanTranscript, cleanSpeech } = await import("./transcript");
+    const { PITCH, GRANDPARENTS, FASTER } = await import("./__fixtures__/calls");
+    for (const call of [PITCH, GRANDPARENTS, FASTER]) {
+      const out = cleanTranscript(call.split(/\n\s*\n/)).join(" ").replace(/⁣/g, "");
+      expect(offList(call, out)).toEqual([]);
+    }
+    for (const [said] of [...CLOSED_LIST_SPEECH, ...RULE_17A_SPEECH, ...RULING_FIXTURES]) {
+      // (d) a restart removes its broken-off clause, the speaker's own restart: checked by its own fixture
+      if (/did like a, we built|went to, we went to/.test(said)) continue;
+      expect(offList(said, cleanSpeech(said))).toEqual([]);
+    }
+  });
+});
+
+/**
+ * Round 10, (a) extended: a "yeah," or "so yeah," opening a later sentence that is not answering a question goes, and
+ * so does a closing ", but yeah" or ", yeah". An answer keeps its "yeah".
+ */
+export const LATER_YEAH_SPEECH: [string, string][] = [
+  // the four live cases (5963, f6a7)
+  ["It's a global thing. Yeah, gaming and mental health, right?", "It's a global thing. Gaming and mental health, right?"],
+  ["I've taken just under $300,000. So that doesn't count what my parents did, but yeah.", "I've taken just under $300,000. So that doesn't count what my parents did."],
+  ["We built the company. Yeah, it was different though.", "We built the company. It was different though."],
+  ["It's a big firm. So yeah, if you heard of Miley Consulting, it's like a lifetime opportunity.", "It's a big firm. If you heard of Miley Consulting, it's like a lifetime opportunity."],
+  // a closing ", yeah"
+  ["We moved to Seattle that winter, yeah.", "We moved to Seattle that winter."],
+  // an answer keeps its yeah
+  ["Did you go? Yeah, I went.", "Did you go? Yeah, I went."],
+  ["Did you love her? Yeah, yeah.", "Did you love her? Yeah, yeah."],
+];
+
+describe("round 10: a later yeah, and a closing but yeah (closed list, a)", () => {
+  it.each(LATER_YEAH_SPEECH)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+    expect(offList(said, cleanSpeech(said))).toEqual([]);
   });
 });

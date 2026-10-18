@@ -9,7 +9,7 @@
  * under it, the others as small straight prints; a click opens it full
  * screen.
  */
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { Avatar } from "../ui";
@@ -17,6 +17,49 @@ import { realChapter } from "./photos";
 import WaxSeal from "./WaxSeal";
 import Face from "./Face";
 import type { Person } from "../../data/family";
+
+/** How many lines a block of text sets in: its boxes grouped by their middles, half a line apart (an inline seal sits a little higher than the words beside it). */
+function linesOf(el: HTMLElement): number {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const half = (parseFloat(getComputedStyle(el).lineHeight) || 30) / 2;
+  const mids = [...range.getClientRects()].filter((r) => r.width > 1).map((r) => (r.top + r.bottom) / 2).sort((a, b) => a - b);
+  let lines = 0;
+  let last = -Infinity;
+  for (const m of mids) {
+    if (m - last > half) lines++;
+    last = m;
+  }
+  return lines;
+}
+
+/**
+ * On a phone (below 600px) the title is fitted to two lines by measurement: from the page's 32px down a pixel at a
+ * time to a 22px floor (24px holds every title at 360px and up; the 280px column of a 320px phone needs 22px for the
+ * longest), after the fonts load and whenever the column changes. Above 600px the stylesheet's size stands.
+ */
+const FLOOR = 22;
+function useTwoLineTitle(ref: { current: HTMLElement | null }, title: string) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.fontSize = "";
+      if (!window.matchMedia("(max-width: 599px)").matches) return;
+      let size = Math.min(32, parseFloat(getComputedStyle(el).fontSize) || 32);
+      el.style.fontSize = `${size}px`;
+      while (linesOf(el) > 2 && size > FLOOR) {
+        size -= 1;
+        el.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    void document.fonts?.ready.then(fit);
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => fit());
+    ro?.observe(el.parentElement || el);
+    return () => ro?.disconnect();
+  }, [ref, title]);
+}
 
 export function MemoryHead({
   title,
@@ -54,6 +97,8 @@ export function MemoryHead({
   treasured?: boolean;
 }) {
   const pill = realChapter(chapter);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useTwoLineTitle(titleRef, title);
   return (
     <header className="mv-head" data-rise>
       {pill && (
@@ -61,7 +106,7 @@ export function MemoryHead({
           <span className="mv-pill">{pill}</span>
         </div>
       )}
-      <h1 className="mv-title" id="mv-title" data-long={title.length > 52 ? "" : undefined}>
+      <h1 className="mv-title" id="mv-title" ref={titleRef}>
         {title}
         {/* the house full stop in foil (Bao's Standard rule 33), ornament only: never after a title that already ends on
             its own punctuation ("What did Nhi teach you to do?"); prints and cards, captions in a set, carry none */}
