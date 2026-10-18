@@ -720,7 +720,7 @@
    alone reserves nothing on this root (measured: 1366 stays 1366, whatever overflow-x is), so the track is kept; it
    takes the page's own colours, a soft thumb on a clear track. A page that locks its scroll (the sign-in ritual, the
    front door's book) has no bar to keep room for, so the cloth reaches the window's edge. */
-:where(html):not(:has(.auth.ritual, .door[data-layout="book"])) { overflow-y: scroll; scrollbar-gutter: stable; }
+:where(html:not(:has(.auth.ritual, .door[data-layout="book"]))) { overflow-y: scroll; scrollbar-gutter: stable; }
 :where(html) { scrollbar-color: color-mix(in srgb, var(--ink-soft) 55%, transparent) transparent; }
 /* a phone: a person's subline runs inline as one line of text (each part kept whole), so its height never depends on
    how many parts a person has; and the Archive's three figures keep one row, their labels wrapping inside their own
