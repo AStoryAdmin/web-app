@@ -82,7 +82,9 @@
 @media (hover: none) { .auth .lamp, .door .lamp { display: none; } }
 
 /* ───────────────────────── 1. The book frame ───────────────────────── */
-.auth .spread-wrap { padding-top: clamp(80px, calc(9.5vh / var(--zoom)), 108px); padding-bottom: clamp(40px, calc(5vh / var(--zoom)), 60px); }
+.auth .spread-wrap { padding-top: clamp(80px, calc(9.5vh / var(--zoom)), 108px); padding-bottom: clamp(40px, calc(5vh / var(--zoom)), 60px); padding-left: clamp(12px, calc(2.5vw / var(--zoom)), 48px); padding-right: clamp(12px, calc(2.5vw / var(--zoom)), 48px); }
+/* the blind-tooled frame on the cloth, measured against the zoom like everything else (rule 12) */
+.auth.ritual::after { inset: clamp(10px, calc(1.6vw / var(--zoom)), 28px); }
 .auth .keepsake, .auth .tp-mark, .auth .tp-folio { display: none !important; }
 /* the book is exactly its design size before it is scaled: content can never change it (bookFit) */
 .auth .spread.scaled { width: 1440px; height: 720px; aspect-ratio: auto; }
