@@ -49,6 +49,21 @@ export function atmosphere(root: HTMLElement): () => void {
   const toY = ribbon && window.matchMedia(MOTION_OK).matches ? gsap.quickTo(ribbon, "y", { duration: 0.6, ease: OUT }) : null;
   let shown = "";
 
+  // the book's name steps aside only when it, the name on the right (the section's, or the page's at the top) and a 24px
+  // gap don't fit the band: measured, so a long book name or a long section name is never clipped, at any width
+  const book = head.firstElementChild as HTMLElement | null;
+  const page = head.querySelector<HTMLElement>(".rh-page");
+  const fitHead = () => {
+    if (!book || book === sec.parentElement) return;
+    const pad = getComputedStyle(head);
+    const room = head.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight);
+    head.classList.toggle("tight", book.scrollWidth + 24 + sec.scrollWidth > room);
+    head.classList.toggle("tight-page", !!page && book.scrollWidth + 24 + page.scrollWidth > room);
+  };
+  const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fitHead);
+  ro?.observe(head);
+  if (book) ro?.observe(book);
+
   const update = () => {
     const z = pageZoom();
     const rect = sheet.getBoundingClientRect();
@@ -73,14 +88,17 @@ export function atmosphere(root: HTMLElement): () => void {
     if (current !== shown) {
       shown = current;
       if (current) sec.textContent = current;
+      fitHead();
       head.classList.toggle("in-section", Boolean(current));
     }
   };
 
   const st = ScrollTrigger.create({ trigger: sheet, start: "top bottom", end: "bottom top", onUpdate: update, onRefresh: update });
+  fitHead();
   update();
   return () => {
     st.kill();
-    head.classList.remove("stuck", "in-section");
+    ro?.disconnect();
+    head.classList.remove("stuck", "in-section", "tight", "tight-page");
   };
 }

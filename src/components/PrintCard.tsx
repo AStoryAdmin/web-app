@@ -27,8 +27,9 @@ import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { smarten } from "../lib/typography";
 import { cardWords } from "../lib/memoryDisplay";
-import { markSeen, newFromLine, seenCount } from "../lib/seenSides";
+import { markSeen, newFromLine, newSides, seenCount } from "../lib/seenSides";
 import type { Contribution } from "../data/contributions";
+import type { Person } from "../data/family";
 import type { Memory, Story } from "../data/stories";
 
 export type PrintSize = "lead" | "tall";
@@ -48,49 +49,118 @@ function freshness(memory: Memory, now = new Date()): string | null {
   return null;
 }
 
-/** "New from Bao Ngo Gia Vo" → "New from Bao": the phone's cue, first names only (the full line is in the card's name). */
-function firstNames(line: string): string {
-  const who = line.replace(/^New from /, "").split(" and ");
-  return `New from ${who.map((n) => (n === "the family" || /^\d+ others$/.test(n) ? n : n.split(/\s+/)[0])).join(" and ")}`;
-}
-
-/** The type steps a typed print's words take on the smallest phones, size and ruled line, until they fit its 3:4. */
-const FIT_STEPS: [number, number][] = [[15, 21], [14, 20], [13.5, 19], [13, 18]];
-const SMALLEST = "(max-width: 359.98px)";
+/** A folded name, for matching a side's name to a person in the family. */
+const fold = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 
 /**
- * Below 360px a typed print's words are never clamped: they step down to fit the print at its 3:4, as the titles do,
- * and only when they still do not fit at 13px does the print grow (its row's prints grow with it, level).
+ * The phone's cue, "New from Lan": each new side by its writer's given name, from the family (the person the side is
+ * linked to, or the one whose full name it carries, in either order). Never the first word of a full name: "Nguyen Thi
+ * Lan" is "Lan", and a name the family doesn't know stays whole. The card's accessible name carries the full line.
  */
-function useFitWords(text: string) {
+function newFromGiven(sides: Contribution[], seen: number, people: Person[]): string | null {
+  const fresh = newSides(sides, seen);
+  if (!fresh.length) return null;
+  const given = (c: Contribution) => {
+    const full = (c.contributorName || "").split(",")[0].trim();
+    const linked = c.personId ? people.find((p) => p.id === c.personId) : undefined;
+    const named = linked ?? people.find((p) => p.givenName && [`${p.givenName} ${p.familyName}`, `${p.familyName} ${p.givenName}`].some((n) => fold(n) === fold(full)));
+    return named?.givenName?.trim() || full;
+  };
+  const names = [...new Set(fresh.map(given).filter(Boolean))];
+  if (!names.length) return "New from the family";
+  if (names.length === 1) return `New from ${names[0]}`;
+  if (names.length === 2) return `New from ${names[0]} and ${names[1]}`;
+  return `New from ${names[0]} and ${names.length - 1} others`;
+}
+
+/** The type steps a typed print's words take on a phone, size and ruled line, until they fit its 3:4. */
+const FIT_STEPS: [number, number][] = [[15, 21], [14, 20], [13.5, 19], [13, 18]];
+const PHONE = "(max-width: 760.98px)";
+
+/**
+ * On a phone a typed print's words are never clamped: they step down to fit the print at its 3:4, as the titles do, and
+ * only when they still do not fit at 13px does the print grow (its row's prints grow with it, level). Every typed print
+ * on the page is fitted in one pass: each step is written to all the prints still waiting, then all are read, so a pass
+ * costs at most four layouts however many prints there are. One ResizeObserver and one media query start a pass.
+ */
+const fitting = new Set<HTMLElement>();
+let fitQueued = false;
+const fitWidths = new WeakMap<HTMLElement, number>();
+let fitRO: ResizeObserver | null = null;
+let fitMQ: MediaQueryList | null = null;
+
+/** The height a typed print's content needs: the cue in the flow, the words with their padding, and the caption. */
+function fitNeed(frame: HTMLElement): number {
+  const inner = frame.querySelector<HTMLElement>(".typed-in");
+  const words = frame.querySelector<HTMLElement>(".said");
+  const cap = frame.querySelector<HTMLElement>(".cap");
+  const cues = frame.querySelector<HTMLElement>(":scope > .cues");
+  if (!inner || !words || !cap) return 0;
+  const box = getComputedStyle(inner);
+  let need = parseFloat(box.paddingTop) + parseFloat(box.paddingBottom) + words.offsetHeight + cap.offsetHeight;
+  if (cues && getComputedStyle(cues).position !== "absolute") need += cues.offsetHeight + parseFloat(getComputedStyle(cues).marginTop);
+  return need;
+}
+
+function fitPass() {
+  fitQueued = false;
+  const frames = [...fitting].filter((f) => f.isConnected);
+  for (const f of frames) {
+    f.style.removeProperty("--said-size");
+    f.style.removeProperty("--lh");
+  }
+  if (!fitMQ?.matches) return;
+  let waiting = frames;
+  for (const [size, lh] of FIT_STEPS) {
+    for (const f of waiting) {
+      f.style.setProperty("--said-size", `${size}px`);
+      f.style.setProperty("--lh", `${lh}px`);
+    }
+    waiting = waiting.filter((f) => fitNeed(f) > (f.offsetWidth * 4) / 3 + 0.5);
+    if (!waiting.length) break;
+  }
+  for (const f of frames) fitWidths.set(f, f.offsetWidth);
+}
+
+/** Queue one pass for everything registered: it runs before the next paint. */
+function queueFit() {
+  if (fitQueued) return;
+  fitQueued = true;
+  queueMicrotask(fitPass);
+}
+
+function startFitting() {
+  if (fitMQ || typeof window.matchMedia !== "function") return;
+  fitMQ = window.matchMedia(PHONE);
+  fitMQ.addEventListener?.("change", queueFit);
+  fitRO =
+    typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver((entries) => {
+          if (entries.some((e) => fitWidths.get(e.target as HTMLElement) !== (e.target as HTMLElement).offsetWidth)) queueFit();
+        });
+  document.fonts?.ready.then(queueFit).catch(() => {});
+}
+
+/** Registers a typed print for the fit; it re-fits when its words, cue, date or chapter change. */
+function useFitWords(text: string, ...also: unknown[]) {
   const said = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
-    const words = said.current;
-    const frame = words?.closest<HTMLElement>(".frame");
-    const inner = words?.parentElement;
-    const cap = frame?.querySelector<HTMLElement>(".cap");
-    if (!text || !words || !frame || !inner || !cap || typeof window.matchMedia !== "function") return;
-    const mq = window.matchMedia(SMALLEST);
-    const clear = () => { frame.style.removeProperty("--lh"); frame.style.removeProperty("--said-size"); };
-    const fit = () => {
-      clear();
-      if (!mq.matches) return;
-      const room = (frame.offsetWidth * 4) / 3;
-      const pad = parseFloat(getComputedStyle(inner).paddingTop) + parseFloat(getComputedStyle(inner).paddingBottom);
-      for (const [size, lh] of FIT_STEPS) {
-        frame.style.setProperty("--said-size", `${size}px`);
-        frame.style.setProperty("--lh", `${lh}px`);
-        if (pad + words.offsetHeight + cap.offsetHeight <= room + 0.5) return;
-      }
+    const frame = said.current?.closest<HTMLElement>(".frame");
+    if (!text || !frame) return;
+    startFitting();
+    fitting.add(frame);
+    fitRO?.observe(frame);
+    queueFit();
+    return () => {
+      fitting.delete(frame);
+      fitRO?.unobserve(frame);
+      fitWidths.delete(frame);
+      frame.style.removeProperty("--said-size");
+      frame.style.removeProperty("--lh");
     };
-    fit();
-    let width = frame.offsetWidth;
-    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => { if (frame.offsetWidth !== width) { width = frame.offsetWidth; fit(); } });
-    ro?.observe(frame);
-    mq.addEventListener?.("change", fit);
-    document.fonts?.ready.then(fit).catch(() => {});
-    return () => { ro?.disconnect(); mq.removeEventListener?.("change", fit); clear(); };
-  }, [text]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, ...also]);
   return said;
 }
 
@@ -133,7 +203,8 @@ export default function PrintCard({
   if (memory.audio?.length) cues.push("mic");
   const show = new Set(cues.slice(0, 3));
   const marks = show.has("faces") || show.has("mic");
-  const saidRef = useFitWords(said);
+  const shortLine = show.has("new") ? newFromGiven(sides, seenCount(memory.id), family?.people ?? []) : null;
+  const saidRef = useFitWords(said, show.has("new"), shortLine, dated, meta.date, meta.chapter, meta.title);
 
   return (
     <Link
@@ -168,7 +239,7 @@ export default function PrintCard({
               <span className="cue new">
                 <i className="dot" />
                 <span className="cue-long">{newLine}</span>
-                <span className="cue-short">{newLine && firstNames(newLine)}</span>
+                <span className="cue-short">{shortLine}</span>
               </span>
             )}
             {show.has("fresh") && <span className="cue fresh">{fresh}</span>}
