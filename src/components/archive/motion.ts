@@ -4,9 +4,10 @@
  * under prefers-reduced-motion nothing here runs at all - the CSS already
  * collapses the rest to a crossfade.
  */
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
 import { belowFold, onEnter, riseIn } from "../../lib/arrive";
+import { OUT } from "../../lib/ease";
 
 const MOTION_OK = "(prefers-reduced-motion: no-preference)";
 
@@ -54,8 +55,8 @@ export function prefersReducedMotion(): boolean {
 }
 
 /**
- * Elements marked `data-arrive` under `ref` rise 10px into place, staggered
- * 60ms, whenever `key` changes (a new filter, a new page).
+ * Elements marked `data-arrive` under `ref` and in view rise 10px into
+ * place, staggered 60ms, whenever `key` changes (a new page or view).
  */
 export function useArrive(ref: RefObject<HTMLElement | null>, key: unknown) {
   useEffect(() => {
@@ -63,9 +64,10 @@ export function useArrive(ref: RefObject<HTMLElement | null>, key: unknown) {
     if (!root) return;
     const mm = gsap.matchMedia();
     mm.add(MOTION_OK, () => {
-      const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll("[data-arrive]"));
+      // only what is in view now; what is below waits for useRiseOnScroll / useInkIn, so one hook owns each entrance
+      const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll("[data-arrive]")).filter((el) => !belowFold(el));
       if (!items.length) return;
-      gsap.fromTo(items, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.06, clearProps: "transform,opacity" });
+      gsap.fromTo(items, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: OUT, stagger: 0.06, clearProps: "transform,opacity" });
     });
     return () => mm.revert();
   }, [ref, key]);
@@ -145,12 +147,34 @@ export function useInkIn(ref: RefObject<HTMLElement | null>, key: unknown) {
           h.classList.add("inked");
         });
         const inks = batch.flatMap((h) => Array.from(h.children) as HTMLElement[]);
-        gsap.fromTo(inks, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.05, clearProps: "transform,opacity" });
+        gsap.fromTo(inks, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, ease: OUT, stagger: 0.05, clearProps: "transform,opacity" });
       });
       return () => {
         stop();
         heads.forEach((h) => h.classList.remove("will-ink", "inked"));
       };
+    });
+    return () => mm.revert();
+  }, [ref, key]);
+}
+
+/**
+ * A filter changed: the list does not arrive all over again (seen tens of
+ * times a visit), it crossfades in 150ms. Skips the first render, which
+ * the arrival owns. Opacity only, from a visible 0.35, never from nothing.
+ */
+export function useCrossfade(ref: RefObject<HTMLElement | null>, key: unknown) {
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const mm = gsap.matchMedia();
+    mm.add(MOTION_OK, () => {
+      gsap.fromTo(el, { opacity: 0.35 }, { opacity: 1, duration: 0.15, ease: OUT, clearProps: "opacity" });
     });
     return () => mm.revert();
   }, [ref, key]);

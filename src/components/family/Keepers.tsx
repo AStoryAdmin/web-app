@@ -55,7 +55,7 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
   return (
     <section className="card keepers" aria-label={`Who can edit ${story.name}'s story`}>
       <h2>Who can edit {story.name}'s story</h2>
-      <p className="meta">You, and the people here. Being in the family tree is a different thing: the tree reads and adds, keepers change.</p>
+      <p className="meta">Keepers can change the story; the family tree reads and adds.</p>
       <ul className="keeperlist">
         {list?.map((m) => (
           <li key={m.id}>

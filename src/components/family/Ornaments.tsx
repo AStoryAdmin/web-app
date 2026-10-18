@@ -2,12 +2,11 @@
  * The book-arts pieces the Family and person pages use (docs/research/
  * decoration-2026.md): the family's initial in a foil cartouche beside its
  * name (D17), the postmark on a line that arrived from somebody in the
- * family (D18), the pressed fern beside the family's name (D19, shown only
- * once the founder's asset is in public/deco), and "Where to next" at the
- * foot of the page (BAOS §38). All decoration is aria-hidden and never
+ * family (D18), and "Where to next" at the foot of the page (BAOS §38).
+ * The pressed fern beside the family's name (D19) waits for the founder's
+ * asset in public/deco; nothing requests it until then. All decoration is aria-hidden and never
  * takes a pointer.
  */
-import { useState } from "react";
 import { Link } from "react-router-dom";
 
 /** D17: the family's initial, blocked in foil inside an oval, as a stationer would. */
@@ -41,11 +40,22 @@ export function Postmark({ iso }: { iso: string }) {
   );
 }
 
-/** D19: a pressed fern frond beside the family's name; nothing at all until the asset exists. */
-export function PressedFern() {
-  const [gone, setGone] = useState(false);
-  if (gone) return null;
-  return <img className="orn-pressed" src="/deco/pressed-fern.webp" alt="" aria-hidden="true" onError={() => setGone(true)} />;
+/** The foil star that sits on a section's rule (the samples' ✦), drawn rather than typed. */
+export function Star({ className = "orn-star" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+      <path d="M7 0C7.6 4.6 9.4 6.4 14 7 9.4 7.6 7.6 9.4 7 14 6.4 9.4 4.6 7.6 0 7 4.6 6.4 6.4 4.6 7 0Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** The leaf fleuron that closes a person's own words (D9). */
+export function Leaf({ className = "pp-leaf" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2 14C2 7 6.5 2.5 14 2c-.4 7.4-5 12-12 12Zm0 0 7-7" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 export type Next = { to: string; title: string; line: string };
@@ -64,7 +74,9 @@ export function WhereNext({ items }: { items: Next[] }) {
               <span className="wn-t">{n.title}</span>
               <span className="wn-l">{n.line}</span>
               <span className="wn-a" aria-hidden="true">
-                →
+                <svg viewBox="0 0 18 18" focusable="false">
+                  <path d="M3 9h12m-5-5 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </span>
             </Link>
           </li>

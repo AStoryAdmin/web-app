@@ -179,8 +179,7 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
           The recording couldn't be loaded ({failed}).{" "}
           <button
             type="button"
-            className="btn quiet sm"
-            style={{ display: "inline-flex", minHeight: 36, padding: "0 10px" }}
+            className="mv-retry"
             onClick={() => {
               setFailed(null);
               setUrls(null);

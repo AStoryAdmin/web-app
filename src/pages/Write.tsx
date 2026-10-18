@@ -28,7 +28,8 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { firstName, personName, realPeople, storytellerOf } from "../components/family/familyView";
 import gsap from "gsap";
 import Shell from "../components/Shell";
-import { Avatar, ButtonLink, Problem } from "../components/ui";
+import WhereNext, { Stop, type NextRow } from "../components/book/WhereNext";
+import { Avatar, Problem } from "../components/ui";
 import { CheckIcon, CloseIcon, ExpandIcon, HelpIcon, MicIcon, PenIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -43,6 +44,7 @@ import { dailyPromptsLeft, incrementDailyPrompts, weeklyPhotosLeft, incrementWee
 import { usePhotoUrl } from "../lib/photoUrls";
 import { useDictation } from "../lib/dictation";
 import { inkStamp } from "../lib/stamp";
+import { MOVE, OUT } from "../lib/ease";
 import { track } from "../lib/analytics";
 import type { Memory, Story } from "../data/stories";
 
@@ -69,17 +71,18 @@ function questionDraft(storyId: string, questionId: string): Partial<Draft> | nu
   return legacy && legacy.questionId === questionId ? legacy : null;
 }
 
-/** Sentence starters for an empty page: the question's own hint first, then the ones that work for anything. */
-function startersFor(question: Prompt | null, own: boolean): string[] {
-  const generic = own
-    ? ["It was the year ", "We were living in ", "I remember the smell of ", "The first thing I'd tell you is "]
+/** Sentence starters for an empty page (the question's hint is an instruction, so it stays under the question, not here). */
+function startersFor(own: boolean): string[] {
+  return own
+    ? ["It was the year ", "We were living in ", "I remember the smell of ", "The first thing I’d tell you is "]
     : ["They were living in ", "It was the year ", "The way it was told to me, ", "What I remember most is "];
-  const fromQ = question?.hint ? [question.hint.replace(/[.?!]\s*$/, "") + " "] : [];
-  return [...fromQ, ...generic].slice(0, 4);
 }
 
 const LINE = 36;
-const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+const shortDate = (d = new Date()) => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+/** The catch-all chapter is never printed as a chapter's name. */
+const CATCH_ALL = "Anything else";
+const chapterName = (era?: string | null) => (era && era !== CATCH_ALL ? era : "");
 /** The part of the day, for the running head: the page knows when it is being written. */
 const partOfDay = (d = new Date()) => {
   const h = d.getHours();
@@ -113,7 +116,7 @@ function Dog({ awake }: { awake: boolean }) {
   return (
     <span className="w-dog" data-awake={awake ? "" : undefined} aria-hidden="true">
       <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={762} height={640} decoding="async" />
-      <img className="awake" src="/dog/peek.png" alt="" width={790} height={640} decoding="async" />
+      <img className="awake" src="/dog/cover-paper.webp" alt="" width={849} height={640} decoding="async" />
     </span>
   );
 }
@@ -176,11 +179,13 @@ function KeptPage({ story, kept, number }: { story: Story; kept: Memory; number:
     <figure className="w-kept" aria-label={`Memory No. ${number}, as it is in the book`}>
       <div className="w-kept-page">
         <span className="page-frame" aria-hidden="true" />
-        <p className="w-kept-head" aria-hidden="true">
-          <span>{kept.era || "Anything else"}</span>
-          <i>✦</i>
-          <span>{kept.period || `No. ${number}`}</span>
-        </p>
+        {(chapterName(kept.era) || kept.period) && (
+          <p className="w-kept-head" aria-hidden="true">
+            {chapterName(kept.era) && <span>{chapterName(kept.era)}</span>}
+            {chapterName(kept.era) && kept.period && <i>✦</i>}
+            {kept.period && <span>{kept.period}</span>}
+          </p>
+        )}
         <h2 className="w-kept-title">{kept.title}</h2>
         <p className="w-kept-words">{kept.body}</p>
         <p className="w-kept-sign" aria-hidden="true">
@@ -304,8 +309,14 @@ function Afterwards({
   const togglePerson = (id: string) => keep({ personIds: there.includes(id) ? there.filter((x) => x !== id) : [...there, id] });
 
   const deck = todaysDeck(story, { unlimited });
-  const remaining = deck.filter((p) => p.id !== question?.id).length;
   const next = deck.find((p) => p.id !== question?.id) || null;
+  const nextRows: NextRow[] = [
+    next && !editing
+      ? { to: `/write?q=${encodeURIComponent(next.id)}`, title: next.question, line: unlimited ? "Another of today’s questions" : "The next of today’s questions" }
+      : { to: "/write", title: "Write another", line: editing ? "The changes are in the book" : "Today’s questions are answered; anything else is welcome" },
+    { to: `/archive/${kept.id}`, title: `Read memory No. ${number}`, line: "As it is set in the book" },
+    { to: "/", title: "Home", line: "Today, the week and the family" },
+  ];
 
   const whenBlock = (
     <div className="w-choice" key="when">
@@ -388,7 +399,8 @@ function Afterwards({
           <header className="w-choices-head">
             <div>
               <h2 id="after-h">
-                A few more things, if you like<span className="w-stop">.</span>
+                A few more things, if you like
+                <Stop />
               </h2>
               <p className="w-note">Each is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
             </div>
@@ -406,31 +418,7 @@ function Afterwards({
         </section>
       </div>
 
-      <section className="w-next" aria-label="What next">
-        <div className="w-next-words">
-          {next && !editing ? (
-            <>
-              <p className="w-kick">{unlimited ? "There’s time for another" : `${remaining} more ${remaining === 1 ? "question" : "questions"} today`}</p>
-              <p className="w-next-q">{next.question}</p>
-            </>
-          ) : (
-            <p className="w-next-q">{editing ? "The changes are in the book." : "That’s today’s questions. Three new ones in the morning."}</p>
-          )}
-        </div>
-        <div className="w-next-acts">
-          {next && !editing && (
-            <ButtonLink to={`/write?q=${encodeURIComponent(next.id)}`} icon={<PenIcon />}>
-              Answer it
-            </ButtonLink>
-          )}
-          <ButtonLink to={`/archive/${kept.id}`} variant={next && !editing ? "outline" : "primary"}>
-            Read memory No. {number}
-          </ButtonLink>
-          <ButtonLink to="/" variant="quiet">
-            Home
-          </ButtonLink>
-        </div>
-      </section>
+      <WhereNext rows={nextRows} />
     </div>
   );
 }
@@ -501,6 +489,16 @@ function Writer({ story }: { story: Story }) {
   const sealRef = useRef<HTMLButtonElement>(null);
   const bookRef = useRef<HTMLDivElement>(null);
   const deskRef = useRef<HTMLDivElement>(null);
+  // the keep's timers and its tween, cleared if the writer goes away mid-press
+  const timers = useRef<number[]>([]);
+  const pressCtx = useRef<gsap.Context | null>(null);
+  useEffect(
+    () => () => {
+      timers.current.forEach((t) => window.clearTimeout(t));
+      pressCtx.current?.revert();
+    },
+    [],
+  );
 
   const set = useCallback((patch: Partial<Draft>) => setD((prev) => ({ ...prev, ...patch })), []);
   // the open journal needs a laptop's width; the margin beside it a large window's
@@ -605,16 +603,16 @@ function Writer({ story }: { story: Story }) {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const blank = { clipPath: "inset(-30% 100% -30% 0)" };
-      const inked = { clipPath: "inset(-30% 0% -30% 0)", ease: "power2.inOut", clearProps: "clipPath" };
+      const inked = { clipPath: "inset(-30% 0% -30% 0)", ease: MOVE, clearProps: "clipPath" };
       const margins = desk.querySelectorAll<HTMLElement>(".w-side > *, .leaf-left > :not(.page-frame), .w-tools-row");
       gsap
-        .timeline({ delay: 0.2, defaults: { ease: "power3.out" } })
-        .fromTo(book, { y: 22, rotation: -0.5, opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.8, clearProps: "transform,opacity" })
-        .fromTo(book.querySelectorAll(".running-head"), blank, { ...inked, duration: 0.7 }, "-=0.35")
-        .fromTo(book.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.8 }, "-=0.4")
+        .timeline({ defaults: { ease: OUT } })
+        .fromTo(book, { y: 22, rotation: -0.5, opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.7, clearProps: "transform,opacity" })
+        .fromTo(book.querySelectorAll(".running-head"), blank, { ...inked, duration: 0.55 }, 0.25)
+        .fromTo(book.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.6 }, 0.4)
         // the ribbon's tail swings once and hangs still, as it does when a book is laid open
-        .fromTo(book.querySelectorAll(".w-ribbon"), { rotation: 6 }, { keyframes: { rotation: [6, -3, 1.2, 0], ease: "sine.inOut" }, duration: 1.3, clearProps: "transform" }, 0.3)
-        .fromTo(margins, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.07, clearProps: "transform,opacity" }, 0.45);
+        .fromTo(book.querySelectorAll(".w-ribbon"), { rotation: 6 }, { keyframes: { rotation: [6, -3, 1.2, 0], ease: MOVE }, duration: 0.9, clearProps: "transform" }, 0.15)
+        .fromTo(margins, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.05, clearProps: "transform,opacity" }, 0.3);
     });
     return () => mm.revert();
   }, [kept]);
@@ -623,7 +621,7 @@ function Writer({ story }: { story: Story }) {
   const era = d.era || "Anything else";
   const words = countWords(d.body);
   const empty = !d.body.trim();
-  const starters = startersFor(question, own);
+  const starters = startersFor(own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
   const bookName = bookNameOf(story);
   const withPerson = withId ? realPeople(family).find((p) => p.id === withId) || null : null;
@@ -727,18 +725,25 @@ function Writer({ story }: { story: Story }) {
       const seal = sealRef.current?.querySelector(".seal") as HTMLElement | null;
       if (seal) {
         // the wax is pressed (D4: scale 1.18, a turn, then still), then the stamp lands beside it (D5)
-        if (!reduced()) gsap.fromTo(seal, { scale: 1.18, rotation: -14, opacity: 0.4 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.28, ease: "power4.out" });
+        if (!reduced()) {
+          pressCtx.current?.revert();
+          pressCtx.current = gsap.context(() => {
+            gsap.fromTo(seal, { scale: 1.18, rotation: -14, opacity: 0.4 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.28, ease: OUT });
+          });
+        }
         const r = seal.getBoundingClientRect();
-        setTimeout(() => inkStamp(r.left + r.width / 2 + 150, r.top + r.height / 2), reduced() ? 0 : 260);
+        timers.current.push(window.setTimeout(() => inkStamp(r.left + r.width / 2, r.top + r.height / 2, "Kept", 150), reduced() ? 0 : 260));
       }
       setFocus(false);
-      setTimeout(
-        () => {
-          setKept(memory);
-          setBusy("");
-          window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
-        },
-        reduced() ? 700 : 1300,
+      timers.current.push(
+        window.setTimeout(
+          () => {
+            setKept(memory);
+            setBusy("");
+            window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
+          },
+          reduced() ? 700 : 1300,
+        ),
       );
     } catch (err) {
       setError(`This memory hasn't been kept yet (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
@@ -763,12 +768,12 @@ function Writer({ story }: { story: Story }) {
         hero={
           <div className="whero">
             <p className="label" data-rise>
-              Memory No. {n} · kept in {bookName}
+              Memory No. {n}
             </p>
-            <h1 className="story-q wq">{kept.title}</h1>
-            <p className="meta wmeta" data-rise>
-              {[kept.era, kept.period, kept.photos.length ? `${kept.photos.length} ${kept.photos.length === 1 ? "photograph" : "photographs"}` : ""].filter(Boolean).join(" · ")}
-            </p>
+            <h1 className="story-q wq">
+              Kept in {bookName}
+              <Stop />
+            </h1>
           </div>
         }
       >
@@ -820,23 +825,11 @@ function Writer({ story }: { story: Story }) {
   const questionHead = (
     <header className="w-qhead">
       <p className="w-qkick">{kicker}</p>
-      <h1 className="w-question">{heading}</h1>
+      <h1 className="w-question" data-len={heading.length > 65 ? "long" : heading.length > 40 ? "mid" : undefined}>
+        {heading}
+      </h1>
       {sub && <p className="w-sub">{sub}</p>}
     </header>
-  );
-  const begin = (
-    <section className="w-begin">
-      <h2 className="w-kick">Ways to begin</h2>
-      <ul>
-        {starters.map((s) => (
-          <li key={s}>
-            <button type="button" onClick={() => insertStarter(s)}>
-              {s.trim()}…
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
   const others = deck.filter((p) => p.id !== question?.id);
   const context = (
@@ -863,8 +856,6 @@ function Writer({ story }: { story: Story }) {
           </ul>
         </section>
       )}
-      {/* on one page the ways to begin are on the page itself */}
-      {spread && empty && !dictation.listening && begin}
     </>
   );
   const pencil = (
@@ -950,6 +941,34 @@ function Writer({ story }: { story: Story }) {
       </div>
     </section>
   );
+  const keep = (
+    <>
+      <div className="w-keep-seal">
+        <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "save" || empty} aria-busy={busy === "save" || undefined}>
+          <span className="seal" aria-hidden="true">
+            <WaxSeal />
+          </span>
+          {busy === "save" ? "Keeping…" : keepLabel}
+        </button>
+        <p className="w-keep-note">
+          {empty ? (
+            <span>A line or two is enough to keep · </span>
+          ) : (
+            <span className="w-kbd-hint">
+              {focus && (
+                <>
+                  <kbd>Esc</kbd> leaves focus,{" "}
+                </>
+              )}
+              <kbd>Ctrl</kbd> + <kbd>Enter</kbd> keeps it ·{" "}
+            </span>
+          )}
+          <Link to="/">Not now</Link>
+        </p>
+      </div>
+      {spread && !rail && <div className="w-tools-row">{tools}</div>}
+    </>
+  );
   // the open journal (two pages) where the window has room for it; the help in the margin beside it on a large window
   const layout = spread ? (rail ? "spread rail" : "spread") : "single";
 
@@ -989,10 +1008,14 @@ function Writer({ story }: { story: Story }) {
                     <span>{focus ? "Leave focus" : "Focus"}</span>
                   </button>
                   <p className="running-head" aria-hidden="true">
-                    <span>{era}</span>
-                    <i>✦</i>
-                    <span>
-                      {longDate()} · {partOfDay()}
+                    {chapterName(d.era) && (
+                      <>
+                        <span className="rh-chapter">{chapterName(d.era)}</span>
+                        <i>✦</i>
+                      </>
+                    )}
+                    <span className="rh-date">
+                      {shortDate()} · {partOfDay()}
                     </span>
                   </p>
                   {/* with the cloth put away, the question comes onto the page */}
@@ -1015,8 +1038,8 @@ function Writer({ story }: { story: Story }) {
                   <p className="dear" aria-hidden="true">
                     Dear family,
                   </p>
-                  {/* a single page: the ways to begin sit on the page itself */}
-                  {!spread && empty && !dictation.listening && (
+                  {/* the ways to begin sit on the page itself, under "Dear family," */}
+                  {empty && !dictation.listening && (
                     <div className="w-begin-inpage" aria-label="Ways to begin">
                       {starters.map((s) => (
                         <button key={s} type="button" onClick={() => insertStarter(s)}>
@@ -1057,27 +1080,7 @@ function Writer({ story }: { story: Story }) {
               <span className="w-ribbon" aria-hidden="true" />
             </div>
 
-            <div className="w-keep">
-              <div className="w-keep-seal">
-                <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "save" || empty} aria-busy={busy === "save" || undefined}>
-                  <span className="seal" aria-hidden="true">
-                    <WaxSeal />
-                  </span>
-                  {busy === "save" ? "Keeping…" : keepLabel}
-                </button>
-                <p className="w-keep-note">
-                  {empty ? (
-                    "A line or two is enough to keep."
-                  ) : (
-                    <>
-                      {focus && <><kbd>Esc</kbd> leaves focus, </>}<kbd>Ctrl</kbd> + <kbd>Enter</kbd> keeps it
-                    </>
-                  )}{" "}
-                  · <Link to="/">Not now</Link>
-                </p>
-              </div>
-              {spread && !rail && <div className="w-tools-row">{tools}</div>}
-            </div>
+            {!rail && <div className="w-keep">{keep}</div>}
           </div>
 
           {/* the margins: the help beside the book on a large window; below it, with the questions, on a smaller one */}
@@ -1089,6 +1092,8 @@ function Writer({ story }: { story: Story }) {
           {(rail || !spread) && (
             <aside className="w-side w-tools" aria-label="Help with the words">
               {tools}
+              {/* on a large window the seal lives in the margin, held in view with the help */}
+              {rail && <div className="w-keep in-rail">{keep}</div>}
             </aside>
           )}
         </div>

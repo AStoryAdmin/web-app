@@ -60,9 +60,6 @@ export default function Kin({ person, family, index, preview }: { person: Person
       ) : (
         <p className="pk-none">Nobody is placed beside {person.givenName || "them"} yet.</p>
       )}
-      <Link className="pk-tree" to={`/family${q}`}>
-        See {first === "Their" ? "them" : first} in the family tree <span aria-hidden="true">→</span>
-      </Link>
     </section>
   );
 }

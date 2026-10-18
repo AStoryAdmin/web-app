@@ -56,15 +56,33 @@ export function noteIsFrom(c: Contribution, person: Person): boolean {
   return credit === first || credit.startsWith(`${first} `) || (!!full && credit === full);
 }
 
-/** "3 memories · 2014 to 2024", "1 memory · 1968", or "" when the rail is empty. */
+/** How a memory's date reads in a span: "1968", or "the 2020s" when only the decade was given. */
+function whenOf(m: Memory): { year: number; label: string } | null {
+  const { year, text } = memoryDate(m) as { year: number | null; text: string };
+  if (year == null) return null;
+  return /\d{4}s/.test(text) ? { year, label: `the ${year}s` } : { year, label: String(year) };
+}
+
+/** "3 memories · 2014 to 2024", "1 memory · the 2020s", or "" when the rail is empty. Says the date as the cards do. */
 export function spanLine(rail: Found[]): string {
   if (!rail.length) return "";
-  const years = rail.map((f) => (memoryDate(f.memory) as { year: number | null }).year).filter((y): y is number => y != null);
+  const whens = rail.map((f) => whenOf(f.memory)).filter((w): w is { year: number; label: string } => !!w);
   const n = `${rail.length} ${rail.length === 1 ? "memory" : "memories"}`;
-  if (!years.length) return n;
-  const from = Math.min(...years);
-  const to = Math.max(...years);
-  return from === to ? `${n} · ${from}` : `${n} · ${from} to ${to}`;
+  if (!whens.length) return n;
+  const first = whens.reduce((a, b) => (b.year < a.year ? b : a));
+  const last = whens.reduce((a, b) => (b.year > a.year ? b : a));
+  return first.label === last.label ? `${n} · ${first.label}` : `${n} · ${first.label} to ${last.label}`;
+}
+
+/**
+ * The rail in two groups, never mixed (BAOS rule 29): what this person told themselves (their own story's
+ * memories, and what they sent in for somebody else's), and what other people told with them in it, each of
+ * those carrying its teller. Each oldest first.
+ */
+export function splitRail(told: Found[], tagged: Found[], own: Story | null): { theirs: Found[]; others: Found[] } {
+  const all = railFor(told, tagged, own);
+  const mine = new Set([...(own ? own.memories.filter((m) => saved(m) && !m.contributor).map((m) => m.id) : []), ...told.map((f) => f.memory.id)]);
+  return { theirs: all.filter((f) => mine.has(f.memory.id)), others: all.filter((f) => !mine.has(f.memory.id)) };
 }
 
 /** One line of the person's own words for a card on the rail: the first real sentence, cut on a word. */

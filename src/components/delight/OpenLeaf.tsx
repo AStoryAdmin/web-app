@@ -13,6 +13,7 @@
  */
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { MOVE } from "../../lib/ease";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ButtonLink } from "../ui";
 import { PenIcon } from "../icons";
@@ -58,7 +59,7 @@ export default function OpenLeaf({ story }: { story: Story }) {
         start: "top 70%",
         once: true,
         onEnter: () => {
-          gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, delay: 0.5, ease: "power2.inOut", immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
+          gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, delay: 0.5, ease: MOVE, immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
         },
       });
     });

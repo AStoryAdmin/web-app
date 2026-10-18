@@ -29,8 +29,8 @@ function Cards({ items, story, view }: { items: Memory[]; story: Story; view: Ar
     );
   return (
     <div className="arc-cards">
-      {items.map((m, i) => (
-        <MemoryCard key={m.id} memory={m} story={story} style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }} />
+      {items.map((m) => (
+        <MemoryCard key={m.id} memory={m} story={story} rise={false} />
       ))}
     </div>
   );
@@ -119,7 +119,7 @@ function InProgressRow({ memory, story }: { memory: Memory; story: Story }) {
   const photo = usePhotoUrl(memory.cover || memory.photos[0]);
   const when = memory.period ? `${memory.period} · ` : "";
   return (
-    <Link className="arc-rec rise" to={`/archive/${memory.id}`}>
+    <Link className="arc-rec" to={`/archive/${memory.id}`}>
       {photo ? (
         <img className="pic" src={photo} alt="" loading="lazy" />
       ) : (
@@ -190,7 +190,7 @@ export function PrintsFlow({ groups, story }: { groups: (YearGroupT & { decade: 
           );
           const prints = g.items.map((m) => (
             <div key={m.id} className="cell tall">
-              <PrintCard memory={m} story={story} size="tall" sides={sides.get(m.id) || []} index={index++} />
+              <PrintCard memory={m} story={story} size="tall" sides={sides.get(m.id) || []} index={index++} rise={false} />
             </div>
           ));
           return [tile, ...prints];

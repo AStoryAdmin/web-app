@@ -83,7 +83,7 @@ export default function Editions({ storyId, memories }: { storyId: string; memor
 
   const lead = offer?.included
     ? `A Classic Hardcover comes with your plan; you pay only the shipping${offer.shippingCents ? ` (${dollars(offer.shippingCents)})` : ""}.`
-    : "Most families print their first edition at around twenty memories.";
+    : "A first edition reads well from about twenty memories.";
 
   return (
     <section className="editions ed-ledger" id="editions" aria-labelledby="editions-h">
@@ -98,11 +98,11 @@ export default function Editions({ storyId, memories }: { storyId: string; memor
             <p className="meta">Printed copies open once our printer is ready.</p>
             {asked ? (
               <p className="meta ed-thanks" role="status">
-                Thank you. We'll write to you the day printing opens.
+                Noted. Printing isn’t open yet; it will be announced in the app.
               </p>
             ) : (
               <Button variant="outline" small onClick={interest}>
-                Tell me when printing opens
+                I’d like a printed copy
               </Button>
             )}
           </div>

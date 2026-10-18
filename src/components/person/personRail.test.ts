@@ -1,6 +1,6 @@
 // What a person's page lays along its rail: oldest first, the newest last; related by chapter or year; their own notes.
 import { describe, expect, it } from "vitest";
-import { noteIsFrom, oneLine, railFor, relatedFor, spanLine } from "./personRail";
+import { noteIsFrom, oneLine, railFor, relatedFor, spanLine, splitRail } from "./personRail";
 import type { Contribution } from "../../data/contributions";
 import type { Person } from "../../data/family";
 import type { Memory, Story } from "../../data/stories";
@@ -36,6 +36,14 @@ describe("the rail", () => {
     expect(spanLine([{ story: s, memory: mem({ period: "1968" }) }])).toBe("1 memory · 1968");
     expect(spanLine([{ story: s, memory: mem({}) }])).toBe("1 memory");
     expect(spanLine([])).toBe("");
+    expect(spanLine([{ story: s, memory: mem({ period: "the 2020s" }) }])).toBe("1 memory · the 2020s");
+  });
+  it("keeps what they told apart from what others told with them in it", () => {
+    const own = story([mem({ id: "x", period: "1990" }), mem({ id: "d", period: "1961", contributor: "Daniel Hartley" })]);
+    const other = story([mem({ id: "t", period: "2001" })]);
+    const { theirs, others } = splitRail([], [{ story: other, memory: other.memories[0] }], own);
+    expect(theirs.map((f) => f.memory.id)).toEqual(["x"]);
+    expect(others.map((f) => f.memory.id)).toEqual(["d", "t"]);
   });
 });
 

@@ -169,15 +169,11 @@ export default function Plans() {
           })}
         </div>
 
-        <p className="pl-foot">
-          A plan that stops returns the account to Free. The app is yours. It does not stop being yours.
-        </p>
-
         <WhereNext
           rows={[
             { to: "/book", title: "See the book", line: "Every page as it will print, and the editions." },
             { to: "/account", title: "Your account", line: "Your name, the wall, who looks after this." },
-            { to: "/", title: "Back to today", line: "Writing is free on every plan." },
+            { to: "/", title: "Back to today", line: "Today’s question is waiting." },
           ]}
         />
       </div>

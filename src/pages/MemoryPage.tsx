@@ -12,7 +12,7 @@
  * recording, one hairline row of tools, the family's lines, and the page
  * turn.
  */
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactElement } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Button, ButtonLink, Problem } from "../components/ui";
@@ -25,8 +25,8 @@ import ToolMenu from "../components/archive/ToolMenu";
 import { MemoryHead, PageTurn, Plate } from "../components/archive/MemoryLead";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
-import { isRunOfLines, minutesLabel, orderedPhotos, paragraphsOf, readableParagraphs, takesDropCap } from "../components/archive/photos";
-import { cleanTranscript, keptLine, soundsSpoken } from "../components/archive/transcript";
+import { isRunOfLines, minutesLabel, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
+import { ASKED, cleanTranscript, keptLine, soundsSpoken } from "../components/archive/transcript";
 import WhereNext from "../components/book/WhereNext";
 import { isTreasured } from "../lib/treasured";
 import { useAuth } from "../state/authContext";
@@ -47,6 +47,27 @@ function findMemory(id: string | undefined, active: Story | null, stories: Story
     if (m) return { story: s, memory: m };
   }
   return null;
+}
+
+/** Words with Vietnamese letters, with the short words between them (as "em nhìn thấy dơ luôn"), so screen readers and hyphenation treat them as Vietnamese. */
+const VI = "[\\p{L}]*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ][\\p{L}]*";
+const VI_RUN = new RegExp(`(?:\\b[\\p{L}]{1,3}\\s+)?${VI}(?:\\s+(?:${VI}|[\\p{L}]{1,4}(?=\\s+${VI})))*`, "gu");
+function withLang(text: string) {
+  const out: (string | ReactElement)[] = [];
+  let last = 0;
+  for (const m of text.matchAll(VI_RUN)) {
+    const at = m.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+    out.push(
+      <span key={at} lang="vi">
+        {m[0]}
+      </span>,
+    );
+    last = at + m[0].length;
+  }
+  if (!out.length) return text;
+  if (last < text.length) out.push(text.slice(last));
+  return out;
 }
 
 /** The spread needs a laptop's width; below it the page is one column and the photograph sits in the words. */
@@ -146,9 +167,7 @@ export default function MemoryPage() {
     .filter((p): p is NonNullable<typeof p> => !!p);
   const hasVoice = memory.audio?.length > 0;
   const seconds = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
-  const told = memory.contributor ? "From" : hasVoice ? "Told by" : "Written by";
   const toldName = memory.contributor ? memory.contributor.split(",")[0].trim() : story.name;
-  const toldRest = hasVoice ? ` on a call${minutesLabel(seconds) ? ` · ${minutesLabel(seconds)}` : ""}` : "";
 
   // the words: what was typed is set as typed; what was said is set as a clean transcript, the exact words a click away
   const transcript = (memory.audio || []).filter((c) => c.speaker !== "assistant" && c.transcript).map((c) => c.transcript);
@@ -156,9 +175,12 @@ export default function MemoryPage() {
   const raw = typed.length ? typed : transcript.length ? paragraphsOf(transcript.join("\n\n")) : [];
   const spoken = hasVoice || Boolean(memory.familyCallId) || soundsSpoken(raw.join("\n\n"));
   const tidy = spoken ? cleanTranscript(raw) : raw;
-  const body = readableParagraphs(spoken && !verbatim ? (tidy.length ? tidy : raw) : raw).map(smarten);
+  const body = readableParagraphs(spoken && !verbatim ? (tidy.length ? tidy : raw) : raw, { punctuate: spoken && !verbatim }).map(smarten);
   const tidied = spoken && tidy.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
-  const kept = smarten(keptLine(raw.join(" ")));
+  const kept = smarten(keptLine(raw.join("\n")));
+  // "Told by Bao in conversation" whenever the words were said, never "Written by" beside "Lightly tidied"
+  const told = memory.contributor ? "From" : spoken ? "Told by" : "Written by";
+  const toldRest = hasVoice ? ` on a call${minutesLabel(seconds) ? ` · ${minutesLabel(seconds)}` : ""}` : spoken && !memory.contributor ? " in conversation" : "";
 
   const viewerName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || (user?.email || "").split("@")[0] || "Someone";
   const isOwner = !!user && story.ownerId === user.id;
@@ -239,18 +261,24 @@ export default function MemoryPage() {
   );
 
   const words = (
-    <div className={`rd-story mv-words${spoken && !verbatim ? " tidy" : ""}${body.length >= 3 ? " illum" : ""}`} lang="en">
+    <div className={`rd-story mv-words${spoken && !verbatim ? " tidy" : ""}`} lang="en">
       {body.length ? (
         body.map((p, k) => (
           <div key={k} className="mv-para">
-            <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
-              {p.split("\n").map((line, j, arr) => (
-                <span key={j}>
-                  {line}
-                  {j < arr.length - 1 && <br />}
-                </span>
-              ))}
-            </p>
+            {p.startsWith(ASKED) ? (
+              <p className="asked">
+                <span className="asked-lab">We asked</span> {withLang(p.slice(ASKED.length))}
+              </p>
+            ) : (
+              <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
+                {p.split("\n").map((line, j, arr) => (
+                  <span key={j}>
+                    {withLang(line)}
+                    {j < arr.length - 1 && <br />}
+                  </span>
+                ))}
+              </p>
+            )}
             {k === 0 && plate && !spread && <aside className="mv-plate inline" aria-label="Photographs">{thePlate}</aside>}
           </div>
         ))
@@ -266,7 +294,7 @@ export default function MemoryPage() {
   );
 
   return (
-    <Shell bare title={memory.era || "Archive"}>
+    <Shell bare title={realChapter(memory.era) || "Archive"}>
       <div className={`page mv${plate ? " has-plate" : " no-plate"}`}>
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
@@ -376,8 +404,7 @@ export default function MemoryPage() {
                   ariaLabel="More"
                   align="end"
                   items={[
-                    { key: "when", label: "Edit when and chapter", icon: <CalendarIcon />, onSelect: () => navigate(editDetails) },
-                    { key: "who", label: "Who's in it", icon: <PeopleIcon />, onSelect: () => navigate(editDetails) },
+                    { key: "details", label: "When, chapter and who's in it", icon: <CalendarIcon />, onSelect: () => navigate(editDetails) },
                     ...(!hasVoice && body.length > 0 && canSpeak() ? [{ key: "listen", label: listen ? "Stop listening" : "Listen", icon: <PlayIcon />, onSelect: () => setListen((v) => !v) }] : []),
                     { key: "remove", label: "Remove…", icon: <TrashIcon />, danger: true, onSelect: () => setConfirm(true) },
                   ]}
@@ -394,7 +421,7 @@ export default function MemoryPage() {
 
         <WhereNext
           rows={[
-            { to: "/archive", title: "Back to the Archive", line: `Every memory in ${own ? "your" : `${story.name}'s`} story, by year.` },
+            { to: "/family", title: "Ask the family", line: "Invite someone to add what they remember of it." },
             { to: "/write", title: own ? "Write the next memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
             { to: "/book", title: "Open the book", line: "See this memory set on the printed page." },
           ]}

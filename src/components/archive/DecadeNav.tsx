@@ -6,6 +6,7 @@
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
 import { pageZoom } from "../../lib/zoom";
+import { MOVE } from "../../lib/ease";
 
 export type Decade = { decade: number; label: string; count: number; year: number };
 
@@ -29,11 +30,19 @@ function useRailMarker(nav: RefObject<HTMLElement | null>, active: number | null
     const r = el.getBoundingClientRect();
     const b = btn.getBoundingClientRect();
     const z = pageZoom();
-    const to = { y: (b.top - r.top) / z, height: b.height / z, opacity: 1 };
+    // the buttons are one height, so the marker's height is set, never tweened; only its y travels
+    gsap.set(mark, { height: b.height / z, opacity: 1 });
+    const y = (b.top - r.top) / z;
     const still = !placed.current || matchMedia("(prefers-reduced-motion: reduce)").matches;
     placed.current = true;
-    if (still) gsap.set(mark, to);
-    else gsap.to(mark, { ...to, duration: 0.5, ease: "power3.inOut", overwrite: true });
+    if (still) {
+      gsap.set(mark, { y });
+      return;
+    }
+    const tween = gsap.to(mark, { y, duration: 0.24, ease: MOVE, overwrite: true });
+    return () => {
+      tween.kill();
+    };
   }, [nav, active, count]);
 }
 
@@ -60,7 +69,7 @@ export function DecadeRow({ decades, active, onPick }: { decades: Decade[]; acti
   return (
     <div className="chiprow scroll arc-decaderow" role="group" aria-label="Decades">
       {decades.map((d) => (
-        <button key={d.decade} type="button" className="chip big" aria-pressed={active === d.decade} onClick={() => onPick(d)} style={{ minHeight: 40 }}>
+        <button key={d.decade} type="button" className="chip big" aria-pressed={active === d.decade} onClick={() => onPick(d)}>
           {d.label}
         </button>
       ))}

@@ -159,9 +159,7 @@ export default function Book() {
             <p className="bkh-headline">{progress.headline}</p>
             <div className="bkh-rule" style={{ ["--pct" as string]: `${Math.max(4, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
               <span className="bkh-fill" />
-              <span className="bkh-star" aria-hidden="true">
-                ✦
-              </span>
+              <span className="bkh-star fleuron" aria-hidden="true" />
             </div>
             <p className="bkh-end">First edition</p>
           </div>

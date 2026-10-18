@@ -1,10 +1,10 @@
 /**
  * "What the family remembers": every other version of this moment the
- * family sent, each as a row, their face, their name and the line they
- * wrote in quotation marks, never merged. Keepers also see what is still
- * waiting and can keep it or not. Under it, the box: what do you remember
- * about this? It opens from the tile above the words or from the quiet
- * line here, and stays open once anything has been typed.
+ * family sent, set as text the way the book sets a note, never merged:
+ * their words in quotation marks, then a small face and their name. Keepers
+ * also see what is still waiting and can keep it or not. Under them, one
+ * quiet link, "Add what you remember", opens the box to write in (the
+ * page's only way to it); it stays open once anything has been typed.
  */
 import { useEffect, useRef, useState } from "react";
 import { Avatar, Button, Problem } from "../ui";

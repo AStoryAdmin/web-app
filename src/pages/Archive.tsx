@@ -10,10 +10,10 @@ import { archiveStats } from "../app-core/lib/timeline.js";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
-import WhereNext from "../components/book/WhereNext";
+import WhereNext, { Stop } from "../components/book/WhereNext";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
 import { InProgressGroup, PrintsFlow, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
-import { prefersReducedMotion, useArrive, useInkIn, useRiseOnScroll } from "../components/archive/motion";
+import { prefersReducedMotion, useArrive, useCrossfade, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
 import { countPending } from "../data/contributions";
 import { decadeOf, groupByYear } from "../app-core/lib/timeline.js";
@@ -167,9 +167,11 @@ export default function Archive() {
   }, [location.hash, groups.length]);
 
   const filterKey = `${chapter}|${day ?? ""}|${filtered.length === 0}|${view}`;
-  useArrive(listRef, filterKey);
+  // the list arrives once per page or view; a filter only crossfades it; below the fold, one hook per element
+  useArrive(listRef, `${storyId}|${view}`);
   useArrive(topRef, storyId);
-  useRiseOnScroll(listRef, ".arc-cards > *, .mosaic > *", filterKey);
+  useCrossfade(listRef, `${chapter}|${day ?? ""}`);
+  useRiseOnScroll(listRef, ".arc-cards > *, .mosaic > *:not(.arc-year)", filterKey);
   useInkIn(listRef, filterKey);
 
   // the rail's dots fill as their year or memory comes into view, once each
@@ -255,7 +257,10 @@ export default function Archive() {
               <TellerPick />
             </span>
           </p>
-          <h1>The Archive</h1>
+          <h1>
+            The Archive
+            <Stop />
+          </h1>
           <p className="meta arc-wall" data-rise>
             {story.isPublic && story.publicSlug ? (
               <>

@@ -7,10 +7,11 @@
  * Set like the family book opened at its frontispiece: on the cloth their
  * portrait (or a monogram seal), their name and a line about them; on the
  * paper the chapters as a contents column that stays beside you on a wide
- * window, and every memory they chose to show as a leaf of the book, two to
- * a row, the photograph a white-bordered print, the words in their own
- * voice. What the family added closes the page as notecards. One line says
- * this is shared on purpose; nothing else explains itself.
+ * window, and every memory they chose to show as a leaf of the book, two or
+ * three to a row, the photograph a white-bordered print, the words in their
+ * own voice. The chapters are the printed book's own (app-core
+ * bookStructure and printedChapterName), so the wall and the Book never
+ * disagree. What the family added closes the page as notecards.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -21,12 +22,13 @@ import { usePhotoUrl } from "../lib/photoUrls";
 import { supabase } from "../lib/supabase";
 import { arrive } from "../lib/arrive";
 import WhereNext, { Stop } from "../components/book/WhereNext";
-import { ERAS } from "../app-core/data/eras.js";
-import { parseYear } from "../app-core/lib/timeline.js";
+import { bookStructure } from "../app-core/lib/legacyBook.js";
+import { printedChapterName } from "../app-core/lib/bookDesign.js";
 
 type WallMemory = { id: string; title: string; body: string; era: string; period: string; created_at: string; photos: string[] };
 type Testimonial = { id: string; contributor_name: string; relationship: string; body: string; created_at: string };
 type WallStory = { name: string; last_name: string; photo_url: string | null; intro: string; relationship: string; memories: WallMemory[]; testimonials: Testimonial[] };
+type Chapter = { name: string; items: WallMemory[] };
 
 const paragraphs = (t: string) =>
   String(t || "")
@@ -34,27 +36,31 @@ const paragraphs = (t: string) =>
     .map((p) => p.trim())
     .filter(Boolean);
 
-const anchor = (era: string) => `ch-${era.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+const anchor = (name: string) => `ch-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+const memories = (n: number) => `${n} ${n === 1 ? "memory" : "memories"}`;
 
-/** A white-bordered print, once its address is signed; nothing at all until then (a visitor may never be able to sign it). */
-function Print({ src, title }: { src: string; title: string }) {
-  return (
-    <span className="wall-print">
-      <img src={src} alt={title ? `A photograph for “${title}”` : "A photograph from the story"} loading="lazy" />
-    </span>
-  );
+/** The chapters exactly as the printed book files them: the same structure function, the same printed names. */
+function chaptersOf(story: WallStory): Chapter[] {
+  const s = bookStructure({ name: story.name, lastName: story.last_name, memories: story.memories.map((m) => ({ ...m, createdAt: m.created_at, status: "complete" })) } as never) as unknown as {
+    chapters: { era: string; items: WallMemory[] }[];
+  };
+  return s.chapters.map((c) => ({ name: printedChapterName(c.era) as string, items: c.items }));
 }
 
 function Leaf({ m }: { m: WallMemory }) {
   const [open, setOpen] = useState(false);
   const paras = paragraphs(m.body);
   const long = m.body.length > 420 || paras.length > 3;
+  // a print once its address is signed; a visitor may never be able to sign it, and then the leaf is the words alone
   const photo = usePhotoUrl(m.photos?.[0] ?? null);
   const id = `leaf-${m.id}`;
-  // the leaves rise as they come into view on a scroll timeline (CSS), never on an observer that might not fire
   return (
-    <article className={`wall-leaf${photo ? " has-photo" : ""}${m.body.length > 700 ? " long" : ""}`} aria-labelledby={`${id}-t`}>
-      {photo && <Print src={photo} title={m.title} />}
+    <article className={`wall-leaf${photo ? " has-photo" : ""}`} aria-labelledby={`${id}-t`}>
+      {photo && (
+        <span className="wall-print">
+          <img src={photo} alt={m.title ? `A photograph for “${m.title}”` : "A photograph from the story"} loading="lazy" />
+        </span>
+      )}
       {m.period && <p className="wall-date">{m.period}</p>}
       <h3 id={`${id}-t`}>{m.title || "Untitled"}</h3>
       {/* a drop cap needs a long first line to wrap around; words kept line by line start plain */}
@@ -110,22 +116,10 @@ export default function Wall() {
     };
   }, [slug]);
 
-  const chapters = useMemo(() => {
-    if (!story) return [];
-    const order = ERAS as string[];
-    const byEra = new Map<string, WallMemory[]>();
-    for (const m of story.memories) {
-      const era = m.era || "Anything else";
-      byEra.set(era, [...(byEra.get(era) || []), m]);
-    }
-    const keys = [...byEra.keys()].sort((a, b) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b)));
-    return keys.map((era) => ({
-      era,
-      items: (byEra.get(era) || []).sort((a, b) => (parseYear(a.period) || 0) - (parseYear(b.period) || 0) || a.created_at.localeCompare(b.created_at)),
-    }));
-  }, [story]);
+  const chapters = useMemo(() => (story ? chaptersOf(story) : []), [story]);
 
-  // One authored arrival: the name rises line by line, the sheet settles, the first leaves follow (lib/arrive).
+  // One authored arrival: the name rises line by line, the sheet settles (lib/arrive). The leaves below are never
+  // held back for it: they move on the scroll's own timeline (CSS), so nothing waits on an observer.
   useEffect(() => {
     if (!story || !root.current) return;
     return arrive(root.current);
@@ -148,9 +142,10 @@ export default function Wall() {
         <main className="wall-none">
           <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
           <h1>
-            This story isn't shared<Stop />
+            This story isn’t shared
+            <Stop />
           </h1>
-          <p>The family may have turned the link off, or the address isn't quite right. Asking whoever sent it for the link again takes a minute.</p>
+          <p>The family may have turned the link off, or the address isn’t quite right. Asking whoever sent it for the link again takes a minute.</p>
           <Link className="btn outline" to="/welcome">
             Keep your own story
           </Link>
@@ -188,10 +183,10 @@ export default function Wall() {
                 <Stop />
               </h1>
               <p className="wall-intro" data-rise>
-                {story.intro || `A life, in ${story.name}'s own words.`}
+                {story.intro || `A life, in ${story.name}’s own words.`}
               </p>
               <p className="wall-counts" data-rise>
-                {count} {count === 1 ? "memory" : "memories"}
+                {memories(count)}
                 {chapters.length > 1 ? ` · ${chapters.length} chapters` : ""}
                 {family ? ` · ${family} from the family` : ""} · shared by the family, for anyone with the link
               </p>
@@ -203,9 +198,16 @@ export default function Wall() {
       <main className="sheet-page wall-sheet">
         <div className="page wall-page">
           {count === 0 && family === 0 ? (
-            <section className="wall-empty" data-rise>
-              <h2>Nothing is shared here yet.</h2>
-              <p>When {story.name} shares a memory, it appears on this page.</p>
+            <section className="wall-empty">
+              <img className="wall-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
+              <h2>
+                Nothing is shared here yet
+                <Stop />
+              </h2>
+              <p>When {story.name} shares a memory, it appears on this page the moment it is kept. Starting a book of your own takes about two minutes.</p>
+              <Link className="btn outline" to="/welcome">
+                Keep your own story
+              </Link>
             </section>
           ) : (
             <>
@@ -213,20 +215,22 @@ export default function Wall() {
                 <p className="wall-contents-label">Contents</p>
                 <ol>
                   {chapters.map((c, i) => (
-                    <li key={c.era}>
-                      <a href={`#${anchor(c.era)}`}>
+                    <li key={c.name}>
+                      <a href={`#${anchor(c.name)}`}>
                         <span className="n">{i + 1}</span>
-                        <span className="t">{c.era}</span>
-                        <span className="c">{c.items.length}</span>
+                        <span className="t">{c.name}</span>
+                        <span className="c">{memories(c.items.length)}</span>
                       </a>
                     </li>
                   ))}
                   {family > 0 && (
                     <li>
                       <a href="#from-the-family">
-                        <span className="n">✦</span>
+                        <span className="n">
+                          <i className="fleuron" aria-hidden="true" />
+                        </span>
                         <span className="t">From the family</span>
-                        <span className="c">{family}</span>
+                        <span className="c">{family === 1 ? "1 note" : `${family} notes`}</span>
                       </a>
                     </li>
                   )}
@@ -234,29 +238,37 @@ export default function Wall() {
               </nav>
 
               <div className="wall-main">
-                {chapters.map((c, i) => (
-                  <section key={c.era} id={anchor(c.era)} className="wall-chapter" aria-labelledby={`${anchor(c.era)}-h`}>
-                    <header className="wall-chapter-head">
-                      <span className="wall-chapter-num" aria-hidden="true">
-                        {i + 1}
-                      </span>
-                      <h2 id={`${anchor(c.era)}-h`}>{c.era}</h2>
-                      <span className="wall-chapter-count">
-                        {c.items.length} {c.items.length === 1 ? "memory" : "memories"}
-                      </span>
-                    </header>
-                    <div className={`wall-leaves${c.items.length === 1 ? " one" : ""}`}>
-                      {c.items.map((m) => (
-                        <Leaf key={m.id} m={m} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
+                {chapters.map((c, i) => {
+                  const one = c.items.length === 1;
+                  const lead = one ? paragraphs(c.items[0].body)[0] : "";
+                  return (
+                    <section key={c.name} id={anchor(c.name)} className={`wall-chapter${one ? " one" : ""}`} aria-labelledby={`${anchor(c.name)}-h`}>
+                      <header className="wall-chapter-head">
+                        <span className="wall-chapter-num" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        <h2 id={`${anchor(c.name)}-h`}>{c.name}</h2>
+                        <span className="wall-chapter-count">{memories(c.items.length)}</span>
+                        {/* a chapter of one memory: its first line, set large beside the leaf, so the row is not half blank */}
+                        {one && lead && lead.length > 24 && (
+                          <blockquote className="wall-chapter-quote" aria-hidden="true">
+                            <p>{lead.length > 160 ? `${lead.slice(0, lead.lastIndexOf(" ", 156))}…` : lead}</p>
+                          </blockquote>
+                        )}
+                      </header>
+                      <div className="wall-leaves">
+                        {c.items.map((m) => (
+                          <Leaf key={m.id} m={m} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
                 {family > 0 && (
                   <section id="from-the-family" className="wall-chapter wall-family" aria-labelledby="from-the-family-h">
                     <header className="wall-chapter-head">
                       <span className="wall-chapter-num" aria-hidden="true">
-                        ✦
+                        <i className="fleuron" />
                       </span>
                       <h2 id="from-the-family-h">From the family</h2>
                     </header>
@@ -277,17 +289,12 @@ export default function Wall() {
         <div className="page wall-next">
           <WhereNext
             rows={[
-              { to: "/welcome", title: "Keep your own story", line: "Start a book for someone in your family." },
+              { to: "/welcome", title: "Keep your own story", line: "Every life holds a story worth keeping." },
               { to: "https://astoryapp.com/samples/", title: "Turn the pages of a sample", line: "A family book, printed exactly the way yours will be.", external: true },
               { to: "https://astoryapp.com/", title: "How A Story works", line: "One small question a day, and the family adds the rest.", external: true },
             ]}
           />
         </div>
-        <footer className="wall-foot">
-          <p>
-            Kept with <Link to="/welcome">A Story</Link>. Every life holds a story worth keeping.
-          </p>
-        </footer>
       </main>
     </div>
   );

@@ -1,20 +1,24 @@
 /**
  * The family tree as an engraved plate (plateModel): one tier per
  * generation down a terracotta rail, the generation's name and decade in
- * the margin, the faces centred, the storyteller the largest in the middle
- * of their own tier, couples joined by an ampersand, and a fine gold thread
- * from each couple down to each of their children. Under every face their
- * name, what they are to the storyteller and their state in the product's
- * three words. A dashed ring where a relation is missing, a shelf for the
- * people nobody has placed yet.
+ * the margin, and in every tier three parts: the storyteller's own line on
+ * the axis (the storyteller the largest face, their parents straight above
+ * them, their children below), everyone else to the left or the right on
+ * the side of whoever they are joined to. Couples are joined by an
+ * ampersand, and a fine gold thread runs from each couple to each of their
+ * children. Under every face only three things: the name, what they are to
+ * the storyteller, and their state in the product's three words; their
+ * years and how many memories they are in come up on hover or focus. At
+ * most one dashed ring per tier, where somebody is missing. A small family
+ * is drawn large; the faces step down only when a generation no longer
+ * fits on one line.
  *
  * Pointing at someone (or tabbing to them) lights their threads and the
- * people at the other end, so who belongs to whom reads at a glance. The
- * threads are measured from the drawn faces, so they follow whatever the
- * window does; below 1100px they are left out and the words under each
- * face carry the relation.
+ * people at the other end. The threads are measured from layout offsets,
+ * so the page zoom and the arrival tweens never move them; below 1100px
+ * they are left out and the words under each face carry the relation.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import type { Family, Person } from "../../../data/family";
 import type { Story } from "../../../data/stories";
@@ -23,7 +27,7 @@ import { Button } from "../../ui";
 import Portrait from "../Portrait";
 import { firstName, linkState, memoriesBy, memoriesWith, personName, realPeople, stateWords, type Index } from "../familyView";
 import { PLACE_KINDS, placeWord, treePeople, yearsOf, type GhostKind } from "./treeModel";
-import { buildPlate, type PlateGhost, type PlateLink, type PlateNode } from "./plateModel";
+import { buildPlate, type PlateGhost, type PlateLink, type PlateNode, type Zone } from "./plateModel";
 import { useTreeMotion } from "./treeMotion";
 
 type Props = {
@@ -41,6 +45,32 @@ type Props = {
 const isReal = (p: Person | null | undefined): p is Person => !!p && !p.id.startsWith("story:");
 const count = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 const DOT: Record<string, string> = { you: "on", joined: "on", invited: "waiting", remembered: "off", listed: "off" };
+/** The face sizes, largest first; a family of six or fewer starts large, of ten or fewer at the middle size. */
+const SIZES = ["l", "m", "n", "t"] as const;
+
+/** The plus in a ring, drawn rather than typed. */
+const Plus = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+  </svg>
+);
+
+/** The state in the product's exact words with its dot, never broken inside a phrase: "invited ·" may end a line, nothing else does. */
+function StateWords({ words }: { words: string }) {
+  const parts = words.split(" · ");
+  return (
+    <>
+      {parts.map((p, i) => (
+        <span className="nw" key={p}>
+          {i === 0 && <i aria-hidden="true" />}
+          {p}
+          {i < parts.length - 1 ? " ·" : ""}
+          {i < parts.length - 1 ? " " : ""}
+        </span>
+      ))}
+    </>
+  );
+}
 
 /* ── One face ──────────────────────────────────────────────────────────── */
 
@@ -51,32 +81,37 @@ function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; sto
   const stateLine = gone ? "" : state === "you" ? "you" : stateWords(state);
   const by = memoriesBy(p, story).length;
   const within = memoriesWith(p, story).length;
-  const note = node.teller ? "" : by > 0 ? `remembers ${by}` : within > 0 ? `in ${count(within, "memory", "memories")}` : "";
   const name = personName(p);
   const years = p.deathYear ? yearsOf(p) : p.birthYear ? `born ${p.birthYear}` : "";
+  const memories = node.teller ? "" : by > 0 ? `remembers ${by}` : within > 0 ? `in ${count(within, "memory", "memories")}` : "";
+  const caption = [years, memories].filter(Boolean).join(" · ");
   const to = isReal(p) ? `/family/${p.id}${preview ? "?preview=tree" : ""}` : null;
   const lit = hot ? (hot.has(node.id) ? " lit" : " dim") : "";
   const cls = `tp-node${node.teller ? " teller" : ""}${gone ? " gone" : ""}${lit}`;
   const body = (
     <>
-      <Portrait photo={p.photo} given={p.givenName} family={p.familyName} gone={gone} className="tp-por" />
-      {node.teller && <span className="tp-kick">Storyteller</span>}
+      <span className="tp-face">
+        <Portrait photo={p.photo} given={p.givenName} family={p.familyName} gone={gone} className="tp-por" />
+        {caption && (
+          <span className="tp-cap" aria-hidden="true">
+            {caption}
+          </span>
+        )}
+      </span>
       <span className="tp-nm">{name}</span>
       {/* "brother-in-law" never breaks at its hyphens */}
-      {node.rel && <span className="tp-rel">{node.rel.replace(/-/g, "‑")}</span>}
-      {years && <span className="tp-yrs">{years}</span>}
+      {node.teller ? <span className="tp-rel teller">Storyteller</span> : node.rel && <span className="tp-rel">{node.rel.replace(/-/g, "‑")}</span>}
       {stateLine && (
         <span className={`tp-state ${DOT[state] || "off"}`}>
-          <i aria-hidden="true" />
-          {stateLine}
+          <StateWords words={stateLine} />
         </span>
       )}
-      {note && <span className="tp-note">{note}</span>}
     </>
   );
   const handlers = { onPointerEnter: () => onHot(node.id), onPointerLeave: () => onHot(null), onFocus: () => onHot(node.id), onBlur: () => onHot(null) };
+  const label = [name, node.teller ? "the storyteller" : node.rel, stateLine, caption].filter(Boolean).join(", ");
   return to ? (
-    <Link className={cls} to={to} data-node={node.id} data-tp-rise aria-label={[name, node.teller ? "the storyteller" : node.rel, stateLine].filter(Boolean).join(", ")} {...handlers}>
+    <Link className={cls} to={to} data-node={node.id} data-tp-rise aria-label={label} {...handlers}>
       {body}
     </Link>
   ) : (
@@ -89,8 +124,8 @@ function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; sto
 function Ring({ ghost, anchor, onAdd, hot }: { ghost: PlateGhost; anchor: Person | null; onAdd: Props["onAdd"]; hot: Set<string> | null }) {
   return (
     <button type="button" className={`tp-ghost${hot ? (hot.has(ghost.node) ? " lit" : " dim") : ""}`} data-node={ghost.node} data-tp-rise onClick={() => onAdd(anchor, ghost.kind)} aria-label={`Add ${ghost.label}`}>
-      <span className="tp-ring" aria-hidden="true">
-        +
+      <span className="tp-ring">
+        <Plus />
       </span>
       <span className="tp-gl">{ghost.label}</span>
     </button>
@@ -101,32 +136,63 @@ function Ring({ ghost, anchor, onAdd, hot }: { ghost: PlateGhost; anchor: Person
 
 function Unplaced({ person, anchor, story, meId, preview, canPlace, onPlace }: { person: Person; anchor: Person | null; story: Story; meId: string | null | undefined; preview?: boolean; canPlace: boolean; onPlace: (kind: GhostKind) => void }) {
   const [open, setOpen] = useState(false);
+  const [flip, setFlip] = useState("");
   const box = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
       if (!box.current?.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      box.current?.querySelector<HTMLButtonElement>(".tp-place")?.focus();
+    };
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
-    box.current?.querySelector<HTMLButtonElement>(".ft-menu button")?.focus();
+    // Open where it fits: above the button near the foot of the window, kept inside the window at either edge.
+    const r = menu.current?.getBoundingClientRect();
+    if (r) setFlip(`${r.bottom > window.innerHeight - 8 ? " up" : ""}${r.left < 8 ? " start" : r.right > window.innerWidth - 8 ? " end" : ""}`);
+    menu.current?.querySelector<HTMLButtonElement>("button")?.focus();
     return () => {
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+  // Up and down move between the choices, Home and End jump to the ends.
+  const onMenuKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const items = [...(menu.current?.querySelectorAll<HTMLButtonElement>("button") || [])];
+    const at = items.indexOf(document.activeElement as HTMLButtonElement);
+    const go = (i: number) => items[(i + items.length) % items.length]?.focus();
+    if (e.key === "ArrowDown") go(at + 1);
+    else if (e.key === "ArrowUp") go(at - 1);
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(items.length - 1);
+    else return;
+    e.preventDefault();
+  };
   const node: PlateNode = { id: person.id, person, rel: "", teller: false };
   return (
     <div ref={box} className="tp-shelfitem">
       <Face node={node} story={story} meId={meId} preview={preview} hot={null} onHot={() => {}} />
       {canPlace && anchor && (
-        <Button variant="quiet" small className="tp-place" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <Button
+          variant="quiet"
+          small
+          className="tp-place"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => {
+            setFlip("");
+            setOpen((v) => !v);
+          }}
+        >
           Say who they are
         </Button>
       )}
       {open && anchor && (
-        <div className="ft-menu shelf tp-menu" role="menu" aria-label={`Place ${firstName(person)}`}>
+        <div ref={menu} className={`ft-menu shelf tp-menu${flip}`} role="menu" aria-label={`Place ${firstName(person)}`} onKeyDown={onMenuKey}>
           {PLACE_KINDS.map((k) => (
             <button
               key={k}
@@ -186,17 +252,17 @@ function measure(plate: HTMLElement, links: PlateLink[]): Thread[] {
     const yt = Math.min(y2, lowerRow.y - 2);
     if (yt <= yb) continue;
     const k = (yt - yb) * 0.6;
-    const d = `M${x1.toFixed(1)} ${y1.toFixed(1)}V${yb.toFixed(1)}C${x1.toFixed(1)} ${(yb + k).toFixed(1)} ${x2.toFixed(1)} ${(yt - k).toFixed(1)} ${x2.toFixed(1)} ${yt.toFixed(1)}V${y2.toFixed(1)}`;
+    const f = (n: number) => n.toFixed(1);
+    const d = `M${f(x1)} ${f(y1)}V${f(yb)}C${f(x1)} ${f(yb + k)} ${f(x2)} ${f(yt - k)} ${f(x2)} ${f(yt)}V${f(y2)}`;
     out.push({ key: l.key, d, dashed: l.dashed, ends: [...l.from, l.to] });
   }
   return out;
 }
 
-/** True when a tier's faces no longer fit on one line. */
+/** True when a part of a tier no longer fits on one line. */
 function wraps(plate: HTMLElement): boolean {
-  return [...plate.querySelectorAll<HTMLElement>(".tp-row")].some((row) => {
-    const kids = [...row.children] as HTMLElement[];
-    // a face set lower to sit on the storyteller's centre line is not a second line
+  return [...plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) :is(.tp-zone, .tp-unit)")].some((zone) => {
+    const kids = [...zone.children] as HTMLElement[];
     return kids.length > 1 && kids.some((k) => k.offsetTop > kids[0].offsetTop + kids[0].offsetHeight * 0.6);
   });
 }
@@ -213,15 +279,18 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
   const teller = plate.teller;
   const realTeller = isReal(teller) ? teller : null;
+  const drawn = plate.tiers.reduce((n, t) => n + t.units.reduce((m, u) => m + u.nodes.length, 0), 0);
+  const start = drawn <= 6 ? 0 : drawn <= 10 ? 1 : 2;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hotId, setHotId] = useState<string | null>(null);
 
-  // Who lights up with the person pointed at: them, and whoever their threads reach.
+  // Who lights up with the person pointed at: them, and whoever their real threads reach. With no real thread
+  // (the storyteller alone, a friend), nobody is dimmed.
   const hot = useMemo(() => {
     if (!hotId) return null;
     const set = new Set([hotId]);
-    for (const l of plate.links) if (l.from.includes(hotId) || l.to === hotId) [...l.from, l.to].forEach((x) => set.add(x));
+    for (const l of plate.links) if (!l.dashed && (l.from.includes(hotId) || l.to === hotId)) [...l.from, l.to].forEach((x) => set.add(x));
     return set.size > 1 ? set : null;
   }, [hotId, plate.links]);
   const onHot = useCallback((id: string | null) => setHotId(id), []);
@@ -230,16 +299,17 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     const el = plateRef.current;
     const svg = svgRef.current;
     if (!el || !svg) return;
-    // Tighter faces when a generation would not fit on one line; looser again when the window grows.
-    el.dataset.tight = "";
-    if (wraps(el)) el.dataset.tight = "1";
+    // The largest faces that let every generation sit on one line.
+    let i = start;
+    el.dataset.size = SIZES[i];
+    while (i < SIZES.length - 1 && wraps(el)) el.dataset.size = SIZES[++i];
     if (getComputedStyle(svg).display === "none") {
       setThreads((prev) => (prev.length ? [] : prev));
       return;
     }
     setSize({ w: el.offsetWidth, h: el.offsetHeight });
     setThreads(measure(el, plate.links));
-  }, [plate.links]);
+  }, [plate.links, start]);
 
   useLayoutEffect(() => {
     draw();
@@ -248,26 +318,57 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     const el = plateRef.current;
     if (!el) return;
     let timer = 0;
+    let width = el.offsetWidth;
     const later = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(draw, 40);
     };
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(later) : null;
+    // Redraw when the plate's width changes (a new size class may fit) or the fonts arrive; height changes follow from those.
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            if (el.offsetWidth !== width) {
+              width = el.offsetWidth;
+              later();
+            }
+          })
+        : null;
     ro?.observe(el);
-    window.addEventListener("resize", later);
     document.fonts?.ready.then(later).catch(() => {});
     return () => {
       window.clearTimeout(timer);
       ro?.disconnect();
-      window.removeEventListener("resize", later);
     };
   }, [draw]);
 
   useTreeMotion(plateRef, `${story.id}:${people.length}`);
 
+  const item = (x: { key: string; unit?: { key: string; nodes: PlateNode[] }; ghost?: PlateGhost }) => {
+    if (x.ghost) {
+      const anchor = x.ghost.anchorId ? byId.get(x.ghost.anchorId) || null : null;
+      return <Ring key={x.key} ghost={x.ghost} anchor={isReal(anchor) ? anchor : null} onAdd={onAdd} hot={hot} />;
+    }
+    const u = x.unit!;
+    if (u.nodes.length === 1) return <Face key={u.key} node={u.nodes[0]} story={story} meId={meId} preview={preview} hot={hot} onHot={onHot} />;
+    return (
+      <div className="tp-unit" key={u.key} role="group" aria-label={u.nodes.map((n) => firstName(n.person)).join(" & ")}>
+        {u.nodes.map((n, i) => (
+          <span className="tp-pair" key={n.id}>
+            {i > 0 && (
+              <span className="tp-amp" aria-hidden="true">
+                &amp;
+              </span>
+            )}
+            <Face node={n} story={story} meId={meId} preview={preview} hot={hot} onHot={onHot} />
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <section className="tp-wrap" aria-label="The family tree">
-      <div className="tp" ref={plateRef} data-hot={hot ? "1" : undefined}>
+      <div className="tp" ref={plateRef} data-size={SIZES[start]} data-hot={hot ? "1" : undefined}>
         <svg ref={svgRef} className="tp-threads" aria-hidden="true" width={size.w || undefined} height={size.h || undefined} viewBox={size.w ? `0 0 ${size.w} ${size.h}` : undefined}>
           {threads.map((t) => (
             <path key={t.key} d={t.d} className={`${t.dashed ? "dash" : ""}${hot ? (t.ends.every((x) => hot.has(x)) && t.ends.includes(hotId || "") ? " lit" : " dim") : ""}`} />
@@ -276,35 +377,18 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
         <span className="tp-rail" aria-hidden="true" />
 
         {plate.tiers.map((tier) => (
-          <section key={tier.key} className={`tp-tier${tier.home ? " home" : ""}`} aria-label={tier.title}>
+          <section key={tier.key} className={`tp-tier${tier.home ? " home" : ""}${tier.units.length ? "" : " rings"}`} aria-label={tier.title}>
             <header className="tp-label">
               <span className="tp-dot" aria-hidden="true" />
               {tier.decade && <span className="tp-dec">{tier.decade}</span>}
               <h3>{tier.title}</h3>
             </header>
             <div className="tp-row">
-              {tier.units.map((u) =>
-                u.nodes.length > 1 ? (
-                  <div className="tp-unit" key={u.key} role="group" aria-label={u.nodes.map((n) => firstName(n.person)).join(" & ")}>
-                    {u.nodes.map((n, i) => (
-                      <span className="tp-pair" key={n.id}>
-                        {i > 0 && (
-                          <span className={`tp-amp${u.nodes[i].teller || u.nodes[i - 1].teller ? " at-teller" : ""}`} aria-hidden="true">
-                            &amp;
-                          </span>
-                        )}
-                        <Face node={n} story={story} meId={meId} preview={preview} hot={hot} onHot={onHot} />
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <Face key={u.key} node={u.nodes[0]} story={story} meId={meId} preview={preview} hot={hot} onHot={onHot} />
-                ),
-              )}
-              {tier.ghosts.map((g) => {
-                const anchor = g.anchorId ? byId.get(g.anchorId) || null : null;
-                return <Ring key={g.key} ghost={g} anchor={isReal(anchor) ? anchor : null} onAdd={onAdd} hot={hot} />;
-              })}
+              {(["left", "centre", "right"] as Zone[]).map((z) => (
+                <div key={z} className={`tp-zone ${z}`}>
+                  {tier.zones[z].map(item)}
+                </div>
+              ))}
             </div>
           </section>
         ))}
@@ -314,12 +398,14 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
             <header className="tp-label">
               <span className="tp-dot open" aria-hidden="true" />
               <h3>Not placed yet</h3>
-              <p className="tp-hint">Say who they are to {own ? "you" : firstName(teller) || story.name}, and they take their place above.</p>
+              <p className="tp-hint">Say who they are to {own ? "you" : firstName(teller) || story.name}.</p>
             </header>
             <div className="tp-row">
-              {plate.unplaced.map((p) => (
-                <Unplaced key={p.id} person={p} anchor={realTeller} story={story} meId={meId} preview={preview} canPlace={!preview && canPlace(p)} onPlace={(kind) => realTeller && onPlace(p, realTeller, kind)} />
-              ))}
+              <div className="tp-zone centre">
+                {plate.unplaced.map((p) => (
+                  <Unplaced key={p.id} person={p} anchor={realTeller} story={story} meId={meId} preview={preview} canPlace={!preview && canPlace(p)} onPlace={(kind) => realTeller && onPlace(p, realTeller, kind)} />
+                ))}
+              </div>
             </div>
           </section>
         )}

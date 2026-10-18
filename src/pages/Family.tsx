@@ -21,7 +21,7 @@ import { Button, Problem } from "../components/ui";
 import { PlusIcon } from "../components/icons";
 import FamilyTree from "../components/family/tree/FamilyTree";
 import Storyteller from "../components/family/Storyteller";
-import { Cartouche, PressedFern, WhereNext } from "../components/family/Ornaments";
+import { Cartouche, Star, WhereNext } from "../components/family/Ornaments";
 import { sampleFamily } from "../components/family/tree/sampleFamily";
 import { placePerson } from "../components/family/tree/placePerson";
 import { generationsLine, peopleLine } from "../components/family/album/albumModel";
@@ -69,7 +69,7 @@ function MyCodes({ people, version }: { people: Person[]; version: number }) {
         <li key={c.code}>
           <b>{spacedCode(c.code) as string}</b>
           <span className="fp-quiet">
-            for {who(c)} · {expiresLabel(c.expiresAt, now)}
+            <span className="nw">for {who(c)}</span> · <span className="nw">{expiresLabel(c.expiresAt, now)}</span>
           </span>
           <Button
             variant="quiet"
@@ -126,7 +126,21 @@ export default function Family() {
     if (params.get("review") === "1") reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [params]);
 
-  if (account === undefined) return <Shell bare wide><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined)
+    return (
+      <Shell bare wide>
+        {/* the mark draws itself over a hairline sketch of the page to come: the name, the plate, three generations */}
+        <div className="page fp fp-skel" aria-busy="true">
+          <span className="sk-line w30 tall" />
+          <span className="sk-line w50" />
+          <span className="sk-tiers">
+            <span className="sk-ring" />
+            <span className="sk-ring big" />
+            <span className="sk-ring" />
+          </span>
+        </div>
+      </Shell>
+    );
   if (account === null && loadError) {
     return (
       <Shell bare wide>
@@ -142,7 +156,6 @@ export default function Family() {
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const own = story.relationship === "Myself" && (!story.ownerId || story.ownerId === meId);
   const joined = !!story.ownerId && story.ownerId !== meId;
-  const whose = own ? "your" : `${story.name}'s`;
   const viewOwn = sample ? false : own;
   const context = sample ? "A sample family, for looking" : own ? "Your story" : joined ? `${story.name}'s story, which you've joined` : `${story.name}'s story, which you keep`;
 
@@ -169,7 +182,6 @@ export default function Family() {
       <div className="page fp">
         <header className="fp-head" data-rise>
           <div className="fp-name">
-            <PressedFern />
             <Cartouche letter={(Array.from(String(shownStory.lastName || shownStory.name || "").trim())[0] || "A").toUpperCase()} />
             <div className="fp-title">
               <h1>
@@ -189,7 +201,7 @@ export default function Family() {
         {!preview && <Duplicates people={people} family={family} stories={stories} meId={meId} onChanged={afterWrite} />}
 
         <div className="fp-grid">
-          <Storyteller family={shownFamily} story={shownStory} meId={sample ? null : meId} own={viewOwn} preview={preview} onInvite={() => !preview && setInvite({ anchor: null })} />
+          <Storyteller family={shownFamily} story={shownStory} meId={sample ? null : meId} own={viewOwn} preview={preview} />
           <FamilyTree
             family={shownFamily}
             story={shownStory}
@@ -204,6 +216,7 @@ export default function Family() {
 
         {!preview && (
           <section className="fp-keep" aria-label="Keeping the family">
+            <Star />
             <div className="fp-keep-col" ref={reviewRef} id="review">
               <ReviewQueue story={story} askedCount={askedCount} asked={<Asked story={story} family={family} meId={meId} keeper onCount={onAskedCount} onChanged={afterWrite} />} />
               <WaitingOnOthers meId={meId} family={family} />
@@ -213,9 +226,7 @@ export default function Family() {
               {/* someone new is coming: the family's dog, curious, chin on the plate's edge (decoration D11) */}
               <img className="fp-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" />
               <h2 id="fp-invites-h">Invitations</h2>
-              <p className="fp-how">
-                Whoever you invite joins {whose} family tree with a code or a link. They read what's shared and add what they remember, under their own name. Nobody writes as {own ? "you" : story.name}.
-              </p>
+              <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>
               <MyCodes people={people} version={codesVersion} />
             </section>
 
@@ -229,7 +240,7 @@ export default function Family() {
 
         <WhereNext
           items={[
-            { to: "/write", title: own ? "Add a memory" : `Add something ${story.name} told you`, line: "A few lines is plenty. It takes about five minutes." },
+            { to: "/", title: "Today's question", line: "One question a day, for whoever is telling." },
             { to: "/archive", title: "The archive", line: `Everything ${own ? "you have" : `${story.name} has`} told, by year and by chapter.` },
             { to: "/book", title: "The book", line: "How the family's memories print, page by page." },
           ]}

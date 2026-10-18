@@ -27,7 +27,7 @@ type Voice = { id: string; personId: string | null; name: string; relationship: 
 const words = (m: Memory) => (m.body || m.excerpt || "").trim();
 const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 
-export default function Storyteller({ family, story, meId, own, preview, onInvite }: { family: Family | null; story: Story; meId: string | null | undefined; own: boolean; preview?: boolean; onInvite?: () => void }) {
+export default function Storyteller({ family, story, meId, own, preview }: { family: Family | null; story: Story; meId: string | null | undefined; own: boolean; preview?: boolean }) {
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
   const people = useMemo(() => treePeople(realPeople(family), story), [family, story]);
   const teller = people.find((p) => p.storyId === story.id) || null;
@@ -66,7 +66,9 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
 
   const kept = story.memories.filter((m) => m.status !== "in_progress");
   const written = kept.filter((m) => !m.audio?.length && !m.familyCallId).length;
-  const countLine = !kept.length ? "no memories kept yet" : `${n(kept.length, "memory", "memories")}${kept.length > 1 && written ? `, ${written === kept.length ? "all" : written} written` : ""}`;
+  const recorded = kept.length - written;
+  // "13 memories: 9 written, 4 recorded" (said aloud, on a call or a recording); one kind needs no split.
+  const countLine = !kept.length ? "no memories kept yet" : `${n(kept.length, "memory", "memories")}${written && recorded ? `: ${written} written, ${recorded} recorded` : ""}`;
   const state: LinkState["key"] | null = teller ? (meId && teller.userId === meId ? "you" : linkState(teller, meId).key) : null;
   const stateLine = !teller || !state || teller.deathYear || state === "you" ? "" : stateWords(state);
   const birth = teller?.birthYear || parseInt(String(story.birthYear || ""), 10) || null;
@@ -136,14 +138,7 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
             );
           })
         ) : (
-          <div className="st-empty">
-            <p>Nobody in the family has added their side yet. Sending them a link takes a minute, and their words appear here under their own name.</p>
-            {onInvite && (
-              <button type="button" className="st-act" onClick={onInvite}>
-                Invite someone <span aria-hidden="true">→</span>
-              </button>
-            )}
-          </div>
+          <p className="st-empty">Nobody has added their side yet. Sending someone a link takes a minute.</p>
         )}
       </section>
     </aside>

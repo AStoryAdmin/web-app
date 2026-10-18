@@ -17,11 +17,12 @@ import { Link } from "react-router-dom";
 import { cardMeta, quoteFor } from "../app-core/lib/memoryCard.js";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { useAccount } from "../state/accountContext";
-import { Avatar } from "./ui";
 import { Mark } from "./Brand";
 import { MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
-import { keptLine } from "./archive/transcript";
+import { realChapter } from "./archive/photos";
+import { keptLine, ownWords } from "./archive/transcript";
+import Face from "./archive/Face";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { opening } from "../lib/resurface";
@@ -37,7 +38,9 @@ function words(memory: Memory, max: number): string {
   const body = (memory.body || "").trim();
   const kept = keptLine(body);
   if (kept) return smarten(kept);
-  if (body) return smarten(quoteFor(opening(body) || body, max) as string);
+  // otherwise the opening of their own words: a call tidied to the teller's turns, typed lines kept apart
+  const own = ownWords(body);
+  if (own) return smarten(quoteFor(opening(own) || own, max) as string);
   const ex = (memory.excerpt || "").trim();
   if (/^the (speaker|narrator|storyteller)\b/i.test(ex)) return "";
   return smarten(quoteFor(ex, max) as string);
@@ -57,7 +60,22 @@ function freshness(memory: Memory, now = new Date()): string | null {
   return null;
 }
 
-export default function PrintCard({ memory, story, size = "tall", sides = [], index = 0 }: { memory: Memory; story: Story; size?: PrintSize; sides?: Contribution[]; index?: number }) {
+export default function PrintCard({
+  memory,
+  story,
+  size = "tall",
+  sides = [],
+  index = 0,
+  rise = true,
+}: {
+  memory: Memory;
+  story: Story;
+  size?: PrintSize;
+  sides?: Contribution[];
+  index?: number;
+  /** Its own CSS arrival; off where the page's scroll hook owns the entrance (the Archive). */
+  rise?: boolean;
+}) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
   const photo = usePhotoUrl(meta.photo);
@@ -84,10 +102,10 @@ export default function PrintCard({ memory, story, size = "tall", sides = [], in
 
   return (
     <Link
-      className={`print-card ${size}${meta.photo ? "" : " typed"}${treasured ? " treasured gilt" : ""} rise`}
+      className={`print-card ${size}${meta.photo ? "" : " typed"}${treasured ? " treasured gilt" : ""}${rise ? " rise" : ""}`}
       data-era={meta.photo ? era : undefined}
       to={`/archive/${memory.id}`}
-      style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}
+      style={rise ? { animationDelay: `${Math.min(index, 6) * 60}ms` } : undefined}
       onClick={() => markSeen(memory.id, sides.length)}
       aria-label={`${meta.title}${dated ? `, ${meta.date}` : ""}${treasured ? ", treasured" : ""}`}
     >
@@ -117,7 +135,7 @@ export default function PrintCard({ memory, story, size = "tall", sides = [], in
           </span>
         )}
         <span className="cap">
-          {meta.chapter && <span className="kicker">{meta.chapter}</span>}
+          {realChapter(meta.chapter) && <span className="kicker">{meta.chapter}</span>}
           <span className="title">{meta.title}</span>
           {dated && <span className="dateline dated">{meta.date}</span>}
         </span>
@@ -131,7 +149,7 @@ export default function PrintCard({ memory, story, size = "tall", sides = [], in
             {show.has("faces") && (
               <span className="faces" title={people.map((p) => p.givenName).join(", ")}>
                 {people.slice(0, 3).map((p) => (
-                  <Avatar key={p.id} name={p.givenName || "?"} size={24} />
+                  <Face key={p.id} person={p} size={24} />
                 ))}
               </span>
             )}

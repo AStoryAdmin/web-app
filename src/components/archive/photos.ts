@@ -1,4 +1,5 @@
 import type { Memory } from "../../data/stories";
+import { ASKED, splitRunOn } from "./transcript";
 
 /** A memory's photographs in display order: the one the family chose first. */
 export function orderedPhotos(memory: Memory): string[] {
@@ -26,32 +27,35 @@ export function minutesLabel(seconds: number): string {
 /**
  * Paragraphs a reader can take in: a transcribed call often arrives as one
  * block of a thousand words. A block longer than `max` characters is set
- * as several paragraphs, broken only where a sentence ends, each about
- * `target` characters. The words are never changed; only where the
- * paragraph breaks fall.
+ * as several paragraphs, broken where a sentence ends, each about `target`
+ * characters; a stretch that runs on with no full stop at all is broken
+ * before a clause word ("and then", "so", "but"), with a full stop added
+ * only when `punctuate` (the tidied reading). The words are never changed.
  */
-export function readableParagraphs(paragraphs: string[], { max = 560, target = 380 }: { max?: number; target?: number } = {}): string[] {
+export function readableParagraphs(paragraphs: string[], { max = 560, target = 380, punctuate = false }: { max?: number; target?: number; punctuate?: boolean } = {}): string[] {
   const out: string[] = [];
   for (const p of paragraphs) {
-    if (p.length <= max || p.includes("\n")) {
+    if (p.length <= max || p.includes("\n") || p.startsWith(ASKED)) {
       out.push(p);
       continue;
     }
-    const sentences = p.match(/[^.!?…]+(?:[.!?…]+["”’)\]]*|$)\s*/g) || [p];
+    const sentences = (p.match(/[^.!?…]+(?:[.!?…]+["”’)\]]*|$)\s*/g) || [p]).flatMap((s) => (s.length > max ? splitRunOn(s, target, punctuate).map((x) => `${x} `) : [s]));
     let run = "";
+    const mine: string[] = [];
     for (const s of sentences) {
       run += s;
       if (run.length >= target) {
-        out.push(run.trim());
+        mine.push(run.trim());
         run = "";
       }
     }
     const rest = run.trim();
     if (rest) {
       // a short tail joins the paragraph before it rather than standing alone
-      if (rest.length < 140 && out.length) out[out.length - 1] = `${out[out.length - 1]} ${rest}`;
-      else out.push(rest);
+      if (rest.length < 140 && mine.length) mine[mine.length - 1] = `${mine[mine.length - 1]} ${rest}`;
+      else mine.push(rest);
     }
+    out.push(...mine);
   }
   return out;
 }
@@ -69,5 +73,6 @@ export const isRunOfLines = (p: string) => {
   return false;
 };
 
-/** The book's drop cap only where it can rest: a first paragraph of 200 characters or more, no line breaks, opening on a letter. */
-export const takesDropCap = (p: string) => !p.includes("\n") && p.length >= 200 && /^[A-Za-z]/.test(p);
+/** The book's drop cap only where it can rest: a first paragraph of 200 to 600 characters (nine lines at most), no line breaks, opening on a letter and not on throat-clearing. */
+export const takesDropCap = (p: string) =>
+  !p.includes("\n") && !p.startsWith(ASKED) && p.length >= 200 && p.length <= 600 && /^[A-Za-z]/.test(p) && !/^(?:yeah|yes|well|so|um|uh|okay|ok|oh|like|and|but)\b/i.test(p);

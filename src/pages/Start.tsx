@@ -10,7 +10,7 @@
  * the Whose-story sheet (and offers "Not now"); `?join=1` opens the join
  * branch straight away. A second story of your own is never offered.
  */
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import gsap from "gsap";
 import { useAuth } from "../state/authContext";
@@ -21,6 +21,7 @@ import { Avatar, Button, Field, Problem } from "../components/ui";
 import { Lockup } from "../components/Brand";
 import LoadingMark from "../components/delight/LoadingMark";
 import { MOTION_OK } from "../lib/arrive";
+import { OUT } from "../lib/ease";
 import { track } from "../lib/analytics";
 import { storiesToAddTo } from "../app-core/lib/familyStories.js";
 import { personName } from "../components/family/familyView";
@@ -165,13 +166,14 @@ export default function Start() {
 
   // The sheet's contents rise once, a few things together, each time the step changes (transform and opacity,
   // stated at both ends, cleared after; nothing under reduced motion).
-  useEffect(() => {
+  // Set up before the browser paints, so the first frame is already the start of the rise and never a flash.
+  useLayoutEffect(() => {
     const el = sheet.current;
     if (!el) return;
     const mm = gsap.matchMedia();
     mm.add(MOTION_OK, () => {
       const items = el.querySelectorAll("[data-rise]");
-      gsap.fromTo(items, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 0.06, clearProps: "transform,opacity" });
+      gsap.fromTo(items, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: OUT, stagger: 0.06, clearProps: "transform,opacity" });
     });
     return () => mm.revert();
   }, [who, account]);
@@ -275,20 +277,32 @@ export default function Start() {
               </p>
             </aside>
 
+            {who === "join" ? (
+              <div className="start-form" data-rise>
+                <form
+                  className="start-code"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (code) navigate(`/join/${code}`);
+                  }}
+                  noValidate
+                >
+                  <Field label="Their family code" placeholder="ABC123" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))} autoFocus autoComplete="off" />
+                  <div className="start-acts">
+                    <Button type="submit" disabled={!code}>
+                      Open it
+                    </Button>
+                    {!code && <span className="acct-why">Type the code they gave you first.</span>}
+                  </div>
+                </form>
+                <AskToJoin
+                  people={toAddTo({ people: family?.people || [], meId: user?.id || null, myStoryIds: stories.map((s) => s.id) })}
+                  myName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()}
+                />
+              </div>
+            ) : (
             <form className="start-form" onSubmit={submit} noValidate data-rise>
               {error && <Problem message={error} onDismiss={() => setError(null)} />}
-              {who === "join" && (
-                <>
-                  <Field label="Their family code" placeholder="ABC123" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))} autoFocus autoComplete="off" />
-                  <Button type="button" onClick={() => code && navigate(`/join/${code}`)} disabled={!code}>
-                    Open it
-                  </Button>
-                  <AskToJoin
-                    people={toAddTo({ people: family?.people || [], meId: user?.id || null, myStoryIds: stories.map((s) => s.id) })}
-                    myName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()}
-                  />
-                </>
-              )}
               {who === "other" && (
                 <>
                   <Field label="Their first name" placeholder="Rose" value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
@@ -305,18 +319,15 @@ export default function Start() {
                 </>
               )}
               {who === "self" && !user?.firstName && <Field label="Your first name" placeholder="Rose" value={name} onChange={(e) => setName(e.target.value)} autoFocus required />}
-              {who !== "join" && (
-                <>
-                  <div className="start-two">
-                    <Field label="Last name" placeholder="Hartley" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                    <Field label="Year of birth, if you know it" inputMode="numeric" placeholder="1945" value={birthYear} onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} hint={`It lets the archive say how old ${who === "self" ? "you were" : "they were"}.`} />
-                  </div>
-                  <Button type="submit" block loading={busy}>
-                    {who === "self" ? "Begin my story" : `Begin ${name.trim() ? `${name.trim()}'s` : "their"} story`}
-                  </Button>
-                </>
-              )}
+              <div className="start-two">
+                <Field label="Last name" placeholder="Hartley" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <Field label="Year of birth, if you know it" inputMode="numeric" placeholder="1945" value={birthYear} onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, "").slice(0, 4))} hint={`It lets the archive say how old ${who === "self" ? "you were" : "they were"}.`} />
+              </div>
+              <Button type="submit" block loading={busy}>
+                {who === "self" ? "Begin my story" : `Begin ${name.trim() ? `${name.trim()}’s` : "their"} story`}
+              </Button>
             </form>
+            )}
           </div>
         )}
       </main>

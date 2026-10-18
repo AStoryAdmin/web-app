@@ -72,7 +72,7 @@ function Switch({ on, label, hint, onChange, busy }: { on: boolean; label: strin
 
 /* ── Profile ─────────────────────────────────────────────────────────── */
 
-function Profile({ user, refresh }: { user: User; refresh: () => Promise<unknown> }) {
+function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promise<unknown>; bookName: string }) {
   const [first, setFirst] = useState(user.firstName);
   const [last, setLast] = useState(user.lastName);
   const [phone, setPhone] = useState(user.phone);
@@ -103,6 +103,7 @@ function Profile({ user, refresh }: { user: User; refresh: () => Promise<unknown
             {name}
             <Stop />
           </h1>
+          {bookName && <p className="acct-plate-book">{bookName}</p>}
         </div>
       </div>
       <div className="acct-sec-body">
@@ -124,6 +125,7 @@ function Profile({ user, refresh }: { user: User; refresh: () => Promise<unknown
           <Button type="submit" small disabled={!changed} loading={busy}>
             Save
           </Button>
+          {!changed && !note && <span className="acct-why">Change a field to save it.</span>}
           <NoteLine note={note} />
         </div>
       </form>
@@ -194,6 +196,7 @@ function Email({ user, refresh }: { user: User; refresh: () => Promise<unknown> 
             <Button variant="quiet" small onClick={() => setOpen(false)}>
               Keep it
             </Button>
+            {!next.includes("@") && !note && <span className="acct-why">Type the new address first.</span>}
             <NoteLine note={note} />
           </div>
         </form>
@@ -230,7 +233,10 @@ function Password() {
   const [shown, setShown] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note>(null);
-  const mismatch = again.length > 0 && again !== pw;
+  const [touched, setTouched] = useState(false);
+  // said once the second field has been left, never on the first keystroke
+  const mismatch = touched && again.length > 0 && again !== pw;
+  const ready = pw.length >= MIN_PASSWORD && pw === again;
 
   const save = async () => {
     if (pw.length < MIN_PASSWORD || pw !== again) return;
@@ -240,6 +246,7 @@ function Password() {
     if (r.ok) {
       setPw("");
       setAgain("");
+      setTouched(false);
       setNote({ ok: "Your password is changed." });
     } else setNote({ error: r.error });
     setBusy(false);
@@ -255,11 +262,12 @@ function Password() {
         }}
       >
         <Field label="New password" type={shown ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" icon={<LockIcon />} reveal={{ shown, toggle: () => setShown((s) => !s) }} hint={`At least ${MIN_PASSWORD} characters.`} />
-        <Field label="Once more" type={shown ? "text" : "password"} value={again} onChange={(e) => setAgain(e.target.value)} autoComplete="new-password" error={mismatch ? "These don't match yet." : null} />
+        <Field label="Once more" type={shown ? "text" : "password"} value={again} onChange={(e) => setAgain(e.target.value)} onBlur={() => setTouched(true)} autoComplete="new-password" error={mismatch ? "These don’t match yet." : null} />
         <div className="acct-acts">
-          <Button type="submit" small loading={busy} disabled={pw.length < MIN_PASSWORD || pw !== again}>
+          <Button type="submit" small loading={busy} disabled={!ready}>
             Change password
           </Button>
+          {!ready && !note && <span className="acct-why">{pw.length < MIN_PASSWORD ? `Type at least ${MIN_PASSWORD} characters, then the same again.` : "Type the same password again."}</span>}
           <NoteLine note={note} />
         </div>
       </form>
@@ -449,7 +457,7 @@ function Walls({ meId }: { meId: string }) {
   const mine = stories.filter((s) => storyGroupOf(s, meId) !== "joined" && (s.memories.length > 0 || s.isPublic));
   if (!mine.length) return null;
   return (
-    <Section title="The wall" lead="One page anyone with the link can read: the memories that are public, and what the family added. Private memories never show. Turn it off any time." id="wall">
+    <Section title="The wall" lead="One page anyone with the link can read: the memories that are public, and what the family added. Turn it off any time." id="wall">
       <div className="acct-switches">
         {mine.map((s) => (
           <WallSwitch key={s.id} story={s} />
@@ -528,6 +536,7 @@ function Trusted() {
           <Button variant="outline" small type="submit" loading={busy} disabled={!mail.includes("@")}>
             {heir ? "Change" : "Name them"}
           </Button>
+          {!mail.includes("@") && !note && <span className="acct-why">Type their email first.</span>}
           <NoteLine note={note} />
         </div>
       </form>
@@ -706,7 +715,7 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
 /* ── The index beside the page ───────────────────────────────────────── */
 
 const INDEX: { group: string; items: [string, string][] }[] = [
-  { group: "You", items: [["profile", "Your name"], ["email", "Email"], ["password", "Password"]] },
+  { group: "You", items: [["profile", "Your name"], ["email", "Email"], ["password", "Password"], ["signout", "Sign out"]] },
   { group: "The stories", items: [["storytellers", "Whose stories"], ["wall", "The wall"], ["export", "A copy of everything"]] },
   { group: "Plan and privacy", items: [["plan", "Your plan"], ["privacy", "Privacy"]] },
   { group: "If you can't", items: [["trusted", "Who looks after this"], ["delete", "Delete the account"]] },
@@ -775,6 +784,7 @@ export default function Account() {
   if (!user) return null; // RequireAuth sends them to sign in
 
   const recordedBy = `${user.firstName} ${user.lastName}`.trim();
+  const bookName = activeStory ? (activeStory.lastName ? `The ${activeStory.lastName} book` : `${activeStory.name}’s book`) : "";
   const leave = async () => {
     setLeaving(true);
     await signOut();
@@ -813,16 +823,40 @@ export default function Account() {
               );
             })}
           </nav>
-          <Button variant="outline" small onClick={leave} loading={leaving} className="acct-signout">
-            Sign out
-          </Button>
         </aside>
 
         <div className="acct-body">
           {loadError && <Problem message={`We couldn't reach your stories. ${loadError}`} onRetry={reload} />}
-          <Profile user={user} refresh={refresh} />
+          {/* on a phone the index folds into one control at the top of the page */}
+          <label className="acct-jump">
+            <span>Go to</span>
+            <select
+              value={current}
+              onChange={(e) => {
+                const id = e.target.value;
+                setCurrent(id);
+                document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+              }}
+            >
+              {INDEX.flatMap((g) => g.items)
+                .filter(([id]) => present.includes(id))
+                .map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <Profile user={user} refresh={refresh} bookName={bookName} />
           <Email user={user} refresh={refresh} />
           <Password />
+          <Section title="Sign out" lead="Only this browser. Your stories stay exactly as they are." id="signout">
+            <div className="acct-acts">
+              <Button variant="outline" small onClick={leave} loading={leaving}>
+                Sign out of this browser
+              </Button>
+            </div>
+          </Section>
           <Storytellers stories={stories} active={activeStory} chooseStory={chooseStory} meId={user.id} />
           <Walls meId={user.id} />
           <Export stories={stories} recordedBy={recordedBy} />
@@ -839,8 +873,8 @@ export default function Account() {
           />
           <WhereNext
             rows={[
-              { to: "/plans", title: "Compare the plans", line: "Every price in full, side by side." },
               { to: "/book", title: "Open the book", line: "Every page, as it will print." },
+              { to: "/family", title: "The family", line: "Who is in the book, and who is invited." },
               { to: "/", title: "Back to today", line: "Today's question is waiting." },
             ]}
           />

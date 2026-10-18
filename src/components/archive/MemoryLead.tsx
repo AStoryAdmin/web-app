@@ -65,12 +65,16 @@ export function MemoryHead({
           <span className="mv-pill">{pill}</span>
         </div>
       )}
-      <div className="mv-titlerow">
-        <h1 className="mv-title" id="mv-title">
-          {title}
-        </h1>
-        {treasured && <WaxSeal size={56} className="mv-seal" label="Treasured" />}
-      </div>
+      <h1 className="mv-title" id="mv-title">
+        {title}
+        {/* the seal sits inline after the last word, so it never narrows the title */}
+        {treasured && (
+          <>
+            {" "}
+            <WaxSeal size={40} className="mv-seal" label="Treasured" />
+          </>
+        )}
+      </h1>
       <p className="mv-date">
         {dated ? <span className="dated">{date}</span> : <Link to={editTo}>Add when it was</Link>}
         {stillWriting && <span>Still being written up</span>}

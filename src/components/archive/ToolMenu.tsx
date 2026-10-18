@@ -4,7 +4,7 @@
  * menu carries the page's one disclosure of what each means. The menu
  * grows from its button (origin-aware, 160 ms on the strong ease-out),
  * closes on Escape, on a click outside and after a choice, and the arrow
- * keys move through it. Nothing animates under reduced motion.
+ * keys move through it. Near the foot of the window it opens upward. Nothing animates under reduced motion.
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
@@ -39,6 +39,7 @@ export default function ToolMenu({
   busy?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const menuId = useId();
@@ -83,13 +84,18 @@ export default function ToolMenu({
         aria-label={ariaLabel}
         aria-busy={busy || undefined}
         disabled={busy}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // near the foot of the window the menu opens upward, so it is never cut off
+          const r = button.current?.getBoundingClientRect();
+          setUp(!!r && window.innerHeight - r.bottom < 280 && r.top > 280);
+          setOpen((v) => !v);
+        }}
       >
         {icon}
         {label}
       </button>
       {open && (
-        <div className="mv-menu" role="menu" id={menuId} onKeyDown={onKey}>
+        <div className={`mv-menu${up ? " up" : ""}`} role="menu" id={menuId} onKeyDown={onKey}>
           {items.map((it) => (
             <button
               key={it.key}

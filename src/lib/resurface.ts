@@ -9,6 +9,7 @@
 import { dayKey } from "../app-core/lib/dailyQuestion.js";
 import { ageAt, memoryDate, onThisMonth } from "../app-core/lib/timeline.js";
 import { quoteFor } from "../app-core/lib/memoryCard.js";
+import { keptLine, ownWords } from "../components/archive/transcript";
 import type { Memory, Story } from "../data/stories";
 
 export type Resurfaced = {
@@ -30,7 +31,16 @@ function hash(s: string): number {
 
 const pick = <T>(items: T[], seed: string): T => items[hash(seed) % items.length];
 
-const words = (m: Memory) => (m.body || m.excerpt || "").trim();
+/** The person's own words: a call tidied to the teller's turns, typed lines kept apart; never the server's third-person summary. */
+const words = (m: Memory) => {
+  const own = ownWords(m.body || "");
+  if (own) return own;
+  const ex = (m.excerpt || "").trim();
+  return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : ex;
+};
+
+/** The quote for the day: their kept line when they have one, else the opening of their own words. */
+const quoteOf = (m: Memory) => keptLine(m.body || "") || quoteFor(opening(words(m)), 220);
 
 const FILLER = /^(yeah|yes|so|um|uh|well|okay|ok|right|oh|and|but|like|you know)\b/i;
 
@@ -74,7 +84,7 @@ export function resurface(story: Story, now = new Date()): Resurfaced | null {
   const thisMonth = (onThisMonth(pool, now) as { memory: Memory; year: number }[]).filter(({ year }) => year < now.getFullYear());
   if (thisMonth.length) {
     const { memory, year } = pick(thisMonth, seed);
-    return { memory, kicker: `${MONTHS[now.getMonth()]} ${year}`, age: ageOf(memory), quote: quoteFor(opening(words(memory)), 220) };
+    return { memory, kicker: `${MONTHS[now.getMonth()]} ${year}`, age: ageOf(memory), quote: quoteOf(memory) };
   }
 
   const today = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -83,10 +93,10 @@ export function resurface(story: Story, now = new Date()): Resurfaced | null {
     .filter(({ written }) => !Number.isNaN(written.getTime()) && `${String(written.getMonth() + 1).padStart(2, "0")}-${String(written.getDate()).padStart(2, "0")}` === today && written.getFullYear() < now.getFullYear());
   if (anniversaries.length) {
     const { memory, written } = pick(anniversaries, seed);
-    return { memory, kicker: `Written ${yearsAgoLabel(now.getFullYear() - written.getFullYear())}`, age: ageOf(memory), quote: quoteFor(opening(words(memory)), 220) };
+    return { memory, kicker: `Written ${yearsAgoLabel(now.getFullYear() - written.getFullYear())}`, age: ageOf(memory), quote: quoteOf(memory) };
   }
 
   const memory = pick(pool, seed);
   const { dated, text } = memoryDate(memory) as { dated: boolean; text: string };
-  return { memory, kicker: dated ? text.trim() : "From the book", age: ageOf(memory), quote: quoteFor(opening(words(memory)), 220) };
+  return { memory, kicker: dated ? text.trim() : "From the book", age: ageOf(memory), quote: quoteOf(memory) };
 }

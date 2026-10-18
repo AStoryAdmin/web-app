@@ -4,95 +4,110 @@
    The founder's own journal (Project Reboot) on A Story's bench. The Shell is bare, so the whole screen is the
    desk: the book lies open in its cloth board (stitched edge, gold corners, gilt page edges, a ribbon), the
    family dog asleep on the board's top edge (once the words start it covers its eyes: the letter is yours).
-   On a laptop the book opens at two pages: the left holds the question, today's other questions, the ways to
-   begin and a pencilled note; the right is the ruled page. Under it a bar that follows the scroll keeps the wax
-   seal and the help in reach. On a phone, one page under the question. Afterwards, the page just kept sits
-   beside four quiet choices, and the next question closes the page. Every selector is scoped to the writer
-   (.w-*, .w-desk) and written to win over astory.css §20, §25, §28, §39 and §46.7. */
+   On a laptop the book opens at two pages: the left holds the question, today's other questions and a pencilled
+   note; the right is the ruled page with the ways to begin under "Dear family,". The seal follows the scroll in
+   a bar under the book (on a large window it sits in the margin with the help, held in view). On a phone, one
+   page under the question. Afterwards, the choices beside the page just kept, then "Where to next".
+   Every selector is scoped to the writer (.w-*, .w-desk) and written to win over astory.css §20, §25, §28, §39
+   and §46.7. Every vw and vh is divided by the page zoom (lib/zoom). */
 
 .w-desk {
   --w-ink: var(--sheet-ink);                /* the book's ink, #2B2B2B: 12:1 on the paper (docs/research/reading-2026.md §3.3) */
-  --w-red: #9A4320;                         /* terracotta for text: 5.5:1; #B85126 stays for glyphs and rules */
+  --w-red: #9A4320;                         /* terracotta for text: 5.5:1; --wax-light stays for glyphs and rules */
   --w-rule: rgba(201, 161, 90, 0.34);       /* the ruled lines, in the foil */
-  --w-pencil: #6F665D;                      /* graphite */
+  --w-pencil: #6F665D;                      /* graphite: 5.3:1 on the leaf */
+  --w-leaf: var(--card);                    /* the leaf's paper */
+  --w-gilt-a: var(--foil-light);            /* the gilt edges: light, then burnished */
+  --w-gilt-b: #E6C77E;
+  --w-gilt-line-a: rgba(150, 110, 45, 0.55);
+  --w-gilt-line-b: rgba(130, 92, 34, 0.55);
+  --w-gutter: rgba(70, 45, 20, 0.32);       /* the shade in the fold between the pages */
+  --w-stitch: rgba(240, 214, 160, 0.32);    /* the thread of the board's stitched edge */
+  --w-slip-shadow: 0 1px 2px rgba(42, 35, 32, 0.08), 0 18px 40px -22px rgba(42, 35, 32, 0.45);
   --w-line: 36px;                           /* one ruled line; Write.tsx reads it and grows the page by whole lines */
   --w-size: 22px;                           /* the words: EB Garamond 22/36 on a laptop, 23 on a large window, 20/32 on a phone */
 }
-
-/* the question on the cloth: the book's display face, large, two lines at most where it can be */
-.hero .whero { max-width: 980px; }
-.hero .whero .label { display: block; margin-bottom: 14px; }
-.hero .whero .wq { font-family: var(--book-display); font-weight: 500; font-size: clamp(34px, 3.4vw, 54px); line-height: 1.1; letter-spacing: -0.008em; max-width: 30ch; color: #FBF6EC; text-wrap: balance; }
-.hero .whero .wmeta { margin-top: 14px; max-width: 60ch; font-family: var(--book-body); font-style: italic; font-size: 19px; line-height: 1.45; color: var(--on-chocolate-soft); }
+@media (min-width: 1680px) { .w-desk { --w-size: 23px; } }
+@media (max-width: 1023px) { .w-desk { --w-size: 21px; } }
+@media (max-width: 599px) { .w-desk { --w-size: 20px; --w-line: 32px; } }
 
 /* ── The desk ── */
-.sheet-page .page.w-desk { max-width: none; padding-top: 96px; padding-bottom: 96px; }
-/* the caret never hides under the bar that follows the scroll */
-html:has(.w-grid.spread) { scroll-padding-bottom: 120px; }
-.w-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "center" "tools" "context"; gap: 48px; max-width: 760px; margin: 0 auto; }
-/* the words keep near the reading measure, 25.4em (about 66 characters): the page's margins widen, the ruled lines
-   still run across it (docs/research/reading-2026.md §3.2) */
-@media (min-width: 761px) { .sheet-page .w-grid.single .w-book .leaf-one { padding-left: 72px; padding-right: 72px; } }
+.sheet-page .page.w-desk { max-width: none; padding-top: 84px; padding-bottom: 96px; }
+.w-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "center" "context" "tools"; gap: 48px; max-width: 760px; margin: 0 auto; }
 .w-center { grid-area: center; min-width: 0; }
 .w-tools { grid-area: tools; min-width: 0; }
 .w-context { grid-area: context; min-width: 0; }
-.w-side { display: flex; flex-direction: column; gap: 36px; }
-
-/* one page (a phone, a tablet, a small laptop): the book, then the help and the questions; side by side under it
-   once there is room */
+.w-side { display: flex; flex-direction: column; gap: 32px; }
+/* one page, from a tablet: the book, then the questions and the help side by side under it */
 @media (min-width: 761px) {
-  .w-grid.single { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "center center" "tools context"; column-gap: 48px; align-items: start; }
+  .w-grid.single { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "center center" "context tools"; column-gap: 48px; align-items: start; }
+  /* the words keep near the reading measure (25.4em, about 66 characters): the page's margins widen instead */
+  .sheet-page .w-grid.single .w-book .leaf-one { padding-left: 72px; padding-right: 72px; }
 }
-/* a laptop: the journal open at two pages, its left edge on the hero's gutter, the help in a row beside the seal */
+/* a laptop: the journal open at two pages, its left edge on the gutter */
 .w-grid.spread { grid-template-columns: minmax(0, 1fr); grid-template-areas: "center"; max-width: calc(var(--content-max) - 2 * var(--gutter)); }
-/* a large window: the journal, and the help in the margin beside it, held in view */
-.w-grid.spread.rail { grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); grid-template-areas: "center tools"; column-gap: clamp(48px, 4vw, 88px); align-items: start; }
+/* a large window: the journal, and the help and the seal in the margin beside it, held in view */
+.w-grid.spread.rail { grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); grid-template-areas: "center tools"; column-gap: clamp(48px, calc(4vw / var(--zoom, 1)), 88px); align-items: start; }
 .w-grid.rail .w-side { position: sticky; top: calc(var(--top-h) + 40px); padding-top: 4px; }
 
-/* the book's small caps, shared by the margins */
+/* headings in the margins: the book's display face, sentence case */
 .sheet-page .page.w-desk .w-kick { margin: 0 0 6px; font: 600 21px/1.2 var(--book-display); letter-spacing: 0; text-transform: none; color: var(--w-ink); }
-/* the house full stop */
-.w-stop { color: var(--kicker-terracotta); }
 .w-note { margin: 0; font: 400 14px/1.5 var(--font-ui); color: var(--ink-soft); }
 .w-note a { color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.sheet-page:has(.w-desk)::after { display: none; }
+/* the caret never hides under the bar that follows the scroll */
+html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); } /* the paper's watermark would sit under the margin's words */
 
-/* ── The book: a cloth board, gold corners, the page stack, the leaf ── */
+/* ── The question, at the head of the page ── */
+.w-qhead { min-width: 0; }
+.w-qkick { margin: 0 0 10px; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--w-red); }
+.sheet-page .page.w-desk .w-question { margin: 0; max-width: 22ch; font-family: var(--book-display); font-weight: 600; font-size: clamp(32px, calc(2.7vw / var(--zoom, 1)), 44px); line-height: 1.1; letter-spacing: -0.01em; color: var(--w-ink); text-wrap: balance; }
+/* the size follows the length, so a question stays at two lines or so */
+.sheet-page .page.w-desk .w-question[data-len="mid"] { font-size: clamp(28px, calc(2.1vw / var(--zoom, 1)), 31px); max-width: 26ch; }
+.sheet-page .page.w-desk .w-question[data-len="long"] { font-size: clamp(25px, calc(1.9vw / var(--zoom, 1)), 27px); max-width: 30ch; line-height: 1.15; }
+.w-sub { margin: 12px 0 0; max-width: 34em; font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.45; color: var(--ink-soft); }
+/* one page: the question sits on the paper above the book, the dog's head between them */
+.w-grid.single .w-qhead { margin: 0 0 100px; }
+.sheet-page .page.w-desk .w-grid.single .w-question { max-width: 24ch; }
+
+/* ── The book: a cloth board, a stitched edge, gold corners, gilt page edges ── */
 .w-book { position: relative; isolation: isolate; padding: 16px 20px 22px 16px; border-radius: 5px;
   background: linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)), url("/book/bookcloth.jpg") 0 0 / 300px 300px, var(--chocolate);
   background-blend-mode: normal, overlay, normal;
   box-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.06), 0 2px 3px rgba(42, 35, 32, 0.18), 0 30px 56px -26px rgba(42, 35, 32, 0.6); }
+.w-book::before { content: ""; position: absolute; inset: 6px; z-index: 0; border: 1px dashed var(--w-stitch); border-radius: 3px; pointer-events: none; }
 .w-corner { position: absolute; z-index: 2; width: 26px; height: 26px; pointer-events: none; }
 .w-corner path { fill: var(--foil); }
-.w-corner path.rule { fill: none; stroke: rgba(247, 236, 207, 0.75); stroke-width: 1; }
+.w-corner path.rule { fill: none; stroke: var(--w-gilt-a); stroke-opacity: 0.8; stroke-width: 1; }
 .w-corner.tl { left: 0; top: 0; }
 .w-corner.tr { right: 0; top: 0; transform: scaleX(-1); }
 .w-corner.bl { left: 0; bottom: 0; transform: scaleY(-1); }
 .w-corner.br { right: 0; bottom: 0; transform: scale(-1, -1); }
-/* the page edges, stacked to the right and below, the way a thick book shows them */
 .w-pages { position: relative; z-index: 1; border-radius: 2px;
-  box-shadow: 2px 2px 0 -1px #F1DDA6, 2px 2px 0 0 rgba(150, 110, 45, 0.55), 4px 4px 0 -1px #E6C77E, 4px 4px 0 0 rgba(130, 92, 34, 0.55); } /* gilt edges */
-/* the ribbon: deep red silk, its notched tail hanging out below the book */
+  box-shadow: 2px 2px 0 -1px var(--w-gilt-a), 2px 2px 0 0 var(--w-gilt-line-a), 4px 4px 0 -1px var(--w-gilt-b), 4px 4px 0 0 var(--w-gilt-line-b); }
+/* the ribbon: red silk, its notched tail hanging out below the book */
 .w-ribbon { position: absolute; z-index: 0; right: 22%; top: calc(100% - 12px); width: 14px; height: 74px; transform-origin: 50% 0; pointer-events: none;
-  background: #8E3B22; border-left: 1px solid #A9502F; border-right: 1px solid #6E2C18; box-sizing: border-box;
+  background: var(--wax); border-left: 1px solid var(--wax-light); border-right: 1px solid var(--wax-shade); box-sizing: border-box;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 10px), 0 100%); }
-/* the dog, asleep with its chin on the board's edge; it looks up once the words start */
-.w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 118px; aspect-ratio: 762 / 640; pointer-events: none; transition: transform 700ms var(--ease-out); }
+/* the dog, asleep with its chin on the board's edge; once the words start it covers its eyes */
+.w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 128px; aspect-ratio: 849 / 640; pointer-events: none; transition: transform 700ms var(--ease-out); }
 .w-dog img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transition: opacity 520ms var(--ease-out); }
 .w-dog .awake { opacity: 0; }
-.w-dog[data-awake] { transform: translateY(-3px); }
 .w-dog[data-awake] .sleep { opacity: 0; }
 .w-dog[data-awake] .awake { opacity: 1; }
 
-/* the leaf itself */
-.sheet-page .w-book .leaf-one { gap: 14px; padding: 46px clamp(28px, 4.2vw, 64px) 34px; border-radius: 2px; box-shadow: none; color: var(--w-ink); }
+/* ── The right-hand page (or the only one) ── */
+.sheet-page .w-book .leaf-one { gap: 14px; padding: 46px clamp(28px, calc(4.2vw / var(--zoom, 1)), 64px) 34px; border-radius: 2px; box-shadow: none; color: var(--w-ink); }
 .w-book .leaf-one .page-frame { inset: 12px; }
-.w-book .leaf-one .running-head { justify-content: center; gap: 12px; margin: 0; padding-right: 0; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker-grey); }
-.w-book .leaf-one .running-head i { font-style: normal; letter-spacing: 0; color: var(--foil); }
-.w-book .leaf-one .wtitle { margin-top: 18px; font-family: var(--book-display); font-weight: 600; font-size: clamp(28px, 2.3vw, 36px); line-height: 1.15; letter-spacing: -0.005em; color: var(--w-ink); }
+.w-book .leaf-one .running-head { display: flex; justify-content: center; align-items: baseline; gap: 12px; min-width: 0; margin: 0; padding: 0 44px; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); white-space: nowrap; }
+.w-book .leaf-one .running-head .rh-chapter { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.w-book .leaf-one .running-head .rh-date { flex: none; }
+.w-book .leaf-one .running-head i { flex: none; font-style: normal; letter-spacing: 0; color: var(--foil); }
+.w-book .leaf-one .wtitle { min-height: 44px; margin-top: 18px; font-family: var(--book-display); font-weight: 600; font-size: clamp(28px, calc(2.3vw / var(--zoom, 1)), 36px); line-height: 1.15; letter-spacing: -0.005em; color: var(--w-ink); }
 .w-book .leaf-one .wtitle::placeholder { font-family: var(--book-display); font-style: italic; font-weight: 500; color: var(--w-pencil); }
-.w-book .leaf-one .wtitle:focus-visible { outline: none; box-shadow: 0 1px 0 var(--foil); }
+.w-book .leaf-one .wtitle:focus-visible { outline: none; box-shadow: 0 2px 0 var(--wax-light); }
 .w-book .leaf-one .dear { margin: 6px 0 -6px; font-family: var(--book-body); font-style: italic; font-size: 20px; color: var(--ink-soft); }
-.w-book .leaf-one .wbody { font-family: var(--book-body); font-size: var(--w-size); line-height: var(--w-line); font-variant-numeric: oldstyle-nums proportional-nums; color: var(--w-ink); min-height: calc(var(--w-line) * 10); font-variant-ligatures: common-ligatures; font-kerning: normal;
+.w-book .leaf-one .wbody { font-family: var(--book-body); font-size: var(--w-size); line-height: var(--w-line); font-variant-numeric: oldstyle-nums proportional-nums; font-variant-ligatures: common-ligatures; font-kerning: normal; color: var(--w-ink); min-height: calc(var(--w-line) * 6);
   background-image: linear-gradient(transparent calc(var(--w-line) - 1px), var(--w-rule) calc(var(--w-line) - 1px), var(--w-rule) var(--w-line), transparent var(--w-line)); background-size: 100% var(--w-line); }
 .w-book .leaf-one .wbody::placeholder { font-family: var(--book-body); font-style: italic; color: var(--w-pencil); }
 .w-book .leaf-one .wbody::selection, .w-book .leaf-one .wtitle::selection { background: var(--foil-pale); color: var(--w-ink); }
@@ -100,163 +115,130 @@ html:has(.w-grid.spread) { scroll-padding-bottom: 120px; }
 .w-book .leaf-one .heard { font-family: var(--book-body); font-size: var(--w-size); line-height: var(--w-line); color: var(--w-pencil); }
 .w-book .leaf-one .signoff { margin-top: 10px; font-family: var(--book-body); font-style: italic; font-size: 19px; color: var(--ink-soft); }
 .w-book .leaf-one .signoff span { font-size: 28px; color: var(--w-ink); }
-.w-book .leaf-one .folio { justify-content: center; gap: 10px; padding-top: 18px; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); font-variant-numeric: tabular-nums; flex-wrap: wrap; row-gap: 4px; }
+/* the folio: sentence case, a quiet line at the foot of the page */
+.w-book .leaf-one .folio { justify-content: center; gap: 4px 10px; flex-wrap: wrap; padding-top: 18px; font: 500 13px/1.4 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .w-book .leaf-one .folio span[aria-hidden] { color: var(--foil); }
 .w-book .leaf-one > .leaf-ear { right: -1px; bottom: -1px; }
 .w-book .leaf-one > .leaf-ear::before { background: var(--chocolate); }
 
-/* ── The question, at the head of the page ── */
-.w-qhead { min-width: 0; }
-.w-qkick { margin: 0 0 10px; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--w-red); }
-.sheet-page .page.w-desk .w-question { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: clamp(32px, 2.7vw, 44px); line-height: 1.1; letter-spacing: -0.01em; color: var(--w-ink); text-wrap: balance; max-width: 22ch; }
-.w-sub { margin: 12px 0 0; max-width: 34em; font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.45; color: var(--ink-soft); }
-/* one page: the question sits on the paper above the book, the dog's head between them */
-.w-grid.single .w-qhead { margin: 0 0 104px; }
-.sheet-page .page.w-desk .w-grid.single .w-question { max-width: 24ch; }
-
-/* ── The journal open at two pages (a laptop and up) ── */
-/* the board's stitched edge, as on the founder's leather journal, in thread the colour of the foil */
-.w-book::before { content: ""; position: absolute; inset: 6px; z-index: 0; border: 1px dashed rgba(240, 214, 160, 0.32); border-radius: 3px; pointer-events: none; }
-.spread .w-book { padding: 18px 22px 24px; }
-.spread .w-pages { display: grid; grid-template-columns: minmax(0, 0.84fr) minmax(0, 1fr);
-  box-shadow: -2px 2px 0 -1px #F1DDA6, -2px 2px 0 0 rgba(150, 110, 45, 0.55), -4px 4px 0 -1px #E6C77E, -4px 4px 0 0 rgba(130, 92, 34, 0.55),
-    2px 2px 0 -1px #F1DDA6, 2px 2px 0 0 rgba(150, 110, 45, 0.55), 4px 4px 0 -1px #E6C77E, 4px 4px 0 0 rgba(130, 92, 34, 0.55); }
-/* the left-hand page: the day, today's questions, the ways to begin, a pencilled note */
-.leaf-left { position: relative; display: flex; flex-direction: column; gap: 22px; min-width: 0; padding: 46px clamp(28px, 3vw, 52px) 34px; border-radius: 2px 0 0 2px; color: var(--w-ink);
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"), #FBF7EE;
-  box-shadow: inset -30px 0 30px -30px rgba(70, 45, 20, 0.34); }
-.leaf-left > :not(.page-frame) { position: relative; z-index: 1; }
-.leaf-left .page-frame { inset: 12px; }
-.spread .w-book .leaf-one { border-radius: 0 2px 2px 0; border-left: 1px solid rgba(60, 50, 40, 0.14); box-shadow: inset 30px 0 30px -30px rgba(70, 45, 20, 0.3); padding-left: clamp(28px, 3vw, 52px); padding-right: clamp(28px, 3vw, 52px); }
-.leaf-left .running-head.verso { display: flex; justify-content: space-between; gap: 12px; margin: 0; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker-grey); }
-.leaf-left .running-head.verso span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.w-orn { display: flex; align-items: center; gap: 14px; margin: 0; color: var(--foil); }
-.w-orn::before, .w-orn::after { content: ""; flex: 1; height: 1px; background: var(--foil-soft); }
-.w-orn i { font-style: normal; font-size: 13px; }
-.leaf-left .w-qhead { margin-top: 14px; }
-.leaf-left .w-pencil { margin-top: auto; padding-top: 12px; align-self: flex-end; text-align: right; }
-.spread .w-ribbon { right: auto; left: calc(45.6% + 6px); }
-
-/* the bar under the book follows the scroll, so the seal (and on a laptop the help) is always in reach; at the end
-   of the page it settles under the ribbon */
-.w-grid.spread .w-keep { position: sticky; bottom: 14px; z-index: 6; margin-top: 84px; padding: 8px 12px 8px 8px; border: 1px solid var(--sheet-rule); border-radius: 16px;
-  background: var(--paper-print); box-shadow: 0 1px 2px rgba(42, 35, 32, 0.08), 0 18px 40px -22px rgba(42, 35, 32, 0.45); }
-.w-grid.spread .w-keep .seal-button { min-height: 56px; }
-/* with the help in the margin, the bar holds only the seal */
-.w-grid.rail .w-keep { width: fit-content; padding-right: 22px; }
-.w-grid.spread .w-keep .seal-button .seal, .w-grid.spread .w-keep .seal-button .seal svg { width: 56px; height: 56px; }
-.w-grid.spread .w-keep-seal { display: grid; grid-template-columns: auto; gap: 0; }
-.w-grid.spread .w-keep-note { margin: -10px 0 0 64px; font-size: 13px; }
-
-/* the help in a row beside the seal, when the journal takes the width */
-.w-keep-seal { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.w-tools-row { flex: 1 1 520px; min-width: 0; display: flex; justify-content: flex-end; }
-.w-tools-row .w-help { justify-items: end; width: 100%; }
-.w-tools-row .w-help > .w-kick { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
-.w-tools-row .w-tool-list { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
-.w-tools-row .w-tool { width: auto; margin: 0; grid-template-columns: 18px auto; gap: 8px; padding: 10px 10px; }
-.w-tools-row .w-tool b { font-size: 14px; white-space: nowrap; }
-.w-tools-row .w-tool > svg { width: 18px; height: 18px; }
-.w-tools-row .w-tool small { display: none; }
-.w-tools-row .w-tool.speak { width: auto; margin: 0 4px 0 0; padding: 10px 16px 10px 12px; border-radius: 999px; }
-.w-tools-row .w-tool.speak b { font-size: 14px; }
-.w-tools-row .w-help-off { display: none; }
-/* what the help gives back opens above the bar, like a slip of paper laid on the book */
-.w-tools-row .w-help-out { position: absolute; right: 8px; bottom: calc(100% + 10px); width: min(460px, calc(100% - 16px)); max-height: min(60vh, 420px); overflow: auto; margin: 0; padding: 16px 20px;
-  border: 1px solid var(--sheet-rule); border-radius: 12px; background: var(--paper-print); box-shadow: 0 1px 2px rgba(42, 35, 32, 0.08), 0 18px 40px -22px rgba(42, 35, 32, 0.45); text-align: left; justify-items: start; }
-
-/* focus: a quiet word in the page's corner */
-.w-book .leaf-one > .w-focus { position: absolute; z-index: 2; right: 22px; top: 20px; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent;
-  font: 500 13px/1 var(--font-ui); color: var(--kicker-grey); cursor: pointer; transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out); }
+/* focus: an icon in the page's corner, its name in the tooltip and to a screen reader */
+.w-book .leaf-one > .w-focus { position: absolute; z-index: 2; right: 16px; top: 16px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent;
+  color: var(--kicker-grey); cursor: pointer; transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .w-focus svg { width: 18px; height: 18px; }
-.w-book .leaf-one > .w-focus { width: 44px; padding: 0; justify-content: center; right: 16px; top: 16px; }
 .w-focus span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .w-focus:hover { background: rgba(201, 161, 90, 0.14); color: var(--w-ink); }
 .w-focus:active { transform: scale(0.97); }
-.w-focus:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
+.w-focus:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; }
 
-/* the ways to begin on the page itself, only where the margins are not beside it */
+/* the ways to begin, on the page under "Dear family," until the first words */
 .w-begin-inpage { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
 .w-begin-inpage button { min-height: 44px; padding: 0 14px; border: 1px solid var(--w-rule); border-radius: 999px; background: transparent; cursor: pointer;
   font-family: var(--book-body); font-style: italic; font-size: 17px; color: var(--ink-soft); transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .w-begin-inpage button:hover { border-color: var(--foil); color: var(--w-ink); }
 .w-begin-inpage button:active { transform: scale(0.97); }
+.w-begin-inpage button:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; }
 
-/* ── Under the book: the seal keeps it ── */
-.w-keep { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin-top: 84px; }
-.w-keep .seal-button { min-height: 64px; padding: 2px 10px 2px 2px; border-radius: 999px; font: 600 18px/1 var(--font-ui); color: var(--w-red); transition: transform 120ms var(--ease-out); }
-.w-keep .seal-button:active:not(:disabled) { transform: scale(0.97); }
-.w-keep .seal-button:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 4px; }
-.w-keep .seal-button[aria-busy] { cursor: progress; }
-/* the seal itself: red wax, a raised ring, the book's initial pressed in; grey and flat until there is something to keep */
-.w-keep .seal-button .seal { width: 64px; height: 64px; border: 0; border-radius: 50%; background: none; box-shadow: none; outline: 0; display: grid; place-items: center;
-  filter: drop-shadow(0 2px 2px rgba(74, 30, 15, 0.28)); transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out); }
-.w-keep .seal-button .seal svg { width: 64px; height: 64px; overflow: visible; }
-/* before: a dashed ring where the wax will go, the A drawn in terracotta; the hand over it warms it to wax; pressed: wax */
-.w-keep .seal-button .wax { fill: transparent; stroke: transparent; transition: fill 200ms var(--ease-out); }
-.w-keep .seal-button .ring { fill: none; stroke: var(--kicker-terracotta); stroke-width: 1.3; stroke-dasharray: 3 3; transition: stroke 200ms var(--ease-out); }
-.w-keep .seal-button .ring.inner { stroke: transparent; stroke-dasharray: none; }
-.w-keep .seal-button .mark { font: 600 25px/1 var(--book-display); fill: var(--w-red); transition: fill 200ms var(--ease-out); }
-.w-keep .seal-button .seal { filter: none; }
-.w-keep .seal-button:not(:disabled):hover .seal { background: none; transform: rotate(-8deg) scale(1.05); }
-.w-keep .seal-button:not(:disabled):hover .wax, .w-keep .seal-button.pressed .wax { fill: #9A4220; stroke: #6E2E16; stroke-width: 1; }
-.w-keep .seal-button:not(:disabled):hover .ring, .w-keep .seal-button.pressed .ring { stroke: rgba(239, 199, 94, 0.75); stroke-dasharray: none; }
-.w-keep .seal-button:not(:disabled):hover .ring.inner, .w-keep .seal-button.pressed .ring.inner { stroke: rgba(60, 16, 6, 0.35); }
-.w-keep .seal-button:not(:disabled):hover .mark, .w-keep .seal-button.pressed .mark { fill: rgba(110, 46, 22, 0.95); }
-.w-keep .seal-button:disabled { color: var(--ink-soft); cursor: not-allowed; }
-.w-keep .seal-button:disabled .seal { filter: grayscale(1) opacity(0.6); }
-.w-keep .seal-button.pressed .seal { background: none; border: 0; outline: 0; box-shadow: none; transform: rotate(-8deg); filter: drop-shadow(0 1px 1px rgba(42, 35, 32, 0.28)); }
-/* while the page is being kept the button is busy, but the wax stays wax */
-.w-keep .seal-button.pressed:disabled { color: var(--w-red); cursor: progress; }
-.w-keep .seal-button.pressed:disabled .seal { filter: drop-shadow(0 1px 1px rgba(42, 35, 32, 0.28)); }
-.w-keep-note { margin: 0; font: 400 14px/1.5 var(--font-ui); color: var(--ink-soft); }
-.w-keep-note a { color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; display: inline-block; padding: 12px 2px; margin: -12px 0; }
-.w-keep-note a:hover { text-decoration-color: var(--heading); }
-.w-keep-note kbd { font: 500 12px/1 var(--font-ui); padding: 3px 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; color: var(--ink); background: var(--paper-print); }
+/* ── The left-hand page (a laptop and up) ── */
+.spread .w-book { padding: 18px 22px 24px; }
+.spread .w-pages { display: grid; grid-template-columns: minmax(0, 0.84fr) minmax(0, 1fr);
+  box-shadow: -2px 2px 0 -1px var(--w-gilt-a), -2px 2px 0 0 var(--w-gilt-line-a), -4px 4px 0 -1px var(--w-gilt-b), -4px 4px 0 0 var(--w-gilt-line-b),
+    2px 2px 0 -1px var(--w-gilt-a), 2px 2px 0 0 var(--w-gilt-line-a), 4px 4px 0 -1px var(--w-gilt-b), 4px 4px 0 0 var(--w-gilt-line-b); }
+.leaf-left { position: relative; display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 46px clamp(28px, calc(3vw / var(--zoom, 1)), 52px) 34px; border-radius: 2px 0 0 2px; color: var(--w-ink);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"), var(--w-leaf);
+  box-shadow: inset -30px 0 30px -30px var(--w-gutter); }
+.leaf-left > :not(.page-frame) { position: relative; z-index: 1; }
+.leaf-left .page-frame { inset: 12px; }
+.spread .w-book .leaf-one { border-radius: 0 2px 2px 0; border-left: 1px solid rgba(60, 50, 40, 0.14); box-shadow: inset 30px 0 30px -30px var(--w-gutter); padding-left: clamp(28px, calc(3vw / var(--zoom, 1)), 52px); padding-right: clamp(28px, calc(3vw / var(--zoom, 1)), 52px); }
+.leaf-left .running-head.verso { display: flex; justify-content: space-between; gap: 12px; margin: 0; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); }
+.leaf-left .running-head.verso span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.leaf-left .w-qhead { margin-top: 10px; }
+.spread .w-dog { width: 116px; }
+.w-orn { display: flex; align-items: center; gap: 14px; margin: 0; color: var(--foil); }
+.w-orn::before, .w-orn::after { content: ""; flex: 1; height: 1px; background: var(--foil-soft); }
+.w-orn i { font-style: normal; font-size: 13px; }
+.spread .w-ribbon { right: auto; left: calc(45.6% + 6px); }
 
-/* ── The left margin: today's questions, ways to begin ── */
-.w-qs ul, .w-begin ul { display: grid; margin: 0; padding: 0; list-style: none; }
-.w-qs li + li, .w-begin li + li { border-top: 1px solid var(--sheet-rule); }
+/* today's other questions */
+.w-qs ul { display: grid; margin: 0; padding: 0; list-style: none; }
+.w-qs li + li { border-top: 1px solid var(--sheet-rule); }
 .w-q { display: block; padding: 12px 0; font-family: var(--book-body); font-size: 18px; line-height: 1.38; color: var(--sheet-ink); text-decoration: none; transition: color 160ms var(--ease-out); }
 a.w-q:hover { color: var(--w-red); }
-a.w-q:active { color: var(--accent-deep); }
-a.w-q:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; border-radius: 2px; }
+a.w-q:active { color: var(--wax); }
+a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; border-radius: 2px; }
 .w-q small { display: block; margin-top: 4px; font: 400 13px/1.3 var(--font-ui); color: var(--ink-soft); }
-.w-q.here { font-style: italic; color: var(--ink-soft); }
-.w-q.here svg { width: 15px; height: 15px; margin-right: 4px; vertical-align: -2px; color: var(--kicker-terracotta); }
 .w-q.own { font: 500 14px/1.4 var(--font-ui); color: var(--heading); padding: 14px 0; }
 .w-q.own::after { content: " →"; color: var(--ochre); }
-.w-begin button { display: block; width: 100%; min-height: 44px; padding: 10px 0; border: 0; background: transparent; text-align: left; cursor: pointer;
-  font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.35; color: var(--ink-soft); transition: color 160ms var(--ease-out); }
-.w-begin button:hover { color: var(--w-ink); }
-.w-begin button:active { color: var(--w-red); }
-.w-begin button:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; border-radius: 2px; }
 
-/* ── The right margin: a pencilled note, then the help ── */
-.w-pencil { position: relative; display: block; margin: 0; padding: 0 0 0 4px; font: italic 400 19px/1.2 var(--book-body); color: var(--w-pencil); }
+/* the pencilled note in the margin; the question chosen from the help takes its place */
+.w-pencil { position: relative; display: block; margin: 0; padding: 0 0 0 4px; font: italic 400 19px/1.25 var(--book-body); color: var(--w-pencil); }
 .w-pencil svg { display: block; margin: 6px 0 0 auto; width: 70px; height: 34px; overflow: visible; }
 .w-pencil path { fill: none; stroke: var(--w-pencil); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.leaf-left .w-pencil { margin-top: auto; padding-top: 12px; align-self: flex-end; text-align: right; }
+.w-pencil.asked span::before { content: "✎ "; font-style: normal; color: var(--wax-light); }
+.leaf-left .w-pencil.asked { max-width: 24em; }
+.leaf-left .w-pencil.asked svg { display: none; }
 
+/* ── The seal, under the book (following the scroll) or in the margin ── */
+.w-keep { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin-top: 84px; }
+.w-grid:not(.rail) .w-keep { position: sticky; bottom: calc(var(--tabbar-h, 0px) + 12px); z-index: 6; padding: 8px 12px 8px 8px; border: 1px solid var(--sheet-rule); border-radius: 16px; background: var(--paper-print); box-shadow: var(--w-slip-shadow); }
+.w-keep.in-rail { margin-top: 8px; padding-top: 22px; border-top: 1px solid var(--sheet-rule); }
+.w-keep-seal { display: grid; gap: 0; justify-items: start; }
+.w-keep .seal-button { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 2px 10px 2px 2px; border: 0; border-radius: 999px; background: transparent; font: 600 18px/1 var(--font-ui); color: var(--w-red); cursor: pointer; transition: transform 120ms var(--ease-out); }
+.w-keep .seal-button:active:not(:disabled) { transform: scale(0.97); }
+.w-keep .seal-button:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 4px; }
+.w-keep .seal-button[aria-busy] { cursor: progress; }
+.w-keep .seal-button:disabled { opacity: 1; color: var(--ink-soft); cursor: not-allowed; }
+.w-keep-note { margin: -8px 0 0 68px; font: 400 13px/1.5 var(--font-ui); color: var(--ink-soft); }
+.w-keep-note a { display: inline-block; padding: 12px 2px; margin: -12px 0; color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.w-keep-note a:hover { text-decoration-color: var(--heading); }
+.w-keep-note kbd { font: 500 12px/1 var(--font-ui); padding: 3px 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; color: var(--ink); background: var(--paper-print); }
+/* the keyboard is taught only where there is one */
+.w-kbd-hint { display: none; }
+@media (hover: hover) and (pointer: fine) { .w-kbd-hint { display: inline; } }
+/* the seal: a dashed ring with the A before; the hand over it warms it to wax; pressed, it is wax */
+.w-keep .seal-button .seal { display: grid; place-items: center; width: 56px; height: 56px; border: 0; border-radius: 50%; background: none; box-shadow: none; outline: 0; transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out); }
+.w-keep .seal-button .seal svg { width: 56px; height: 56px; overflow: visible; }
+.w-keep .seal-button .wax { fill: transparent; stroke: transparent; transition: fill 200ms var(--ease-out); }
+.w-keep .seal-button .ring { fill: none; stroke: var(--wax-light); stroke-width: 1.3; stroke-dasharray: 3 3; transition: stroke 200ms var(--ease-out); }
+.w-keep .seal-button .ring.inner { stroke: transparent; stroke-dasharray: none; }
+.w-keep .seal-button .mark { font: 600 25px/1 var(--book-display); fill: var(--w-red); transition: fill 200ms var(--ease-out); }
+.w-keep .seal-button:disabled .ring { stroke: var(--ink-soft); }
+.w-keep .seal-button:disabled .mark { fill: var(--ink-soft); }
+.w-keep .seal-button.pressed .wax { fill: var(--wax); stroke: var(--wax-shade); stroke-width: 1; }
+.w-keep .seal-button.pressed .ring { stroke: var(--brass); stroke-opacity: 0.75; stroke-dasharray: none; }
+.w-keep .seal-button.pressed .ring.inner { stroke: var(--wax-shade); stroke-opacity: 0.5; }
+.w-keep .seal-button.pressed .mark { fill: var(--wax-shade); }
+.w-keep .seal-button.pressed .seal { transform: rotate(-8deg); filter: drop-shadow(var(--contact)); }
+.w-keep .seal-button.pressed:disabled { color: var(--w-red); cursor: progress; }
+@media (hover: hover) and (pointer: fine) {
+  .w-keep .seal-button:not(:disabled):hover .seal { transform: rotate(-8deg) scale(1.05); }
+  .w-keep .seal-button:not(:disabled):hover .wax { fill: var(--wax); stroke: var(--wax-shade); stroke-width: 1; }
+  .w-keep .seal-button:not(:disabled):hover .ring { stroke: var(--brass); stroke-opacity: 0.75; stroke-dasharray: none; }
+  .w-keep .seal-button:not(:disabled):hover .ring.inner { stroke: var(--wax-shade); stroke-opacity: 0.5; }
+  .w-keep .seal-button:not(:disabled):hover .mark { fill: var(--wax-shade); }
+}
+
+/* ── The help ── */
 .w-help { display: grid; gap: 2px; }
-.w-tool-list { display: grid; gap: 2px; }
 .w-help .w-kick { margin-bottom: 10px; }
-.w-tool { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; min-height: 48px; padding: 10px 12px; margin: 0 -12px; width: calc(100% + 24px);
+.w-tool-list { display: grid; gap: 2px; }
+.w-tool { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; align-items: center; width: calc(100% + 24px); min-height: 48px; margin: 0 -12px; padding: 10px 12px;
   border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; color: var(--heading);
-  transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out), opacity 160ms var(--ease-out); }
-.w-tool > svg { width: 20px; height: 20px; color: var(--kicker-terracotta); }
+  transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
+.w-tool > svg { width: 20px; height: 20px; color: var(--wax-light); }
 .w-tool b { display: block; font: 600 15px/1.3 var(--font-ui); }
 .w-tool small { display: block; margin-top: 3px; font: 400 13px/1.4 var(--font-ui); color: var(--ink-soft); }
 .w-tool:hover:not(:disabled) { background: var(--paper-tone); }
 .w-tool:active:not(:disabled) { transform: scale(0.98); }
-.w-tool:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 0; }
-.w-tool:disabled { cursor: not-allowed; color: var(--ink-soft); }
-.w-tool:disabled > svg { color: var(--ink-faint); }
-.w-tool[aria-busy] { opacity: 1; cursor: progress; }
+.w-tool:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 0; }
+.w-tool:disabled { opacity: 1; cursor: not-allowed; color: var(--ink-soft); }
+.w-tool:disabled > svg { color: var(--ink-soft); }
+.w-tool[aria-busy] { cursor: progress; }
 .w-tool[aria-busy] b { color: var(--ink-soft); }
-.w-tool.speak { margin: 0 0 8px; width: 100%; padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 12px; }
+.w-tool.speak { width: 100%; margin: 0 0 8px; padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 12px; }
 .w-tool.speak b { font-size: 16px; }
 .w-tool.speak:hover { border-color: var(--ink-soft); background: transparent; }
-.w-tool.speak.listening { border-color: var(--kicker-terracotta); }
+.w-tool.speak.listening { border-color: var(--wax-light); }
 .w-tool.speak.listening > svg { animation: w-listen 1.4s var(--ease-in-out) infinite; }
 @keyframes w-listen { 50% { transform: scale(1.16); opacity: 0.55; } }
 .w-help > .w-note { margin-top: 8px; }
@@ -265,67 +247,89 @@ a.w-q:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offse
 .w-help-out .w-note.done { color: var(--ink); }
 .w-undo { justify-self: start; min-height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; font: 600 14px/1 var(--font-ui); color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 .w-undo:hover { text-decoration-color: var(--heading); }
+.w-undo:focus-visible, .w-slip-close:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; border-radius: 4px; }
 .w-asks { display: grid; margin: 0; padding: 0; list-style: none; }
 .w-asks li + li { border-top: 1px dashed rgba(111, 102, 93, 0.3); }
-.w-asks button { display: block; width: 100%; min-height: 44px; padding: 10px 0 10px 22px; border: 0; background: transparent; text-align: left; cursor: pointer; position: relative;
+.w-asks button { position: relative; display: block; width: 100%; min-height: 44px; padding: 10px 0 10px 22px; border: 0; background: transparent; text-align: left; cursor: pointer;
   font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.35; color: var(--w-pencil); transition: color 160ms var(--ease-out); }
 .w-asks button::before { content: "–"; position: absolute; left: 4px; top: 10px; color: var(--w-pencil); font-style: normal; }
-.w-asks button:hover { color: var(--w-ink); }
-.w-asks button[aria-pressed="true"] { color: var(--w-ink); }
-.w-asks button[aria-pressed="true"]::before { content: "✎"; color: var(--kicker-terracotta); left: 0; }
-.w-asks button:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; border-radius: 2px; }
+.w-asks button:hover, .w-asks button[aria-pressed="true"] { color: var(--w-ink); }
+.w-asks button[aria-pressed="true"]::before { content: "✎"; color: var(--wax-light); left: 0; }
+.w-asks button:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; border-radius: 2px; }
 
-/* the paper's watermark would sit under the margin's words; the writer's paper goes without it */
-.sheet-page:has(.w-desk)::after { display: none; }
+/* the help in a row beside the seal, when the journal takes the width without a margin */
+.w-tools-row { flex: 1 1 520px; min-width: 0; display: flex; justify-content: flex-end; }
+.w-tools-row .w-help { justify-items: end; width: 100%; }
+.w-tools-row .w-help > .w-kick { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+.w-tools-row .w-tool-list { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.w-tools-row .w-tool { width: auto; margin: 0; grid-template-columns: 18px auto; gap: 8px; padding: 10px; }
+.w-tools-row .w-tool b { font-size: 14px; white-space: nowrap; }
+.w-tools-row .w-tool > svg { width: 18px; height: 18px; }
+.w-tools-row .w-tool small { display: none; }
+.w-tools-row .w-tool.speak { width: auto; margin: 0 4px 0 0; padding: 10px 16px 10px 12px; border-radius: 999px; }
+.w-tools-row .w-tool.speak b { font-size: 14px; }
+.w-tools-row .w-help-off { display: none; }
+/* what the help gives back opens above the bar, like a slip of paper laid on the book */
+.w-tools-row .w-help-out { position: absolute; right: 8px; bottom: calc(100% + 10px); width: min(460px, calc(100% - 16px)); max-height: min(calc(60vh / var(--zoom, 1)), 420px); overflow: auto; margin: 0; padding: 16px 20px;
+  border: 1px solid var(--sheet-rule); border-radius: 12px; background: var(--paper-print); box-shadow: var(--w-slip-shadow); text-align: left; justify-items: start; }
+.w-tools-row .w-help-out > .w-note.done { padding-right: 56px; }
+.w-slip-close { position: absolute; top: 6px; right: 8px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; cursor: pointer; font: 600 13px/1 var(--font-ui); color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.w-slip-close:hover { text-decoration-color: var(--heading); }
 
-/* ── Focus mode: only the book ── */
+/* ── Focus mode: only the right-hand page, at the reading measure ── */
 .w-desk.focus .w-side, .w-desk.focus .leaf-left, .w-desk.focus .w-dog, .w-desk.focus .w-grid.single .w-qhead, .w-desk.focus .w-tools-row { display: none; }
-.w-desk.focus .w-pages { grid-template-columns: minmax(0, 1fr); }
-.w-desk.focus .w-book .leaf-one { border-left: 0; box-shadow: none; }
-.w-desk.focus .w-ribbon { left: auto; right: 22%; }
 .w-desk.focus .w-grid { grid-template-columns: minmax(0, 900px); grid-template-areas: "center"; justify-content: center; max-width: none; }
-body.writing-focus .sheet-page .page.w-desk { padding-top: 120px; }
+.w-desk.focus .w-pages { grid-template-columns: minmax(0, 1fr); }
+.w-desk.focus .w-book .leaf-one { align-items: center; border-left: 0; box-shadow: none; }
+.w-desk.focus .w-book .leaf-one > :not(.page-frame, .w-focus, .leaf-ear) { width: 100%; max-width: calc(25.4 * var(--w-size)); } /* 25.4em of the words' size, whatever each line's own size */
+.w-desk.focus .w-ribbon { left: auto; right: 22%; }
+.w-desk.focus .w-keep { width: fit-content; margin-left: auto; margin-right: auto; padding-right: 22px; }
+body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
 .w-book .leaf-one .w-focus-q { margin: 18px 0 -6px; font-family: var(--book-body); font-style: italic; font-size: 20px; line-height: 1.4; color: var(--ink-soft); text-align: center; text-wrap: balance; }
 
-/* ── Afterwards: the page just kept, four quiet choices, then the next question ── */
+/* ── Afterwards: the choices beside the page just kept, then "Where to next" ── */
 .sheet-page .page.w-desk.after-step { padding-top: 56px; }
-.w-after { display: grid; gap: 72px; max-width: calc(var(--content-max) - 2 * var(--gutter)); margin: 0 auto; }
+.w-after { display: grid; gap: 64px; max-width: calc(var(--content-max) - 2 * var(--gutter)); margin: 0 auto; }
 .w-after > .banner { margin: 0; }
-.w-after-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; }
+.w-after-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
 @media (min-width: 1100px) {
-  .w-after-grid { grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: clamp(48px, 5vw, 96px); align-items: start; }
+  .w-after-grid { grid-template-columns: minmax(280px, 400px) minmax(0, 1fr); gap: clamp(40px, calc(4vw / var(--zoom, 1)), 88px); align-items: start; }
   .w-kept { position: sticky; top: calc(var(--top-h) + 32px); }
 }
 .w-kept { margin: 0; }
-.w-kept-page { position: relative; padding: 40px 36px 32px; border: 1px solid var(--sheet-rule); border-radius: 3px; background: var(--paper-print);
-  box-shadow: 0 3px 0 -1px var(--paper-print), 0 3px 0 0 var(--sheet-rule), 0 6px 0 -1px var(--paper-print), 0 6px 0 0 var(--sheet-rule); }
+.w-kept-page { position: relative; padding: 36px 32px 28px; border: 1px solid var(--sheet-rule); border-radius: 3px; background: var(--paper-print); box-shadow: var(--edge-stack); }
 .w-kept-page > :not(.page-frame, .w-kept-prints) { position: relative; z-index: 1; }
 .w-kept-page .page-frame { inset: 10px; }
-.w-kept-head { display: flex; justify-content: center; gap: 10px; margin: 0; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); text-align: center; }
+.w-kept-head { display: flex; justify-content: center; gap: 10px; margin: 0 0 18px; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); text-align: center; }
 .w-kept-head i { font-style: normal; color: var(--foil); letter-spacing: 0; }
-.sheet-page .page .w-kept-title { margin: 22px 0 12px; font-family: var(--book-display); font-weight: 600; font-size: 30px; line-height: 1.12; color: var(--sheet-ink); }
+.sheet-page .page h2.w-kept-title { margin: 0 0 12px; font-family: var(--book-display); font-weight: 600; font-size: 28px; line-height: 1.12; letter-spacing: -0.005em; color: var(--sheet-ink); text-wrap: balance; }
 .w-kept-words { margin: 0; font-family: var(--book-body); font-size: 18px; line-height: 1.6; color: var(--sheet-ink); font-variant-numeric: oldstyle-nums proportional-nums; white-space: pre-line;
-  display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden; }
-/* the first letter set as the book sets a chapter's: a two-line initial in the display face, in the cloth's red */
+  display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
+/* the first letter set as the book sets a chapter's: a two-line initial in the display face, in the cloth's colour */
 .w-kept-words::first-letter { float: left; margin: 6px 8px 0 0; font-family: var(--book-display); font-weight: 600; font-size: 58px; line-height: 0.8; color: var(--chocolate); }
-.w-kept-sign { margin: 18px 0 0; text-align: right; font-family: var(--book-body); font-style: italic; font-size: 17px; color: var(--ink-soft); }
+.w-kept-sign { margin: 16px 0 0; text-align: right; font-family: var(--book-body); font-style: italic; font-size: 17px; color: var(--ink-soft); }
 .w-kept-sign span { display: block; font-size: 24px; color: var(--sheet-ink); }
 .w-kept-prints { position: absolute; z-index: 2; right: -18px; top: -26px; display: flex; }
 .w-kept-prints .wphoto { width: 92px; height: 92px; }
 .w-kept-prints .wphoto + .wphoto { margin-left: -44px; }
 
+.w-choices { min-width: 0; container-type: inline-size; }
 .w-choices-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 24px; margin-bottom: 28px; }
-.sheet-page .page .w-choices-head h2 { margin: 0 0 8px; font-size: clamp(28px, 2.4vw, 36px); }
-.w-state { flex: none; display: inline-flex; align-items: center; gap: 6px; min-width: 7ch; min-height: 24px; margin: 6px 0 0; justify-content: flex-end; font: 600 14px/1 var(--font-ui); color: var(--green); }
+.sheet-page .page .w-choices-head h2 { margin: 0 0 8px; font-size: clamp(28px, calc(2.4vw / var(--zoom, 1)), 36px); }
+.w-state { flex: none; display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 7ch; min-height: 24px; margin: 6px 0 0; font: 600 14px/1 var(--font-ui); color: var(--green); }
 .w-state svg { width: 16px; height: 16px; }
 .w-state.saving { color: var(--ink-soft); }
+/* the columns follow the space the choices have, not the window: two from about 560px, three from about 900px */
 .w-choice-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
-/* three short choices across, the chapters (the long list) across the whole width under them */
-@media (min-width: 1280px) {
-  .w-choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px 40px; }
-  .w-choice.chapter { grid-column: 1 / -1; }
+@container (min-width: 560px) {
+  .w-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 40px; }
+  .w-choice.chapter, .w-choice.photo { grid-column: 1 / -1; }
 }
-.w-choice { display: grid; gap: 14px; align-content: start; padding-top: 18px; border-top: 1px solid var(--sheet-rule); min-width: 0; }
+@container (min-width: 900px) {
+  .w-choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .w-choice.photo { grid-column: auto; }
+}
+.w-choice { display: grid; gap: 14px; align-content: start; min-width: 0; padding-top: 18px; border-top: 1px solid var(--sheet-rule); }
 .sheet-page .page .w-choice h3 { margin: 0; font: 600 22px/1.2 var(--book-display); letter-spacing: 0; text-transform: none; color: var(--w-ink); }
 .w-choice .chiprow { gap: 8px; }
 /* the choices are words with a hairline round them; chosen, the line darkens and a tick is inked in (no fills, no bubbles) */
@@ -334,106 +338,92 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 120px; }
   transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .sheet-page .w-choice .chip.big:hover, .w-person:hover { border-color: var(--ink-soft); }
 .sheet-page .w-choice .chip.big:active, .w-person:active { transform: scale(0.97); }
-.sheet-page .w-choice .chip.big:focus-visible, .w-person:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
+.sheet-page .w-choice .chip.big:focus-visible, .w-person:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; }
 .sheet-page .w-choice .chip.big[aria-pressed="true"], .w-person[aria-pressed="true"] { background: transparent; border-color: var(--chocolate); box-shadow: inset 0 0 0 0.5px var(--chocolate); color: var(--chocolate); }
-.sheet-page .w-choice .chip.big[aria-pressed="true"]::before { content: ""; width: 10px; height: 6px; margin: -3px 2px 0 -2px; border-left: 1.6px solid var(--kicker-terracotta); border-bottom: 1.6px solid var(--kicker-terracotta); transform: rotate(-45deg); }
+.sheet-page .w-choice .chip.big[aria-pressed="true"]::before { content: ""; width: 10px; height: 6px; margin: -3px 2px 0 -2px; border-left: 1.6px solid var(--wax-light); border-bottom: 1.6px solid var(--wax-light); transform: rotate(-45deg); }
 .w-person { padding-left: 5px; }
 .w-person .avatar { flex: none; }
-.w-person .tick { width: 15px; height: 15px; color: var(--kicker-terracotta); }
+.w-person .tick { width: 15px; height: 15px; color: var(--wax-light); }
 .w-line { display: block; max-width: 340px; }
-.w-line input { width: 100%; min-height: 44px; padding: 0 2px; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; background: transparent; outline: none;
-  font-family: var(--book-body); font-size: 18px; color: var(--sheet-ink); transition: border-color 160ms var(--ease-out); }
+.w-line input { width: 100%; min-height: 44px; padding: 0 2px; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; background: transparent; outline: none; font-family: var(--book-body); font-size: 18px; color: var(--sheet-ink); transition: border-color 160ms var(--ease-out); }
 .w-line input::placeholder { font-style: italic; color: var(--w-pencil); }
 .w-line input:hover { border-bottom-color: var(--ink-soft); }
-.w-line input:focus-visible { border-bottom-color: var(--kicker-terracotta); box-shadow: 0 1px 0 var(--kicker-terracotta); }
+.w-line input:focus-visible { border-bottom-color: var(--wax-light); box-shadow: 0 1px 0 var(--wax-light); }
 .w-choice.photo.first { order: -1; }
 .w-choice .wphotos { margin: 4px 0 6px; gap: 14px; }
-.w-choice .wphoto .x::before { content: ""; position: absolute; inset: -10px; }
 .w-choice .wphoto .x { transition: transform 120ms var(--ease-out), background-color 160ms var(--ease-out); }
-.w-choice .wphoto .x:hover { background: var(--kicker-terracotta); }
+.w-choice .wphoto .x::before { content: ""; position: absolute; inset: -10px; }
+.w-choice .wphoto .x:hover { background: var(--wax-light); }
 .w-choice .wphoto .x:active { transform: scale(0.92); }
-.w-choice .wphoto .x:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
-.w-attach { justify-self: start; white-space: nowrap; display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px 0 18px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; cursor: pointer;
+.w-choice .wphoto .x:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; }
+.w-attach { justify-self: start; display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px 0 18px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; cursor: pointer; white-space: nowrap;
   font: 600 15px/1 var(--font-ui); color: var(--heading); transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
-.w-attach svg { width: 18px; height: 18px; color: var(--kicker-terracotta); }
+.w-attach svg { width: 18px; height: 18px; color: var(--wax-light); }
 .w-attach:hover:not(:disabled) { background: var(--paper-tone); border-color: var(--ink-soft); }
 .w-attach:active:not(:disabled) { transform: scale(0.97); }
-.w-attach:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
-.w-attach:disabled { cursor: progress; opacity: 0.6; }
+.w-attach:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; }
+.w-attach:disabled { cursor: progress; }
 .w-choice.photo.first .w-attach { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
 .w-choice.photo.first .w-attach svg { color: var(--brass); }
 .w-choice.photo.first .w-attach:hover:not(:disabled) { background: var(--chocolate-deep); }
-
-.w-next { display: grid; gap: 28px; padding-top: 40px; border-top: 1px solid var(--sheet-rule); }
-@media (min-width: 1100px) { .w-next { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 48px; } }
-.sheet-page .page.w-desk .w-next-words .w-kick { margin: 0 0 10px; font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--w-red); }
-.w-next-q { margin: 0; max-width: 34ch; font-family: var(--book-body); font-style: italic; font-size: clamp(26px, 2.2vw, 34px); line-height: 1.28; color: var(--sheet-ink); text-wrap: balance; }
-.w-next-acts { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-
-/* the words at the reading sizes (docs/research/reading-2026.md §3.2) */
-@media (min-width: 1680px) { .w-desk { --w-size: 23px; } }
-@media (max-width: 1023px) { .w-desk { --w-size: 21px; } }
-@media (max-width: 599px) { .w-desk { --w-size: 20px; --w-line: 32px; } }
+.w-after .where-next { margin-top: 0; }
 
 /* ── A tablet and a phone ── */
 @media (max-width: 1279px) {
   .sheet-page .page.w-desk { padding-top: 40px; }
 }
 @media (max-width: 760px) {
-  .hero .whero .wq { font-size: clamp(28px, 7.6vw, 34px); }
-  .hero .whero .wmeta { font-size: 17px; }
   .sheet-page .page.w-desk { padding-top: 28px; padding-bottom: 132px; }
-  .sheet-page .page.w-desk.after-step { padding-top: 32px; }
+  .sheet-page .page.w-desk.after-step { padding-top: 28px; }
   .w-grid { gap: 40px; }
-  .w-book { padding: 10px 12px 14px 10px; }
-  .w-corner { width: 20px; height: 20px; }
-  .sheet-page .w-book .leaf-one { padding: 34px 20px 24px; }
-  .w-book .leaf-one .page-frame { inset: 7px; }
-  .w-book .leaf-one > .w-focus { display: none; }
-  /* two ways to begin, wrapped, never running off the screen */
-  .w-begin-inpage button:nth-child(n + 3) { display: none; }
-  .w-book .leaf-one .running-head { font-size: 12px; letter-spacing: 0.1em; flex-wrap: wrap; row-gap: 4px; }
-  .w-book .leaf-one .running-head span:last-child { white-space: nowrap; }
-  .w-book .leaf-one .running-head i { display: none; }
   .w-grid.single .w-qhead { margin-bottom: 86px; }
-  .sheet-page .page.w-desk .w-question { font-size: clamp(28px, 7.4vw, 34px); }
+  .sheet-page .page.w-desk .w-question, .sheet-page .page.w-desk .w-question[data-len] { font-size: clamp(26px, calc(7.4vw / var(--zoom, 1)), 32px); max-width: none; }
+  .sheet-page .page.w-desk .w-question[data-len="long"] { font-size: 25px; }
+  /* the page wider on a phone, so a line holds 40 characters or more */
+  .w-book { padding: 6px 8px 10px 6px; }
+  .w-book::before { inset: 4px; }
+  .w-corner { width: 18px; height: 18px; }
+  .sheet-page .w-book .leaf-one { padding: 32px 14px 22px; }
+  .w-book .leaf-one .page-frame { inset: 6px; }
+  .w-book .leaf-one > .w-focus { display: none; }
+  .w-book .leaf-one .running-head { padding: 0; letter-spacing: 0.1em; }
   .w-book .leaf-one .wtitle { font-size: 26px; margin-top: 10px; }
   .w-book .leaf-one .signoff span { font-size: 24px; }
-  .w-book .leaf-one .folio { font-size: 12px; letter-spacing: 0.08em; }
-  .w-dog { right: 26px; width: 92px; bottom: calc(100% - 10px); }
+  /* the folio's dot goes when its two parts stack */
+  .w-book .leaf-one .folio { flex-direction: column; align-items: center; gap: 2px; }
+  .w-book .leaf-one .folio span[aria-hidden] { display: none; }
+  /* two ways to begin, wrapped, never running off the screen */
+  .w-begin-inpage button:nth-child(n + 3) { display: none; }
+  .w-dog { right: 24px; width: 104px; bottom: calc(100% - 10px); }
   .w-ribbon { height: 56px; width: 12px; }
-  .w-keep { margin-top: 68px; flex-direction: column; align-items: flex-start; }
+  .w-keep { margin-top: 64px; }
+  /* one row on a phone: the seal, and "Not now" at the other end */
+  .w-grid:not(.rail) .w-keep-seal { width: 100%; grid-auto-flow: column; align-items: center; justify-content: space-between; }
+  .w-keep-note { margin: 0; }
+  .w-keep-note > span:not(.w-kbd-hint) { display: none; }
+  /* Afterwards on a phone: the choices first, the page just kept after them */
+  .w-after-grid .w-choices { order: -1; }
   .w-choices-head { flex-direction: column; }
   .w-state { justify-content: flex-start; margin: 0; }
-  .w-kept-page { padding: 32px 22px 24px; }
-  .w-kept-prints { right: -6px; top: -22px; }
-  .w-next-acts .btn { flex: 1 1 auto; }
+  .w-kept-page { padding: 28px 20px 22px; }
+  .w-kept-prints { position: static; justify-content: flex-end; margin: 14px -4px 0 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .w-dog, .w-dog img, .w-tool, .w-focus, .w-attach, .w-person { transition: none; }
+  .w-dog, .w-dog img, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
   .w-tool.speak.listening > svg { animation: none; }
 }
 
-/* ── The open leaf at the foot of Home and the Archive (components/delight/OpenLeaf): the same book as the writer's,
-   so its page edges are gilt too ── */
-.open-leaf .ol-page { box-shadow: 0 3px 0 -1px #F1DDA6, 0 3px 0 0 rgba(150, 110, 45, 0.5), 0 6px 0 -1px #E6C77E, 0 6px 0 0 rgba(130, 92, 34, 0.5); }
-
 /* ── The "Kept" stamp (lib/stamp, decoration D5): a double-ruled rubber stamp in terracotta ink, a little worn ── */
-.ink-stamp { position: fixed; z-index: 90; pointer-events: none; padding: 7px 12px 6px; border: 1.5px solid #B85126; outline: 0.75px solid #B85126; outline-offset: 2px; border-radius: 3px; background: transparent;
-  font: 700 14px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; color: #B85126; mix-blend-mode: multiply;
+.ink-stamp { position: fixed; z-index: 90; pointer-events: none; padding: 7px 12px 6px; border: 1.5px solid var(--ink-stamp); outline: 0.75px solid var(--ink-stamp); outline-offset: 2px; border-radius: 3px; background: transparent;
+  font: 700 14px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; color: var(--ink-stamp); mix-blend-mode: multiply;
   -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px;
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px; }
-/* the open leaf's small print at the house floor, and its pencilled note in the book's italic (Caveat is for photo captions only) */
+.ink-stamp i { display: none; }
+
+/* ── The open leaf at the foot of Home and the Archive (components/delight/OpenLeaf): the same book as the
+   writer's, so its pages show gilt edges; its small print at the house floor; its note in the book's italic ── */
+.open-leaf .ol-page { box-shadow: var(--edge-stack); }
 .open-leaf .ol-head { font-size: 12px; letter-spacing: 0.16em; }
 .open-leaf .ol-note { font: italic 400 20px/1.2 var(--book-body); color: var(--ink-soft); }
-@media (max-width: 760px) { .open-leaf .ol-head { font-size: 12px; letter-spacing: 0.12em; } .open-leaf .ol-note { font-size: 19px; } }
-/* the slip above the bar closes with one quiet word */
-.w-slip-close { position: absolute; top: 6px; right: 8px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; cursor: pointer; font: 600 13px/1 var(--font-ui); color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
-.w-slip-close:hover { text-decoration-color: var(--heading); }
-.w-slip-close:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; border-radius: 4px; }
-.w-tools-row .w-help-out > .w-note.done { padding-right: 56px; }
-/* the question chosen from the help, kept in pencil in the left page's margin */
-.w-pencil.asked span::before { content: "✎ "; font-style: normal; color: var(--kicker-terracotta); }
-.leaf-left .w-pencil.asked { max-width: 24em; }
-.leaf-left .w-pencil.asked svg { display: none; }
+@media (max-width: 760px) { .open-leaf .ol-head { letter-spacing: 0.12em; } .open-leaf .ol-note { font-size: 19px; } }

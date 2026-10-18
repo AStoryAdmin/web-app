@@ -22,11 +22,12 @@ import MemoryRail from "../components/person/MemoryRail";
 import RelatedRow from "../components/person/RelatedRow";
 import FamilyNotes from "../components/person/FamilyNotes";
 import Kin from "../components/person/Kin";
-import { WhereNext } from "../components/family/Ornaments";
+import { Leaf, WhereNext } from "../components/family/Ornaments";
 import { quoteFor } from "../app-core/lib/memoryCard.js";
 import { opening } from "../lib/resurface";
 import { smarten } from "../lib/typography";
-import { railFor, relatedFor, spanLine, type Found } from "../components/person/personRail";
+import { railFor, relatedFor, spanLine, splitRail, type Found } from "../components/person/personRail";
+import type { Teller } from "../components/person/MemoryRail";
 import { sampleFamily } from "../components/family/tree/sampleFamily";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -40,7 +41,9 @@ import type { Story } from "../data/stories";
 
 type Res = { own: Story | null; told: Found[]; tagged: Found[]; mentions: Found[]; total: number };
 
-const RAIL_MAX = 12;
+/** The latest few of each group (their own first, then the family's); the rest are a link away, in the archive. */
+const RAIL_MAX = 4;
+const OTHERS_MAX = 3;
 
 export default function Person() {
   const { personId = "" } = useParams();
@@ -74,6 +77,7 @@ export default function Person() {
   }, [person, stories, family, index]);
 
   const rail = useMemo(() => (res ? railFor(res.told, res.tagged, res.own) : []), [res]);
+  const groups = useMemo(() => (res ? splitRail(res.told, res.tagged, res.own) : { theirs: [], others: [] }), [res]);
   const related = useMemo(() => {
     if (!res) return [];
     const seen = new Set<string>();
@@ -81,17 +85,34 @@ export default function Person() {
   }, [res, rail, story]);
 
   const back = preview ? "/family?preview=tree" : "/family";
-  if (account === undefined) return <Shell compact back={back}><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined)
+    return (
+      <Shell wide back={back}>
+        {/* the mark draws itself over a hairline sketch of the page to come */}
+        <div className="page pp2 pp-skel" aria-busy="true">
+          <span className="sk-plate" />
+          <span className="sk-col">
+            <span className="sk-line w40" />
+            <span className="sk-line" />
+            <span className="sk-line" />
+            <span className="sk-line w70" />
+          </span>
+        </div>
+      </Shell>
+    );
   if (!story) return <Navigate to="/start" replace />;
   if (!person || !res) {
     return (
-      <Shell compact title="Family" back={back}>
+      <Shell compact title="Family">
         <div className="page pp-missing">
-          <h2>This person isn't in the family tree.</h2>
-          <p>They may have been merged into someone else, or taken out of the tree.</p>
-          <Link className="pk-tree" to={back}>
-            Back to the family <span aria-hidden="true">→</span>
-          </Link>
+          <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" />
+          <div>
+            <h2>This person isn't in the family tree.</h2>
+            <p>They may have been merged into someone else, or taken out of the tree.</p>
+            <Link className="pp-write" to={back}>
+              Back to the family <span aria-hidden="true">→</span>
+            </Link>
+          </div>
         </div>
       </Shell>
     );
@@ -107,14 +128,24 @@ export default function Person() {
   const editable = !preview && canEdit(person, family, meId);
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const name = personName(person);
-  const shown = rail.slice(-RAIL_MAX);
+  const theirsShown = groups.theirs.slice(-RAIL_MAX);
+  const othersShown = groups.others.slice(-(theirsShown.length ? OTHERS_MAX : RAIL_MAX));
+  const more = rail.length - theirsShown.length - othersShown.length;
+  // Who told a memory somebody else has: their tree row when we know it, else the name on the credit, else the story's teller.
+  const tellerOf = (f: Found): Teller => {
+    const credit = String(f.memory.contributor || "").split(",")[0].trim();
+    const row = (f.memory.authorPersonId && family?.people.find((p) => p.id === f.memory.authorPersonId)) || (!credit ? storytellerOf(family, f.story) : null);
+    if (row) return { name: personName(row), photo: row.photo, given: row.givenName, family: row.familyName };
+    const n = credit || `${f.story.name} ${f.story.lastName}`.trim();
+    return { name: n, given: n.split(" ")[0], family: n.split(" ").slice(1).join(" ") };
+  };
   const life = lifeLine(person) as string;
   const span = spanLine(rail);
   const whose = teller && teller.userId && teller.userId === meId ? "your" : `${story.name}'s`;
   // The kicker already says "Storyteller"; the line under the name says what they are to the storyteller, and their years.
   const subline = [preview ? "A sample family" : "", isTeller ? "Storyteller" : state.key === "you" ? "You" : rel ? `${whose === "your" ? "Your" : `${story.name}'s`} ${rel}` : "In the family", life].filter(Boolean).join(" · ");
   // Their own words, once on the page (decoration D22): the opening of the latest memory they told or kept, never a summary.
-  const theirs = [...(res.own ? res.own.memories.filter((m) => m.status !== "in_progress").map((memory) => ({ story: res.own!, memory })) : []), ...res.told]
+  const theirs = [...(res.own ? res.own.memories.filter((m) => m.status !== "in_progress" && !m.contributor).map((memory) => ({ story: res.own!, memory })) : []), ...res.told]
     .filter((f) => (f.memory.body || "").trim().length >= 20)
     .sort((a, b) => b.memory.createdAt.localeCompare(a.memory.createdAt))[0];
   const said = theirs ? smarten(quoteFor(opening(theirs.memory.body.trim()), 220) as string).replace(/^“|”$/g, "") : "";
@@ -245,7 +276,7 @@ export default function Person() {
                     <p className="pp-why">They read what's shared and add what they remember, under their own name. Nobody writes as {story.name}.</p>
                   ) : (
                     <>
-                      <p className="pp-why">{person.email ? `Invited at ${person.email}. Until they accept, nothing here reaches them.` : `A code puts ${first} in the family tree. Add an email and we'll send it, or pass it on yourself. Until they accept, nothing here reaches them.`}</p>
+                      <p className="pp-why">{person.email ? `Invited at ${person.email}; nothing here reaches them until they accept.` : `A code puts ${first} in the family tree; nothing here reaches them until they accept.`}</p>
                       {!person.email && <Field label="Email, if you have it" icon={<MailIcon />} type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Optional" autoComplete="off" />}
                       <Button small variant={state.key === "invited" ? "outline" : "primary"} loading={busy === "code"} onClick={() => void sendCode(person.email || inviteEmail)}>
                         {state.key === "invited" ? "Send the code again" : inviteEmail.trim() || person.email ? "Send the code" : "Make a code"}
@@ -318,28 +349,48 @@ export default function Person() {
               {said && (
                 <figure className="pp-words-plate" data-rise>
                   <blockquote>
-                    <p>{said}</p>
+                    <p>
+                      {said}
+                      <Leaf />
+                    </p>
                   </blockquote>
                   <figcaption>
                     {first}, in {preview ? <span>“{theirs!.memory.title?.trim() || "a memory"}”</span> : <Link to={`/archive/${theirs!.memory.id}`}>“{theirs!.memory.title?.trim() || "a memory"}”</Link>}
                   </figcaption>
                 </figure>
               )}
-              {shown.length > 0 ? (
+              {rail.length > 0 ? (
                 <>
-                  <header className="pp-head" data-rise>
-                    <h2>{isTeller ? `What ${first} has told` : `Memories with ${first}`}</h2>
-                    {!preview && (
-                      <Link className="pp-write" to={`/write?with=${encodeURIComponent(person.id)}`}>
-                        Write one with {first} <span aria-hidden="true">→</span>
-                      </Link>
-                    )}
-                  </header>
-                  <MemoryRail items={shown} label={isTeller ? `What ${first} told` : `Memories with ${first}`} />
-                  {rail.length > shown.length && (
+                  {theirsShown.length > 0 && (
+                    <section className="pp-group" aria-labelledby="pp-theirs-h">
+                      <header className="pp-head" data-rise>
+                        <h2 id="pp-theirs-h">{isTeller ? `What ${first} has told` : `What ${first} has told the family`}</h2>
+                        {!preview && othersShown.length === 0 && (
+                          <Link className="pp-write" to={`/write?with=${encodeURIComponent(person.id)}`}>
+                            Write one with {first} <span aria-hidden="true">→</span>
+                          </Link>
+                        )}
+                      </header>
+                      <MemoryRail items={theirsShown} label={`What ${first} told`} preview={preview} />
+                    </section>
+                  )}
+                  {othersShown.length > 0 && (
+                    <section className="pp-group" aria-labelledby="pp-others-h">
+                      <header className="pp-head" data-rise>
+                        <h2 id="pp-others-h">{isTeller ? `${first}, as the family remembers` : `Memories with ${first}`}</h2>
+                        {!preview && (
+                          <Link className="pp-write" to={`/write?with=${encodeURIComponent(person.id)}`}>
+                            Write one with {first} <span aria-hidden="true">→</span>
+                          </Link>
+                        )}
+                      </header>
+                      <MemoryRail items={othersShown} label={`Memories with ${first}, told by others`} tellerOf={tellerOf} preview={preview} />
+                    </section>
+                  )}
+                  {more > 0 && !preview && (
                     <p className="pp-more" data-rise>
                       <Link className="pp-write" to="/archive">
-                        Everything with {first}, in the archive <span aria-hidden="true">→</span>
+                        All {rail.length} with {first}, in the archive <span aria-hidden="true">→</span>
                       </Link>
                     </p>
                   )}
@@ -367,9 +418,9 @@ export default function Person() {
 
         <WhereNext
           items={[
-            { to: preview ? "/family?preview=tree" : "/family", title: "The family", line: `Everyone in ${story.name}'s family, by generation.` },
-            { to: `/write?with=${encodeURIComponent(person.id)}`, title: `A memory with ${first}`, line: "A few lines is plenty. It takes about five minutes." },
-            { to: "/archive", title: "The archive", line: "Every memory, by year and by chapter." },
+            { to: "/", title: "Today's question", line: "One question a day, for whoever is telling." },
+            { to: "/talk", title: "Talk it through", line: "Tell a memory out loud and it is written down for you." },
+            { to: "/book", title: "The book", line: "How the family's memories print, page by page." },
           ]}
         />
       </div>

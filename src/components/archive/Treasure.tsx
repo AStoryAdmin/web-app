@@ -6,8 +6,9 @@
  * itself gives a little (a short ease-out, no bounce) and a few specks of
  * ink fly; the button stays put.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { OUT } from "../../lib/ease";
 import { useAccount } from "../../state/accountContext";
 import { TREASURED, isTreasured } from "../../lib/treasured";
 import type { Memory, Story } from "../../data/stories";
@@ -26,14 +27,22 @@ export default function Treasure({ memory, story }: { memory: Memory; story: Sto
   const star = useRef<SVGSVGElement>(null);
   const ink = useRef<HTMLSpanElement>(null);
   const on = isTreasured(memory);
+  // one GSAP context for this button: the press is added to it (context-safe), and it is reverted on unmount
+  const ctx = useRef<gsap.Context | null>(null);
+  useEffect(() => {
+    ctx.current = gsap.context(() => {});
+    return () => ctx.current?.revert();
+  }, []);
   const press = () => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !star.current) return;
-    const tl = gsap.timeline();
-    tl.fromTo(star.current, { scale: 1, transformOrigin: "50% 50%" }, { scale: 1.3, duration: 0.14, ease: "power2.out" }).to(star.current, { scale: 1, duration: 0.32, ease: "power3.out", clearProps: "transform" });
-    if (!on && ink.current) {
-      const specks = Array.from(ink.current.children);
-      tl.fromTo(specks, { x: 0, y: 0, scale: 0, opacity: 1 }, { x: () => gsap.utils.random(-18, 18), y: () => gsap.utils.random(-16, 16), scale: () => gsap.utils.random(0.5, 1.1), opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.015 }, 0.05);
-    }
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !star.current || !ctx.current) return;
+    const el = star.current;
+    const specks = !on && ink.current ? Array.from(ink.current.children) : [];
+    ctx.current.add(() => {
+      const tl = gsap.timeline();
+      tl.fromTo(el, { scale: 1, transformOrigin: "50% 50%" }, { scale: 1.3, duration: 0.14, ease: OUT }).to(el, { scale: 1, duration: 0.32, ease: OUT, clearProps: "transform" });
+      if (specks.length)
+        tl.fromTo(specks, { x: 0, y: 0, scale: 0.5, opacity: 1 }, { x: () => gsap.utils.random(-18, 18), y: () => gsap.utils.random(-16, 16), scale: () => gsap.utils.random(0.6, 1.1), opacity: 0, duration: 0.6, ease: OUT, stagger: 0.015 }, 0.05);
+    });
   };
   const flip = async () => {
     press();

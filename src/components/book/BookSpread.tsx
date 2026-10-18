@@ -3,10 +3,13 @@
  * pages, the cover alone on the right and the back cover alone on the
  * left, turned with Back / Turn page, the arrow keys, a click on a page,
  * and a row of dashes to jump to any spread. The turn is a leaf rotating
- * on its spine (GSAP, 1.1s, a cubic ease); when the person asks for less
- * motion, or on a phone where one page shows at a time, a page simply
- * fades in. Nothing ever slides sideways. "Read this page" gives the
- * spread to the browser's voice.
+ * on its spine (GSAP, 0.9s on the samples' own curve); from the keyboard it
+ * turns in 250ms, and presses made during a turn are queued, never
+ * dropped. When the person asks for less motion, or on a phone where one
+ * page shows at a time, a page simply fades in. Under the book, the
+ * samples' note for the spread ("Linen hardcover", "Endpapers", the
+ * chapter) and "Read this page", which gives the spread to the browser's
+ * voice.
  *
  * While the book is closed its cover leans toward the pointer the way the
  * book object on the cloth does (useTilt), and a new cover colour sweeps
@@ -24,9 +27,10 @@ import { MARK_MASK } from "./markMask";
 import { ChevronLeft, ChevronRight, PauseIcon, PlayIcon } from "../icons";
 import { canSpeak, chunksOf } from "../../lib/readAloud";
 import { track } from "../../lib/analytics";
+import { MOVE, OUT } from "../../lib/ease";
 
 type View = { left: Page | null; right: Page | null };
-type Turn = { to: number; dir: 1 | -1 };
+type Turn = { to: number; dir: 1 | -1; fast: boolean };
 
 function useMedia(query: string): boolean {
   const [on, setOn] = useState(() => (typeof window !== "undefined" ? window.matchMedia(query).matches : false));
@@ -47,19 +51,24 @@ gsap.registerPlugin(CustomEase);
 /** The samples' leaf: cubic-bezier(.45,.05,.25,1) over 0.9s, so a page turns here exactly as it turns there. */
 const LEAF_EASE = CustomEase.create("bk-leaf", "M0,0 C0.45,0.05 0.25,1 1,1");
 
-/** Where a spread sits in the book, for the line under the dashes. */
-function placeOf(view: View): string {
+/**
+ * The samples' note for a spread: a name, and for the parts every book shares a line about them (its NOTES table,
+ * in this app's words). Memory spreads are named by their chapter.
+ */
+function noteOf(view: View, i: number, last: number): [string, string] {
+  const kinds = [view.left?.kind, view.right?.kind];
   for (const p of [view.right, view.left]) {
     if (!p) continue;
-    if (p.kind === "memory" || p.kind === "deeper" || p.kind === "opener") return p.chapter;
-    if (p.kind === "little") return p.title;
+    if (p.kind === "memory" || p.kind === "deeper" || p.kind === "opener") return [p.chapter, ""];
+    if (p.kind === "little") return [p.title, ""];
   }
-  const p = view.right ?? view.left;
-  if (!p) return "";
-  if (p.kind === "contents") return "Contents";
-  if (p.kind === "title" || p.kind === "colophon" || p.kind === "dedication") return "The opening pages";
-  if (p.kind === "final") return "The last page";
-  return "";
+  if (kinds.includes("cover")) return ["Linen hardcover", "Seven cover colours, with the title, the names and the photographs."];
+  if (kinds.includes("back")) return ["Back cover", "A dedication to the whole family."];
+  if (kinds.includes("final")) return ["The story keeps going", "The book is one edition. The archive keeps growing, and the code takes you there."];
+  if (kinds.includes("endpaper")) return ["Endpapers", i > last / 2 ? "The book closes the way it opened." : "The inside covers carry the A Story mark in the cover colour."];
+  if (kinds.includes("title") || kinds.includes("colophon")) return ["Title & colophon", "Every book says how it was made."];
+  if (kinds.includes("dedication") || kinds.includes("contents")) return ["Dedication & contents", ""];
+  return ["", ""];
 }
 
 /**
@@ -123,32 +132,45 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
   // A new page stops the voice; so does leaving.
   useEffect(() => stop, [safeIndex, stop]);
 
+  // A press made while a leaf is turning waits here, and is played the moment the leaf lands.
+  const pending = useRef<{ to: number; fast: boolean } | null>(null);
   const go = useCallback(
-    (to: number) => {
+    (to: number, fast = false) => {
       const target = Math.max(0, Math.min(last, to));
-      if (target === safeIndex || turn) return;
+      if (turn) {
+        pending.current = { to: target, fast };
+        return;
+      }
+      if (target === safeIndex) return;
       if (!opened.current) {
         opened.current = true;
         track("book_preview_opened", { pages: book.pages.length });
       }
       if (single || reduced) setIndex(target);
-      else setTurn({ to: target, dir: target > safeIndex ? 1 : -1 });
+      else setTurn({ to: target, dir: target > safeIndex ? 1 : -1, fast });
     },
     [last, safeIndex, turn, single, reduced, book.pages.length],
   );
+  // the leaf has landed: play what was pressed meanwhile
+  useEffect(() => {
+    if (turn || !pending.current) return;
+    const p = pending.current;
+    pending.current = null;
+    go(p.to, p.fast);
+  }, [turn, go]);
 
   // The leaf turns; when it lands, the new spread is the spread.
   useEffect(() => {
     if (!turn || !leafRef.current) return;
-    const { to, dir } = turn;
+    const { to, dir, fast } = turn;
     const ctx = gsap.context(() => {
       gsap.fromTo(
         leafRef.current,
         { rotateY: 0 },
         {
           rotateY: dir > 0 ? -180 : 180,
-          duration: 0.9,
-          ease: LEAF_EASE,
+          duration: fast ? 0.25 : 0.9,
+          ease: fast ? OUT : LEAF_EASE,
           onComplete: () => {
             setIndex(to);
             setTurn(null);
@@ -159,28 +181,21 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
     return () => ctx.revert();
   }, [turn]);
 
-  // Arrow keys turn the pages, unless the person is typing somewhere.
+  // The left and right arrows turn the pages (quickly, and every press counts), unless the person is typing or holds
+  // a modifier. Page Up, Page Down, Home and End are left to the page, so the keyboard can still scroll it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
-      if (e.key === "ArrowRight" || e.key === "PageDown") {
-        e.preventDefault();
-        go(safeIndex + 1);
-      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
-        e.preventDefault();
-        go(safeIndex - 1);
-      } else if (e.key === "Home") {
-        e.preventDefault();
-        go(0);
-      } else if (e.key === "End") {
-        e.preventDefault();
-        go(last);
-      }
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      e.preventDefault();
+      const from = pending.current?.to ?? turn?.to ?? safeIndex;
+      go(from + (e.key === "ArrowRight" ? 1 : -1), true);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [go, safeIndex, last]);
+  }, [go, safeIndex, turn]);
 
   const cur = views[safeIndex];
   const next = turn ? views[turn.to] : null;
@@ -252,8 +267,8 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
       { clipPath: sweep.fromLeft ? "inset(0% 100% 0% 0%)" : "inset(0% 0% 0% 100%)" },
       {
         clipPath: "inset(0% 0% 0% 0%)",
-        duration: 0.75,
-        ease: "power2.inOut",
+        duration: 0.45,
+        ease: MOVE,
         onComplete: () => {
           setShown(sweep.cover);
           setSweep(null);
@@ -264,7 +279,10 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
       tween.kill();
     };
   }, [sweep]);
-  const place = placeOf(cur);
+  const [noteK, noteP] = noteOf(cur, safeIndex, last);
+  // the book opens and closes while the leaf turns: the slide to centre runs with the turn, not after it
+  const slidFront = atFront && !turn;
+  const slidBack = atBack && !turn;
   const where = atFront ? "Front cover" : atBack ? "Back cover" : single ? `Page ${safeIndex} of ${book.pages.length - 2}` : `Spread ${safeIndex} of ${last - 1}`;
   const dotLabel = (i: number) => (i === 0 ? "Front cover" : i === last ? "Back cover" : single ? `Page ${i}` : `Spread ${i}`);
 
@@ -294,22 +312,18 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
       </div>
       {sweep && sweep.into.isConnected && createPortal(<span ref={sweepRef} className="bk-sweep" aria-hidden="true" style={{ background: sweep.cover.board }} />, sweep.into)}
 
+      <div className="bk-under">
       <div className="bk-controls">
-        {/* on the front cover there is nothing behind: the button keeps its place but is not shown */}
-        <button type="button" className={`btn outline sm${atFront ? " bk-hide" : ""}`} onClick={() => go(safeIndex - 1)} disabled={atFront || !!turn} aria-hidden={atFront || undefined} tabIndex={atFront ? -1 : undefined} aria-label="Previous page">
+        {/* on the front cover, as on the samples page, Back is there and disabled (a phone takes it out of the row) */}
+        <button type="button" className={`btn outline sm bk-back${atFront ? " at-front" : ""}`} onClick={() => go(safeIndex - 1)} disabled={atFront} aria-label="Previous page">
           <ChevronLeft /> Back
         </button>
         <span className="bk-where" aria-live="polite">
           {where}
         </span>
-        <button type="button" className="btn outline sm" onClick={() => go(safeIndex + 1)} disabled={safeIndex === last || !!turn} aria-label="Next page">
+        <button type="button" className="btn outline sm bk-next" onClick={() => go(safeIndex + 1)} disabled={safeIndex === last} aria-label="Next page">
           {atFront ? "Open the book" : "Turn page"} <ChevronRight />
         </button>
-        {speaks && (
-          <button type="button" className={`btn outline sm bk-read${reading ? " on" : ""}`} onClick={read} aria-pressed={reading}>
-            {reading ? <PauseIcon /> : <PlayIcon />} {reading ? "Stop reading" : "Read this page"}
-          </button>
-        )}
       </div>
 
       <div className="bk-dots" role="group" aria-label="Jump to a spread">
@@ -317,13 +331,22 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
           <button key={i} type="button" className="bk-dot" aria-label={dotLabel(i)} aria-current={i === safeIndex || undefined} onClick={() => go(i)} />
         ))}
       </div>
-      <p className="bk-caption" aria-hidden="true">
-        {place}
-      </p>
+      <div className="bk-note">
+        <p className="bk-caption" aria-live="polite">
+          {noteK && <b>{noteK}</b>}
+          {noteP && <span>{noteP}</span>}
+        </p>
+        {speaks && (
+          <button type="button" className={`btn outline sm bk-read${reading ? " on" : ""}`} onClick={read} aria-pressed={reading}>
+            {reading ? <PauseIcon /> : <PlayIcon />} {reading ? "Stop reading" : "Read this page"}
+          </button>
+        )}
+      </div>
+      </div>
     </>
   );
 
-  const cls = `bk-reader samples${rail ? " bk-desk" : ""}${single ? " single" : ""}${atFront ? " closed-front" : ""}${atBack ? " closed-back" : ""}`;
+  const cls = `bk-reader samples${rail ? " bk-desk" : ""}${single ? " single" : ""}${slidFront ? " closed-front" : ""}${slidBack ? " closed-back" : ""}`;
 
   if (rail) {
     return (

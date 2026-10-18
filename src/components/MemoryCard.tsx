@@ -18,7 +18,8 @@ import { useAccount } from "../state/accountContext";
 import { Avatar } from "./ui";
 import { LockIcon, MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
-import { keptLine } from "./archive/transcript";
+import { keptLine, ownWords } from "./archive/transcript";
+import Face from "./archive/Face";
 import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
 import { opening } from "../lib/resurface";
@@ -36,13 +37,15 @@ function cardWords(memory: Memory): string {
   const body = (memory.body || "").trim();
   const kept = keptLine(body);
   if (kept) return smarten(kept);
-  if (body) return smarten(quoteFor(opening(body) || body, 150) as string);
+  // otherwise the opening of their own words: a call tidied to the teller's turns, typed lines kept apart
+  const own = ownWords(body);
+  if (own) return smarten(quoteFor(opening(own) || own, 150) as string);
   const ex = (memory.excerpt || "").trim();
   if (/^the (speaker|narrator|storyteller)\b/i.test(ex)) return "";
   return smarten(quoteFor(ex, 150) as string);
 }
 
-export default function MemoryCard({ memory, story, style }: { memory: Memory; story: Story; style?: CSSProperties }) {
+export default function MemoryCard({ memory, story, style, rise = true }: { memory: Memory; story: Story; style?: CSSProperties; /** Its own CSS arrival; off where the page's scroll hook owns the entrance. */ rise?: boolean }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
   const photo = usePhotoUrl(meta.photo);
@@ -57,7 +60,7 @@ export default function MemoryCard({ memory, story, style }: { memory: Memory; s
     .slice(0, 4);
   const paper = paperFor(memory);
   return (
-    <Link className={`mem${meta.photo ? "" : " text"}${paper ? ` ${paper}` : ""} rise`} to={`/archive/${memory.id}`} style={style}>
+    <Link className={`mem${meta.photo ? "" : " text"}${paper ? ` ${paper}` : ""}${rise ? " rise" : ""}`} to={`/archive/${memory.id}`} style={style}>
       {meta.photo && (
         <span className="print" aria-hidden="true">
           <img className="pic" src={photo ?? undefined} alt="" loading="lazy" />
@@ -87,7 +90,7 @@ export default function MemoryCard({ memory, story, style }: { memory: Memory; s
           {people.length > 0 ? (
             <span className="faces" aria-label={people.map((p) => p.givenName).join(", ")}>
               {people.slice(0, 3).map((p) => (
-                <Avatar key={p.id} name={p.givenName || "?"} size={24} />
+                <Face key={p.id} person={p} size={24} />
               ))}
               {people.length > 3 && <span className="more-n">+{people.length - 3}</span>}
             </span>

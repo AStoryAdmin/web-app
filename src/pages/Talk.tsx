@@ -53,6 +53,7 @@ export default function Talk() {
   return (
     <Shell
       compact
+      wide
       title="Talk"
       back="/"
       hero={
