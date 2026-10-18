@@ -13,7 +13,7 @@
  * bookStructure and printedChapterName), so the wall and the Book never
  * disagree. What the family added closes the page as notecards.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Lockup } from "../components/Brand";
 import { useLight } from "../components/delight/Light";
@@ -77,14 +77,119 @@ function usePrint(u: string | null | undefined): string | null {
   return isSigned(u) ? (u as string) : signedHere;
 }
 
+/** Lines a clamped leaf always keeps, and how few hidden lines are worth a button (fewer are simply shown). */
+const BASE_LINES = 6;
+const WORTH_A_BUTTON = 2;
+/** The button's own height and the gap above it, in CSS px (min-height 44, margin-top s-1, the leaf's gap s-2). */
+const MORE_RESERVE = 44 + 4 + 8;
+
+/**
+ * Words are clamped to fill the leaf's row, not to a fixed count: a leaf of words beside a photograph runs down to
+ * where the photograph leaves end, and the button shows only when words are really hidden (more than a couple of
+ * lines; one or two hidden lines are simply shown). Measured after layout, and again, all leaves together and in
+ * reading order, when the width changes, the fonts arrive or a print loads, so the result never depends on which
+ * leaf happened to measure first.
+ */
+type Fill = { clear: () => void; measure: () => boolean };
+const fills = new Set<Fill>();
+let refillFrame = 0;
+/** Measure every leaf again. A leaf that gains or loses its button changes its row's height, so a pass that changed
+ * a button is followed by one more (at most two more), once React has drawn the buttons. */
+function refill(passes = 2) {
+  cancelAnimationFrame(refillFrame);
+  refillFrame = requestAnimationFrame(() => {
+    fills.forEach((f) => f.clear());
+    let changed = false;
+    fills.forEach((f) => {
+      if (f.measure()) changed = true;
+    });
+    if (changed && passes > 0) setTimeout(() => refill(passes - 1), 0);
+  });
+}
+
+function useFill(leaf: React.RefObject<HTMLElement | null>, words: React.RefObject<HTMLDivElement | null>, open: boolean) {
+  const [more, setMore] = useState(false);
+  const shown = useRef(false);
+  useLayoutEffect(() => {
+    const el = leaf.current;
+    const w = words.current;
+    if (!el || !w) return;
+    const clear = () => {
+      w.style.removeProperty("-webkit-line-clamp");
+      w.style.removeProperty("display");
+      w.style.removeProperty("overflow");
+    };
+    /** Returns true when the leaf's button appeared or went. */
+    const measure = (): boolean => {
+      clear();
+      if (open) return false;
+      // styles first, then the two boxes back to back: a scroll-driven rise can move the leaf between reads, so
+      // everything is measured from the leaf's own top
+      const lh = parseFloat(getComputedStyle(w).lineHeight) || 28.8;
+      const pad = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+      const box = el.getBoundingClientRect();
+      const top = w.getBoundingClientRect().top - box.top;
+      if (!el.offsetHeight || !box.height) return false;
+      const k = box.height / el.offsetHeight; // screen px per CSS px (html zoom)
+      const floor = box.height - pad * k;
+      const reserve = MORE_RESERVE * k;
+      const below = () => {
+        const l = el.getBoundingClientRect().top;
+        return w.getBoundingClientRect().bottom - l;
+      };
+      let n = Math.max(BASE_LINES, Math.floor((floor - reserve - top) / (lh * k)));
+      w.style.setProperty("-webkit-line-clamp", String(n));
+      // paragraph gaps take room too: step back until the words and the button sit inside the leaf
+      while (n > BASE_LINES && below() + reserve > floor + 0.5) {
+        n -= 1;
+        w.style.setProperty("-webkit-line-clamp", String(n));
+      }
+      const fits = w.scrollHeight - w.clientHeight <= lh * WORTH_A_BUTTON + 1;
+      if (fits) {
+        w.style.setProperty("display", "block");
+        w.style.setProperty("overflow", "visible");
+      }
+      const changed = shown.current === fits;
+      shown.current = !fits;
+      setMore(!fits);
+      return changed;
+    };
+    const fill = { clear, measure };
+    fills.add(fill);
+    const again = () => refill();
+    if (measure()) again();
+    let width = el.parentElement?.getBoundingClientRect().width ?? 0;
+    const ro = new ResizeObserver(() => {
+      const now = el.parentElement?.getBoundingClientRect().width ?? 0;
+      if (Math.abs(now - width) > 0.5) {
+        width = now;
+        again();
+      }
+    });
+    if (el.parentElement) ro.observe(el.parentElement);
+    document.fonts?.ready.then(again).catch(() => {});
+    const imgs = Array.from(el.parentElement?.querySelectorAll("img") ?? []);
+    imgs.forEach((i) => i.addEventListener("load", again));
+    return () => {
+      fills.delete(fill);
+      ro.disconnect();
+      imgs.forEach((i) => i.removeEventListener("load", again));
+      clear();
+    };
+  }, [leaf, words, open]);
+  return more || open;
+}
+
 function Leaf({ m }: { m: WallMemory }) {
   const [open, setOpen] = useState(false);
   const paras = paragraphs(m.body);
-  const long = m.body.length > 420 || paras.length > 3;
   const photo = usePrint(m.photos?.[0] ?? null);
   const id = `leaf-${m.id}`;
+  const leaf = useRef<HTMLElement>(null);
+  const words = useRef<HTMLDivElement>(null);
+  const more = useFill(leaf, words, open);
   return (
-    <article className={`wall-leaf${photo ? " has-photo" : ""}`} aria-labelledby={`${id}-t`}>
+    <article ref={leaf} className={`wall-leaf${photo ? " has-photo" : ""}`} aria-labelledby={`${id}-t`}>
       {photo && (
         <span className="wall-print">
           <img src={photo} alt={m.title ? `A photograph for “${m.title}”` : "A photograph from the story"} loading="lazy" />
@@ -93,12 +198,12 @@ function Leaf({ m }: { m: WallMemory }) {
       {m.period && <p className="wall-date">{m.period}</p>}
       <h3 id={`${id}-t`}>{m.title || "Untitled"}</h3>
       {/* a drop cap needs a long first line to wrap around; words kept line by line start plain */}
-      <div id={`${id}-w`} className={`wall-words${long && !open ? " closed" : ""}${(paras[0] || "").length > 140 ? " drop" : ""}`}>
+      <div ref={words} id={`${id}-w`} className={`wall-words${open ? "" : " closed"}${(paras[0] || "").length > 140 ? " drop" : ""}`}>
         {paras.map((p, i) => (
           <p key={i}>{p}</p>
         ))}
       </div>
-      {long && (
+      {more && (
         <button type="button" className="wall-more" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={`${id}-w`}>
           {open ? "Fold it away" : "Read the whole thing"}
         </button>
@@ -308,11 +413,15 @@ export default function Wall() {
           )}
         </div>
         <div className="page wall-next">
+          {/* an empty wall already offers "Keep your own story" as its one action, so its third row is the price instead */}
           <WhereNext
             rows={[
               ...(count === 0 && family === 0 ? [] : [{ to: "/welcome", title: "Keep your own story", line: "Every life holds a story worth keeping." }]),
               { to: "https://astoryapp.com/samples/", title: "Turn the pages of a sample", line: "A family book, printed exactly the way yours will be.", external: true },
               { to: "https://astoryapp.com/", title: "How A Story works", line: "One small question a day, and the family adds the rest.", external: true },
+              ...(count === 0 && family === 0
+                ? [{ to: "https://astoryapp.com/pricing", title: "What a family book costs", line: "The plans side by side, and what each one includes.", external: true }]
+                : []),
             ]}
           />
         </div>

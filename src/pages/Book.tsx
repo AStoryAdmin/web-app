@@ -78,8 +78,18 @@ export default function Book() {
 
   if (account === undefined)
     return (
-      <Shell compact tone="teal" title="The Book">
-        <div className="page" aria-busy="true" />
+      <Shell compact wide tone="teal" title="The Book">
+        {/* the desk's hairlines while the story arrives: the rail's ruled rows beside the open spread */}
+        <div className="page book-page bka-skel bk-skel" aria-busy="true">
+          <span className="bka-sk-col" aria-hidden="true">
+            <i className="bka-sk-line w40" />
+            <i className="bka-sk-line" />
+            <i className="bka-sk-line" />
+            <i className="bka-sk-line" />
+            <i className="bka-sk-line w70" />
+          </span>
+          <span className="bka-sk-block" aria-hidden="true" />
+        </div>
       </Shell>
     );
   if (account === null && loadError) {

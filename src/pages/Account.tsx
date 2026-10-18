@@ -14,7 +14,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type Rea
 import { Link, useNavigate } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, ButtonLink, CodeInput, Field, Problem } from "../components/ui";
-import { LinkIcon, LockIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
+import { LinkIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { changePassword, confirmEmailChange, requestEmailChange, updateProfile, updateSettings, CODE_LEN, MIN_PASSWORD, type Settings, type User } from "../data/auth";
@@ -133,7 +133,7 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
         }}
       >
         <div className="acct-two">
-          <Field label="First name" value={first} onChange={(e) => setFirst(e.target.value)} autoComplete="given-name" icon={<UserIcon />} />
+          <Field label="First name" value={first} onChange={(e) => setFirst(e.target.value)} autoComplete="given-name" />
           <Field label="Last name" value={last} onChange={(e) => setLast(e.target.value)} autoComplete="family-name" />
         </div>
         <Field label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" autoComplete="tel" hint="Only the family sees it, and only if you let them." />
@@ -204,7 +204,7 @@ function Email({ user, refresh }: { user: User; refresh: () => Promise<unknown> 
             void start();
           }}
         >
-          <Field label="New email" type="email" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="email" icon={<MailIcon />} required />
+          <Field label="New email" type="email" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="email" required />
           <div className="acct-acts">
             <Button type="submit" small loading={busy} disabled={!next.includes("@")}>
               Send a code
@@ -277,7 +277,7 @@ function Password() {
           void save();
         }}
       >
-        <Field label="New password" type={shown ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" icon={<LockIcon />} reveal={{ shown, toggle: () => setShown((s) => !s) }} hint={`At least ${MIN_PASSWORD} characters.`} />
+        <Field label="New password" type={shown ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" reveal={{ shown, toggle: () => setShown((s) => !s) }} hint={`At least ${MIN_PASSWORD} characters.`} />
         <Field label="Once more" type={shown ? "text" : "password"} value={again} onChange={(e) => setAgain(e.target.value)} onBlur={() => setTouched(true)} autoComplete="new-password" error={mismatch ? "These don’t match yet." : null} />
         <div className="acct-acts">
           <Button type="submit" small loading={busy} disabled={!ready}>
@@ -546,7 +546,7 @@ function Trusted() {
           void save();
         }}
       >
-        <Field label={heir ? "Choose someone else" : "Their email"} type="email" value={mail} onChange={(e) => setMail(e.target.value)} icon={<MailIcon />} autoComplete="off" />
+        <Field label={heir ? "Choose someone else" : "Their email"} type="email" value={mail} onChange={(e) => setMail(e.target.value)} autoComplete="off" />
         <div className="acct-acts">
           <Button variant="outline" small type="submit" loading={busy} disabled={!mail.includes("@")}>
             {heir ? "Change" : "Name them"}
@@ -793,7 +793,28 @@ export default function Account() {
   if (user === undefined || account === undefined)
     return (
       <Shell bare wide title="Account">
-        <div className="page" aria-busy="true" />
+        {/* the index column and three ruled sections, in hairlines, while the account arrives */}
+        <div className="page acct-page bka-skel acct-skel" aria-busy="true">
+          <span className="bka-sk-col acct-skel-index" aria-hidden="true">
+            <i className="bka-sk-line w40" />
+            <i className="bka-sk-line w70" />
+            <i className="bka-sk-line w50" />
+            <i className="bka-sk-line w70" />
+            <i className="bka-sk-line w50" />
+          </span>
+          <span className="bka-sk-col" aria-hidden="true">
+            <i className="bka-sk-line tall w50" />
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="acct-skel-sec">
+                <i className="bka-sk-line w70" />
+                <span className="bka-sk-col">
+                  <i className="bka-sk-line" />
+                  <i className="bka-sk-line w85" />
+                </span>
+              </span>
+            ))}
+          </span>
+        </div>
       </Shell>
     );
   if (!user) return null; // RequireAuth sends them to sign in

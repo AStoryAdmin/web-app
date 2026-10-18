@@ -182,6 +182,10 @@
 .sheet-page .bk-empty-words h2 { font-size: 40px; }
 .bk-empty-time { font: italic 400 17px/1.4 var(--book-body); color: var(--ink-soft); }
 .bk-empty-acts { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+/* a large window: the desk and its words fill three quarters of the sheet, the closed book about 440px */
+@media (min-width: 1600px) {
+  .bk-empty { grid-template-columns: minmax(0, 640px) minmax(0, 620px); gap: var(--s-20); padding: var(--s-12) 0 var(--s-10); }
+}
 
 /* 1.6 The editions as a printer's price list */
 .ed-ledger { position: relative; display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 2.3fr); gap: var(--s-6) var(--s-12); margin-top: var(--s-16); padding-top: var(--s-10); }
@@ -240,6 +244,8 @@
   .ed-name { grid-area: name; }
   .ed-leader { display: none; }
   .ed-price { grid-area: price; align-self: start; }
+  /* the note under a price balances onto two short lines, so the name keeps the width every row shares */
+  .ed-price small { max-width: 15ch; }
   .ed-act { grid-area: act; justify-content: flex-start; }
   .ed-act:empty { display: none; }
   .bk-empty { grid-template-columns: minmax(0, 1fr); gap: var(--s-8); justify-items: center; }
@@ -414,6 +420,12 @@
 .pl-choose span[aria-hidden] { color: var(--accent); }
 .pl-mine { font: 600 13px/44px var(--font-ui); color: var(--kicker-sage); }
 .pl-quiet { font: 400 13px/1.4 var(--font-ui); color: var(--ink-soft); padding-top: 12px; }
+/* on an access code nothing is chosen, so the table ends on its last rule, with no row of one caption under it */
+@media (min-width: 901px) {
+  .pl-table.no-act .pl-act { padding: 0; }
+  .pl-table.no-act .pl-act > * { display: none; }
+  .pl-table.no-act .pl-label-act { border-top: 1px solid var(--sheet-rule); padding: 0; }
+}
 /* the keepsake, drawn (no 1200px image in a 36px slot), on its own line above the words, on a large window only */
 .pl-keepsake { display: none; }
 @media (min-width: 1600px) {
@@ -608,13 +620,14 @@
 .start-sample:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 /* a short laptop window: the sheet and its rows give back a little height so step 1 is one screen */
 @media (min-width: 861px) and (max-height: 800px) {
-  .start { padding-top: var(--s-3); gap: var(--s-3); }
+  .start { padding-top: var(--s-3); padding-bottom: var(--s-4); gap: var(--s-3); }
   .start-sheet { padding-top: var(--s-6); padding-bottom: var(--s-4); }
-  /* step 2's form starts at the sheet's centre line, under the fleuron: keep it clear */
-  .start-sheet.step-2 { padding-top: var(--s-10); }
-  .start-top { margin-bottom: var(--s-3); }
+  /* step 2's form starts at the sheet's centre line, under the fleuron, and its last line stays clear of the foil frame */
+  .start-sheet.step-2 { padding-top: var(--s-10); padding-bottom: var(--s-8); }
+  /* the heading block stands further from the cards than the cards stand from each other */
+  .start-top { margin-bottom: var(--s-5); }
   .start .start-top h1 { font-size: 52px; }
-  .start-way { padding-top: 10px; padding-bottom: 10px; }
+  .start-way { padding-top: var(--s-2); padding-bottom: var(--s-2); }
   .start-sample { margin-top: 0; }
 }
 @media (min-width: 1600px) { .start-sheet, .start-head { max-width: 1480px; } }
@@ -627,6 +640,7 @@
 }
 @media (max-width: 1100px) {
   .start-sheet { padding: var(--s-10) var(--s-8); }
+  .start-head { padding: 0 var(--s-8); }
   .start-top { grid-template-columns: minmax(0, 1fr); }
   .start .start-top h1 { font-size: 48px; }
   .start-step { gap: var(--s-10); }
@@ -644,6 +658,7 @@
 @media (max-width: 760px) {
   .start { padding: var(--s-4) var(--s-2) var(--s-8); }
   .start-sheet { padding: var(--s-8) var(--s-4) var(--s-6); }
+  .start-head { padding: 0 var(--s-4); }
   .start-sheet::before { inset: 6px; }
   .start .start-top h1 { font-size: 38px; }
   .start-sub { font-size: 17px; }
@@ -723,8 +738,7 @@
 .wall-words p + p { margin-top: 0.7em; }
 .wall-words.drop p:first-child::first-letter { font: 600 3.1em/0.8 var(--book-display); float: left; padding: 0.06em 0.08em 0 0; color: var(--kicker-terracotta); }
 .wall-words.closed { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
-/* in a chapter with photographs, a leaf of words alone opens further, so it fills its row as the photograph leaves do */
-@media (min-width: 761px) { .wall-leaves:has(.has-photo) > .wall-leaf:not(.has-photo) .wall-words.closed { -webkit-line-clamp: 15; } }
+/* six lines before the page measures; Wall.tsx then lets the words run down to the foot of their row (useFill) */
 .wall-more { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; margin-top: var(--s-1); background: none; border: 0; cursor: pointer; font: 600 13px/1.35 var(--font-ui); color: var(--kicker-terracotta); }
 .wall-more::after { content: "→"; font-size: 14px; transition: transform 160ms var(--ease-out); }
 .wall-more[aria-expanded="true"]::after { content: "↑"; }
@@ -815,4 +829,29 @@
   .wall-note { padding: var(--s-5); }
   .wall-none { padding: var(--s-10) var(--s-6); }
   .wall-none h1 { font-size: 32px; }
+}
+
+/* ═════════════════════════ 7. Loading: each page's hairline skeleton under the mark ═════════════════════════ */
+/* Shell draws the mark over a busy page; these are the page's own shape in hairlines, so nothing jumps when it arrives. */
+.bka-skel { align-content: start; }
+.bka-sk-col { display: grid; gap: 22px; align-content: start; min-width: 0; }
+.bka-sk-line { display: block; width: 100%; height: 18px; border-bottom: 1px solid var(--sheet-rule); }
+.bka-sk-line.tall { height: 48px; }
+.bka-sk-line.w40 { width: 40%; } .bka-sk-line.w50 { width: 50%; } .bka-sk-line.w70 { width: 70%; } .bka-sk-line.w85 { width: 85%; }
+.bka-sk-block { display: block; min-width: 0; border: 1px solid var(--sheet-rule); border-radius: 4px; }
+.bk-skel { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s-12); padding-top: var(--s-6); }
+.bk-skel .bka-sk-block { width: 100%; aspect-ratio: 2 / 1; max-width: min(100%, calc((100vh / var(--zoom, 1) - var(--bk-chrome, 316px)) * 2), 1480px); justify-self: center; }
+.talk-skel { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); padding-top: var(--s-6); }
+.talk-skel .bka-sk-block { min-height: 320px; }
+.acct-skel .acct-skel-sec { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr); gap: var(--s-12); padding: var(--s-8) 0; border-top: 1px solid var(--sheet-rule); }
+@media (max-width: 1100px) {
+  .bk-skel { grid-template-columns: minmax(0, 1fr); }
+  .bk-skel > .bka-sk-col { order: 2; }
+  .talk-skel { grid-template-columns: minmax(0, 1fr); row-gap: var(--s-10); }
+  .acct-skel .acct-skel-sec { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+}
+@media (max-width: 760px) {
+  .bk-skel .bka-sk-block { aspect-ratio: 1; max-width: 100%; }
+  .talk-skel .bka-sk-block { order: -1; min-height: 300px; }
+  .acct-skel .acct-skel-index { display: none; }
 }

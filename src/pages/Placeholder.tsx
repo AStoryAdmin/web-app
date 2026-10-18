@@ -22,7 +22,7 @@ export default function Placeholder({ name }: { name: string }) {
           {name.replace(/[.!?]$/, "")}
           <span className="stop">.</span>
         </h1>
-        <p>The link may be old, or the address isn't quite right. Home is one click away.</p>
+        <p>The link may be old, or the address isn’t quite right. Home is one click away.</p>
           <Link className="btn outline" to="/">
             Go home
           </Link>

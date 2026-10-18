@@ -2,8 +2,9 @@
  * The book open on the desk, as the samples page shows it: two facing
  * pages, the cover alone on the right and the back cover alone on the
  * left, turned with Back / Turn page, the arrow keys, a click on a page,
- * and a row of dashes to jump to any spread. The turn is a leaf rotating
- * on its spine (GSAP, 0.9s on the samples' own curve); from the keyboard it
+ * or the contents and chapter chips to jump; the dashes under it only show
+ * where you are. The turn is a leaf rotating on its spine (GSAP, 0.9s on
+ * the samples' own curve); from the keyboard it
  * turns in 250ms, and presses made during a turn are queued, never
  * dropped. When the person asks for less motion, or on a phone where one
  * page shows at a time, a page simply fades in. Under the book, the

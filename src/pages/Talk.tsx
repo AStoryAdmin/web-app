@@ -33,8 +33,30 @@ export default function Talk() {
 
   if (account === undefined)
     return (
-      <Shell compact title="Talk" back="/">
-        <div className="page" aria-busy="true" />
+      <Shell
+        compact
+        wide
+        title="Talk"
+        back="/"
+        hero={
+          <h1 className="hero-title">
+            Talk
+            <Stop />
+          </h1>
+        }
+      >
+        {/* the words and their three steps on the left, the question's card on the right, in hairlines */}
+        <div className="page talk-page bka-skel talk-skel" aria-busy="true">
+          <span className="bka-sk-col" aria-hidden="true">
+            <i className="bka-sk-line tall w70" />
+            <i className="bka-sk-line" />
+            <i className="bka-sk-line w85" />
+            <i className="bka-sk-line w40" />
+            <i className="bka-sk-line" />
+            <i className="bka-sk-line w70" />
+          </span>
+          <span className="bka-sk-block" aria-hidden="true" />
+        </div>
       </Shell>
     );
   if (account === null && loadError)

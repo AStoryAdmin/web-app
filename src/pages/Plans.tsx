@@ -115,7 +115,7 @@ export default function Plans() {
           <p>Plans are bought on astoryapp.com for now, and show here the moment they are paid for.</p>
         </div>
 
-        <div className="pl-table" role="group" aria-label="What each plan includes" data-rise>
+        <div className={`pl-table${current === "complimentary" ? " no-act" : ""}`} role="group" aria-label="What each plan includes" data-rise>
           <div className="pl-labels" aria-hidden="true">
             <span className="pl-corner" />
             {ROWS.map((r) => (
