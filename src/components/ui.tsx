@@ -2,6 +2,7 @@
  * The shared controls, on the classes in src/styles/astory.css (the design
  * system). Pages compose these; they do not restyle a div.
  */
+import { smarten } from "../lib/typography";
 import { forwardRef, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
 import { Link, type LinkProps } from "react-router-dom";
 import { CheckIcon } from "./icons";
@@ -182,7 +183,7 @@ export function Avatar({ src, name, size = 44, className = "" }: { src?: string 
 export function Problem({ message, onRetry, onDismiss }: { message: string; onRetry?: () => void; onDismiss?: () => void }) {
   return (
     <div role="alert" className="banner" style={{ background: "var(--accent-soft)", borderColor: "var(--accent)", marginBottom: "var(--s-5)" }}>
-      <span style={{ flex: 1, minWidth: 0 }}>{message}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>{smarten(message)}</span>
       {onRetry && (
         <Button variant="outline" small onClick={onRetry}>
           Try again

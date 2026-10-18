@@ -43,7 +43,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
       setFamily(tree);
       setLoadError(null);
     } catch (err) {
-      const message = (err as Error)?.message || "Couldn't reach your stories.";
+      const message = (err as Error)?.message || "Couldn’t reach your stories.";
       console.warn("account: load:", message);
       setLoadError(message);
       setAccount((prev) => prev ?? null);
@@ -105,7 +105,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
 
   const saveMemory = useCallback(
     async (memory: Memory, storyId: string) => {
-      await attempt("This memory hasn't been saved yet.", () => saveMemoryRemote(memory, storyId));
+      await attempt("This memory hasn’t been saved yet.", () => saveMemoryRemote(memory, storyId));
       patchStory(storyId, (s) => {
         const exists = s.memories.some((m) => m.id === memory.id);
         return {
@@ -120,7 +120,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
 
   const removeMemory = useCallback(
     async (memoryId: string, storyId: string) => {
-      await attempt("That memory wasn't removed.", () => deleteMemory(memoryId));
+      await attempt("That memory wasn’t removed.", () => deleteMemory(memoryId));
       patchStory(storyId, (s) => ({ ...s, memories: s.memories.filter((m) => m.id !== memoryId) }));
     },
     [attempt, patchStory],
@@ -129,7 +129,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const updateStory = useCallback(
     async (story: Story) => {
       if (!userId) throw new Error("Not signed in");
-      await attempt("That change wasn't saved.", () => saveStory(story, userId));
+      await attempt("That change wasn’t saved.", () => saveStory(story, userId));
       patchStory(story.id, (s) => ({ ...s, ...story, memories: s.memories }));
     },
     [attempt, patchStory, userId],
@@ -138,7 +138,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const chooseStory = useCallback(
     async (storyId: string) => {
       if (!userId) return;
-      await attempt("Couldn't remember which story you chose.", () => setActiveStory(userId, storyId, true));
+      await attempt("Couldn’t remember which story you chose.", () => setActiveStory(userId, storyId, true));
       setAccount((prev) => (prev ? { ...prev, activeStoryId: storyId, onboardingComplete: true } : prev));
     },
     [attempt, userId],
@@ -148,7 +148,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     async (story: Story) => {
       if (!userId) throw new Error("Not signed in");
       const owned = { ...story, ownerId: story.ownerId || userId };
-      await attempt("That story wasn't saved.", async () => {
+      await attempt("That story wasn’t saved.", async () => {
         await saveStory(owned, userId, { isNew: true });
         await setActiveStory(userId, owned.id, true);
       });
