@@ -620,3 +620,37 @@
   .tp-ghost { order: 2; }
   .tp-row { max-width: var(--tp-row-w, none); margin-inline: auto; }
 }
+
+/* ── round 8 ─────────────────────────────────────────────────────────── */
+/* a family list across as many columns as leave nobody alone on the last row (Kin picks the count) */
+.pk-list.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pk-list.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pk-list.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pk-list.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .pp2 .pk-list { grid-template-columns: minmax(0, 1fr); }
+  /* two state lines side by side never run together */
+  .tp-row { column-gap: 16px; }
+}
+/* the photograph link: one underline under the words and the arrow, as the other arrow links */
+.pp-addphoto { display: inline-block; line-height: 44px; }
+.pp-addphoto span { display: inline; }
+/* the keepers' held line reads as one sentence, like the codes' */
+.keeperlist li.held { flex-wrap: wrap; gap: 0 0.3em; }
+
+@media (min-width: 761px) and (max-width: 1099px) {
+  /* the tree leads with the storyteller, as on a phone: their unit alone on the axis, everyone else balanced under it */
+  .tp-tier.home .tp-zone.centre > * { order: -4; flex-basis: 100%; display: flex; justify-content: center; }
+  .tp-tier.home .tp-zone:not(.centre) :is(.tp-node, .tp-ghost), .tp-tier.home .tp-zone.centre > .tp-ghost { margin-top: 0; }
+  .tp-tier.home .tp-zone:not(.centre) .tp-amp { margin-top: calc(var(--pz) / 2 - 18px); }
+  /* the plate's words sit level with the portrait; a plate with only a line or two takes a smaller portrait */
+  .pp-plate { align-items: center; }
+  .pp-plate.slim { grid-template-columns: 120px minmax(0, 1fr); width: fit-content; min-width: min(100%, 420px); padding: 20px 32px 20px 24px; }
+  .pp-plate.slim > .pp-por { --pz: 112px; }
+  .pp-plate.slim > .pp-por:not(.seal) { width: 120px; height: 150px; border-radius: 60px 60px 4px 4px; }
+  .pp-plate.slim .pp-plate-body { padding-top: 0; }
+  /* four across is too tight for names here: an even count goes two by two instead (never one alone) */
+  .pk-list.c4.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* the quiet button's words on the column's edge, its target kept */
+  .pp-plate-body .pp-edit { margin-inline-start: -16px; }
+}

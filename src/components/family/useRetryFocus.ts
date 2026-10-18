@@ -37,7 +37,9 @@ export function useRetryFocus(home?: RefObject<HTMLElement | null>, again = ":sc
     // the loading line has left: once the new content is in, hand the keyboard on if it has nowhere to be (a
     // line that is only re-attached, as StrictMode does, is still on the page and keeps the wish)
     window.setTimeout(() => {
-      if (cur.current?.isConnected) return;
+      // still on the page and still the loading line: only re-attached. A node React reused for what came next
+      // (the failure, or "No codes out") has lost its tabindex: that counts as gone.
+      if (cur.current?.isConnected && cur.current.getAttribute("tabindex") === "-1") return;
       armed.current = false;
       if (!lost()) return;
       const box = homeBox.current?.current;

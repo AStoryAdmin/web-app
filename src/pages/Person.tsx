@@ -312,7 +312,8 @@ export default function Person() {
 
         <div className="pp-cols">
           <aside className="pp-side" aria-label={`About ${first}`}>
-            <div className="pp-plate" data-rise ref={plateRef} tabIndex={-1}>
+            {/* slim: only a line or two beside the portrait (nothing to do here), so the tablet sets it small */}
+            <div className={`pp-plate${!inviteable && !editable ? " slim" : ""}`} data-rise ref={plateRef} tabIndex={-1}>
               <Portrait photo={person.photo} given={person.givenName} family={person.familyName} gone={!!person.deathYear} className={`pp-por${isTeller ? " teller" : ""}`} />
               {/* on a tablet the portrait stands to the left of all this; elsewhere it runs under the portrait */}
               <div className="pp-plate-body">

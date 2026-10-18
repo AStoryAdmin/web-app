@@ -92,9 +92,16 @@ function balance(el: HTMLElement) {
   for (const row of el.querySelectorAll<HTMLElement>(".tp-row")) {
     row.style.removeProperty("--tp-row-w");
     if (!band) continue;
-    const items = [...row.querySelectorAll<HTMLElement>(":scope > .tp-zone > *")]
+    const all = [...row.querySelectorAll<HTMLElement>(":scope > .tp-zone > *")].filter((n) => n.getBoundingClientRect().width > 0);
+    // the storyteller's unit stands on a row of its own (flex-basis 100%): it only sets the narrowest the row may be
+    const alone = all.filter((n) => getComputedStyle(n).flexBasis === "100%");
+    const own = alone.map((n) => {
+      const kids = [...n.children].map((k) => k.getBoundingClientRect());
+      return kids.length ? (Math.max(...kids.map((k) => k.right)) - Math.min(...kids.map((k) => k.left))) / pageZoom() : 0;
+    });
+    const items = all
+      .filter((n) => !alone.includes(n))
       .map((n, i) => ({ w: n.getBoundingClientRect().width / pageZoom(), order: parseFloat(getComputedStyle(n).order) || 0, i }))
-      .filter((x) => x.w > 0)
       .sort((a, b) => a.order - b.order || a.i - b.i)
       .map((x) => x.w);
     if (items.length < 3) continue;
@@ -114,7 +121,7 @@ function balance(el: HTMLElement) {
     };
     const need = rows(row.clientWidth);
     if (need < 2) continue;
-    let lo = Math.max(...items);
+    let lo = Math.max(...items, ...own);
     let hi = row.clientWidth;
     while (hi - lo > 1) {
       const mid = (lo + hi) / 2;

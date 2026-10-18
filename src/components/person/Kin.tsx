@@ -14,12 +14,15 @@ import { personName } from "../family/familyView";
 export default function Kin({ person, kin, preview }: { person: Person; kin: { person: Person; rel: string }[]; preview?: boolean }) {
   if (!kin.length) return null;
   const q = preview ? "?preview=tree" : "";
+  // Across, as many as never leave one person alone on the last row: four people two by two, ten four across.
+  const n = kin.length;
+  const cols = n === 4 ? 2 : [3, 4, 2, 5].find((c) => n <= c || n % c !== 1) || 3;
   return (
     <section className="pk" aria-labelledby="pk-h">
       <h2 id="pk-h" className="pk-h">
         {person.givenName ? `${person.givenName}’s family` : "Their family"}
       </h2>
-      <ul className="pk-list">
+      <ul className={`pk-list c${cols}${n % 2 ? "" : " even"}`}>
         {kin.map(({ person: p, rel }) => (
           <li key={p.id}>
             <Link className="pk-one" to={`/family/${p.id}${q}`}>
