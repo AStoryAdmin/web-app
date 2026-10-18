@@ -899,7 +899,8 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .bk-skel .bka-sk-block { width: 100%; aspect-ratio: 2 / 1; max-width: min(100%, calc((100vh / var(--zoom, 1) - var(--bk-chrome, 316px)) * 2), 1480px); justify-self: center; }
 .bk-skel-under { display: none; }
 .talk-skel { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); }
-.talk-skel .bka-sk-block { min-height: 306px; margin-top: -2.5px; }
+/* the card's outline takes the card's own half-degree tilt, so its corners land where the card's do */
+.talk-skel .bka-sk-block { min-height: 306px; transform: rotate(-0.5deg); }
 /* Account: the index's group labels over 44px rows, and the real sections' grid with the bookplate first */
 .acct-skel-index { gap: 0; }
 .acct-skel-index .bka-sk-line.nav { height: 44px; border-bottom: 0; position: relative; }
@@ -926,10 +927,11 @@ html:has(.wall) { scrollbar-gutter: stable; }
   /* the row under the book stacks: the note and "Read this page", the buttons, the dashes */
   .bk-skel-under { height: 116px; }
 }
-@media (min-width: 1001px) and (max-width: 1100.98px) { .talk-skel > .bka-sk-col { min-height: 374px; } }
+/* the lead sets in one line only from 1031px (two below), so the words are 31px shorter there */
+@media (min-width: 1031px) and (max-width: 1100.98px) { .talk-skel > .bka-sk-col { min-height: 374px; } }
 @media (max-width: 760.98px) {
   .bk-skel-under { height: 98px; margin-top: var(--s-1); }
-  .talk-skel .bka-sk-block { order: -1; min-height: 245px; margin-top: 0; }
+  .talk-skel .bka-sk-block { order: -1; min-height: 245px; margin-top: 0; transform: none; }
   .talk-skel > .bka-sk-col { min-height: 0; }
   .acct-skel .acct-skel-index { display: none; }
   .acct-skel-jump { display: block; height: 48px; margin-bottom: var(--s-4); }
@@ -943,6 +945,17 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .start-skel .start-spec .loading-mark { min-height: 0; }
 /* a join link's frame: step 2's recap and code field held invisible at their size, the heart over the field */
 .start-skel .start-recap, .start-sk-hold { visibility: hidden; }
+/* drawn in hairlines at the held words' own size: a rule under every line of the recap, the code field's underline,
+   the button's outline */
+.start-skel .start-recap > * { position: relative; }
+.start-skel .start-recap > *::after { content: ""; position: absolute; inset: 0; visibility: visible; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(1lh - 1px), var(--sheet-rule) calc(1lh - 1px) 1lh); }
+/* the back link is one line in a 44px target: one rule under its words */
+.start-skel .start-recap > .start-back::after { background: linear-gradient(var(--sheet-rule), var(--sheet-rule)) 0 70% / 100% 1px no-repeat; }
+.start.start-skel .start-sk-hold .field input { visibility: visible; color: transparent; background: none; border: 0; border-bottom: 1px solid var(--sheet-rule); border-radius: 0; box-shadow: none; }
+.start-sk-hold .field input::placeholder { color: transparent; }
+.start-sk-hold :is(input, .btn) { pointer-events: none; }
+.start.start-skel .start-sk-hold .btn[disabled] { visibility: visible; color: transparent; background: none; border: 1px solid var(--sheet-rule); box-shadow: none; }
 .start-sk-code { position: relative; }
 .start-sk-mark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .start-sk-mark .loading-mark { min-height: 0; }

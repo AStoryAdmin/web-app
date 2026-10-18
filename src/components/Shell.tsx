@@ -6,7 +6,7 @@
  * phone the places move to a floating tab bar at the bottom. The pointer
  * is a soft light over the cloth; each page arrives once (lib/arrive).
  */
-import { isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
+import { isValidElement, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -293,10 +293,16 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   // (a bare page shows no hero, so its title, which only names the running head, doesn't re-key the arrival: a memory's
   // chapter isn't known until it loads)
   const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${bare ? "b" : (title ?? "")}`;
+  // The arrival sets its from-states in a layout effect, in the commit, so the browser never paints the page at rest
+  // and then blanks it (as useGSAP does). The scroll and the atmosphere only listen, so they can wait for the paint.
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    return arrive(el);
+  }, [location.pathname, ready]);
   useEffect(() => {
     const el = root.current;
     if (!el) return;
-    const settle = arrive(el);
     // the bar follows, the sheet slides up over the cloth (lib/scrollShell, CSS section 50)
     const scroll = scrollShell(el);
     // the sheet answers the scroll: the ribbon, the running head's section, the prints (lib/atmosphere, CSS §46)
@@ -304,7 +310,6 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
     return () => {
       air();
       scroll();
-      settle();
     };
   }, [location.pathname, ready]);
   // A cold load: the skeleton arrived under the same frame (same ready key), so the sheet has already risen. When the
@@ -312,7 +317,7 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   // dips a second time. A changed key re-runs the whole arrival above instead.
   const wasBusy = useRef(busy);
   const busyReady = useRef(ready);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const was = wasBusy.current;
     wasBusy.current = busy;
     const sameFrame = busyReady.current === ready;
@@ -364,7 +369,8 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
         <Leaf page />
         <div className="hero">
           {/* keyed by what the page shows: the title splitter (lib/arrive) rewrites the h1, so a changed hero is a fresh node, never React writing into split lines */}
-          <div className="hero-in" key={ready}>
+          {/* a bare page's title isn't in the arrival key (its hero is hidden), but a changed title is still a fresh node */}
+          <div className="hero-in" key={bare ? `${ready}:${title ?? ""}` : ready}>
             {back && (
               <button type="button" className="back" aria-label="Back" onClick={() => (back === true ? navigate(-1) : navigate(back))}>
                 <ChevronLeft />

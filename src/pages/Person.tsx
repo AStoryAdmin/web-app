@@ -118,10 +118,11 @@ export default function Person() {
         back={back}
         book={preview ? "A sample family" : undefined}
         hero={
-          // the arrived hero's frame (same Shell key, so the sheet rises once): one title line held invisible
+          // the arrived hero's frame (same Shell key, so the sheet rises once): the title and its subline held invisible
           <div className="phero" aria-hidden="true">
             <div className="phero-words">
               <p className="phero-title hold-words">&nbsp;</p>
+              <p className="phero-sub hold-words">&nbsp;</p>
             </div>
           </div>
         }

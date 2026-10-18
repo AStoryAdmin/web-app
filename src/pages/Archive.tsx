@@ -256,7 +256,36 @@ export default function Archive() {
               The Archive
               <Stop />
             </h1>
-            <p className="meta arc-wall hold-words">&nbsp;</p>
+            {/* the longer of the two wall lines (a shared wall), so a phone holds its two lines; a private one is shorter */}
+            <p className="meta arc-wall hold-words">
+              Anyone with the link can read the public memories. <span className="arc-wall-act">Copy link</span>
+            </p>
+            <dl className="hero-stats arc-stats-hero hold-words">
+              <div>
+                <b>8</b>
+                <span>Memories</span>
+              </div>
+              <div>
+                <b>1949–2026</b>
+                <span>The years it reaches</span>
+              </div>
+              <div>
+                <b>2</b>
+                <span>Chapters</span>
+              </div>
+              <div className="arc-hs-book">
+                <span className="arc-hs-link">
+                  <img src="/book/keepsake-closed.webp" alt="" width={34} height={46} />
+                  <span className="arc-hs-txt">
+                    <b>
+                      40<small>%</small>
+                    </b>
+                    <span>toward the first edition</span>
+                    <i className="arc-hs-bar" />
+                  </span>
+                </span>
+              </div>
+            </dl>
           </>
         }
       >

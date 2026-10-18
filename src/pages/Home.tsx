@@ -44,10 +44,17 @@ export default function Home() {
           <div className="hero-grid home-hero">
             <div className="greet">
               <p className="label">
-                <span className="hold-words">&nbsp;</span>
+                {/* the date needs no account; the label's words are held so it wraps as it will on a phone */}
+                <span className="hold-words">{longDate()} · Your story</span>
                 <span className="mobile-only">
                   {" "}
-                  <span className="teller-pick hold-words">&nbsp;</span>
+                  {/* the storyteller button as it usually reads (your own story), so the label wraps as it will */}
+                  <span className="teller-pick hold-words">
+                    <span>
+                      <strong>{user?.firstName ? `${user.firstName} · Your own story` : "Your own story"}</strong>
+                    </span>
+                    <svg width={16} height={16} aria-hidden="true" />
+                  </span>
                 </span>
               </p>
               <h1>
@@ -59,8 +66,15 @@ export default function Home() {
               <span className="pill gold">A little question for today</span>
               <p className="story-q q">What did the kitchen smell like when you were small?</p>
               <div className="acts">
-                <span className="btn">Write it</span>
-                <span className="btn quiet">Talk it through on a call</span>
+                <span className="btn primary">
+                  <PenIcon />
+                  Write it
+                </span>
+                <span className="btn quiet">
+                  <MicIcon />
+                  Talk it through on a call
+                </span>
+                <span className="btn quiet sm">Ask me another</span>
               </div>
             </div>
           </div>

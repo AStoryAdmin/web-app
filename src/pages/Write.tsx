@@ -23,7 +23,7 @@
  * the weekly photos when the picker opens; never at Keep. Writing in your
  * own words is never metered.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { firstName, personName, realPeople, storytellerOf } from "../components/family/familyView";
 import gsap from "gsap";
@@ -483,16 +483,47 @@ function Afterwards({
 export default function Write() {
   const { account, activeStory: story } = useAccount();
   const [params] = useSearchParams();
-  // the writer's own frame (bare, wide) while the account loads, so its arrival runs once
-  if (account === undefined)
-    return (
-      <Shell bare wide>
+  // The page's one Shell lives here, above the keyed Writer, so the frame that shows while the account loads is the
+  // same instance the writer arrives in: the sheet rises once. The writer tells it which frame it needs (the bare desk,
+  // or the kept page with its hero) through WriteFrame.
+  const [keptAs, setKeptAs] = useState<number | null>(null);
+  if (account !== undefined && !story) return <Navigate to="/start" replace />;
+  const frame =
+    keptAs !== null && story
+      ? {
+          back: "/",
+          wide: true,
+          hero: (
+            <div className="whero">
+              <p className="label" data-rise>
+                Memory No. {keptAs}
+              </p>
+              <h1>
+                Kept in{" "}
+                <span className="nw">
+                  {bookNameIn(story)}
+                  <Stop />
+                </span>
+              </h1>
+            </div>
+          ),
+        }
+      : { bare: true, wide: true };
+  return (
+    <Shell {...frame}>
+      {account === undefined || !story ? (
         <div className="page" aria-busy="true" />
-      </Shell>
-    );
-  if (!story) return <Navigate to="/start" replace />;
-  return <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}`} story={story} />;
+      ) : (
+        <WriteFrame.Provider value={setKeptAs}>
+          <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}`} story={story} />
+        </WriteFrame.Provider>
+      )}
+    </Shell>
+  );
 }
+
+/** How the writer tells the page's Shell which frame it stands in: null for the desk, the memory's number once kept. */
+const WriteFrame = createContext<(kept: number | null) => void>(() => {});
 
 type Help = "tidy" | "title" | "ask";
 
@@ -881,27 +912,17 @@ function Writer({ story }: { story: Story }) {
   };
 
   /* ── Step 2 ── */
+  // the page's Shell (in Write, above this keyed writer) sets the kept page's hero, or the desk's bare frame
+  const setFrame = useContext(WriteFrame);
+  const keptAs = kept ? (keptNumber ?? number) : null;
+  useLayoutEffect(() => {
+    setFrame(keptAs);
+  }, [setFrame, keptAs]);
+  useLayoutEffect(() => () => setFrame(null), [setFrame]);
+
   if (kept) {
     const n = keptNumber ?? number;
     return (
-      <Shell
-        back="/"
-        wide
-        hero={
-          <div className="whero">
-            <p className="label" data-rise>
-              Memory No. {n}
-            </p>
-            <h1>
-              Kept in{" "}
-              <span className="nw">
-                {bookNameIn(story)}
-                <Stop />
-              </span>
-            </h1>
-          </div>
-        }
-      >
         <div className="page desk w-desk after-step">
           <Afterwards
             story={story}
@@ -915,7 +936,6 @@ function Writer({ story }: { story: Story }) {
             onKept={setKept}
           />
         </div>
-      </Shell>
     );
   }
 
@@ -1119,7 +1139,6 @@ function Writer({ story }: { story: Story }) {
   const layout = spread ? (rail ? "spread rail" : "spread") : "single";
 
   return (
-    <Shell bare wide>
       <div className={`page desk w-desk${focus ? " focus" : ""}${!empty && changed ? " writing" : ""}`} ref={deskRef}>
         <div className={`w-grid ${layout}`}>
           {/* the book, open on the desk */}
@@ -1243,6 +1262,5 @@ function Writer({ story }: { story: Story }) {
         </div>
         {!focus && <WhereNext rows={leaveRows} />}
       </div>
-    </Shell>
   );
 }
