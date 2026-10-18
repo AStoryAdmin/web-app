@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
+import PlateSay from "./PlateSay";
 import type { CompanionFocus } from "../../components/delight/Companion";
 import { Button, Field } from "../../components/ui";
 import { resendSignupCode, safeNext, signIn } from "../../data/auth";
@@ -17,13 +18,23 @@ export default function SignIn() {
   const [focus, setFocus] = useState<CompanionFocus>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // which field the error is about, so that field points at it
+  const [bad, setBad] = useState<"email" | "password" | "both" | null>(null);
 
   if (user) return <Navigate to={next} replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email.trim() || !password) return setError("Type your email and your password.");
+    setBad(null);
+    if (!email.trim()) {
+      setBad("email");
+      return setError("Type the email you signed up with.");
+    }
+    if (!password) {
+      setBad("password");
+      return setError("Type your password.");
+    }
     setBusy(true);
     const r = await signIn(email, password);
     setBusy(false);
@@ -37,8 +48,11 @@ export default function SignIn() {
       navigate(`/verify?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`, { viewTransition: true });
       return;
     }
+    setBad("both");
     setError(r.error);
   };
+
+  const says = (field: "email" | "password") => (bad === field || bad === "both" ? { "aria-invalid": true as const, "aria-describedby": "plate-say" } : {});
 
   return (
     <AuthFrame companion={{ focus, shown, progress: Math.min(1, email.length / 24) }}>
@@ -46,12 +60,7 @@ export default function SignIn() {
         <h1>
           Sign in<span className="stop">.</span>
         </h1>
-        <p className="sub">With the same account as the A Story app.</p>
-        {error && (
-          <p className="plate-error" role="alert">
-            {error}
-          </p>
-        )}
+        <PlateSay error={error}>With the same account as the A Story app.</PlateSay>
         <Field
           label="Email"
           type="email"
@@ -61,8 +70,8 @@ export default function SignIn() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onFocusChange={(w) => setFocus(w ? "email" : null)}
-          aria-invalid={error && !email.trim() ? true : undefined}
           required
+          {...says("email")}
         />
         <Field
           label="Password"
@@ -73,17 +82,16 @@ export default function SignIn() {
           onChange={(e) => setPassword(e.target.value)}
           reveal={{ shown, toggle: () => setShown((s) => !s) }}
           onFocusChange={(w) => setFocus(w ? "password" : null)}
-          aria-invalid={error && !password ? true : undefined}
           required
+          {...says("password")}
         />
-        <Link className="forgot" to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} viewTransition>
-          Forgot your password?
-        </Link>
         <Button type="submit" block loading={busy}>
           Sign in
         </Button>
-        <p className="switch">
-          New here?{" "}
+        <p className="plate-links">
+          <Link to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} viewTransition>
+            Forgot your password?
+          </Link>
           <Link to={`/create-account?next=${encodeURIComponent(next)}`} viewTransition>
             Create an account
           </Link>

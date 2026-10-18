@@ -151,7 +151,8 @@ export function arrive(root: HTMLElement): () => void {
       const rest = gsap.utils.toArray<HTMLElement>(hero.querySelectorAll("[data-rise]"));
       if (title) {
         const split = SplitText.create(title, { type: "lines", mask: "lines", linesClass: "line" });
-        tl.fromTo(split.lines, { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.09 }, 0.05);
+        // once the lines have risen, the title goes back to plain text, so it rewraps when the window or the zoom changes
+        tl.fromTo(split.lines, { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.09, onComplete: () => split.revert() }, 0.05);
       }
       // the gold foil rule is stamped left to right, after the words
       const foil = hero.querySelector<HTMLElement>(".foil:not([data-rise])");

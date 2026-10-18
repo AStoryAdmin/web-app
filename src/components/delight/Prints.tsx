@@ -10,10 +10,12 @@
  * reduced motion they are simply there.
  *
  * The photographs are the master library's (public/photos/NN-1200.webp),
- * large enough for a 4K window; the captions are sample lines.
+ * large enough for a 4K window; the captions are sample lines. They decode
+ * with the page (decoding="sync") so a page change never shows a grey box.
  */
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { OUT } from "../../lib/ease";
 
 export type Print = {
   src: string;
@@ -56,14 +58,14 @@ export default function Prints({ active = true, prints = ALBUM }: { active?: boo
   useEffect(() => {
     const el = box.current;
     if (!el || !active) return;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     const els = gsap.utils.toArray<HTMLElement>(el.querySelectorAll(".print"));
     // The drift is a few pixels in the page's own coordinates: the page is scaled (html zoom, the book's fit),
     // so the movement scales with the prints and stays the same share of them at any window size.
     const movers = els.map((p) => ({
       d: Number(p.dataset.depth || 1),
-      x: gsap.quickTo(p, "x", { duration: 1.1, ease: "power2.out" }),
-      y: gsap.quickTo(p, "y", { duration: 1.1, ease: "power2.out" }),
+      x: gsap.quickTo(p, "x", { duration: 1.1, ease: OUT }),
+      y: gsap.quickTo(p, "y", { duration: 1.1, ease: OUT }),
     }));
     const move = (e: PointerEvent) => {
       // clientX and innerWidth are both in screen pixels, so the ratio is the same at any zoom
@@ -94,7 +96,7 @@ export default function Prints({ active = true, prints = ALBUM }: { active?: boo
         >
           <div className="print-in">
             <div className="print-face">
-              <img src={p.src} alt="" decoding="async" style={p.focus ? { objectPosition: p.focus } : undefined} />
+              <img src={p.src} alt="" decoding="sync" style={p.focus ? { objectPosition: p.focus } : undefined} />
               <i className="pc tl" />
               <i className="pc tr" />
               <i className="pc bl" />

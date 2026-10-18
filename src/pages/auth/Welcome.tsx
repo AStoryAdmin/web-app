@@ -15,7 +15,7 @@
  * marked as seen.
  */
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import { Lockup } from "../../components/Brand";
 import { useLight } from "../../components/delight/Light";
@@ -30,7 +30,20 @@ import { coverColour } from "../../components/book/coverColours";
 import { MARK_MASK } from "../../components/book/markMask";
 import { SAMPLE_BOOKS, sampleBook, type SampleBook } from "../../data/sampleBooks";
 import { useAuth } from "../../state/authContext";
-import { markOpened, OUT, STACKED, useFit } from "./bookFit";
+import { BOOK_PRINT } from "../../app-core/theme/index.js";
+import { isStacked, markOpened, OUT, useFit } from "./bookFit";
+
+/** The sign-in's album: decoded before the page turns into the open book, so its prints never arrive as grey boxes. */
+const ALBUM = ["/photos/27-1200.webp", "/photos/02-1200.webp", "/photos/18-1200.webp"];
+/** The three papers a book is printed on, as the swatches under "The book arrives". */
+/** At most 400 ms: the album being decoded, or nothing to wait for. */
+const albumReady = (album: { current: Promise<unknown> | null }) => Promise.race([album.current, new Promise((done) => setTimeout(done, 400))]);
+const PAPERS = BOOK_PRINT.papers as Record<string, { page: string }>;
+const PAPER_NAMES: [string, string][] = [
+  ["classic", "Classic"],
+  ["ivory", "Ivory"],
+  ["antique", "Antique"],
+];
 
 export default function Welcome() {
   const { user } = useAuth();
@@ -39,7 +52,10 @@ export default function Welcome() {
   const canvas = useRef<HTMLDivElement>(null);
   const sweepFrom = useRef<number | null>(null);
   useLight(ground);
-  useFit(ground, wrap, canvas, "door", 1440, 760);
+  // the bench is drawn at 1520 by 660 and fitted to the window like the sign-in's book
+  useFit(ground, wrap, canvas, 1520, 660);
+  const navigate = useNavigate();
+  const album = useRef<Promise<unknown> | null>(null);
   // The three fictional families of the samples page, each in its own cover colour until a swatch is chosen.
   const [family, setFamily] = useState<SampleBook["key"]>("carolyn");
   // The first book lies on the cloth in cream: a dark board on the brown cloth reads as a hole (the founder's
@@ -53,8 +69,14 @@ export default function Welcome() {
   // Content is visible by default; this only plays it in, and finishes on its own clock (no observer).
   useLayoutEffect(() => {
     markOpened();
-    // the sign-in's album, fetched while the visitor reads, so the open book arrives with its photographs
-    for (const src of ["/photos/27-1200.webp", "/photos/02-1200.webp", "/photos/18-1200.webp"]) new Image().src = src;
+    // the sign-in's album, fetched and decoded while the visitor reads, so the open book arrives with its photographs
+    album.current = Promise.all(
+      ALBUM.map((src) => {
+        const img = new Image();
+        img.src = src;
+        return img.decode().catch(() => undefined);
+      }),
+    );
     const el = ground.current;
     if (!el) return;
     const mm = gsap.matchMedia();
@@ -70,6 +92,14 @@ export default function Welcome() {
 
   if (user) return <Navigate to="/" replace />;
 
+  // Into the open book: wait (at most 400 ms) for the album to be decoded, then turn the page as a View Transition.
+  const into = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const to = e.currentTarget.getAttribute("href") || "/sign-in";
+    void albumReady(album).then(() => navigate(to, { viewTransition: true }));
+  };
+
   return (
     <div className="door on-dark" ref={ground} style={{ ["--bk-mark" as string]: MARK_MASK }}>
       <span className="lamp" aria-hidden="true" />
@@ -82,7 +112,7 @@ export default function Welcome() {
       </header>
 
       <div className="door-wrap" ref={wrap}>
-        <div className={`door-canvas${matchMedia(STACKED).matches ? "" : " scaled"}`} ref={canvas}>
+        <div className={`door-canvas${isStacked() ? "" : " scaled"}`} ref={canvas}>
           <main className="door-leaf">
             <h1>
               Every life holds a story <span className="keep">worth keeping.</span>
@@ -99,20 +129,31 @@ export default function Welcome() {
               </div>
               <div>
                 <dt>The book arrives</dt>
-                <dd>Read it on screen any day, print it at home for free, or have it bound.</dd>
+                <dd>Read it on screen any day, print it at home for free, or have it bound: softcover, clothbound or the Heirloom, on one of three papers.</dd>
+                <dd className="door-papers" aria-label="The three papers">
+                  {PAPER_NAMES.map(([key, name]) => (
+                    <span key={key}>
+                      <i style={{ background: PAPERS[key]?.page }} aria-hidden="true" />
+                      {name}
+                    </span>
+                  ))}
+                </dd>
               </div>
             </dl>
             <div className="door-foot">
             <div className="door-acts">
-              <ButtonLink to="/create-account" viewTransition>
+              <ButtonLink to="/create-account" onClick={into}>
                 Begin a book
               </ButtonLink>
-              <ButtonLink to="/sign-in" variant="outline" viewTransition>
+              <ButtonLink to="/sign-in" variant="outline" onClick={into}>
                 Sign in
               </ButtonLink>
             </div>
             <p className="door-code">
-              Have a family code? <Link to="/create-account?code=" viewTransition>Use it here</Link>
+              Have a family code?{" "}
+              <Link to="/create-account?code=" onClick={into}>
+                Use it here
+              </Link>
             </p>
             {/* the family dog beside the way in, its paws on the leaf's foil rule, watching the pointer as on the sign-in */}
             <Companion focus={null} shown={false} rest="watch" />
@@ -121,6 +162,8 @@ export default function Welcome() {
 
           <section className="door-book" aria-label="A sample book you can read">
             <div className="door-picks">
+              <div className="door-pickcol">
+              <p className="door-note">Three sample families, their books and photographs, printed exactly the way yours will be.</p>
               <div className="sb-books" role="group" aria-label="Choose a sample book">
                 {SAMPLE_BOOKS.map((b) => (
                   <button key={b.key} type="button" aria-pressed={b.key === family} onClick={() => setFamily(b.key)}>
@@ -131,6 +174,7 @@ export default function Welcome() {
                     </span>
                   </button>
                 ))}
+              </div>
               </div>
               <CoverSwatches
                 tone="dark"
@@ -154,7 +198,6 @@ export default function Welcome() {
               </figure>
               <BookSpread key={family} book={book} sweepFrom={sweepFrom} />
             </div>
-            <p className="door-note">Three sample families’ books, printed exactly the way yours will be. The photographs beside them are samples too.</p>
           </section>
         </div>
       </div>

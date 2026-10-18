@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
+import PlateSay from "./PlateSay";
 import { Button, CodeInput } from "../../components/ui";
 import { CODE_LEN, resendSignupCode, safeNext, verifySignupCode } from "../../data/auth";
 
@@ -49,12 +50,15 @@ export default function Verify() {
     setAgain("sent");
   };
 
+  // a mistyped address is fixed by starting the account again with the right one
+  const change = `/create-account?next=${encodeURIComponent(next)}${familyCode ? `&code=${encodeURIComponent(familyCode)}` : ""}`;
+
   if (!email) {
     return (
       <AuthFrame>
         <div className="form">
           <h1>Which email was it?</h1>
-          <p className="sub">This page needs the address the code was sent to. Sign in with it and we'll send a fresh code.</p>
+          <PlateSay>This page needs the address the code went to. Sign in with it and we’ll send a fresh code; it takes a minute.</PlateSay>
           <div className="acts">
             <Link className="btn primary block" to="/sign-in" viewTransition>
               Sign in
@@ -71,15 +75,18 @@ export default function Verify() {
         <h1>
           Check your email<span className="stop">.</span>
         </h1>
-        <p className="sub">
-          We sent a six-digit code to <b>{email}</b>.
+        <p className="given">
+          <span>
+            The code went to <b>{email}</b>
+          </span>
+          <Link className="linkish" to={change} viewTransition>
+            Change
+          </Link>
         </p>
-        {error && (
-          <p className="plate-error" role="alert">
-            {error}
-          </p>
-        )}
-        <CodeInput value={code} onChange={setCode} autoFocus />
+        <PlateSay error={error}>Six digits, from the email we just sent.</PlateSay>
+        <div className={error ? "code-wrap is-bad" : "code-wrap"} aria-describedby="plate-say">
+          <CodeInput value={code} onChange={setCode} autoFocus />
+        </div>
         <Button type="submit" block loading={busy}>
           Continue
         </Button>

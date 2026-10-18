@@ -1,20 +1,28 @@
 /**
  * The signed-out book's shared mechanics: the house easings, the opening
  * ritual's once-per-session flag, and useFit, which scales a canvas drawn
- * at a design size to the window (AuthFrame's spread, the front door's bench).
+ * at a fixed design size to the window (AuthFrame's spread, the front
+ * door's bench).
+ *
+ * The fit depends on the window only, never on the canvas's own height: a
+ * plate with an error line, a longer form, a family switched on the front
+ * door, none of them can change the size of the book. Every AuthFrame page
+ * is fitted to the same 1440 by 720, so moving between them the book holds
+ * still. It is computed before the first paint, on resize, and when the
+ * faces arrive.
+ *
+ * Where the book would have to shrink below a comfortable size (a short
+ * laptop window, a portrait tablet, a narrow window) the pages stack and
+ * scroll instead, at their own size: `STACKED`, the same query the CSS uses.
  */
 import { useLayoutEffect, type RefObject } from "react";
-import gsap from "gsap";
-import { CustomEase } from "gsap/CustomEase";
+
+export { MOVE, OUT } from "../../lib/ease";
 
 const KEY = "astory-opened";
-/** Below this the pages stack and the page scrolls (CSS uses the same width). */
-export const STACKED = "(max-width: 760px)";
-
-gsap.registerPlugin(CustomEase);
-/** The house easings (DESIGN.md, the craft rules): entrances and feedback, and movement on screen. */
-export const OUT = CustomEase.create("house-out", "0.23,1,0.32,1");
-export const MOVE = CustomEase.create("house-move", "0.77,0,0.175,1");
+/** The pages stack (and scroll) on a phone, a narrow or short window, or a portrait screen. Mirrored in signed-out.css §7. */
+export const STACKED = "(max-width: 1180px), (max-height: 690px), (max-aspect-ratio: 5/4)";
+export const isStacked = () => typeof window !== "undefined" && window.matchMedia(STACKED).matches;
 
 export const seenOpening = () => {
   try {
@@ -31,64 +39,48 @@ export const markOpened = () => {
   }
 };
 
-/** The last scale, so the next page of the book starts at it instead of jumping from 1. */
-const remembered: Record<string, number> = {};
+/** Write the layout and the scale on the frame (outside the hook, so the hook's arguments are only ever read). */
+function paint(el: HTMLElement, art: HTMLElement, fit: number | null) {
+  el.dataset.layout = fit === null ? "stacked" : "book";
+  art.classList.toggle("scaled", fit !== null);
+  if (fit === null) el.style.removeProperty("--fit");
+  else el.style.setProperty("--fit", fit.toFixed(4));
+}
 
 /**
- * Scale a canvas drawn at `designW` wide to the window, up or down, so the whole of it is on one screen.
- * `root` carries `--fit` for the CSS (`zoom: var(--fit)` on the canvas, and the small print's floor);
- * `wrap` is the box it must fit inside (its padding is kept clear). Measured in screen pixels, so the
- * html zoom steps (lib/zoom) and the browser's own zoom both count. Runs before the first paint and
- * again on every resize; below `STACKED` the canvas is not scaled and the page scrolls.
+ * Scale a canvas drawn at `designW` × `designH` to fit the window, up or down. `root` carries `--fit` (the CSS uses
+ * it for `zoom` on the canvas and for the floors on small print and controls); `wrap` is the box whose padding is
+ * kept clear. Measured in screen pixels, so the html zoom steps (lib/zoom) and the browser's own zoom both count.
  */
-export function useFit(root: RefObject<HTMLElement | null>, wrap: RefObject<HTMLElement | null>, canvas: RefObject<HTMLElement | null>, key: string, designW: number, designH: number) {
+
+export function useFit(root: RefObject<HTMLElement | null>, wrap: RefObject<HTMLElement | null>, canvas: RefObject<HTMLElement | null>, designW: number, designH: number) {
   useLayoutEffect(() => {
     const el = root.current;
     const box = wrap.current;
     const art = canvas.current;
     if (!el || !box || !art) return;
-    let fit = remembered[key] ?? 1;
     let timer = 0;
     const apply = () => {
-      if (matchMedia(STACKED).matches) {
-        el.style.removeProperty("--fit");
-        art.classList.remove("scaled");
-        return;
-      }
-      if (!art.classList.contains("scaled")) art.classList.add("scaled");
-      el.style.setProperty("--fit", fit.toFixed(3));
-      // twice: the small print has a floor in screen pixels, so the canvas's height depends a little on the scale
-      for (let i = 0; i < 2; i++) {
-        const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
-        const cs = getComputedStyle(box);
-        const padX = (parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) * z;
-        const padY = (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) * z;
-        const w = box.getBoundingClientRect().width - padX;
-        const h = window.innerHeight - padY;
-        const natH = Math.max(designH, art.getBoundingClientRect().height / (z * fit));
-        const next = Math.min(3, Math.max(0.5, Math.min(w / (designW * z), h / (natH * z))));
-        if (Math.abs(next - fit) < 0.004) break;
-        fit = next;
-        el.style.setProperty("--fit", fit.toFixed(3));
-      }
-      remembered[key] = fit;
+      if (isStacked()) return paint(el, art, null);
+      const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+      const cs = getComputedStyle(box);
+      const padX = (parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) * z;
+      const padY = (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) * z;
+      const w = window.innerWidth - padX;
+      const h = window.innerHeight - padY;
+      const fit = Math.min(3, Math.max(0.5, Math.min(w / (designW * z), h / (designH * z))));
+      paint(el, art, fit);
     };
     apply();
     const later = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(apply, 40);
     };
-    const ro = new ResizeObserver(later);
-    ro.observe(box);
-    ro.observe(art);
     window.addEventListener("resize", later);
-    // the faces arrive after the first paint and change the plate's height a little
     void document.fonts?.ready.then(later);
     return () => {
       window.clearTimeout(timer);
-      ro.disconnect();
       window.removeEventListener("resize", later);
     };
-  }, [root, wrap, canvas, key, designW, designH]);
+  }, [root, wrap, canvas, designW, designH]);
 }
-

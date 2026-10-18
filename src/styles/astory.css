@@ -636,9 +636,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* the blink: two paper ovals over the eyes, only while watching */
 .auth .companion .lid { position: absolute; width: 11%; height: 12%; border-radius: 50%; background: var(--page); top: 50.5%; transform: scaleY(0); transform-origin: 50% 10%; opacity: 0; }
 .auth .companion .lid.l { left: 32.5%; } .auth .companion .lid.r { left: 58.5%; }
-.auth .companion[data-mood="watch"] .lid { opacity: 1; animation: blink 5.6s ease-in-out infinite; }
+.auth .companion[data-mood="watch"] .lid { opacity: 1; } /* the blink itself is GSAP, in Companion.tsx */
 .auth .companion[data-mood="watch"] .lid.r { animation-delay: 40ms; }
-@keyframes blink { 0%, 94%, 100% { transform: scaleY(0); } 96%, 98% { transform: scaleY(1); } }
 
 /* the form on the paper */
 .auth .form { width: 100%; min-width: 0; }

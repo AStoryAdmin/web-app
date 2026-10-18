@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AuthFrame from "./auth/AuthFrame";
+import PlateSay from "./auth/PlateSay";
 import { Button, ButtonLink, Field } from "../components/ui";
 import { CloseIcon } from "../components/icons";
 import LoadingMark from "../components/delight/LoadingMark";
@@ -63,7 +64,8 @@ function Person({ info }: { info: Info }) {
 
 export default function Contribute() {
   const { slug = "" } = useParams();
-  const [info, setInfo] = useState<Info | null | undefined>(undefined);
+  // undefined while it loads; null when the link leads to no story; "failed" when the request itself did not get through
+  const [info, setInfo] = useState<Info | null | undefined | "failed">(undefined);
   const [step, setStep] = useState<"words" | "who">("words");
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
@@ -84,15 +86,15 @@ export default function Contribute() {
     let live = true;
     const sb = getSupabase();
     if (!sb || !slug) {
-      queueMicrotask(() => live && setInfo(null));
+      queueMicrotask(() => live && setInfo(slug ? "failed" : null));
       return;
     }
     (async () => {
       try {
         const { data, error: err } = await sb.rpc("get_contribute_info", { slug });
-        if (live) setInfo(err || !data ? null : (data as Info));
+        if (live) setInfo(err ? "failed" : data ? (data as Info) : null);
       } catch {
-        if (live) setInfo(null);
+        if (live) setInfo("failed");
       }
     })();
     return () => {
@@ -102,7 +104,8 @@ export default function Contribute() {
 
   const addPhotos = async (files: FileList | null) => {
     const sb = getSupabase();
-    if (!files?.length || !sb || !info?.id) return;
+    const storyId = info && info !== "failed" ? info.id : undefined;
+    if (!files?.length || !sb || !storyId) return;
     const room = MAX_PHOTOS - photos.length;
     if (room <= 0) return setError(`Up to ${MAX_PHOTOS} photographs.`);
     setBusy("photo");
@@ -112,7 +115,7 @@ export default function Contribute() {
       for (const file of Array.from(files).slice(0, room)) {
         const blob = await shrinkImage(file);
         const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-        const path = `${info.id}/contrib-${uuid()}/${uuid()}.${ext}`;
+        const path = `${storyId}/contrib-${uuid()}/${uuid()}.${ext}`;
         const { error: upErr } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: blob.type || "image/jpeg" });
         if (upErr) throw upErr;
         urls.push(sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl);
@@ -169,31 +172,39 @@ export default function Contribute() {
     setError(null);
   };
 
-  const errorLine = error && (
-    <p className="cb-error" role="alert">
+  // the leaf's one line for what went wrong; it keeps its room, so an error never moves the page
+  const errorLine = (
+    <p id="cb-say" className={`cb-error${error ? " is-on" : ""}`} role={error ? "alert" : undefined} aria-live="polite">
       {error}
     </p>
   );
 
   // A link that leads nowhere is the family book with the dog on its plate, one line of cause and remedy, one action.
-  if (info === null) {
+  if (info === null || info === "failed") {
+    const offline = info === "failed";
     return (
-      <AuthFrame rest="watch">
+      <AuthFrame rest="curious">
         <div className="form">
           <h1>
-            This link isn’t available<span className="stop">.</span>
+            {offline ? "The family’s book didn’t open" : "This link isn’t available"}
+            <span className="stop">.</span>
           </h1>
-          <p className="sub">The family may have closed it, or a letter is missing from the address. Ask whoever sent it for the link again; it takes a minute.</p>
+          <PlateSay>
+            {offline
+              ? "The connection dropped on the way. Try again; it takes a moment."
+              : "The family may have closed it, or a letter is missing from the address. Ask whoever sent it for the link again; it takes a minute."}
+          </PlateSay>
           <div className="acts">
-            <Button block onClick={() => setAttempt((a) => a + 1)}>
-              Try the link again
-            </Button>
+            {offline ? (
+              <Button block onClick={() => setAttempt((n) => n + 1)}>
+                Try again
+              </Button>
+            ) : (
+              <ButtonLink to="/welcome" block viewTransition>
+                What is A Story?
+              </ButtonLink>
+            )}
           </div>
-          <p className="switch">
-            <Link to="/welcome" viewTransition>
-              What is A Story?
-            </Link>
-          </p>
         </div>
       </AuthFrame>
     );
@@ -210,7 +221,6 @@ export default function Contribute() {
   } else if (done) {
     page = (
       <div className="cb-state">
-        <p className="cb-kicker">Sent to {info.name}'s family</p>
         <h1 className="cb-q">
           Thank you<span className="stop">.</span>
         </h1>
@@ -308,7 +318,7 @@ export default function Contribute() {
         {firstLine && <blockquote className="cb-quote">{firstLine.length > 140 ? `${firstLine.slice(0, 140).trim()}…` : firstLine}</blockquote>}
         {errorLine}
         <div className="cb-fields">
-          <Field ref={nameRef} label="Your name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So they know who this is from" autoComplete="name" aria-invalid={error && !name.trim() ? true : undefined} />
+          <Field ref={nameRef} label="Your name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So they know who this is from" autoComplete="name" aria-invalid={error && !name.trim() ? true : undefined} aria-describedby={error && !name.trim() ? "cb-say" : undefined} />
           <Field label={`How you knew ${info.name}`} value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="Her neighbour, his niece, an old friend" autoComplete="off" />
           <Field label="Your email, if you like" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" hint="Kept with what you sent, so the family can reach you." />
         </div>

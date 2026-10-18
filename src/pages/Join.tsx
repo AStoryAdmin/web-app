@@ -10,8 +10,9 @@
  * a place in the tree, never a story's keepers (PRODUCT-DECISIONS §6).
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import AuthFrame from "./auth/AuthFrame";
+import PlateSay from "./auth/PlateSay";
 import { Button, ButtonLink } from "../components/ui";
 import LoadingMark from "../components/delight/LoadingMark";
 import { useAuth } from "../state/authContext";
@@ -27,20 +28,20 @@ function Invitation() {
   return (
     <div className="inv ep-arrive" id="joining">
       <figure className="inv-print" aria-hidden="true">
-        <img src="/photos/33-1200.webp" alt="" decoding="async" />
+        <img src="/photos/33-1200.webp" alt="" decoding="sync" />
         <i className="pc tl" />
         <i className="pc tr" />
         <i className="pc bl" />
         <i className="pc br" />
       </figure>
       <figure className="inv-print two" aria-hidden="true">
-        <img src="/photos/31-1200.webp" alt="" decoding="async" />
+        <img src="/photos/31-1200.webp" alt="" decoding="sync" />
         <i className="pc tl" />
         <i className="pc tr" />
         <i className="pc bl" />
         <i className="pc br" />
-        <figcaption>Nan, the year she turned seventy</figcaption>
       </figure>
+      <p className="ep-note inv-note">Photographs from a sample family’s book.</p>
       <div className="inv-card">
         <i className="pc tl" aria-hidden="true" />
         <i className="pc tr" aria-hidden="true" />
@@ -70,15 +71,15 @@ function Invitation() {
   );
 }
 
-/** A code typed by hand, for a link that lost its own. */
-function TypeCode({ initial = "" }: { initial?: string }) {
+/** A code typed by hand, for a link that lost its own. What is wrong with it is said on the plate's one line (`onError`). */
+function TypeCode({ initial = "", invalid, onError }: { initial?: string; invalid: boolean; onError: (message: string | null) => void }) {
   const navigate = useNavigate();
   const [value, setValue] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
   const go = (e: FormEvent) => {
     e.preventDefault();
     const c = normaliseFamilyCode(value) as string;
-    if (!looksLikeFamilyCode(c)) return setError(c.length === 6 ? "Some of those letters are never used in a code (I, L, O, 0 and 1). Check them against the message." : `That is ${c.length} letters and numbers; a family code has six.`);
+    if (!looksLikeFamilyCode(c)) return onError(c.length === 6 ? "Some of those letters are never used in a code (I, L, O, 0 and 1). Check them against the message." : `That is ${c.length} letters and numbers; a family code has six.`);
+    onError(null);
     navigate(`/join/${c}`, { viewTransition: true });
   };
   return (
@@ -90,23 +91,18 @@ function TypeCode({ initial = "" }: { initial?: string }) {
             value={value}
             onChange={(e) => {
               setValue(e.target.value.toUpperCase());
-              setError(null);
             }}
             placeholder="K7M 2QX"
             autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
             maxLength={9}
-            aria-invalid={error ? true : undefined}
+            aria-invalid={invalid ? true : undefined}
+            aria-describedby="plate-say"
             className="codefield"
           />
         </span>
       </label>
-      {error && (
-        <p className="plate-error" role="alert">
-          {error}
-        </p>
-      )}
       <Button type="submit" block>
         Try this code
       </Button>
@@ -123,6 +119,7 @@ export default function Join() {
   const [result, setResult] = useState<JoinResult | null>(null);
   const [phase, setPhase] = useState<"idle" | "joined" | "ready">("idle");
   const [attempt, setAttempt] = useState(0);
+  const [typed, setTyped] = useState<string | null>(null);
   // One join per attempt, kept here so a re-run of the effect (StrictMode
   // runs it twice; a new `reload` would too) subscribes to the same call
   // instead of starting another or, worse, losing the answer. Before this
@@ -183,8 +180,10 @@ export default function Join() {
         <h1>
           This code doesn’t look right<span className="stop">.</span>
         </h1>
-        <p className="sub">A family code is six letters and numbers, like <span className="nw">K7M 2QX</span>. Check it against the message; it takes a moment.</p>
-        <TypeCode initial={code.length > 0 && code.length <= 12 ? code : ""} />
+        <PlateSay error={typed}>
+          A family code is six letters and numbers, like <span className="nw">K7M 2QX</span>. Check it against the message; it takes a moment.
+        </PlateSay>
+        <TypeCode initial={code.length > 0 && code.length <= 12 ? code : ""} invalid={!!typed} onError={setTyped} />
       </div>
     );
   } else if (user === undefined) {
@@ -195,15 +194,16 @@ export default function Join() {
       </div>
     );
   } else if (!user) {
+    // Signed out, the code has not been checked yet (that needs an account): say what it does if it is right.
     plate = (
       <div className="form">
         <h1>
-          A place is kept for you<span className="stop">.</span>
+          Your family code<span className="stop">.</span>
         </h1>
-        <p className="sub">Someone in your family saved it with this code.</p>
+        <PlateSay>If it is right, it puts you in their family tree. Codes last 30 days.</PlateSay>
         {seal}
         <p className="step">
-          <b>Step 1 of 2:</b> your own account, about a minute. <b>Step 2:</b> you are in their family tree.
+          <b>Step 1 of 2:</b> your own account, about a minute. <b>Step 2:</b> we check the code and you join.
         </p>
         <div className="acts">
           <ButtonLink to={`/create-account?code=${code}`} block viewTransition>
@@ -213,8 +213,7 @@ export default function Join() {
             I already have an account
           </ButtonLink>
         </div>
-        <p className="legal">The code works for 30 days from when it was sent.</p>
-        <p className="switch phone-only">
+        <p className="plate-links one phone-only">
           <a href="#joining">What joining means ↓</a>
         </p>
       </div>
@@ -224,7 +223,7 @@ export default function Join() {
       <div className="form plate-wait" aria-busy="true">
         {seal}
         <LoadingMark />
-        <p className="sub">Putting you in the family tree</p>
+        <p className="sub">Checking the code and putting you in the family tree</p>
       </div>
     );
   } else if (outcome?.ok) {
@@ -234,11 +233,17 @@ export default function Join() {
           {outcome.title || "You're in"}
           <span className="stop">.</span>
         </h1>
-        <p className="sub">{outcome.body}</p>
+        <PlateSay>{outcome.body}</PlateSay>
         <div className="acts">
-          <ButtonLink to="/" block className="done-in" aria-busy={phase !== "ready" || undefined}>
-            {phase === "ready" ? "Go to Home" : "Making your page ready…"}
-          </ButtonLink>
+          {phase === "ready" ? (
+            <ButtonLink to="/" block>
+              Go to Home
+            </ButtonLink>
+          ) : (
+            <Button block loading disabled>
+              Go to Home
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -248,13 +253,10 @@ export default function Join() {
         <h1>
           That didn’t work<span className="stop">.</span>
         </h1>
-        {seal}
-        <p className="plate-error" role="alert">
-          {outcome?.body}
-        </p>
-        {needsAnotherCode && <TypeCode />}
-        <div className="acts">
-          {retryable && (
+        <PlateSay error={typed || outcome?.body} />
+        {needsAnotherCode && <TypeCode initial={code} invalid={!!typed} onError={setTyped} />}
+        {retryable && (
+          <div className="acts">
             <Button
               block
               onClick={() => {
@@ -264,21 +266,30 @@ export default function Join() {
             >
               Try again
             </Button>
-          )}
-          <ButtonLink to="/" variant="outline" block>
+          </div>
+        )}
+        <p className="plate-links one">
+          <Link to="/" viewTransition>
             Go to Home
-          </ButtonLink>
-        </div>
+          </Link>
+        </p>
       </div>
     );
   }
 
+  // The title line only promises a place once the code is known to be good.
+  const promise = outcome?.ok ? (
+    <>
+      Your family’s book <span className="keep">has a place for you.</span>
+    </>
+  ) : valid ? (
+    <>
+      Join your <span className="keep">family’s book.</span>
+    </>
+  ) : undefined;
+
   return (
-    <AuthFrame left={<Invitation />} leftLabel="What joining means" rest={outcome?.ok ? "watch" : "curious"} promise={
-        <>
-          Your family’s book <span className="keep">has a place for you.</span>
-        </>
-      }>
+    <AuthFrame left={<Invitation />} leftLabel="What joining means" rest={outcome?.ok ? "watch" : "curious"} promise={promise}>
       <div aria-live="polite">{plate}</div>
     </AuthFrame>
   );

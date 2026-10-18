@@ -35,7 +35,7 @@ import Leaf from "../../components/delight/Leaf";
 import Prints from "../../components/delight/Prints";
 import { useLight } from "../../components/delight/Light";
 import { MARK_MASK } from "../../components/book/markMask";
-import { markOpened, MOVE, OUT, seenOpening, STACKED, useFit } from "./bookFit";
+import { isStacked, markOpened, MOVE, OUT, seenOpening, useFit } from "./bookFit";
 
 type Props = {
   /** The bookplate's content, or the whole right page's when `plate` is false. */
@@ -72,7 +72,8 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
   useLight(ground);
   const wrapRef = useRef<HTMLDivElement>(null);
   const spreadRef = useRef<HTMLDivElement>(null);
-  useFit(ground, wrapRef, spreadRef, "book", 1440, 720);
+  // every AuthFrame page is fitted to the same 1440 by 720, so the book never changes size between them
+  useFit(ground, wrapRef, spreadRef, 1440, 720);
 
   const { pathname } = useLocation();
   // what the dog does when nothing is happening: asleep while a code is awaited, curious on a new account
@@ -84,57 +85,69 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
     if (import.meta.env.DEV) (window as unknown as { __gsap?: typeof gsap }).__gsap = gsap;
     const el = ground.current;
     if (!el || stage === "open") return;
-    const board = el.querySelector<HTMLElement>(".board");
-    const paths = gsap.utils.toArray<SVGPathElement>(el.querySelectorAll(".foil-title path"));
-    const rule = el.querySelector<HTMLElement>(".board-rule");
-    const spread = el.querySelector<HTMLElement>(".spread");
-    if (!board || !spread) return;
-    const settle = gsap.utils.toArray<HTMLElement>(spread.querySelectorAll(".leaf-l .print, .leaf-l .ep-arrive"));
-    const leafL = spread.querySelector<HTMLElement>(".leaf-l");
-    const dog = spread.querySelector<HTMLElement>(".companion");
-    const phone = matchMedia(STACKED).matches;
+    let skip = () => {};
+    // everything the ritual sets lives in one context, so leaving (or StrictMode's second run) reverts it whole
+    const ctx = gsap.context(() => {
+      const board = el.querySelector<HTMLElement>(".board");
+      const front = el.querySelector<HTMLElement>(".board-front");
+      const back = el.querySelector<HTMLElement>(".board-back");
+      const breath = el.querySelector<HTMLElement>(".board-breath");
+      const paths = gsap.utils.toArray<SVGPathElement>(el.querySelectorAll(".foil-title path"));
+      const rule = el.querySelector<HTMLElement>(".board-rule");
+      const spread = el.querySelector<HTMLElement>(".spread");
+      if (!board || !spread) return;
+      const settle = gsap.utils.toArray<HTMLElement>(spread.querySelectorAll(".leaf-l .print, .leaf-l .ep-arrive"));
+      const leafL = spread.querySelector<HTMLElement>(".leaf-l");
+      const dog = spread.querySelector<HTMLElement>(".companion");
+      const phone = isStacked();
 
-    // the closed state, before the first paint: the prints and the dog wait, the pages lie under the board
-    gsap.set([...settle, dog].filter(Boolean), { opacity: 0 });
-    for (const p of paths) {
-      const len = p.getTotalLength();
-      gsap.set(p, { strokeDasharray: len, strokeDashoffset: len, fillOpacity: 0 });
-    }
+      // the closed state, before the first paint: the prints and the dog wait, the pages lie under the board
+      gsap.set([...settle, dog].filter(Boolean), { opacity: 0 });
+      // the one authored moment: the foil title tools itself on, stroke by stroke (a stroke draw, not transform or
+      // opacity, accepted for this once-per-session arrival)
+      for (const p of paths) {
+        const len = p.getTotalLength();
+        gsap.set(p, { strokeDasharray: len, strokeDashoffset: len, fillOpacity: 0 });
+      }
 
-    const tl = gsap.timeline({
-      onComplete: () => {
-        markOpened();
-        setStage("open");
-      },
-    });
-    let t0: number;
-    if (phone) {
-      tl.to(paths, { strokeDashoffset: 0, duration: 0.4, ease: MOVE }, 0)
-        .to(paths, { fillOpacity: 1, duration: 0.2, ease: OUT }, 0.3)
-        .to(board, { opacity: 0, duration: 0.3, ease: OUT }, 0.5);
-      t0 = 0.55;
-    } else {
-      // the foil tools itself on, the rule draws, the cloth breathes under the lamp; then the board swings open on the spine
-      tl.to(paths, { strokeDashoffset: 0, duration: 0.6, ease: MOVE, stagger: 0.01 }, 0)
-        .to(paths, { fillOpacity: 1, duration: 0.35, ease: OUT, stagger: 0.006 }, 0.5)
-        .fromTo(board, { "--breath": 0 }, { "--breath": 1, duration: 0.45, ease: "sine.inOut", yoyo: true, repeat: 1 }, 0.05)
-        .to(rule, { scaleX: 1, duration: 0.4, ease: OUT }, 0.55)
-        .to(board, { rotateY: -180, duration: 0.9, ease: MOVE }, 0.9)
-        .to(board, { opacity: 0, duration: 0.15 }, 1.75);
-      t0 = 1.55;
-    }
-    // the left page is there once the board has passed the spine
-    if (leafL) tl.set(leafL, { visibility: "visible" }, phone ? 0.5 : 1.35);
-    // the prints settle onto the endpaper one after another, and the dog looks up (2.4 s in all)
-    if (settle.length) tl.fromTo(settle, { y: -20, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: OUT, stagger: 0.08, clearProps: "scale,opacity,y" }, t0);
-    if (dog) tl.fromTo(dog, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: OUT, clearProps: "all" }, t0 + 0.2);
-    // any press skips to the open book
-    const skip = () => tl.progress(1);
+      const tl = gsap.timeline({
+        onComplete: () => {
+          markOpened();
+          setStage("open");
+        },
+      });
+      let t0: number;
+      if (phone) {
+        // a half-second beat: the title tools on, then the front face fades (never the 3D parent's opacity)
+        tl.to(paths, { strokeDashoffset: 0, duration: 0.4, ease: MOVE }, 0)
+          .to(paths, { fillOpacity: 1, duration: 0.2, ease: OUT }, 0.3)
+          .to([front, back].filter(Boolean), { opacity: 0, duration: 0.3, ease: OUT }, 0.5)
+          .set(board, { visibility: "hidden" }, 0.8);
+        t0 = 0.55;
+      } else {
+        // the foil tools itself on, the rule draws, the lamp breathes over the board; then the board swings open on the
+        // spine and lies as the left page, whose back (the endpaper) then gives way to the page under it
+        tl.to(paths, { strokeDashoffset: 0, duration: 0.6, ease: MOVE, stagger: 0.01 }, 0).to(paths, { fillOpacity: 1, duration: 0.35, ease: OUT, stagger: 0.006 }, 0.5);
+        if (breath) tl.fromTo(breath, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: MOVE, yoyo: true, repeat: 1 }, 0.05);
+        tl.to(rule, { scaleX: 1, duration: 0.4, ease: OUT }, 0.55).to(board, { rotateY: -180, duration: 0.9, ease: MOVE }, 0.9);
+        if (back) tl.to(back, { opacity: 0, duration: 0.25, ease: OUT }, 1.75);
+        tl.set(board, { visibility: "hidden" }, 2.0);
+        t0 = 1.75;
+      }
+      // the left page is there once the board has passed the spine
+      if (leafL) tl.set(leafL, { visibility: "visible" }, phone ? 0.5 : 1.35);
+      // the prints settle onto the endpaper one after another, and the dog looks up (2.5 s in all)
+      if (settle.length) tl.fromTo(settle, { y: -20, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: OUT, stagger: 0.08, clearProps: "scale,opacity,y" }, t0);
+      if (dog) tl.fromTo(dog, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: OUT, clearProps: "all" }, phone ? 0.75 : 1.55);
+      // any press skips to the open book
+      skip = () => {
+        tl.progress(1);
+      };
+    }, el);
     el.addEventListener("pointerdown", skip, { once: true });
     return () => {
       el.removeEventListener("pointerdown", skip);
-      // killed, not finished: StrictMode runs this twice, and finishing here would skip the ritual altogether
-      tl.kill();
+      ctx.revert();
     };
   }, [stage]);
 
@@ -148,7 +161,7 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
       </Link>
 
       <div className="spread-wrap" ref={wrapRef}>
-        <div className={`spread${matchMedia(STACKED).matches ? "" : " scaled"}`} ref={spreadRef}>
+        <div className={`spread${isStacked() ? "" : " scaled"}`} ref={spreadRef}>
           {/* the inside of the front board: the endpaper, and what the page lays on it */}
           <section className="leaf-l endpaper" aria-label={leftLabel || "Photographs from a family's book"}>
             <span className="ep-pattern" aria-hidden="true" />
@@ -190,6 +203,7 @@ export default function AuthFrame({ children, companion, rest: restProp, left, p
           {stage === "closed" && (
             <div className="board" aria-hidden="true">
               <div className="board-face board-front">
+                <span className="board-breath" aria-hidden="true" />
                 <Lockup className="foil-title" height={120} />
                 <i className="board-rule" />
               </div>

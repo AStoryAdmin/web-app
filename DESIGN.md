@@ -104,11 +104,13 @@ Where a skill's house style contradicts the brand (its ban on cream-and-terracot
 - Running text in the full ink, never grey. Grey is for secondary notes only.
 - Two or three sizes do the visible work: one very large, one small. Five sizes on a page is the ceiling.
 - No italic headings. Italic lives in body emphasis and in the book's captions only.
+- A fourth face, the hand: Caveat (`var(--font-script)`), only for handwritten captions on the backs and borders of photographs. Mrs Saint Delafield (`--bka-script`) is the signature script on Start's specimens only.
 - No monospace. No index numbering (01 / 02) outside the book's own chapter openers.
 
 **Space and surfaces**
 - Surfaces separate by a step in tone, never by a drop shadow at rest. Shadows only on what truly floats (a menu, a print lifted on hover).
 - No gradients except a scrim under text on a photograph. No glass, no blur panels.
+- **Book material is exempt.** Shadows, shading and gradients that draw a physical object (a print's lift and photo corners, the board and spine of a book, the gutter between pages, gilt edges and glints, the cloth's light) are the book itself, not interface styling. Mark each such line with `/* book material */`. Interface surfaces still separate by tone.
 - The gap between sections is clearly larger than any gap inside one.
 - Each section has a different composition from its neighbours. No rows of identical icon-topped cards.
 - One deliberate rest per page at most; a screen that is mostly empty ground is an underbuilt section.

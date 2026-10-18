@@ -1,9 +1,12 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
+import PlateSay from "./PlateSay";
 import type { CompanionFocus } from "../../components/delight/Companion";
 import { Button, CodeInput, Field } from "../../components/ui";
 import { CODE_LEN, MIN_PASSWORD, requestPasswordReset, resetPassword } from "../../data/auth";
+
+type Bad = "email" | "code" | "password" | null;
 
 /** Two steps on the plate: the email, then the emailed code with a new password. */
 export default function ForgotPassword() {
@@ -18,28 +21,36 @@ export default function ForgotPassword() {
   const [busy, setBusy] = useState(false);
   const [again, setAgain] = useState<"" | "busy" | "sent">("");
   const [error, setError] = useState<string | null>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
+  const [bad, setBad] = useState<Bad>(null);
+
+  const fail = (field: Bad, message: string) => {
+    setBad(field);
+    setError(message);
+  };
+  const says = (field: Bad) => (bad === field ? { "aria-invalid": true as const, "aria-describedby": "plate-say" } : {});
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("Type the email you signed up with.");
+    setBad(null);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return fail("email", "Type the email you signed up with.");
     setBusy(true);
     const r = await requestPasswordReset(email);
     setBusy(false);
-    if (!r.ok) return setError(r.error);
+    if (!r.ok) return fail(null, r.error);
     setSent(true);
   };
 
   const finish = async (e: FormEvent) => {
     e.preventDefault();
-    if (code.length < CODE_LEN) return setError("Type all six digits from the email.");
-    if (password.length < MIN_PASSWORD) return setError(`The new password needs at least ${MIN_PASSWORD} characters.`);
     setError(null);
+    setBad(null);
+    if (code.length < CODE_LEN) return fail("code", "Type all six digits from the email.");
+    if (password.length < MIN_PASSWORD) return fail("password", `The new password needs at least ${MIN_PASSWORD} characters.`);
     setBusy(true);
     const r = await resetPassword(email, code, password);
     setBusy(false);
-    if (!r.ok) return setError(r.error);
+    if (!r.ok) return fail(null, r.error);
     navigate("/", { replace: true });
   };
 
@@ -49,7 +60,7 @@ export default function ForgotPassword() {
     const r = await requestPasswordReset(email);
     if (!r.ok) {
       setAgain("");
-      return setError(r.error);
+      return fail(null, r.error);
     }
     setAgain("sent");
   };
@@ -59,18 +70,23 @@ export default function ForgotPassword() {
       {!sent ? (
         <form className="form" onSubmit={send} noValidate key="ask">
           <h1>Forgot your password?</h1>
-          <p className="sub">We'll email you a six-digit code to choose a new one.</p>
-          {error && (
-            <p className="plate-error" role="alert">
-              {error}
-            </p>
-          )}
-          <Field ref={emailRef} label="Email" type="email" autoComplete="username" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} onFocusChange={(w) => setFocus(w ? "email" : null)} required />
+          <PlateSay error={error}>We’ll email you a six-digit code to choose a new one.</PlateSay>
+          <Field
+            label="Email"
+            type="email"
+            autoComplete="username"
+            inputMode="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onFocusChange={(w) => setFocus(w ? "email" : null)}
+            required
+            {...says("email")}
+          />
           <Button type="submit" block loading={busy}>
             Send the code
           </Button>
-          <p className="switch">
-            Remembered it?{" "}
+          <p className="plate-links one">
             <Link to={`/sign-in${email ? `?email=${encodeURIComponent(email)}` : ""}`} viewTransition>
               Back to sign in
             </Link>
@@ -93,17 +109,16 @@ export default function ForgotPassword() {
                 setCode("");
                 setAgain("");
                 setError(null);
+                setBad(null);
               }}
             >
               Change
             </button>
           </p>
-          {error && (
-            <p className="plate-error" role="alert">
-              {error}
-            </p>
-          )}
-          <CodeInput value={code} onChange={setCode} autoFocus />
+          <PlateSay error={error}>Type the six digits, then your new password.</PlateSay>
+          <div className={bad === "code" ? "code-wrap is-bad" : "code-wrap"} aria-describedby={bad === "code" ? "plate-say" : undefined}>
+            <CodeInput value={code} onChange={setCode} autoFocus />
+          </div>
           <Field
             label="New password"
             type={shown ? "text" : "password"}
@@ -114,6 +129,7 @@ export default function ForgotPassword() {
             reveal={{ shown, toggle: () => setShown((s) => !s) }}
             onFocusChange={(w) => setFocus(w ? "password" : null)}
             required
+            {...says("password")}
           />
           <Button type="submit" block loading={busy}>
             Save and sign in

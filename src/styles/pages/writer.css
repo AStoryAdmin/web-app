@@ -36,6 +36,7 @@
 
 /* ── The desk ── */
 .sheet-page .page.w-desk { max-width: none; padding-top: 56px; padding-bottom: 96px; }
+.sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 80px; } /* Bond's ears clear the headband and the foil frame */
 .w-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "center" "context" "tools"; gap: 48px; max-width: 760px; margin: 0 auto; }
 .w-center { grid-area: center; min-width: 0; }
 .w-tools { grid-area: tools; min-width: 0; }
@@ -96,11 +97,15 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   background: var(--wax); border-left: 1px solid var(--wax-light); border-right: 1px solid var(--wax-shade); box-sizing: border-box;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 10px), 0 100%); }
 /* the dog, asleep with its chin on the board's edge; once the words start it covers its eyes */
-.w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 128px; aspect-ratio: 849 / 640; pointer-events: none; }
-.w-dog img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; transition: opacity 520ms var(--ease-out); }
-.w-dog .awake { opacity: 0; }
+.w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 128px; aspect-ratio: 781 / 640; pointer-events: none; }
+/* every pose on one scale: the box is 781 drawing-px wide and 640 tall; each pose is drawn at its own height of 640 */
+.w-dog img { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; object-fit: contain; object-position: 50% 100%; }
+.w-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out); }
+/* awake, he hides his eyes from behind the book: the drawing is cut at the board's top edge */
+.w-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 13px 0);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
 .w-dog[data-awake] .sleep { opacity: 0; }
-.w-dog[data-awake] .awake { opacity: 1; }
+.w-dog[data-awake] .awake { opacity: 1; transform: none; transition-delay: 60ms; }
 
 /* ── The right-hand page (or the only one) ── */
 .sheet-page .w-book .leaf-one { gap: 14px; padding: 46px clamp(28px, calc(4.2vw / var(--zoom, 1)), 64px) 34px; border-radius: 2px; box-shadow: none; color: var(--w-ink); }
@@ -152,9 +157,10 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .spread .w-book .leaf-one .folio { padding-top: 8px; }
 .spread .w-begin-inpage button:nth-child(n + 3) { display: none; }
 .spread .w-keep { margin-top: 16px; }
+.spread:not(.rail) .w-ribbon { height: 26px; }
 /* a laptop's short screen: the ornament goes and the list tightens, so the seal is in the first screen */
 @media (max-height: 740px) {
-  .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 40px; }
+  .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 64px; }
   .w-desk .spread .w-dog { width: 84px; }
   .spread .leaf-left .w-sub, .spread .leaf-left .w-pencil:not(.asked) { display: none; }
   .spread .leaf-left, .sheet-page .spread .w-book .leaf-one { gap: 6px; padding-top: 24px; padding-bottom: 14px; }
@@ -164,6 +170,8 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   .spread .w-book .leaf-one .signoff { margin-top: 0; }
   .spread .w-book .leaf-one .folio { padding-top: 2px; }
   .spread .w-keep { margin-top: 12px; }
+  .spread:not(.rail) .w-ribbon { height: 22px; }
+  .spread .leaf-left { padding-bottom: 8px; }
   .spread .w-book .leaf-one .wbody { min-height: var(--w-line); }
 }
 @media (max-height: 900px) {
@@ -188,6 +196,7 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .w-orn::before, .w-orn::after { content: ""; flex: 1; height: 1px; background: var(--foil-soft); }
 .w-orn i { font-style: normal; font-size: 13px; }
 .spread .w-ribbon { right: auto; left: calc(45.6% + 6px); }
+.spread .leaf-left .w-qs { margin-top: 18px; }
 
 /* today's other questions */
 .w-qs ul { display: grid; margin: 0; padding: 0; list-style: none; }
@@ -197,8 +206,8 @@ a.w-q:hover { color: var(--w-red); }
 a.w-q:active { color: var(--wax); }
 a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; border-radius: 2px; }
 .w-q small { display: block; margin-top: 4px; font: 400 13px/1.3 var(--font-ui); color: var(--ink-soft); }
-.w-q.own { font: 500 14px/1.4 var(--font-ui); color: var(--heading); padding: 14px 0; }
-.w-q.own::after { content: " →"; color: var(--ochre); }
+.w-q.own { flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px; font: 500 14px/1.4 var(--font-ui); color: var(--heading); padding: 14px 0; }
+.w-q.own::after { content: "→"; color: var(--ochre); }
 
 /* the pencilled note in the margin; the question chosen from the help takes its place */
 .w-pencil { position: relative; display: block; margin: 0; padding: 0 0 0 4px; font: italic 400 19px/1.25 var(--book-body); color: var(--w-pencil); }
@@ -311,6 +320,9 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .w-tools-row .w-tool.speak { width: auto; margin: 0 4px 0 0; padding: 10px 16px 10px 12px; border-radius: 999px; }
 .w-tools-row .w-tool.speak b { font-size: 14px; }
 .w-tools-row .w-help-off { display: none; }
+.w-tools-row .w-help.off .w-tool:not(.speak) { display: none; }
+.w-tools-row .w-help.off .w-help-off { display: block; margin: 0; align-self: center; }
+.w-tools-row .w-help.off { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
 /* what the help gives back opens above the bar, like a slip of paper laid on the book */
 .w-tools-row .w-help-out { position: absolute; right: 8px; bottom: calc(100% + 10px); width: min(460px, calc(100% - 16px)); max-height: min(calc(60vh / var(--zoom, 1)), 420px); overflow: auto; margin: 0; padding: 16px 20px;
   border: 1px solid var(--sheet-rule); border-radius: 12px; background: var(--paper-print); box-shadow: var(--w-slip-shadow); text-align: left; justify-items: start; }
@@ -443,7 +455,8 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   .w-book .leaf-one .running-head { padding: 0; letter-spacing: 0.1em; }
   .w-keep-error { margin-left: 0; }
   .w-grid:not(.rail) .w-keep-seal .w-keep-error { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; margin: 2px 0 4px; max-width: none; }
-  .w-book .leaf-one .wtitle { font-size: 26px; margin-top: 10px; }
+  /* the question stays the largest line on the screen */
+  .w-book .leaf-one .wtitle { font-size: 21px; margin-top: 10px; }
   .w-book .leaf-one .signoff span { font-size: 24px; }
   /* the folio's dot goes when its two parts stack */
   .w-book .leaf-one .folio { flex-direction: column; align-items: center; gap: 2px; }
@@ -451,10 +464,13 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   /* two ways to begin, wrapped, never running off the screen */
   .w-begin-inpage button:nth-child(n + 3) { display: none; }
   .w-dog { right: 24px; width: 104px; bottom: calc(100% - 10px); }
+  .w-dog .awake { clip-path: inset(0 0 10px 0); }
   .w-ribbon { height: 56px; width: 12px; }
   .w-keep { margin-top: 64px; }
   /* one row on a phone: the seal, and "Not now" at the other end */
-  .w-grid:not(.rail) .w-keep-seal { width: 100%; grid-auto-flow: column; align-items: center; justify-content: space-between; }
+  .w-grid:not(.rail) .w-keep-seal { width: 100%; grid-auto-flow: row; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .w-grid:not(.rail) .w-keep-seal .seal-button { grid-column: 1; grid-row: 1; }
+  .w-grid:not(.rail) .w-keep-seal .w-keep-note { grid-column: 2; grid-row: 1; }
   .w-keep-note { margin: 0; }
   .w-keep-note > span:not(.w-kbd-hint) { display: none; }
   /* Afterwards on a phone: the choices first, the page just kept after them */
@@ -465,10 +481,11 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   .w-kept-prints { position: static; justify-content: flex-end; margin: 14px -4px 0 0; }
 }
 
-@media (max-width: 359px) { .w-book .leaf-one .wtitle { font-size: 22px; } }
+/* a narrow phone: one way to begin, so a pill never sits alone with empty paper beside it */
+@media (max-width: 380px) { .w-begin-inpage button:nth-child(n + 2) { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .w-dog img, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
+  .w-dog img, .w-dog .awake, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
   .w-tool.speak.listening > svg { animation: none; }
 }
 
@@ -478,6 +495,14 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px;
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px; }
 .ink-stamp i { display: none; }
+
+/* ── The open leaf's dog (OpenLeaf.tsx): Bond on one scale, waking from behind the page's edge ── */
+.open-leaf .ol-dog { aspect-ratio: 781 / 640; }
+.open-leaf .ol-dog img { inset: auto 0 0 0; width: 100%; }
+.open-leaf .ol-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out); }
+.open-leaf .ol-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 12px 0); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.open-leaf[data-awake] .ol-dog .awake { opacity: 1; transform: none; transition-delay: 60ms; }
+@media (prefers-reduced-motion: reduce) { .open-leaf .ol-dog .sleep, .open-leaf .ol-dog .awake { transition: none; transform: none; } }
 
 /* ── The open leaf at the foot of Home and the Archive (components/delight/OpenLeaf): the same book as the
    writer's, so its pages show gilt edges; its small print at the house floor; its note in the book's italic ── */
