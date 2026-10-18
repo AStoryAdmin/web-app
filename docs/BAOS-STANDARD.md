@@ -36,7 +36,7 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 18. **People are portraits, never boxes.** Show a round photograph, or their initials as a monogram seal. Never a tinted square with an initial, never a 600px empty card. The one featured portrait on a person's own page may be an arch, as on the founder's gbaonvo.com, Shiori and Kiyo. Everyone else is round.
 19. **No scattered captions, disclaimers or over-explaining.** One disclosure where needed. No giant wordmark in a footer. Don't repeat the same promise or action twice on one page.
 20. **Honest copy.** Never invent numbers, customers, quotes or reviews. Use the founder's real copy where it exists.
-21. **Real assets.** Use the founder's watercolour puppy (`public/dog/*`) and photographs from the locked master library, never cropped from contact sheets and never filtered. When imagery is missing, write prompts for the founder to generate in GPT; don't generate it. Never use the book slipcase image.
+21. **Real assets.** Use the mascot, Bond, the founder's own dog, drawn in the soft watercolour style (`public/dog/*`; he replaces the cream samoyed, ruling of 2026-10-17; prompts and states in `docs/mascot/BOND.md`) and photographs from the locked master library, never cropped from contact sheets and never filtered. When imagery is missing, write prompts for the founder to generate in GPT; don't generate it. Never use the book slipcase image.
 22. **The book preview is the samples page.** The reader and every book object match astoryapp.com/samples exactly ("printed exactly the way yours will be").
 
 17a. **Reading comes first.** "The paragraph is not eye friendly to read." Long text follows docs/research/reading-2026.md: a measured column, generous size and line height, full-strength ink on the paper, no ornament that gets in the way. No tinted bubbles, no heavy pill buttons, no clipped rounded photo frames: the founder called them "unacceptable".
@@ -48,7 +48,7 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 24. **The navigation follows you.** The top bar is fixed and condenses when you scroll. The cream sheet slides up over the brown, and the brown only shows when you are back at the top.
 25. **Nothing is ever left hidden or half-faded** by an animation that didn't finish. Content never depends on the frame clock or on an observer firing.
 26. **Pointer effects line up with the pointer** at any zoom. The pressed leaf follows the cursor over the whole page, cream included. The nav highlight sits under its own tab.
-27. **Delight.** The puppy on the sign-in plate follows the pointer, covers its eyes on the password and sleeps on verify. Small, earned moments: Duolingo's level of delight, not a playground.
+27. **Delight.** Bond on the sign-in plate follows the pointer, covers his eyes on the password and sleeps on verify. Small, earned moments: Duolingo's level of delight, not a playground.
 28. **An atmosphere that invites writing,** like the founder's journal: a letter already begun ("Dear family,"), a ribbon, a running head that knows where you are, the pen lying ready, the dog at the end. No streaks, no guilt and no mood scores.
 
 ## 5. Product truths that design must show
