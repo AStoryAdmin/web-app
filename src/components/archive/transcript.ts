@@ -30,11 +30,15 @@ export type TidyCut = [number, number, TidyRule];
 /** (a) A filler sound, lower case, a word of its own, with a comma that sets it off. */
 const FILLER_SOUND = /(,\s*)?(?<![\p{L}\p{N}'’-])(um|uh|er|erm|hmm)(?![\p{L}\p{N}'’-])(,)?/gu;
 /** (a) The teller's very first word, when a comma follows it. */
-const OPENING_WORD = /^(yeah|well|okay|so),\s*/i;
+const OPENING_WORD = /^(yeah|well|okay|so),(?!\s*\1\b)\s*/i;
 /** (a) A sentence-opening "Yeah," or "So yeah,". */
-const LATER_YEAH = /^(?:[Yy]eah|[Ss]o yeah),\s*/;
+const LATER_YEAH = /^(?:[Yy]eah|[Ss]o yeah),(?!\s*[Rr]ight\b)\s*/;
 /** (b) "like" with a comma on both sides. */
 const COMMA_LIKE = /,\s*like,/g;
+/** (b) A form of be, go or say before ", like,": the "like" quotes ("I was, like, wow") and stays. */
+const LIKE_QUOTES_AFTER = /\b(?:am|is|are|was|were|be|been|being|['’]s|['’]m|['’]re|go|goes|went|going|gone|say|says|said|saying)\s*$/i;
+/** (b) An amount after ", like,": the "like" hedges ("We paid, like, two hundred dollars") and stays. */
+const LIKE_AMOUNT_NEXT = /^\s*(?:[$£€¥]|\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|half)\b|a (?:few|couple|hundred|thousand|million|dozen)\b)/i;
 /** (c) "I", "the", "and" or "that's" said twice in a row with a comma between. */
 const SLIP_TWICE = /(?<![\p{L}'’])(I|[Tt]he|[Aa]nd|[Tt]hat['’]s)(?:,\s*\1)+(?![\p{L}'’])/giu;
 /** The forms the first copy may take: "I" in capitals; the, and, that's in lower case or opening a sentence. */
@@ -48,8 +52,8 @@ const YEAH_ALONE = /^yeah[.!]*$/i;
 
 /** A question, a tag question too ("It was good, right?"): what follows it answers it. */
 const isQuestion = (s: string) => /\?["”’)]*$/.test(s.trim());
-/** A question the other person might ask, in an unlabelled transcript. */
-const ASK = /^(?:and\s+|so\s+)?(?:do|did|does|is|are|was|were|how|what|why|when|where|who|which|can|could|would|will|have|has)\b[^?]{0,80}\?["”’]*$/i;
+/** A question the other person might ask, in an unlabelled transcript: only a yes-or-no question ("Do they open to non-students as well?"). */
+const ASK = /^(?:and\s+|so\s+)?(?:do|did|does|is|are|was|were|can|could|will|would|have|has)\b[^?]{0,80}\?["”’']*$/i;
 const TAG = /\b(?:right|you know|isn't it|wasn't it|okay|yeah|huh)\?["”’]*$/i;
 /** Never lifted: a question holding the first person is the teller's own. */
 const FIRST_PERSON = /\b(?:i|me|my|mine|we|us|our|ours|myself|ourselves)\b/i;
@@ -59,8 +63,13 @@ const ASKER_GOES_ON = /^(?:(?:because|and|so)\s+)?(?:our|we're|we’re|we are|we
 const TELLER_ANSWERS = /^(?:for sure|yes)[.!]*["”’)]*$/i;
 /** The mark that begins a paragraph holding the other person's question, set as the book's "We asked" line. */
 export const ASKED = "⁣";
-/** Labels a chat or call transcript puts in front of each turn; a text counts as labelled only when it opens on one. */
-const TURN = /(?:^|\s)(You|Me|AI|Assistant|A Story|Interviewer|Narrator|Q|A):\s+/g;
+/**
+ * Labels a chat or call transcript puts in front of each turn: at the start, after a sentence's end or at a line
+ * break, never inside a sentence ("We had plan A: we go north" keeps its "A:"). The other side's own names (AI,
+ * Assistant, Interviewer, A Story) are labels wherever they stand in a labelled text, as a chat run onto one line has
+ * them ("…end chay AI: If you'd like…"). A text counts as labelled only when it opens on a label.
+ */
+const TURN = /(?:^\s*|(?<=[.!?…]["”’)']*)\s+|\s*\n\s*|\s+(?=(?:AI|Assistant|A Story|Interviewer):))(You|Me|AI|Assistant|A Story|Interviewer|Narrator|Q|A):\s+/g;
 const LABELLED = /^\s*(?:You|Me|AI|Assistant|A Story|Interviewer|Narrator|Q|A):\s+/;
 const OTHER = /^(AI|Assistant|A Story|Interviewer|Q)$/i;
 /** Where a run-on block of speech can be broken when it has no full stop: before "and then", "so", "but"… */
@@ -93,8 +102,8 @@ export function tellerTurns(text: string): string {
   return out.join(" ");
 }
 
-const cap = (s: string) => s.replace(/^(["“‘(]?)([a-z])/, (_, q: string, c: string) => q + c.toUpperCase());
-const sentencesOf = (s: string) => s.match(/[^.!?…]+(?:[.!?…]+["”’)]*|$)\s*/g) || [s];
+const cap = (s: string) => s.replace(/^(["“‘'(]?)([a-z])(?=[a-z\s'’,.!?…]|$)/, (_, q: string, c: string) => q + c.toUpperCase());
+const sentencesOf = (s: string) => s.match(/[^.!?…]+(?:[.!?…]+["”’)']*|$)\s*/g) || [s];
 const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
 
 /** The sentences of a text with where each starts, trimmed. */
@@ -112,16 +121,30 @@ function sentencesAt(text: string): { at: number; s: string }[] {
   return out;
 }
 
+/** (a) A list going on after a filler: the next word capitalised or a number, or "and" / "or" within the next three words. */
+const LIST_GOES_ON = /^\s*(?:[\p{Lu}\d]|(?:\S+\s+){0,2}(?:and|or)\b)/u;
 /** (a) The filler sounds in a sentence, each with a comma that sets it off. */
 function fillerCuts(s: string): TidyCut[] {
   const out: TidyCut[] = [];
-  for (const m of s.matchAll(FILLER_SOUND)) out.push([m.index ?? 0, (m.index ?? 0) + m[0].length, "a-filler"]);
+  for (const m of s.matchAll(FILLER_SOUND)) {
+    const at = m.index ?? 0;
+    // between two commas both go ("We were, uh, poor" → "We were poor"), unless a list goes on after it: then the comma
+    // before it stays ("Tuan, um, Minh and Long" → "Tuan, Minh and Long")
+    const start = m[1] && m[3] && LIST_GOES_ON.test(s.slice(at + m[0].length)) ? at + m[1].length : at;
+    out.push([start, at + m[0].length, "a-filler"]);
+  }
   return out;
 }
 
 /** (b) ", like,": the "like" with a comma on both sides. */
 function likeCuts(s: string): TidyCut[] {
-  return [...s.matchAll(COMMA_LIKE)].map((m) => [m.index ?? 0, (m.index ?? 0) + m[0].length, "b-like"] as TidyCut);
+  const out: TidyCut[] = [];
+  for (const m of s.matchAll(COMMA_LIKE)) {
+    const at = m.index ?? 0;
+    if (LIKE_QUOTES_AFTER.test(s.slice(0, at)) || LIKE_AMOUNT_NEXT.test(s.slice(at + m[0].length))) continue;
+    out.push([at, at + m[0].length, "b-like"]);
+  }
+  return out;
 }
 
 /** (c) "I", "the", "and" or "that's" said twice with a comma between, the first copy opening the sentence or after a comma. */
@@ -160,12 +183,14 @@ function tidyParagraph(text: string, { answer = false, opening = false, named = 
   let afterQuestion = answer;
   let afterReaction = false;
   sentencesAt(text).forEach(({ at, s }, i) => {
-    const bare = s.replace(/["“”]/g, "").trim();
-    // (e) the other person's reaction, and a "Yeah." straight after one
+    const bare = s.trim();
+    // (e) the other person's reaction, and a "Yeah." straight after one; tested on the sentence as written, so one in
+    // quotation marks (someone in the story speaking) never matches
     if (!named && (REACTION.test(bare) || (afterReaction && YEAH_ALONE.test(bare)))) {
       cuts.push([at, at + s.length, "e-reaction"]);
       afterReaction = REACTION.test(bare);
-      afterQuestion = false;
+      // a reaction that asks ("Wait, were you?") is still a question: the "Yeah," after it answers it
+      afterQuestion = isQuestion(s);
       return;
     }
     afterReaction = false;
@@ -253,7 +278,7 @@ function namedTurns(paragraph: string): Piece[] | null {
   let run = parts[0].trim() ? `${parts[0].trim()} ` : "";
   let answer = false;
   for (let i = 1; i < parts.length; i += 2) {
-    const words = (parts[i + 1] || "").trim();
+    const words = (parts[i + 1] || "").replace(/\s*\n\s*/g, " ").trim();
     if (!words) continue;
     if (OTHER.test(parts[i])) {
       if (run.trim()) out.push({ asked: false, said: run.trim(), answer, named: true });
@@ -270,10 +295,7 @@ function namedTurns(paragraph: string): Piece[] | null {
 
 /** The pieces of a transcript, each with what the tidy cut from it and what it shows (the "We asked" lines too). */
 export function explainTranscript(paragraphs: string[]): { asked: boolean; said: string; out: string; cuts: TidyCut[] }[] {
-  const pieces = paragraphs.flatMap((p) => {
-    const one = p.replace(/\s*\n\s*/g, " ");
-    return namedTurns(one) ?? liftQuestions(one);
-  });
+  const pieces = paragraphs.flatMap((p) => namedTurns(p.trim()) ?? liftQuestions(p.replace(/\s*\n\s*/g, " ")));
   const out: { asked: boolean; said: string; out: string; cuts: TidyCut[] }[] = [];
   let first = true;
   let afterQuestion = false;
@@ -283,7 +305,7 @@ export function explainTranscript(paragraphs: string[]): { asked: boolean; said:
       const cuts: TidyCut[] = [];
       const kept: string[] = [];
       for (const { at, s } of sentencesAt(piece.said)) {
-        if (REACTION.test(s.replace(/["“”]/g, "").trim())) cuts.push([at, at + s.length, "e-reaction"]);
+        if (REACTION.test(s.trim())) cuts.push([at, at + s.length, "e-reaction"]);
         else kept.push(s);
       }
       if (kept.length) out.push({ asked: true, said: piece.said, out: kept.join(" "), cuts });
@@ -441,15 +463,20 @@ export function keptLine(text: string, { max = 170, min = 50, needFeeling = true
   if (!all) return "";
   // a line break ends a sentence too: typed lines never run together into one
   const own = tellerTurns(all.replace(/[ \t]+/g, " "));
+  // a sentence the words set as "We asked" (the asker's question and their going on) is never the teller's line
+  const asked = explainTranscript(all.split(/\n\s*\n/))
+    .filter((p) => p.asked)
+    .map((p) => norm(p.said));
   const sentences = own
     .split(/\n+/)
-    .flatMap((line) => line.match(/[^.!?…]+[.!?…]+["”’)]*/g) || [])
+    .flatMap((line) => line.match(/[^.!?…]+[.!?…]+["”’)']*/g) || [])
     .map((s) => s.trim());
   let best = "";
   let bestScore = -Infinity;
   sentences.forEach((s, i) => {
     const len = s.length;
-    if (len < min || len > max || /\?["”’)]*$/.test(s) || !/^[A-Z“"‘]/.test(s)) return;
+    if (len < min || len > max || /\?["”’)']*$/.test(s) || !/^[A-Z“"‘]/.test(s)) return;
+    if (asked.some((a) => a.includes(norm(s)))) return;
     // judged as it will be shown, without the joint ("So you always have to…" is shown "You always have to…")
     const shown = s.replace(OUT_OF_CONTEXT, "");
     // a takeaway carries a feeling or a judgement; a plain fact ("I've taken just under $300,000…") is not one, and
@@ -500,7 +527,7 @@ const OUT_OF_CONTEXT = /^(?:so|and|but)(?:,\s*|\s+(?=(?:i|you|he|she|we|they|it|
  *    ("We live in a small city · It's in Vietnam");
  * 3. the best whole sentence of their own that fits (30 to 140 characters,
  *    never a question, never trailing off), from the tidied words when it
- *    was said, with a leading "I mean" or "So" dropped.
+ *    was said, with an opening "So", "And" or "But" dropped only before a comma, a pronoun or "the".
  * Never cut, never an ellipsis. Empty only when there are no words.
  */
 export function takeaway(text: string): string {
@@ -521,7 +548,13 @@ export function takeaway(text: string): string {
     if (out) return out;
   }
   const words = spoken ? cleanTranscript(t.split(/\n\s*\n/)).filter((p) => !p.startsWith(ASKED)).join(" ") : t.replace(/\s+/g, " ");
-  const sentences = (words.match(/[^.!?…]+[.!?…]+["”’)]*/g) || []).map((x) => cap(x.trim().replace(OUT_OF_CONTEXT, "")));
+  // a sentence the words set as "We asked" is the asker's, never the teller's line, typed or said
+  const asked = explainTranscript(t.split(/\n\s*\n/))
+    .filter((p) => p.asked)
+    .map((p) => norm(p.said));
+  const sentences = (words.match(/[^.!?…]+[.!?…]+["”’)']*/g) || [])
+    .filter((x) => !asked.some((a) => a.includes(norm(x))))
+    .map((x) => cap(x.trim().replace(OUT_OF_CONTEXT, "")));
   let best = "";
   let bestScore = -Infinity;
   sentences.forEach((x, i) => {
@@ -560,7 +593,7 @@ export function findTakeaway(paragraph: string, line: string): [number, number] 
   if (!line) return null;
   const want = norm(line);
   if (!want) return null;
-  for (const m of paragraph.matchAll(/[^.!?…]+[.!?…]+["”’)]*\s*/g)) {
+  for (const m of paragraph.matchAll(/[^.!?…]+[.!?…]+["”’)']*\s*/g)) {
     if (norm(m[0]) === want || norm(m[0]).endsWith(want)) {
       // the mark starts where the takeaway does, past the joint it was lifted without ("So that paid…" marks "that paid…")
       const lead = norm(m[0]) === want ? 0 : (m[0].match(OUT_OF_CONTEXT)?.[0].length ?? 0);
@@ -578,7 +611,7 @@ export function opensOn(words: string, line: string): boolean {
   if (!line || !words) return false;
   // within the first two sentences or the first 200 characters, the reader has only just read it
   const at = findTakeaway(words, line);
-  const two = words.match(/^(?:[^.!?…]+[.!?…]+["”’)]*\s*){1,2}/)?.[0].length ?? 0;
+  const two = words.match(/^(?:[^.!?…]+[.!?…]+["”’)']*\s*){1,2}/)?.[0].length ?? 0;
   if (at && (at[0] <= 200 || at[0] < two)) return true;
   return norm(words).startsWith(norm(line));
 }
