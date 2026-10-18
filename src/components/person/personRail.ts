@@ -148,6 +148,9 @@ const NOT_THEM = new Set(["faith-house-had", "roots-parents-born", "open-parents
 const OLDER = new Set(["world-cost-remember", "child-called-grandparents"]);
 // Questions about a working life, which a young person may not have had yet.
 const WORKING = new Set(["work-longest", "work-favorite-job", "work-journey", "work-hours", "open-worked-where"]);
+// A working life asked of in the past ("What work did Ty do the longest?"): for the living the bank has its
+// present-perfect sibling ("Where has Ty worked over the years?"), so these are kept for those who have died.
+const WORK_PAST = new Set(["work-longest", "work-favorite-job", "work-journey", "work-hours"]);
 // Questions asked in the present tense ("What does Ty always have in the fridge?"): only of the living.
 const PRESENT = new Set([
   "later-ordinary-day",
@@ -172,6 +175,7 @@ export function fitsPerson(id: string, person: Pick<Person, "birthYear" | "death
   if (OLDER.has(id) && (!born || born > 1975)) return false;
   if (WORKING.has(id) && born && born > 1998) return false;
   if (PRESENT.has(id) && person.deathYear) return false;
+  if (WORK_PAST.has(id) && !person.deathYear) return false;
   return true;
 }
 

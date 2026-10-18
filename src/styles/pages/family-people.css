@@ -6,9 +6,12 @@
    terracotta rail, the storyteller's own line down the axis, everyone else either side, faces as round prints in a
    paper ring with a gold hairline (or a monogram seal), couples joined by an ampersand in foil, fine gold threads from
    each couple to their children, one dashed ring where somebody is missing. Every vw is divided by --zoom (lib/zoom).
-   Five type sizes do all the work: display, section, name, words, small (the tokens below). */
+   Five type sizes do all the work (the tokens below): display (58), statement (32, 36 from 1600px), section (28),
+   words (18) and small (13). Names are set at the words size in the display face; the weight carries them. On a
+   phone, section and statement are one size (24). --fz-name stays only as the words size for shared pieces
+   (WhereNext) that ask for it. */
 
-:is(.fp, .pp2, .pp-missing) { --fz-display: 58px; --fz-statement: 32px; --fz-section: 28px; --fz-name: 20px; --fz-words: 18px; --fz-small: 13px; }
+:is(.fp, .pp2, .pp-missing) { --fz-display: 58px; --fz-statement: 32px; --fz-section: 28px; --fz-words: 18px; --fz-name: var(--fz-words); --fz-small: 13px; }
 /* every section heading on these pages is the section size: higher than astory's .sheet-page .page h2:not(…) (0,3,1) */
 .sheet-page .page:is(.fp, .pp2, .pp-missing) :is(h2, .st-name, .pk-h) { font-size: var(--fz-section); line-height: 1.1; }
 
@@ -87,7 +90,7 @@
 .st-act svg { width: 17px; height: 17px; color: var(--accent); flex: none; }
 .st-act:active { transform: scale(0.97); }
 .st-voices { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--sheet-rule); display: grid; gap: 18px; }
-.sheet-page .st-h { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.15; color: var(--sheet-ink); }
+.sheet-page .st-h { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); line-height: 1.15; color: var(--sheet-ink); }
 .st-voice { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; margin: 0; align-items: start; }
 .st-voice > div { position: relative; padding-right: 50px; }
 /* D18: what arrived from the family wears a postmark */
@@ -150,7 +153,7 @@
 .tp-tier.rings .tp-dot { top: 22px; border-style: dashed; border-color: var(--ink-faint); }
 .tp-dot.open { border-style: dashed; border-color: var(--ink-faint); }
 .tp-dec { display: block; margin-bottom: 4px; font: 600 var(--fz-small)/1 var(--font-ui); letter-spacing: 0.04em; color: var(--kicker-terracotta); font-variant-numeric: lining-nums; }
-.sheet-page .tp-label h3 { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.15; color: var(--sheet-ink); text-wrap: balance; overflow-wrap: anywhere; }
+.sheet-page .tp-label h3 { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); line-height: 1.15; color: var(--sheet-ink); text-wrap: balance; overflow-wrap: anywhere; }
 .tp-also { display: block; margin-top: 2px; font: 500 var(--fz-small)/1.35 var(--font-ui); color: var(--ink-soft); }
 /* a generation with nobody in it yet: one quiet line in the margin, not a row of its own */
 .tp-ask { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 2px; padding: 0; border: 0; background: none; font: 500 var(--fz-small)/1.2 var(--font-ui); color: var(--ink-soft); cursor: pointer; text-align: left;
@@ -186,12 +189,12 @@
 .tp-node .por { --pz: inherit; transition: transform 120ms var(--ease-out), box-shadow 220ms var(--ease-out); }
 .tp-node.teller { width: var(--node-t); }
 .tp-node.teller .por { --pz: var(--pz-t); box-shadow: 0 0 0 1px var(--foil), 0 0 0 7px var(--paper-print), 0 0 0 8.5px var(--accent); }
-.tp-nm { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.12; color: var(--sheet-ink); overflow-wrap: anywhere; text-wrap: balance; }
+.tp-nm { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); line-height: 1.12; color: var(--sheet-ink); overflow-wrap: anywhere; text-wrap: balance; }
 .tp-node.teller .tp-nm { font-size: var(--fz-section); line-height: 1.05; }
 /* at the smallest faces the names step down to the words size, so a name keeps to one line */
 .tp[data-size="t"] .tp-nm { font-size: var(--fz-words); }
 .tp[data-size="t"] .tp-face { margin-bottom: 8px; }
-.tp[data-size="t"] .tp-node.teller .tp-nm { font-size: var(--fz-name); }
+.tp[data-size="t"] .tp-node.teller .tp-nm { font-size: var(--fz-words); }
 .tp-rel { margin-top: 2px; font: 500 var(--fz-small)/1.35 var(--font-ui); color: var(--ink-soft); white-space: nowrap; }
 .tp-rel.teller { color: var(--kicker-terracotta); font-weight: 600; }
 .tp-state { display: block; margin-top: 2px; font: 500 var(--fz-small)/1.35 var(--font-ui); color: var(--ink-soft); }
@@ -295,7 +298,7 @@
 .fp-codes { list-style: none; margin: 0; padding: 0; display: grid; }
 .fp-codes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; min-height: 56px; border-top: 1px solid var(--sheet-rule); }
 .fp-codes li:last-child { border-bottom: 1px solid var(--sheet-rule); }
-.fp-codes b { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); letter-spacing: 0.08em; color: var(--sheet-ink); font-variant-numeric: lining-nums; white-space: nowrap; }
+.fp-codes b { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); letter-spacing: 0.08em; color: var(--sheet-ink); font-variant-numeric: lining-nums; white-space: nowrap; }
 .fp-keep .keeperlist .por { --pz: 40px; }
 .fp-keep .askrow { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-top: 1px solid var(--sheet-rule); }
 .fp-keep .contrib .pic-av { --pz: 56px; }
@@ -303,7 +306,7 @@
 .fp-keep .contrib .pic { width: 72px; height: 72px; object-fit: cover; padding: 5px 5px 8px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 2px; box-sizing: border-box; }
 .fp-keep .contrib .who { margin: 0; font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--ink-soft); }
 .fp-keep .contrib .who b { color: var(--sheet-ink); font-weight: 600; }
-.sheet-page .fp-keep .contrib h3 { margin: 4px 0 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.15; color: var(--sheet-ink); }
+.sheet-page .fp-keep .contrib h3 { margin: 4px 0 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); line-height: 1.15; color: var(--sheet-ink); }
 .sheet-page .fp-keep .contrib .story { margin: 6px 0 0; font-family: var(--book-body); font-size: var(--fz-words); line-height: 1.5; color: var(--sheet-ink); }
 .fp-keep .contrib .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 /* one height for a field and the button beside it */
@@ -322,7 +325,7 @@
 
 /* ───────────── a phone ───────────── */
 @media (max-width: 760px) {
-  :is(.fp, .pp2, .pp-missing) { --fz-display: 40px; --fz-statement: 24px; --fz-section: 26px; --fz-name: 19px; --fz-words: 18px; }
+  :is(.fp, .pp2, .pp-missing) { --fz-display: 40px; --fz-statement: 24px; --fz-section: 24px; --fz-words: 18px; }
   .fp-head { margin-bottom: 28px; padding-bottom: 18px; }
   .fp-head .btn { width: 100%; justify-content: center; }
   .sheet-page .fp .fp-head h1 { font-size: var(--fz-display); }
@@ -437,7 +440,7 @@
 .pp2 .pp-card:not(.text) { grid-template-columns: 92px minmax(0, 1fr); gap: 18px; }
 .pp2 .pp-print { padding: 5px 5px 8px; background: var(--paper-print); border: 1px solid var(--sheet-rule); }
 .pp2 .pp-list { gap: 10px; }
-.pp2 .pp-title { font-size: var(--fz-name); }
+.pp2 .pp-title { font-size: var(--fz-words); }
 .pp2 .pp-card.text .pp-words { font-style: italic; -webkit-line-clamp: 2; }
 .pp2 .pp-card.text .pp-words::before { content: "\201C"; }
 .pp2 .pp-card.text .pp-words::after { content: "\201D"; }
@@ -464,7 +467,7 @@
 .pk-one:active { transform: scale(0.97); }
 .pk-one:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
 .pk-words { display: grid; gap: 2px; min-width: 0; }
-.pk-nm { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.1; color: var(--sheet-ink); overflow-wrap: anywhere; }
+.pk-nm { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); line-height: 1.1; color: var(--sheet-ink); overflow-wrap: anywhere; }
 .pk-rel { font: 500 var(--fz-small)/1.3 var(--font-ui); color: var(--ink-soft); }
 .pk-none { margin: 12px 0 0; font: 500 var(--fz-small)/1.5 var(--font-ui); color: var(--ink-soft); }
 
@@ -497,7 +500,7 @@
 
 /* a live code on a person's page: the code itself, set like the samples' small caps numerals */
 .pp-code { margin: 0; }
-.pp-code b { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); letter-spacing: 0.08em; color: var(--sheet-ink); font-variant-numeric: lining-nums; }
+.pp-code b { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); letter-spacing: 0.08em; color: var(--sheet-ink); font-variant-numeric: lining-nums; }
 .pp-invite .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .pp2 .pp-more { display: flex; flex-wrap: wrap; gap: 0 28px; }
 .st-empty p { margin: 0; }
@@ -547,7 +550,7 @@
 .pp-prompts a { display: flex; align-items: baseline; justify-content: flex-start; gap: 10px; min-height: 44px; padding: 13px 2px; color: var(--sheet-ink); text-decoration: none;
   transition: color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .pp-q { font-family: var(--book-body); font-style: italic; font-size: var(--fz-words); line-height: 1.4; text-wrap: pretty; }
-.pp-q-a { flex: none; color: var(--accent); transition: transform 160ms var(--ease-out); }
+.pp-q-a { flex: none; font-size: var(--fz-words); color: var(--accent); transition: transform 160ms var(--ease-out); }
 .pp-prompts a:active { transform: scale(0.98); }
 .pp-prompts a:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
@@ -557,6 +560,14 @@
 /* nothing with them yet: the empty state, then their family under it with the gap between sections, at every
    width; the column then runs as long as the portrait card beside it (no bare paper under a short column) */
 .pp-main.bare { display: block; }
+/* from 1600px the empty page takes the frame a page with memories has: the empty state in the wide track, their
+   family as the right column (the stacked layout keeps its section gap below that) */
+@media (min-width: 1600px) {
+  .pp-main.bare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 64px; align-items: start; }
+  .pp-main.bare:has(> .pp-extras:empty) { display: block; }
+  .pp-main.bare .pp-extras > :first-child { margin-top: 0; }
+  .pp-main.bare .pp-extras .pk-list { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 760px) {
   .pp-words-plate { min-width: 0; }
   .pp-prompts { margin-top: 16px; }
@@ -569,6 +580,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pp-prompts a, .pp-q-a { transition: none; }
+  /* no movement at all: the colour change stays, the nudge and the press go */
+  .pp-prompts a:hover .pp-q-a, .pp-prompts a:active { transform: none; }
 }
 /* a large family on a big screen, snug: less air between the generations before any face gets smaller */
 .tp[data-snug] .tp-tier { padding-bottom: 4px; }
@@ -588,3 +601,22 @@
 .tp-state .tp-sep { display: none; }
 .tp[data-size="l"] .tp-state .nw { display: inline; }
 .tp[data-size="l"] .tp-state .tp-sep { display: inline; }
+
+/* ── round 7 ─────────────────────────────────────────────────────────── */
+/* the plate's body runs under the portrait (a column), except on a tablet, where it stands beside it */
+.pp-plate-body { display: contents; }
+@media (min-width: 761px) and (max-width: 1099px) {
+  .pp-plate { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: start; column-gap: 32px; text-align: left; padding: 26px 28px 24px; }
+  .pp-plate > .pp-por { --pz: 148px; margin: 0; }
+  .pp-plate > .pp-por:not(.seal) { width: 160px; height: 200px; border-radius: 80px 80px 4px 4px; }
+  .pp-plate-body { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding-top: 6px; }
+  .pp-plate-body .pp-addphoto { margin: 0; }
+  .pp-plate-body .pp-invite { width: 100%; margin-top: 12px; padding-top: 12px; gap: 10px; }
+}
+/* the containers the keyboard is handed to (after a swap or a send) take it without a ring for a pointer */
+:is(.fp-keep-review, .fp-invites, .keepers, .st-voices, .pp-plate, .review, .pp-invite):focus:not(:focus-visible) { outline: none; }
+/* on a laptop or a tablet each generation's "+" comes last, after its people */
+@media (min-width: 761px) and (max-width: 1099px) {
+  .tp-ghost { order: 2; }
+  .tp-row { max-width: var(--tp-row-w, none); margin-inline: auto; }
+}

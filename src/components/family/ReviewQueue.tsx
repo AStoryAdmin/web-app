@@ -93,7 +93,7 @@ export default function ReviewQueue({
   const onFail = useCallback((err: unknown) => setError(`That didn’t go through (${(err as Error)?.message || "no connection"}). It’s still here; try again.`), []);
   const sectionRef = useRef<HTMLElement>(null);
   const { held, hold, undo, pause, resume, returnRef } = useHold(onFail, sectionRef);
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  const { line: retryLine, arm: armRetry } = useRetryFocus(sectionRef);
 
   useEffect(() => {
     let live = true;

@@ -7,7 +7,7 @@
  * here. Nobody is ever written as somebody else: the family’s lines are
  * theirs, under their own name.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Family, Person } from "../../data/family";
 import type { Memory, Story } from "../../data/stories";
@@ -42,7 +42,8 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
   const [contributions, setContributions] = useState<Contribution[] | null>(preview ? [] : null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  const voicesRef = useRef<HTMLElement>(null);
+  const { line: retryLine, arm: armRetry } = useRetryFocus(voicesRef);
   useEffect(() => {
     if (preview) return;
     let live = true;
@@ -123,7 +124,7 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
         </Link>
       </div>
 
-      <section className="st-voices" aria-label="From the family">
+      <section className="st-voices" aria-label="From the family" ref={voicesRef} tabIndex={-1}>
         <h3 className="st-h">From the family</h3>
         {voices.length > 0 ? (
           voices.map((v) => {

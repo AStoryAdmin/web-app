@@ -11,7 +11,7 @@
  * household reuses that person instead of adding one, and a name already
  * there (not yet on A Story) asks "is this the same person?" first.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { findPersonByEmail, sameNamePeople, type Family, type Person } from "../../data/family";
 import type { Account, Story } from "../../data/stories";
 import { Button, Field } from "../ui";
@@ -58,7 +58,30 @@ function useCopy() {
 }
 
 /** The code large, the link, a QR, and the ways to pass them on. */
-export function CodeCard({ code, who, story, senderName, emailed, email, emailReason }: { code: string; who: string; story: Story; senderName: string; emailed?: boolean | null; email?: string; emailReason?: string | null }) {
+export function CodeCard({
+  code,
+  who,
+  story,
+  senderName,
+  emailed,
+  email,
+  emailReason,
+  focusFirst,
+}: {
+  code: string;
+  who: string;
+  story: Story;
+  senderName: string;
+  emailed?: boolean | null;
+  email?: string;
+  emailReason?: string | null;
+  /** Shown in place of the button that asked for it: take the keyboard to its first Copy. */
+  focusFirst?: boolean;
+}) {
+  const firstCopy = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusFirst) firstCopy.current?.focus();
+  }, [focusFirst]);
   const link = joinUrl(code);
   const svg = useMemo(() => qrSvg(link), [link]);
   const { copied, copy } = useCopy();
@@ -71,7 +94,7 @@ export function CodeCard({ code, who, story, senderName, emailed, email, emailRe
         <div className="codebig" aria-label={`Family code ${[...code].join(" ")}`}>
           {spacedCode(code) as string}
         </div>
-        <Button variant="outline" small onClick={() => copy("code", code)} icon={copied === "code" ? <CheckIcon /> : undefined}>
+        <Button variant="outline" small ref={firstCopy} onClick={() => copy("code", code)} icon={copied === "code" ? <CheckIcon /> : undefined}>
           {copied === "code" ? "Copied" : "Copy"}
         </Button>
       </div>

@@ -4,7 +4,7 @@
  * sees this; they invite by email and the invitation links itself when
  * that address signs in.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Person } from "../../data/family";
 import type { Story } from "../../data/stories";
 import { inviteManager, listManagers, removeManager, type Manager } from "../../data/familyWrites";
@@ -12,17 +12,18 @@ import { keeperName } from "../../app-core/lib/keeperName.js";
 import { Button, Chip, Field } from "../ui";
 import Portrait from "./Portrait";
 import { useRetryFocus } from "./useRetryFocus";
+import { useHold } from "./useHold";
+import HeldLine from "./HeldLine";
 import { MailIcon } from "../icons";
 
 export default function Keepers({ story, people, senderName }: { story: Story; people: Person[]; senderName: string }) {
   const [list, setList] = useState<Manager[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  const homeRef = useRef<HTMLElement>(null);
+  const { line: retryLine, arm: armRetry } = useRetryFocus(homeRef, ".keeperlist > [role=alert] button");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [asking, setAsking] = useState<string | null>(null);
-  const [removing, setRemoving] = useState<string | null>(null);
   const [note, setNote] = useState<{ text: string; bad?: boolean } | null>(null);
 
   useEffect(() => {
@@ -54,23 +55,27 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
     setList(await listManagers(story.id).catch(() => list));
   };
 
-  // Asked in place, never in a browser dialog: "Stop Nhi editing? Stop · Keep".
-  const remove = async (m: Manager) => {
-    setRemoving(m.id);
+  // Stopping a keeper is held six seconds with an Undo, like every other "no" on the page ("Stopped Nhi editing · Undo"),
+  // and only then sent: undoing it afterwards would mean inviting them again.
+  const onFail = useCallback(
+    (err: unknown) => setNote({ text: `That didn’t go through (${(err as Error)?.message || "no connection"}). They can still edit; try again.`, bad: true }),
+    [],
+  );
+  const { held, hold, undo, pause, resume, returnRef } = useHold(onFail, homeRef);
+  const remove = (m: Manager) => {
     setNote(null);
-    try {
-      await removeManager(m.id);
-      setList((prev) => (prev || []).filter((x) => x.id !== m.id));
-      setAsking(null);
-    } catch (err) {
-      setNote({ text: `That didn’t go through (${(err as Error)?.message || "no connection"}).`, bad: true });
-    } finally {
-      setRemoving(null);
-    }
+    const first = nameFor(m).split(" ")[0];
+    hold(
+      m.id,
+      `Stopped ${first} editing`,
+      `Stopping ${first} editing…`,
+      () => removeManager(m.id),
+      () => setList((prev) => (prev || []).filter((x) => x.id !== m.id)),
+    );
   };
 
   return (
-    <section className="card keepers" aria-label={`Who can edit ${story.name}’s story`}>
+    <section className="card keepers" aria-label={`Who can edit ${story.name}’s story`} ref={homeRef} tabIndex={-1}>
       <h2>Who can edit {story.name}’s story</h2>
       <p className="meta">Keepers can change the story; the family tree reads and adds.</p>
       <ul className="keeperlist">
@@ -95,32 +100,23 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
             </button>
           </li>
         )}
-        {list?.map((m) => (
+        {list?.map((m) =>
+          held[m.id] ? (
+            <HeldLine key={m.id} as="li" held={held[m.id]} onUndo={() => undo(m.id)} onPause={() => pause(m.id)} onResume={() => resume(m.id)} />
+          ) : (
           <li key={m.id}>
             <Portrait given={nameFor(m).split(" ")[0]} family={nameFor(m).split(" ").slice(1).join(" ")} size={40} />
             <span>
               <strong>{nameFor(m)}</strong>
-              <span className="meta">{asking === m.id ? `Stop ${nameFor(m).split(" ")[0]} editing?` : m.invitedEmail}</span>
+              <span className="meta">{m.invitedEmail}</span>
             </span>
-            {asking === m.id ? (
-              <span className="keeper-ask">
-                <Button variant="outline" small className="danger" loading={removing === m.id} onClick={() => void remove(m)}>
-                  Stop
-                </Button>
-                <Button variant="quiet" small disabled={removing === m.id} onClick={() => setAsking(null)}>
-                  Keep
-                </Button>
-              </span>
-            ) : (
-              <>
-                <Chip tone={m.status === "active" ? "green" : "gold"}>{m.status === "active" ? "editing" : "invited"}</Chip>
-                <Button variant="quiet" small onClick={() => setAsking(m.id)}>
-                  Remove
-                </Button>
-              </>
-            )}
+            <Chip tone={m.status === "active" ? "green" : "gold"}>{m.status === "active" ? "editing" : "invited"}</Chip>
+            <Button variant="quiet" small ref={returnRef(m.id)} onClick={() => remove(m)}>
+              Remove
+            </Button>
           </li>
-        ))}
+          ),
+        )}
         {list && !list.length && <li className="meta">Only you, so far.</li>}
       </ul>
       <form

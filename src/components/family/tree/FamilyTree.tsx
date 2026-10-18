@@ -82,6 +82,50 @@ function StateWords({ words }: { words: string }) {
   );
 }
 
+/**
+ * On a laptop or a tablet (761–1099px) a generation wraps onto rows under its name. The rows are balanced, so five
+ * faces split 3 and 2, never 4 and 1: the narrowest width that still needs as many rows is found, and the row is
+ * held to it (--tp-row-w, centred). Elsewhere nothing is held.
+ */
+function balance(el: HTMLElement) {
+  const band = window.matchMedia("(min-width: 761px) and (max-width: 1099px)").matches;
+  for (const row of el.querySelectorAll<HTMLElement>(".tp-row")) {
+    row.style.removeProperty("--tp-row-w");
+    if (!band) continue;
+    const items = [...row.querySelectorAll<HTMLElement>(":scope > .tp-zone > *")]
+      .map((n, i) => ({ w: n.getBoundingClientRect().width / pageZoom(), order: parseFloat(getComputedStyle(n).order) || 0, i }))
+      .filter((x) => x.w > 0)
+      .sort((a, b) => a.order - b.order || a.i - b.i)
+      .map((x) => x.w);
+    if (items.length < 3) continue;
+    const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    const rows = (w: number) => {
+      let n = 1;
+      let x = 0;
+      for (const iw of items) {
+        if (!x) x = iw;
+        else if (x + gap + iw <= w) x += gap + iw;
+        else {
+          n++;
+          x = iw;
+        }
+      }
+      return n;
+    };
+    const need = rows(row.clientWidth);
+    if (need < 2) continue;
+    let lo = Math.max(...items);
+    let hi = row.clientWidth;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) / 2;
+      if (rows(mid) <= need) hi = mid;
+      else lo = mid;
+    }
+    // a pixel or two over the found width: the browser's own sub-pixel sums never tip it onto another row
+    row.style.setProperty("--tp-row-w", `${Math.ceil(hi) + 2}px`);
+  }
+}
+
 /* ── One face ──────────────────────────────────────────────────────────── */
 
 function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; story: Story; meId: string | null | undefined; preview?: boolean; hot: Set<string> | null; onHot: (id: string | null) => void }) {
@@ -362,6 +406,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
         if (!tooTall()) delete el.dataset.snug;
       }
     }
+    balance(el);
     if (getComputedStyle(svg).display === "none") {
       setThreads((prev) => (prev.length ? [] : prev));
       return;

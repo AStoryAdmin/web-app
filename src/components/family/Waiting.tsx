@@ -10,7 +10,7 @@
  * request never disappears into silence: "asked to join Rose’s story ·
  * waiting", "you suggested born 1946 for Linh · waiting".
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import { answerJoinRequest, listJoinRequests, listMyJoinRequests, listPendingSuggestions, resolveSuggestion, storyCard, type Family, type JoinRequest, type Person, type Suggestion } from "../../data/family";
 import { savePerson } from "../../data/familyWrites";
@@ -35,6 +35,7 @@ export function Asked({
   family,
   meId,
   keeper,
+  fallback,
   onCount,
   onFailed,
   onChanged,
@@ -44,6 +45,8 @@ export function Asked({
   meId: string | null | undefined;
   /** Whether this account keeps the story (owner or active manager): only keepers see join requests. */
   keeper: boolean;
+  /** Where the keyboard goes when an answered ask leaves (a container that stays, tabIndex -1). */
+  fallback?: RefObject<HTMLElement | null>;
   onCount?: (n: number) => void;
   /** Whether the asks couldn’t be reached, so the review above never says "nothing waiting" over the failure. */
   onFailed?: (failed: boolean) => void;
@@ -56,8 +59,8 @@ export function Asked({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const onFail = useCallback((err: unknown) => setError(`That didn’t go through (${(err as Error)?.message || "no connection"}). It’s still here; try again.`), []);
-  const { held, hold, undo, pause, resume, returnRef } = useHold(onFail);
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  const { held, hold, undo, pause, resume, returnRef } = useHold(onFail, fallback);
+  const { line: retryLine, arm: armRetry } = useRetryFocus(fallback, ".review-asked > [role=alert] button");
   const people = family?.people || [];
   const personOf = (id: string) => people.find((p) => p.id === id) || null;
 
@@ -232,12 +235,12 @@ export function Asked({
 type Mine = { joins: { id: string; label: string; at: string }[]; suggestions: Suggestion[] };
 
 /** What this account asked of others and is still waiting on. Nothing when there is nothing. */
-export function WaitingOnOthers({ meId, family }: { meId: string | null | undefined; family: Family | null }) {
+export function WaitingOnOthers({ meId, family, fallback }: { meId: string | null | undefined; family: Family | null; fallback?: RefObject<HTMLElement | null> }) {
   const [mine, setMine] = useState<Mine | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => new Date(0));
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  const { line: retryLine, arm: armRetry } = useRetryFocus(fallback);
   const people = family?.people || [];
 
   useEffect(() => {

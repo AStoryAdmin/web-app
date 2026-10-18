@@ -14,7 +14,7 @@
  * twice (docs/PRD.md §3.3a), and when somebody is, one line says so and
  * offers the merge.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Button, Problem } from "../components/ui";
@@ -48,13 +48,13 @@ import type { Person } from "../data/family";
 
 /** The codes this account has sent that still open a place, each with a way to take it back (held six seconds
     with an Undo first: the code may already be in a relative’s hands, and once taken back it is dead). */
-function MyCodes({ people, mine }: { people: Person[]; mine: ReturnType<typeof useMyCodes> }) {
+function MyCodes({ people, mine, home }: { people: Person[]; mine: ReturnType<typeof useMyCodes>; home: RefObject<HTMLElement | null> }) {
   const { codes, setCodes, failed, reload, now } = mine;
   const [notTaken, setNotTaken] = useState<string | null>(null);
   const onFail = useCallback((_err: unknown, code: string) => setNotTaken(code), []);
-  const listRef = useRef<HTMLUListElement>(null);
-  const { held, hold, undo, pause, resume, returnRef } = useHold(onFail, listRef);
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  // the Invitations plate stays through every swap (the list going, the last code taken back): the keyboard's home
+  const { held, hold, undo, pause, resume, returnRef } = useHold(onFail, home);
+  const { line: retryLine, arm: armRetry } = useRetryFocus(home);
   if (failed && codes === null)
     return (
       <p className="fp-quiet bad" role="alert">
@@ -80,7 +80,7 @@ function MyCodes({ people, mine }: { people: Person[]; mine: ReturnType<typeof u
   if (!codes.length) return <p className="fp-quiet">No codes out at the moment.</p>;
   const who = (c: MyCode) => (c.personId ? personName(people.find((p) => p.id === c.personId)) || "a place in the tree" : "the family");
   return (
-    <ul className="fp-codes" aria-label="Codes you’ve sent" ref={listRef} tabIndex={-1}>
+    <ul className="fp-codes" aria-label="Codes you’ve sent">
       {codes.map((c) =>
         held[c.code] ? (
           <HeldLine key={c.code} as="li" held={held[c.code]} onUndo={() => undo(c.code)} onPause={() => pause(c.code)} onResume={() => resume(c.code)} />
@@ -131,6 +131,7 @@ export default function Family() {
   const [askedCount, setAskedCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
+  const invitesRef = useRef<HTMLElement>(null);
   const onAskedCount = useCallback((n: number) => setAskedCount(n), []);
   const [askedFailed, setAskedFailed] = useState(false);
   const onAskedFailed = useCallback((f: boolean) => setAskedFailed(f), []);
@@ -252,14 +253,14 @@ export default function Family() {
           <section className="fp-keep" aria-label="Keeping the family">
             <Star />
             {/* what waits for a yes runs across the top; with nothing waiting it is one ruled line */}
-            <div className="fp-keep-review" ref={reviewRef} id="review">
+            <div className="fp-keep-review" ref={reviewRef} id="review" tabIndex={-1}>
               <ReviewQueue
                 story={story}
                 askedCount={askedCount}
                 askedFailed={askedFailed}
-                asked={<Asked story={story} family={family} meId={meId} keeper onCount={onAskedCount} onFailed={onAskedFailed} onChanged={afterWrite} />}
+                asked={<Asked story={story} family={family} meId={meId} keeper fallback={reviewRef} onCount={onAskedCount} onFailed={onAskedFailed} onChanged={afterWrite} />}
               />
-              <WaitingOnOthers meId={meId} family={family} />
+              <WaitingOnOthers meId={meId} family={family} fallback={reviewRef} />
             </div>
 
             {/* the two plates fill the row at one height; the family’s dog sits behind the Invitations plate’s top
@@ -267,10 +268,10 @@ export default function Family() {
             <div className="fp-keep-cards">
               <div className="fp-invite-wrap">
                 <img className="fp-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
-                <section className="fp-keep-col fp-invites" id="invite" aria-labelledby="fp-invites-h">
+                <section className="fp-keep-col fp-invites" id="invite" aria-labelledby="fp-invites-h" ref={invitesRef} tabIndex={-1}>
                   <h2 id="fp-invites-h">Invitations</h2>
                   <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>
-                  <MyCodes people={people} mine={mine} />
+                  <MyCodes people={people} mine={mine} home={invitesRef} />
                 </section>
               </div>
 

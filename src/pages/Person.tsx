@@ -30,6 +30,7 @@ import { useMyCodes } from "../components/family/useMyCodes";
 import { useHold } from "../components/family/useHold";
 import HeldLine from "../components/family/HeldLine";
 import { useRetryFocus } from "../components/family/useRetryFocus";
+import { useFocusNext } from "../components/family/useFocusNext";
 import { buildPlate } from "../components/family/tree/plateModel";
 import { treePeople } from "../components/family/tree/treeModel";
 import { kinOf, promptsAbout, railFor, relatedFor, saidLine, spanLine, splitRail, type Found } from "../components/person/personRail";
@@ -79,7 +80,10 @@ export default function Person() {
   const onTakeFail = useCallback((err: unknown) => setError(`The code wasn’t taken back (${(err as Error)?.message || "no connection"}).`), []);
   const inviteRef = useRef<HTMLDivElement>(null);
   const taking = useHold(onTakeFail, inviteRef);
-  const { line: retryLine, arm: armRetry } = useRetryFocus();
+  const plateRef = useRef<HTMLDivElement>(null);
+  const { line: retryLine, arm: armRetry } = useRetryFocus(plateRef, ".pp-invite > [role=alert] button");
+  // the plate's in-place swaps (the form, the removal question, the code card) keep the keyboard's place
+  const { arm: focusNext, at: focusAt } = useFocusNext();
   // What the plate calls this person ("Nhi Tran’s parent"), so the page and the tree never disagree.
   const plateRel = useMemo(() => {
     if (!person || !story) return "";
@@ -248,6 +252,7 @@ export default function Person() {
       const next = { ...person, givenName: edit.given.trim(), familyName: edit.last.trim(), birthYear: Number.isFinite(year) && year > 0 ? year : undefined, email: edit.email.trim().toLowerCase() || undefined } as PersonType;
       await savePerson(next, householdId);
       await reload();
+      focusNext("change");
       setEdit(null);
     } catch (err) {
       setError(`That didn’t save (${(err as Error)?.message || "no connection"}).`);
@@ -307,8 +312,10 @@ export default function Person() {
 
         <div className="pp-cols">
           <aside className="pp-side" aria-label={`About ${first}`}>
-            <div className="pp-plate" data-rise>
+            <div className="pp-plate" data-rise ref={plateRef} tabIndex={-1}>
               <Portrait photo={person.photo} given={person.givenName} family={person.familyName} gone={!!person.deathYear} className={`pp-por${isTeller ? " teller" : ""}`} />
+              {/* on a tablet the portrait stands to the left of all this; elsewhere it runs under the portrait */}
+              <div className="pp-plate-body">
               {!person.photo && !preview && (
                 <Link className="pp-addphoto" to={`/write?photo=1&with=${encodeURIComponent(person.id)}`}>
                   Add a photograph of {first} <span aria-hidden="true">→</span>
@@ -316,7 +323,7 @@ export default function Person() {
               )}
               {/* when the codes can’t be reached the alert below says so, once; no state line above it */}
               {!(codesUnknown && mine.failed) && (
-              <p className={`pp-state ${codesUnknown ? "off" : tone}`} aria-busy={codesUnknown ? true : undefined} tabIndex={codesUnknown ? -1 : undefined} ref={codesUnknown ? retryLine : undefined}>
+              <p className={`pp-state ${codesUnknown ? "off" : tone}`} aria-busy={codesUnknown ? true : undefined} tabIndex={-1} ref={codesUnknown ? retryLine : undefined}>
                 {codesUnknown ? (
                   "Checking for an invitation…"
                 ) : words ? (
@@ -353,7 +360,7 @@ export default function Person() {
               {inviteable && !edit && !codesUnknown && (
                 <div className="pp-invite" ref={inviteRef} tabIndex={-1}>
                   {sent ? (
-                    <CodeCard code={sent.code} who={first} story={story} senderName={senderName} emailed={sent.emailed} email={sent.email} />
+                    <CodeCard code={sent.code} who={first} story={story} senderName={senderName} emailed={sent.emailed} email={sent.email} focusFirst />
                   ) : stateKey === "joined" ? (
                     <p className="pp-why">They read what’s shared and add what they remember, under their own name. Nobody writes as {story.name}.</p>
                   ) : liveCode && !person.email ? (
@@ -399,14 +406,18 @@ export default function Person() {
                   variant="quiet"
                   small
                   className="pp-edit"
-                  onClick={() => setEdit({ given: person.givenName || "", last: person.familyName || "", birth: person.birthYear ? String(person.birthYear) : "", email: person.email || "" })}
+                  ref={focusAt("change")}
+                  onClick={() => {
+                    focusNext("form");
+                    setEdit({ given: person.givenName || "", last: person.familyName || "", birth: person.birthYear ? String(person.birthYear) : "", email: person.email || "" });
+                  }}
                 >
                   Change {first}’s details
                 </Button>
               )}
 
               {editable && edit && (
-                <section className="pp-editbox" aria-label={`Edit ${first}`}>
+                <section className="pp-editbox" aria-label={`Edit ${first}`} ref={focusAt("form", (el) => el.querySelector("input"))}>
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -421,7 +432,14 @@ export default function Person() {
                       <Button type="submit" small loading={busy === "save"}>
                         Save
                       </Button>
-                      <Button variant="quiet" small onClick={() => setEdit(null)}>
+                      <Button
+                        variant="quiet"
+                        small
+                        onClick={() => {
+                          focusNext("change");
+                          setEdit(null);
+                        }}
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -435,13 +453,30 @@ export default function Person() {
                             <Button variant="outline" small className="danger" loading={busy === "remove"} onClick={() => void remove()}>
                               Remove {first}
                             </Button>
-                            <Button variant="quiet" small onClick={() => setAskRemove(false)}>
+                            <Button
+                              variant="quiet"
+                              small
+                              ref={focusAt("keep")}
+                              onClick={() => {
+                                focusNext("askRemove");
+                                setAskRemove(false);
+                              }}
+                            >
                               Keep
                             </Button>
                           </div>
                         </>
                       ) : (
-                        <Button variant="quiet" small className="danger" onClick={() => setAskRemove(true)}>
+                        <Button
+                          variant="quiet"
+                          small
+                          className="danger"
+                          ref={focusAt("askRemove")}
+                          onClick={() => {
+                            focusNext("keep");
+                            setAskRemove(true);
+                          }}
+                        >
                           Remove from the tree
                         </Button>
                       )}
@@ -449,6 +484,7 @@ export default function Person() {
                   )}
                 </section>
               )}
+              </div>
             </div>
           </aside>
 

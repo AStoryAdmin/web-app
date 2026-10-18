@@ -92,6 +92,10 @@ describe("questions about somebody nobody has written about yet", () => {
     expect(fitsPerson("work-hours", who({ birthYear: 2004 }))).toBe(false);
     expect(fitsPerson("family-fridge", who({ birthYear: 1910, deathYear: 1990 }))).toBe(false);
     expect(fitsPerson("family-fridge", who({}))).toBe(true);
+    // the living are asked in the present perfect where the bank has it, not as if their working life were over
+    expect(fitsPerson("work-longest", who({ birthYear: 1960 }))).toBe(false);
+    expect(fitsPerson("open-worked-where", who({ birthYear: 1960 }))).toBe(true);
+    expect(fitsPerson("work-longest", who({ birthYear: 1920, deathYear: 1999 }))).toBe(true);
   });
   it("are three, from three topics, the same three each time, and never say \"them’s\"", () => {
     for (const id of ["p-1", "36cfd520-c499-4771-b0e2-ffc64cabefb1", "sample-sam", "x"]) {
