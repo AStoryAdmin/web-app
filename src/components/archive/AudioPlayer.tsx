@@ -46,7 +46,10 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
     let live = true;
     signClips(clips)
       .then((u) => live && setUrls(u))
-      .catch((err: Error) => live && setFailed(err?.message || "couldn't load it"));
+      .catch((err: Error) => {
+        console.warn("recording not signed", err);
+        if (live) setFailed("load");
+      });
     return () => {
       live = false;
     };
@@ -69,7 +72,7 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
   const toggle = () => {
     const el = audio.current;
     if (!el || !ready) return;
-    if (el.paused) el.play().catch(() => setFailed("it wouldn't play"));
+    if (el.paused) el.play().catch(() => setFailed("play"));
     else el.pause();
   };
 
@@ -170,13 +173,13 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
                 setT(durations[i] || 0);
               }
             }}
-            onError={() => setFailed("it wouldn't play")}
+            onError={() => setFailed("play")}
           />
         )}
       </div>
       {failed && (
         <p className="note" role="alert">
-          The recording couldn't be loaded ({failed}).{" "}
+          {failed === "play" ? "The recording wouldn't play here." : "The recording couldn't be loaded."} Check the connection and try again.{" "}
           <button
             type="button"
             className="mv-retry"

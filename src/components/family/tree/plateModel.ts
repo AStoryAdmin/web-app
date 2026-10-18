@@ -41,14 +41,18 @@ export type PlateItem = { key: string; unit?: PlateUnit; ghost?: PlateGhost };
 export type PlateTier = {
   key: string;
   level: number;
-  /** "Rose's parents", "Your generation", "Rose's children, and Margaret's". */
+  /** "Rose's parents", "Your generation", "Rose's children". */
   title: string;
+  /** Whose the others in the tier are, set as a small second line under the title: "and Margaret's". */
+  also: string;
   /** "1910s", from the tier's birth years; "" when none are known. */
   decade: string;
   /** Everyone in the tier, left to right. */
   units: PlateUnit[];
   /** At most one. */
   ghosts: PlateGhost[];
+  /** Rings for a generation that has nobody in it yet, set as quiet lines in this tier's margin instead of a tier of their own. */
+  asks: PlateGhost[];
   /** The tier in three parts, each left to right; the centre is the storyteller's own line. */
   zones: Record<Zone, PlateItem[]>;
   /** The storyteller's own tier. */
@@ -200,8 +204,8 @@ export function buildPlate(o: { people: Person[]; index: Index; tellerId: string
     const owners = d.row ? [...new Set(d.units.flatMap((u) => u.nodes.filter((n) => !main(d.level, n.id)).map((n) => possessive(n.person, d.row))).filter((s) => /'s$/.test(s)))] : [];
     let title = lineTitle(d.level, whose);
     if (d.level !== 0 && hasMain && d.row) title = d.row.title;
-    if (d.level !== 0 && owners.length) title = `${title}, and ${owners.join(" and ")}`;
-    return { key: `tier:${d.level}`, level: d.level, title, decade: decadeOf(members), units: ZONES.flatMap((z) => zones[z].map((x) => x.unit!)), ghosts: [], zones, home: d.level === 0 };
+    const also = d.level !== 0 && owners.length ? `and ${owners.join(" and ")}` : "";
+    return { key: `tier:${d.level}`, level: d.level, title, also, decade: decadeOf(members), units: ZONES.flatMap((z) => zones[z].map((x) => x.unit!)), ghosts: [], asks: [], zones, home: d.level === 0 };
   });
 
   // The threads: every person to their parents in the tier straight above.
@@ -227,7 +231,7 @@ export function buildPlate(o: { people: Person[]; index: Index; tellerId: string
   const tierAt = (level: number) => {
     let t = tiers.find((x) => x.level === level);
     if (!t) {
-      t = { key: `tier:${level}`, level, title: lineTitle(level, whose), decade: "", units: [], ghosts: [], zones: { left: [], centre: [], right: [] }, home: false };
+      t = { key: `tier:${level}`, level, title: lineTitle(level, whose), also: "", decade: "", units: [], ghosts: [], asks: [], zones: { left: [], centre: [], right: [] }, home: false };
       tiers.push(t);
       tiers.sort((a, b) => a.level - b.level);
     }
@@ -259,6 +263,14 @@ export function buildPlate(o: { people: Person[]; index: Index; tellerId: string
   const children = tiers.find((t) => t.level === 1)?.units.some((u) => u.nodes.some((n) => parentsOf(n.id).includes(teller.id)));
   if (children) ring(2, "centre", "end", "grandchild", "a grandchild", "grandchild", null, null);
 
-  const generations = tiers.filter((t) => t.units.length).length;
-  return { teller, tiers, links, unplaced: album.unplaced, generations, placed: album.placed, lone: album.lone };
+  // A generation with nobody in it yet does not take a row: its ring becomes a quiet line in the margin of the
+  // nearest tier that has people ("+ Rose's grandparents" under "Rose's parents"), and its dashed threads go.
+  const drawn = tiers.filter((t) => t.units.length);
+  for (const t of tiers.filter((x) => !x.units.length)) {
+    const near = drawn.reduce((a, b) => (Math.abs(b.level - t.level) < Math.abs(a.level - t.level) ? b : a));
+    near.asks.push(...t.ghosts);
+    const gone = new Set(t.ghosts.map((g) => g.node));
+    for (let i = links.length - 1; i >= 0; i--) if (gone.has(links[i].to) || links[i].from.some((f) => gone.has(f))) links.splice(i, 1);
+  }
+  return { teller, tiers: drawn, links, unplaced: album.unplaced, generations: drawn.length, placed: album.placed, lone: album.lone };
 }

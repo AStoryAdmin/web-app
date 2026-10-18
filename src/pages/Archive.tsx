@@ -15,6 +15,7 @@ import { DecadeRail, DecadeRow, type Decade } from "../components/archive/Decade
 import { InProgressGroup, PrintsFlow, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useCrossfade, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
+import { realChapter } from "../components/archive/photos";
 import { countPending } from "../data/contributions";
 import { decadeOf, groupByYear } from "../app-core/lib/timeline.js";
 import { ERAS } from "../app-core/data/eras.js";
@@ -89,7 +90,8 @@ export default function Archive() {
   const chapters = useMemo(() => {
     const counts = new Map<string, number>();
     for (const m of saved) counts.set(m.era, (counts.get(m.era) || 0) + 1);
-    return (ERAS as string[]).filter((e) => counts.has(e)).map((e) => ({ era: e, count: counts.get(e) || 0 }));
+    // "Anything else" is where a memory waits for a chapter; it is neither a chip nor counted as a chapter
+    return (ERAS as string[]).filter((e) => counts.has(e) && realChapter(e)).map((e) => ({ era: e, count: counts.get(e) || 0 }));
   }, [saved]);
 
   const q = query.trim().toLowerCase();
@@ -141,7 +143,7 @@ export default function Archive() {
     let raf = 0;
     const read = () => {
       raf = 0;
-      const heads = Array.from(document.querySelectorAll<HTMLElement>(".arc-year[data-decade], .arc-ytile[data-decade]"));
+      const heads = Array.from(document.querySelectorAll<HTMLElement>(".arc-year[data-decade]"));
       let current: number | null = null;
       for (const h of heads) {
         if (h.getBoundingClientRect().top <= 140) current = Number(h.dataset.decade);
@@ -220,12 +222,25 @@ export default function Archive() {
     setParams(next, { replace: true });
   };
 
-  if (account === undefined) return <Shell compact title="The Archive"><div className="page" aria-busy="true" /></Shell>;
+  if (account === undefined)
+    return (
+      <Shell compact title="The Archive">
+        <div className="page arc-page arc-skeleton" aria-busy="true">
+          <span className="sk-line w40" />
+          <span className="sk-grid">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
+      </Shell>
+    );
   if (account === null && loadError) {
     return (
       <Shell compact title="The Archive">
         <div className="page">
-          <Problem message={`We couldn't reach the archive. ${loadError}`} onRetry={reload} />
+          <Problem message="We couldn't reach the archive just now." onRetry={reload} />
           <p className="meta">It's kept safe on our side. Check the connection and try again.</p>
         </div>
       </Shell>
@@ -234,14 +249,14 @@ export default function Archive() {
   if (!story) return <Navigate to="/start" replace />;
 
   const own = story.relationship === "Myself";
-  const stats = archiveStats(story) as { memories: number; chapters: number; span: { from: number; to: number } | null };
+  const stats = archiveStats(story) as { memories: number; span: { from: number; to: number } | null };
   const whose = own ? "your" : `${story.name}'s`;
   const photoCount = saved.reduce((n, m) => n + (m.photos?.length || 0), 0);
   // the book's progress as the fourth figure: "8 of about 20" toward the first edition, never a countdown
   const book = bookProgress(story) as { count: number; remaining: number; ratio: number; state: string };
   // a share, not the count again (the count is the first figure): how far toward the first edition
   const bookPct = Math.round(book.ratio * 100);
-  const bookSub = book.state === "ready" ? "Ready to print" : book.state === "lopsided" ? "Enough to print; some chapters are thin" : "Of the way to the first edition";
+  const bookSub = book.state === "ready" ? "Ready to print" : book.state === "lopsided" ? "Enough to print; some chapters are thin" : "toward the first edition";
   const bookLine = `${bookPct}% ${bookSub.toLowerCase()}`;
   const filtering = Boolean(q || chapter || day);
   const nothingAtAll = memories.length === 0;
@@ -295,8 +310,8 @@ export default function Archive() {
               </div>
             )}
             <div>
-              <b>{stats.chapters}</b>
-              <span>{stats.chapters === 1 ? "Chapter" : "Chapters"}</span>
+              <b>{chapters.length}</b>
+              <span>{chapters.length === 1 ? "Chapter" : "Chapters"}</span>
             </div>
             <div className="arc-hs-book">
               <Link to="/book" className="arc-hs-link" aria-label={`${bookLine}. Open the book`}>
@@ -370,7 +385,7 @@ export default function Archive() {
                   </label>
                 </form>
 
-                {chapters.length > 1 && (
+                {chapters.length >= 2 && (
                   <div className="chiprow scroll arc-chips" role="group" aria-label="Chapters">
                     <button type="button" className="chip big" aria-pressed={chapter === ""} onClick={() => setChapter("")}>
                       All <span className="n">· {saved.length}</span>
@@ -415,13 +430,13 @@ export default function Archive() {
                         {decadeLabel(b.decade)}
                       </p>
                       {b.groups.map((g) => (
-                        <YearGroup key={g.key} group={g} story={story} decade={b.decade} view="list" />
+                        <YearGroup key={g.key} group={g} story={story} decade={b.decade} />
                       ))}
                     </section>
                   ))}
                   {undated && (
                     <section className="arc-decade" aria-label="Not dated yet">
-                      <UndatedGroup items={undated.items} story={story} view="list" />
+                      <UndatedGroup items={undated.items} story={story} />
                     </section>
                   )}
                 </div>

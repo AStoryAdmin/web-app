@@ -20,7 +20,9 @@ const LEAD_FILLER = /^(?:(?:(?:yeah|yes|well|okay|ok|oh|um+|uh+|like|so|you know
 /** A trailing "but yeah", "so yeah", "and yeah" at the end of a sentence. */
 const TRAIL_YEAH = /,?\s+(?:but|so|and)\s+yeah(?=[.!?…]|$)/gi;
 /** A short question that reads as the other person's ("Wait, were you?", "Do they open to non-students as well?"), not a tag ("…, right?"). */
-const ASK = /^(?:wait,?\s+|and\s+|so\s+)?(?:do|did|does|is|are|was|were|how|what|why|when|where|who|which|can|could|would|will|have|has)\b[^?]{0,80}\?["”’]*$/i;
+const ASK = /^(?:and\s+|so\s+)?(?:do|did|does|is|are|was|were|how|what|why|when|where|who|which|can|could|would|will|have|has)\b[^?]{0,80}\?["”’]*$/i;
+/** A reaction, not a question to answer ("Wait, were you?", "Really?"): it is the other person's, and dropped. */
+const REACTION_Q = /^(?:wait|really|seriously|oh|huh)\b/i;
 const TAG = /\b(?:right|you know|isn't it|wasn't it|okay|yeah|huh)\?["”’]*$/i;
 /** The mark that begins a paragraph holding the other person's question, set as the book's "We asked" line. */
 export const ASKED = "⁣";
@@ -36,8 +38,11 @@ export function soundsSpoken(text: string): boolean {
   if (!t.trim()) return false;
   TURN.lastIndex = 0;
   if (TURN.test(t)) return true;
-  const markers = (t.match(/\b(?:yeah|um+|uh+|you know|i mean|right\?|kind of|like,|so yeah|okay so)\b/gi) || []).length;
-  return markers >= 2 && markers / Math.max(1, t.length / 1000) >= 1.5;
+  // the marks of talk: fillers, hedges, and sentences that open the way speech does ("And I think…", "No, I just…")
+  const markers =
+    (t.match(/\b(?:yeah|um+|uh+|you know|i mean|i think|i guess|right\?|kind of|sort of|like,|so yeah|okay so)\b/gi) || []).length +
+    (t.match(/(?:^|[.!?]\s+)(?:and|so|but|no|yes|well|because)\b[ ,]/gi) || []).length;
+  return markers >= 2 && markers / Math.max(1, t.length / 1000) >= 2;
 }
 
 /** Keeps only the teller's turns when the words carry speaker labels. */
@@ -59,6 +64,36 @@ export function tellerTurns(text: string): string {
 const cap = (s: string) => s.replace(/^(["“‘(]?)([a-z])/, (_, q: string, c: string) => q + c.toUpperCase());
 const sentencesOf = (s: string) => s.match(/[^.!?…]+(?:[.!?…]+["”’)]*|$)\s*/g) || [s];
 
+/** "Like" as filler goes ("I taught like teenagers" → "I taught teenagers"); the verb and the comparison stay. */
+function dropFillerLike(s: string): string {
+  return s
+    .replace(/,\s*like,\s*/gi, ", ")
+    .replace(/\blike\b,?\s*/gi, (m: string, at: number, all: string) => (isFillerLike(all, at) ? "" : m))
+    .replace(/\s{2,}/g, " ");
+}
+
+/**
+ * A spoken sentence that runs on past 160 characters with no full stop is
+ * punctuated by sense: a full stop before "and then", "so", "but" or "and
+ * so" once the piece before it holds 50 characters or more. The words and
+ * their order never change.
+ */
+function punctuateRunOn(s: string): string[] {
+  if (s.length <= 160) return [s];
+  const out: string[] = [];
+  let rest = s;
+  const re = /\s(?=(?:and then|and so|so|but)\s)/gi;
+  for (;;) {
+    re.lastIndex = 50;
+    const m = re.exec(rest);
+    if (!m || rest.length - m.index < 40) break;
+    out.push(`${rest.slice(0, m.index).replace(/[,;:]$/, "")}.`);
+    rest = cap(rest.slice(m.index + 1));
+  }
+  out.push(rest);
+  return out;
+}
+
 /** One paragraph of speech, tidied. */
 export function cleanSpeech(text: string): string {
   const turns = tellerTurns(String(text || ""));
@@ -73,8 +108,12 @@ export function cleanSpeech(text: string): string {
         .replace(FILLER, "$1")
         // stutters and false starts: a word or a short phrase said twice ("I, I", "so I, so I")
         .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, "$1")
+        // a false start across a joining word: "my so my mom" → "my mom"
+        .replace(/\b([\w'’]+)\s+(?:so|and|uh|um)\s+\1\b/gi, "$1")
         .replace(/^[\s,;:]+/, ""),
     )
+    .map(dropFillerLike)
+    .flatMap(punctuateRunOn)
     .filter((s) => /[\p{L}\p{N}]/u.test(s) && !BACKCHANNEL.test(s.trim()))
     .map(cap)
     .join(" ");
@@ -83,7 +122,9 @@ export function cleanSpeech(text: string): string {
     .replace(/([,;:])\s*([,.;:!?])/g, "$2")
     .replace(/^[\s,;:]+/, "")
     .replace(/\s{2,}/g, " ")
-    .trim();
+    .trim()
+    // speech ends a thought with a full stop the transcript forgot
+    .replace(/([\p{L}\p{N}])$/u, "$1.");
 }
 
 /** The other person's questions in an unlabelled transcript, lifted out of the teller's paragraph onto lines of their own. */
@@ -93,7 +134,9 @@ function liftQuestions(paragraph: string): string[] {
   for (const raw of sentencesOf(paragraph)) {
     const s = raw.trim();
     if (!s) continue;
-    if (ASK.test(s) && !TAG.test(s)) {
+    if (s.endsWith("?") && REACTION_Q.test(s) && !TAG.test(s)) continue; // the other person reacting: dropped
+    // lifted only when it is a real question (five words or more); a short one stays in the teller's words
+    if (ASK.test(s) && !TAG.test(s) && s.split(/\s+/).length >= 5) {
       if (run.trim()) out.push(run.trim());
       out.push(ASKED + s);
       run = "";
@@ -175,20 +218,31 @@ export function ownWords(text: string): string {
     .join(" ");
 }
 
-const OPENS_WEAK = /^["“‘]?(?:so|no|like|yeah|well|and|but|okay|ok|oh|um|uh|because|then|that'?s|it'?s|this|there|you)\b/i;
+const OPENS_WEAK = /^["“‘]?(?:and then|and so|so|no|like|yeah|well|but|okay|ok|oh|um|uh|because|then|this|there|you)\b/i;
+/** "It's", "That's", "And" open a kept line only when the sentence carries a feeling or a judgement. */
+const OPENS_SOFT = /^["“‘]?(?:and(?! then| so)|that'?s|that’s|it'?s|it’s)\b/i;
+/** The words that make a sentence worth remembering: a feeling, a judgement, a turn of a life. */
+const FEELING = /\b(always|never|love|loved|loving|miss|missed|remember|remembered|never forget|forget|dream|dreams|wish|wished|proud|happy|happiest|sad|hard|hardest|challenging|struggle|scared|afraid|grateful|thankful|lucky|blessed|beautiful|worth|best|favou?rite|special|important|mattered|meant|learned|opportunity|heart|hope|grief|joy|fear|courage|kindness)\b/i;
+
 /**
  * A "like" that is filler ("she took home like hundreds", "and like worked"), not the verb ("I'd like to")
  * or a comparison ("like a teacher").
  */
 function fillerLike(s: string): boolean {
-  for (const m of s.matchAll(/\blike\b/gi)) {
-    const before = s.slice(0, m.index).trim().split(/\s+/).pop()?.toLowerCase() || "";
-    const after = s.slice((m.index ?? 0) + 4).trim().split(/[\s,.!?]+/)[0]?.toLowerCase() || "";
-    const verb = /^(i|we|they|you|he|she|would|'d|i'd|we'd|really|to|did|didn't|don't|do|not|feel|felt|looks?|looked|sounds?|liked?)$/.test(before);
-    const compare = /^(a|an|the|this|that|it|my|his|her|our|their|your|me|him|us|them|home|family)$/.test(after) && !/,$/.test(s.slice(0, m.index).trim());
-    if (!verb && !compare) return true;
-  }
+  for (const m of s.matchAll(/\blike\b/gi)) if (isFillerLike(s, m.index ?? 0)) return true;
   return false;
+}
+
+/** Whether the "like" at `at` in `s` is filler: neither the verb ("I'd like to") nor a comparison ("like a teacher"). */
+function isFillerLike(s: string, at: number): boolean {
+  const before = s.slice(0, at).trim().split(/\s+/).pop()?.toLowerCase() || "";
+  const after = s.slice(at + 4).trim().split(/[\s,.!?]+/)[0]?.toLowerCase() || "";
+  const verb = /^(i|we|they|you|he|she|would|'d|i'd|we'd|really|to|did|didn't|don't|do|not|feel|felt|looks?|looked|sounds?|liked?)$/.test(before);
+  // "like a teacher" compares; "like a really good fan" hedges
+  const second = s.slice(at + 4).trim().split(/[\s,.!?]+/)[1]?.toLowerCase() || "";
+  const hedge = /^(really|very|so|kind|sort|little|bit|whole|lot)$/.test(second);
+  const compare = /^(a|an|the|this|that|it|my|his|her|our|their|your|me|him|us|them|home|family)$/.test(after) && !hedge && !/,$/.test(s.slice(0, at).trim()) && !/^,/.test(s.slice(at + 4));
+  return !verb && !compare;
 }
 
 const DANGLES =/\b(?:to|the|a|an|of|and|but|so|with|for|that|was|is|my|our|your|their|in|on|at|from|like)[.!…]["”’)]*$/i;
@@ -205,7 +259,7 @@ const DANGLES =/\b(?:to|the|a|an|of|and|but|so|with|for|that|was|is|my|our|your|
  * It prefers a first-person sentence with a feeling in it, or "remember".
  * Empty when nothing qualifies: no line is better than a poor one.
  */
-export function keptLine(text: string): string {
+export function keptLine(text: string, { max = 170, min = 50, needFeeling = true }: { max?: number; min?: number; needFeeling?: boolean } = {}): string {
   const all = String(text || "").replace(/\r\n?/g, "\n").trim();
   if (!all) return "";
   // a line break ends a sentence too: typed lines never run together into one
@@ -218,16 +272,20 @@ export function keptLine(text: string): string {
   let bestScore = -Infinity;
   sentences.forEach((s, i) => {
     const len = s.length;
-    if (len < 50 || len > 170 || /\?["”’)]*$/.test(s) || !/^[A-Z“"‘]/.test(s)) return;
-    if (OPENS_WEAK.test(s) || DANGLES.test(s) || fillerLike(s)) return;
+    if (len < min || len > max || /\?["”’)]*$/.test(s) || !/^[A-Z“"‘]/.test(s)) return;
+    const feels = FEELING.test(s);
+    // a takeaway carries a feeling or a judgement; a plain fact ("I've taken just under $300,000…") is not one
+    if (needFeeling && !feels) return;
+    if (OPENS_WEAK.test(s) || (OPENS_SOFT.test(s) && !feels) || DANGLES.test(s) || fillerLike(s)) return;
     if (cleanSpeech(s) !== s) return;
+    // a feeling or a judgement outweighs who is speaking; a plain fact scores low
     let score = 0;
-    if (/\b(I|we|my|our|me|us)\b/.test(s)) score += 3;
+    if (feels) score += 5;
+    if (/\b(I|we|my|our|me|us)\b/.test(s)) score += 2;
     if (/^(?:I|We|My|Our)\b/.test(s)) score += 1;
-    if (len >= 70 && len <= 140) score += 2;
+    if (len >= 60 && len <= 140) score += 1;
     if (i > 0) score += 1;
-    if (/\b(love|loved|miss|missed|remember|never|always|proud|happy|hard|scared|grateful|home|family|mother|father|mom|dad|grand\w+)\b/i.test(s)) score += 3;
-    if (/\d{3,}/.test(s)) score -= 1;
+    if (/\$|\d{3,}/.test(s)) score -= 2;
     score -= i * 0.05;
     if (score > bestScore) {
       bestScore = score;
@@ -235,4 +293,29 @@ export function keptLine(text: string): string {
     }
   });
   return best;
+}
+
+/**
+ * A card's words, never cut mid-sentence: a whole kept sentence of 45
+ * characters or fewer when there is one; for words typed line by line, the
+ * first lines whole ("We live in a small city · It's in Vietnam"); else the
+ * page's kept line. Empty when none of these exists (the card then quotes
+ * the opening of their own words).
+ */
+export function cardLine(text: string): string {
+  const short = keptLine(text, { max: 45, min: 18 });
+  if (short) return short;
+  const t = String(text || "").replace(/\r\n?/g, "\n").trim();
+  if (t.includes("\n") && !soundsSpoken(t)) {
+    const lines = t.split("\n").map((l) => l.trim()).filter(Boolean);
+    let out = "";
+    for (const l of lines) {
+      const next = out ? `${out} · ${l}` : l;
+      if (out && next.length > 60) break;
+      out = next;
+    }
+    if (out) return out;
+  }
+  // no feeling to keep: the card still shows one whole sentence of their own, never a cut one
+  return keptLine(text) || keptLine(text, { max: 90, min: 18, needFeeling: false });
 }

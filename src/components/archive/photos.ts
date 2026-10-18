@@ -43,6 +43,11 @@ export function readableParagraphs(paragraphs: string[], { max = 560, target = 3
     let run = "";
     const mine: string[] = [];
     for (const s of sentences) {
+      // break before a sentence that would carry the paragraph well past the target
+      if (run.trim() && run.length + s.length > target * 1.45) {
+        mine.push(run.trim());
+        run = "";
+      }
       run += s;
       if (run.length >= target) {
         mine.push(run.trim());
@@ -52,7 +57,8 @@ export function readableParagraphs(paragraphs: string[], { max = 560, target = 3
     const rest = run.trim();
     if (rest) {
       // a short tail joins the paragraph before it rather than standing alone
-      if (rest.length < 140 && mine.length) mine[mine.length - 1] = `${mine[mine.length - 1]} ${rest}`;
+      // (only when the two together stay a readable length)
+      if (rest.length < 140 && mine.length && mine[mine.length - 1].length + rest.length <= target * 1.45) mine[mine.length - 1] = `${mine[mine.length - 1]} ${rest}`;
       else mine.push(rest);
     }
     out.push(...mine);

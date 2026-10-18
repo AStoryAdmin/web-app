@@ -25,8 +25,10 @@ import ToolMenu from "../components/archive/ToolMenu";
 import { MemoryHead, PageTurn, Plate } from "../components/archive/MemoryLead";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
-import { isRunOfLines, minutesLabel, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
+import { isRunOfLines, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
 import { ASKED, cleanTranscript, keptLine, soundsSpoken } from "../components/archive/transcript";
+import { useServerTidy } from "../components/archive/serverTidy";
+import { tellerParts, wasSpoken } from "../lib/memoryDisplay";
 import WhereNext from "../components/book/WhereNext";
 import { isTreasured } from "../lib/treasured";
 import { useAuth } from "../state/authContext";
@@ -70,6 +72,19 @@ function withLang(text: string) {
   return out;
 }
 
+/** The kept line where it stands in the words, under the same low gold marker as under the title: the source, not a repeat. */
+function withMark(text: string, kept: string) {
+  const at = kept ? text.indexOf(kept) : -1;
+  if (at < 0) return withLang(text);
+  return [
+    <span key="a">{withLang(text.slice(0, at))}</span>,
+    <mark key="m" className="mv-mark">
+      {withLang(kept)}
+    </mark>,
+    <span key="b">{withLang(text.slice(at + kept.length))}</span>,
+  ];
+}
+
 /** The spread needs a laptop's width; below it the page is one column and the photograph sits in the words. */
 const SPREAD = "(min-width: 1280px)";
 function useSpread(): boolean {
@@ -88,9 +103,10 @@ function Missing() {
   return (
     <Shell bare title="Memory">
       <div className="page mv">
-        <div className="mp-missing">
+        <div className="mp-missing mv-missing">
+          <img className="mv-missing-dog" src="/dog/curious-paper.webp" alt="" width={150} height={126} />
           <h1>That memory isn't here.</h1>
-          <p className="meta">It may have been removed, or it belongs to a story this account can't see.</p>
+          <p className="meta">It may have been removed, or it belongs to a story this account can't see. The rest of the archive is where it was.</p>
           <ButtonLink to="/archive" variant="outline">
             Back to the archive
           </ButtonLink>
@@ -141,6 +157,15 @@ export default function MemoryPage() {
     };
   }, [memoryId]);
 
+  // the words: what was typed is set as typed; what was said is set as a clean transcript, the exact words a click away.
+  // The local clean transcript shows at once; the server's tidy pass (full stops, capitals) replaces it when it arrives.
+  const transcript = (memory?.audio || []).filter((c) => c.speaker !== "assistant" && c.transcript).map((c) => c.transcript);
+  const typed = paragraphsOf(memory?.body || "");
+  const raw = typed.length ? typed : transcript.length ? paragraphsOf(transcript.join("\n\n")) : [];
+  const spoken = memory ? wasSpoken(memory) || soundsSpoken(raw.join("\n\n")) : false;
+  const localTidy = spoken ? cleanTranscript(raw) : raw;
+  const served = useServerTidy(memoryId, raw.join("\n\n"), localTidy, spoken, story && story.relationship !== "Myself" ? story.name : "");
+
   // a new memory (Previous, Next) opens tidied and silent, on its own first photograph
   const [openFor, setOpenFor] = useState(memoryId);
   if (openFor !== memoryId) {
@@ -154,7 +179,14 @@ export default function MemoryPage() {
   if (account === undefined)
     return (
       <Shell bare title="Memory">
-        <div className="page" aria-busy="true" />
+        <div className="page mv mv-skeleton" aria-busy="true">
+          <span className="sk-line w30" />
+          <span className="sk-line w70 tall" />
+          <span className="sk-line w45" />
+          <span className="sk-line w90" />
+          <span className="sk-line w85" />
+          <span className="sk-line w60" />
+        </div>
       </Shell>
     );
   if (!story || !memory) return <Missing />;
@@ -166,21 +198,12 @@ export default function MemoryPage() {
     .map((pid) => family?.people.find((p) => p.id === pid))
     .filter((p): p is NonNullable<typeof p> => !!p);
   const hasVoice = memory.audio?.length > 0;
-  const seconds = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
-  const toldName = memory.contributor ? memory.contributor.split(",")[0].trim() : story.name;
-
-  // the words: what was typed is set as typed; what was said is set as a clean transcript, the exact words a click away
-  const transcript = (memory.audio || []).filter((c) => c.speaker !== "assistant" && c.transcript).map((c) => c.transcript);
-  const typed = paragraphsOf(memory.body);
-  const raw = typed.length ? typed : transcript.length ? paragraphsOf(transcript.join("\n\n")) : [];
-  const spoken = hasVoice || Boolean(memory.familyCallId) || soundsSpoken(raw.join("\n\n"));
-  const tidy = spoken ? cleanTranscript(raw) : raw;
-  const body = readableParagraphs(spoken && !verbatim ? (tidy.length ? tidy : raw) : raw, { punctuate: spoken && !verbatim }).map(smarten);
-  const tidied = spoken && tidy.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
+  const tidyNow = served ?? (localTidy.length ? localTidy : raw);
+  const body = readableParagraphs(spoken && !verbatim ? tidyNow : raw, { punctuate: spoken && !verbatim && !served }).map(smarten);
+  const tidied = spoken && tidyNow.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
   const kept = smarten(keptLine(raw.join("\n")));
-  // "Told by Bao in conversation" whenever the words were said, never "Written by" beside "Lightly tidied"
-  const told = memory.contributor ? "From" : spoken ? "Told by" : "Written by";
-  const toldRest = hasVoice ? ` on a call${minutesLabel(seconds) ? ` · ${minutesLabel(seconds)}` : ""}` : spoken && !memory.contributor ? " in conversation" : "";
+  // one rule for who told it, shared with the cards and "From the book": "Told by Bao in conversation"
+  const { verb: told, name: toldName, rest: toldRest } = tellerParts(memory, story);
 
   const viewerName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || (user?.email || "").split("@")[0] || "Someone";
   const isOwner = !!user && story.ownerId === user.id;
@@ -273,7 +296,7 @@ export default function MemoryPage() {
               <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
-                    {withLang(line)}
+                    {withMark(line, kept)}
                     {j < arr.length - 1 && <br />}
                   </span>
                 ))}
@@ -351,11 +374,13 @@ export default function MemoryPage() {
 
             {tidied && body.length > 0 && (
               <p className="mv-tidy" aria-live="polite">
-                {verbatim ? `Word for word, as it was said` : `Lightly tidied from the ${hasVoice ? "call" : "conversation"}`}
-                <span aria-hidden="true"> · </span>
-                <button type="button" onClick={() => setVerbatim((v) => !v)} aria-pressed={verbatim}>
-                  {verbatim ? "Read it tidied" : "Read it word for word"}
-                </button>
+                {verbatim ? `Word for word, as it was said` : `Lightly tidied from the ${hasVoice ? "call" : "conversation"}`}{" "}
+                <span className="mv-tidy-act">
+                  <span aria-hidden="true">· </span>
+                  <button type="button" onClick={() => setVerbatim((v) => !v)} aria-pressed={verbatim}>
+                    {verbatim ? "Read it tidied" : "Read it word for word"}
+                  </button>
+                </span>
               </p>
             )}
 
@@ -389,13 +414,19 @@ export default function MemoryPage() {
               </div>
             ) : (
               <div className="mv-tools" role="group" aria-label="This memory">
-                <Link className="mv-tool" to={`/write?edit=${memory.id}&photo=1`}>
+                <Link className="mv-tool" to={`/write?edit=${memory.id}&photo=1`} aria-label={photos.length ? "Add a photograph" : "Add the first photograph"}>
                   <PhotoIcon aria-hidden="true" />
-                  {photos.length ? "Add a photograph" : "Add the first photograph"}
+                  <span className="lg">{photos.length ? "Add a photograph" : "Add the first photograph"}</span>
+                  <span className="sm" aria-hidden="true">
+                    Photograph
+                  </span>
                 </Link>
-                <Link className="mv-tool" to={`/write?edit=${memory.id}`}>
+                <Link className="mv-tool" to={`/write?edit=${memory.id}`} aria-label="Add to the words">
                   <PenIcon aria-hidden="true" />
-                  Add to the words
+                  <span className="lg">Add to the words</span>
+                  <span className="sm" aria-hidden="true">
+                    Add words
+                  </span>
                 </Link>
                 <span className="mv-tools-gap" aria-hidden="true" />
                 <ToolMenu

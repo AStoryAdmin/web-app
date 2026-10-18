@@ -82,11 +82,17 @@ export default function ReviewQueue({
 
   useEffect(() => {
     let live = true;
-    listContributions(story.id, "pending").then((list) => {
-      if (!live) return;
-      setItems(list);
-      setNow(new Date());
-    });
+    listContributions(story.id, "pending")
+      .then((list) => {
+        if (!live) return;
+        setItems(list);
+        setNow(new Date());
+      })
+      .catch(() => {
+        if (!live) return;
+        setItems([]);
+        setError("What the family sent couldn't be reached just now. Reload the page to try again.");
+      });
     return () => {
       live = false;
     };
@@ -114,6 +120,14 @@ export default function ReviewQueue({
 
   const sent = items?.length ?? 0;
   const count = sent + askedCount;
+  // Nothing waiting: one ruled line, not a box (the asks still mount, so they can say when one arrives).
+  if (items !== null && count === 0 && !error)
+    return (
+      <section className="review none" aria-label="Waiting for your review">
+        <p className="review-none">Nothing waiting for your review. What the family asks or sends lands here first.</p>
+        {asked}
+      </section>
+    );
   return (
     <section className="review" aria-label="Waiting for your review">
       <h2>

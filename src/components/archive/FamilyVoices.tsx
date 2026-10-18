@@ -113,7 +113,7 @@ export default function FamilyVoices({
     };
   }, [story.id, memory.id, refresh]);
 
-  // opened from the tile above: bring the box into view and put the caret in it
+  // opened from "Add what you remember": bring the box into view and put the caret in it
   useEffect(() => {
     if (!open || !box.current) return;
     const el = box.current;
@@ -139,7 +139,8 @@ export default function FamilyVoices({
       setSent(isOwner ? "Added. It shows here once a keeper has looked at it." : "Sent to the family.");
       setRefresh((n) => n + 1);
     } catch (err) {
-      setError(`That didn't send (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
+      console.warn("contribution not sent", err);
+      setError("That didn't send. Your words are still here; check the connection and press Send again.");
     } finally {
       setSending(false);
     }
@@ -153,7 +154,8 @@ export default function FamilyVoices({
       else await rejectContribution(c.id);
       setItems((prev) => (keep ? prev.map((x) => (x.id === c.id ? { ...x, status: "approved" } : x)) : prev.filter((x) => x.id !== c.id)));
     } catch (err) {
-      setError(`That didn't go through (${(err as Error)?.message || "no connection"}). Try again.`);
+      console.warn("contribution decision not saved", err);
+      setError("That didn't go through. Check the connection and try again.");
     } finally {
       setBusyId(null);
     }

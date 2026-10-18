@@ -55,12 +55,14 @@ export default function OpenLeaf({ story }: { story: Story }) {
       const arrow = el.querySelector<SVGPathElement>(".ol-arrow path");
       if (!arrow) return;
       const len = arrow.getTotalLength();
+      // made here, paused, so the matchMedia context reverts it on unmount; played when the arrow comes into view
+      const draw = gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, ease: MOVE, paused: true, immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
       ScrollTrigger.create({
         trigger: arrow,
         start: "top bottom-=40",
         once: true,
         onEnter: () => {
-          gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, ease: MOVE, immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
+          draw.play();
         },
       });
     });

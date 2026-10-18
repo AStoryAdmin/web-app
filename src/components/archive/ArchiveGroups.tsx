@@ -9,7 +9,6 @@ import PrintCard from "../PrintCard";
 import { listContributions, type Contribution } from "../../data/contributions";
 import { groupSides } from "../../lib/seenSides";
 import { useAuth } from "../../state/authContext";
-import Mosaic from "../Mosaic";
 import { MicIcon } from "../icons";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { ageAt } from "../../app-core/lib/timeline.js";
@@ -20,13 +19,7 @@ export type YearGroupT = { key: string; year: number | null; label: string; ageL
 /** How the Archive shows a group's memories: as a mosaic of prints, or as the rows down the rail. */
 export type ArchiveView = "prints" | "list";
 
-function Cards({ items, story, view }: { items: Memory[]; story: Story; view: ArchiveView }) {
-  if (view === "prints")
-    return (
-      <div className="arc-prints">
-        <Mosaic memories={items} story={story} lead={false} rise={false} />
-      </div>
-    );
+function Cards({ items, story }: { items: Memory[]; story: Story }) {
   return (
     <div className="arc-cards">
       {items.map((m) => (
@@ -48,7 +41,8 @@ export function DateTask({ items }: { items: Memory[] }) {
   return (
     <Link className="arc-task" to={`/write?edit=${items[0].id}&details=1`}>
       Give {n === 1 ? "it" : `${num(n)} memories`} a year
-      <span className="arc-task-t"> · about {minutes} {minutes === 1 ? "minute" : "minutes"}</span>
+      {" · "}
+      <span className="arc-task-t">about {minutes} {minutes === 1 ? "minute" : "minutes"}</span>
       <span className="arc-task-arrow" aria-hidden="true">
         →
       </span>
@@ -85,7 +79,7 @@ function yearNote(group: YearGroupT, story: Story): string | null {
   return parts.join(" ");
 }
 
-export function YearGroup({ group, story, decade, view = "list" }: { group: YearGroupT; story: Story; decade: number | null; view?: ArchiveView }) {
+export function YearGroup({ group, story, decade }: { group: YearGroupT; story: Story; decade: number | null }) {
   const note = yearNote(group, story);
   return (
     <section aria-labelledby={`y${group.key}-h`}>
@@ -98,19 +92,19 @@ export function YearGroup({ group, story, decade, view = "list" }: { group: Year
           {note}
         </p>
       )}
-      <Cards items={group.items} story={story} view={view} />
+      <Cards items={group.items} story={story} />
     </section>
   );
 }
 
-export function UndatedGroup({ items, story, view = "list" }: { items: Memory[]; story: Story; view?: ArchiveView }) {
+export function UndatedGroup({ items, story }: { items: Memory[]; story: Story }) {
   return (
     <section aria-labelledby="yundated-h">
       <div className="arc-year" id="yundated" data-arrive>
         <h2 id="yundated-h">Not dated yet</h2>
         <DateTask items={items} />
       </div>
-      <Cards items={items} story={story} view={view} />
+      <Cards items={items} story={story} />
     </section>
   );
 }

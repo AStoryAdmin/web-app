@@ -21,7 +21,9 @@ import { Button, Problem } from "../components/ui";
 import { PlusIcon } from "../components/icons";
 import FamilyTree from "../components/family/tree/FamilyTree";
 import Storyteller from "../components/family/Storyteller";
-import { Cartouche, Star, WhereNext } from "../components/family/Ornaments";
+import { Cartouche, Star } from "../components/family/Ornaments";
+import WhereNext from "../components/book/WhereNext";
+import { useMyCodes } from "../components/family/useMyCodes";
 import { sampleFamily } from "../components/family/tree/sampleFamily";
 import { placePerson } from "../components/family/tree/placePerson";
 import { generationsLine, peopleLine } from "../components/family/album/albumModel";
@@ -35,31 +37,26 @@ import Duplicates from "../components/family/Duplicates";
 import { Asked, WaitingOnOthers } from "../components/family/Waiting";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { householdFor, listMyCodes, revokeCode, type MyCode } from "../data/familyWrites";
+import { householdFor, revokeCode, type MyCode } from "../data/familyWrites";
 import { buildIndex } from "../app-core/lib/familyGraph.js";
 import { spacedCode } from "../app-core/lib/familyCode.js";
 import { canEdit, expiresLabel, familyTitle, personName, realPeople, type Index } from "../components/family/familyView";
 import type { Person } from "../data/family";
 
 /** The codes this account has sent that still open a place, each with a way to take it back. */
-function MyCodes({ people, version }: { people: Person[]; version: number }) {
-  const [codes, setCodes] = useState<MyCode[] | null>(null);
-  const [now, setNow] = useState(() => new Date(0));
+function MyCodes({ people, mine }: { people: Person[]; mine: ReturnType<typeof useMyCodes> }) {
+  const { codes, setCodes, failed, reload, now } = mine;
   const [busy, setBusy] = useState<string | null>(null);
-  const [failed, setFailed] = useState<string | null>(null);
-  useEffect(() => {
-    let live = true;
-    listMyCodes()
-      .then((list) => {
-        if (!live) return;
-        setCodes(list);
-        setNow(new Date());
-      })
-      .catch(() => live && setCodes([]));
-    return () => {
-      live = false;
-    };
-  }, [version]);
+  const [notTaken, setNotTaken] = useState<string | null>(null);
+  if (failed && codes === null)
+    return (
+      <p className="fp-quiet" role="alert">
+        The codes you've sent couldn't be reached just now.{" "}
+        <button type="button" className="fp-retry" onClick={reload}>
+          Try again
+        </button>
+      </p>
+    );
   if (codes === null) return <p className="fp-quiet" aria-busy="true">Looking for the codes you've sent…</p>;
   if (!codes.length) return <p className="fp-quiet">No codes out at the moment.</p>;
   const who = (c: MyCode) => (c.personId ? personName(people.find((p) => p.id === c.personId)) || "a place in the tree" : "the family");
@@ -77,18 +74,18 @@ function MyCodes({ people, version }: { people: Person[]; version: number }) {
             loading={busy === c.code}
             onClick={async () => {
               setBusy(c.code);
-              setFailed(null);
+              setNotTaken(null);
               try {
                 await revokeCode(c.code);
                 setCodes((prev) => (prev || []).filter((x) => x.code !== c.code));
               } catch {
-                setFailed(c.code);
+                setNotTaken(c.code);
               } finally {
                 setBusy(null);
               }
             }}
           >
-            {failed === c.code ? "Try again" : "Take back"}
+            {notTaken === c.code ? "Try again" : "Take back"}
           </Button>
         </li>
       ))}
@@ -104,12 +101,12 @@ export default function Family() {
   // Dev only: a fictional family, for judging the page with four generations. Nothing on it writes.
   const preview = import.meta.env.DEV && params.get("preview") === "tree";
   const sample = useMemo(() => (preview ? sampleFamily() : null), [preview]);
-  const [codesVersion, setCodesVersion] = useState(0);
   const [askedCount, setAskedCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
   const onAskedCount = useCallback((n: number) => setAskedCount(n), []);
 
+  const mine = useMyCodes(!preview);
   const shownFamily = sample ? sample.family : family;
   const shownStory = sample ? sample.story : story;
   const people = useMemo(() => realPeople(family), [family]);
@@ -119,7 +116,7 @@ export default function Family() {
     const index = buildIndex(shownFamily || { people: [], edges: [] }) as Index;
     const teller = all.find((p) => p.storyId === shownStory.id);
     const plate = buildPlate({ people: all, index, tellerId: teller?.id || null });
-    return plate.lone && !plate.unplaced.length ? "" : `${generationsLine(plate.generations)} · ${peopleLine(all.length, plate.unplaced.length)}`;
+    return plate.lone && !plate.unplaced.length ? [] : [generationsLine(plate.generations), peopleLine(all.length, plate.unplaced.length)];
   }, [shownFamily, shownStory]);
 
   useEffect(() => {
@@ -161,7 +158,7 @@ export default function Family() {
 
   const afterWrite = async () => {
     await reload();
-    setCodesVersion((v) => v + 1);
+    mine.reload();
   };
 
   /** Somebody already in the family, put into the tree beside somebody else (one or two edges). */
@@ -188,7 +185,14 @@ export default function Family() {
                 {familyTitle(shownStory)}
                 <span className="stop">.</span>
               </h1>
-              <p className="fp-sub">{[context, summary].filter(Boolean).join(" · ")}</p>
+              <p className="fp-sub">
+                {[context, ...(summary || [])].map((part, i) => (
+                  <span key={part}>
+                    {i > 0 && " · "}
+                    <span className="nw">{part}</span>
+                  </span>
+                ))}
+              </p>
             </div>
           </div>
           <Button icon={<PlusIcon />} onClick={() => !preview && setInvite({ anchor: null })} aria-disabled={preview || undefined}>
@@ -201,7 +205,7 @@ export default function Family() {
         {!preview && <Duplicates people={people} family={family} stories={stories} meId={meId} onChanged={afterWrite} />}
 
         <div className="fp-grid">
-          <Storyteller family={shownFamily} story={shownStory} meId={sample ? null : meId} own={viewOwn} preview={preview} />
+          <Storyteller family={shownFamily} story={shownStory} meId={sample ? null : meId} own={viewOwn} preview={preview} onInvite={() => !preview && setInvite({ anchor: null })} />
           <FamilyTree
             family={shownFamily}
             story={shownStory}
@@ -211,13 +215,15 @@ export default function Family() {
             onAdd={(anchor, kind) => !preview && setInvite({ anchor, kind })}
             onPlace={place}
             canPlace={(p) => !preview && canEdit(p, family, meId)}
+            coded={sample ? null : mine.coded}
           />
         </div>
 
         {!preview && (
           <section className="fp-keep" aria-label="Keeping the family">
             <Star />
-            <div className="fp-keep-col" ref={reviewRef} id="review">
+            {/* what waits for a yes runs across the top; with nothing waiting it is one ruled line */}
+            <div className="fp-keep-review" ref={reviewRef} id="review">
               <ReviewQueue story={story} askedCount={askedCount} asked={<Asked story={story} family={family} meId={meId} keeper onCount={onAskedCount} onChanged={afterWrite} />} />
               <WaitingOnOthers meId={meId} family={family} />
             </div>
@@ -227,7 +233,7 @@ export default function Family() {
               <img className="fp-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" />
               <h2 id="fp-invites-h">Invitations</h2>
               <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>
-              <MyCodes people={people} version={codesVersion} />
+              <MyCodes people={people} mine={mine} />
             </section>
 
             {story.ownerId === meId && (
@@ -239,7 +245,7 @@ export default function Family() {
         )}
 
         <WhereNext
-          items={[
+          rows={[
             { to: "/", title: "Today's question", line: "One question a day, for whoever is telling." },
             { to: "/archive", title: "The archive", line: `Everything ${own ? "you have" : `${story.name} has`} told, by year and by chapter.` },
             { to: "/book", title: "The book", line: "How the family's memories print, page by page." },

@@ -6,7 +6,10 @@
  * Oldest at the top, the newest last. When the memories were told by
  * somebody else (`tellerOf`), each one carries its teller's face and name,
  * and its date is never turned into an age: the age a story knows is its
- * own subject's, not the person who sent the memory in (BAOS 17, 29).
+ * own subject's, not the person who sent the memory in (BAOS 17, 29). A
+ * card with no date, or the fallback chapter, prints neither (the page
+ * gathers the undated into one row); the memory the page quotes above
+ * keeps to its title.
  */
 import { useRef } from "react";
 import { Link } from "react-router-dom";
@@ -28,12 +31,18 @@ function cover(m: Memory): string | null {
   return (m.cover && all.includes(m.cover) ? m.cover : all[0]) || null;
 }
 
-function RailCard({ story, memory, teller, preview }: Found & { teller: Teller | null; preview?: boolean }) {
+/** The chapter a memory falls into when nobody chose one; not worth printing on a card. */
+const FALLBACK_CHAPTER = /^anything else$/i;
+
+function RailCard({ story, memory, teller, preview, quoted }: Found & { teller: Teller | null; preview?: boolean; quoted?: boolean }) {
   const photo = usePhotoUrl(cover(memory));
   const paper = paperFor(memory);
-  const words = oneLine(memory);
+  // the page's plate already quotes this one: the card keeps to its title and date
+  const words = quoted ? "" : oneLine(memory);
   // An account somebody else sent in is dated as they dated it, never as the subject's age.
-  const date = teller || memory.contributor ? ((memoryDate(memory) as { text: string }).text.trim() || "No date yet") : (dateLine(story, memory) as string);
+  const { dated, text } = memoryDate(memory) as { dated: boolean; text: string };
+  const date = !dated ? "" : teller || memory.contributor ? text.trim() : (dateLine(story, memory) as string);
+  const chapter = memory.era && !FALLBACK_CHAPTER.test(memory.era) ? memory.era : "";
   const to = preview ? "#" : `/archive/${memory.id}`;
   return (
     <li className="pp-item">
@@ -49,10 +58,17 @@ function RailCard({ story, memory, teller, preview }: Found & { teller: Teller |
             {memory.title?.trim() || "Untitled"}
             {isTreasured(memory) && <StarIcon filled width={14} height={14} />}
           </span>
-          <span className="pp-date">
-            <span className={date === "No date yet" ? "when" : "when dated"}>{date}</span>
-            {memory.era && <span className="chap"> · {memory.era}</span>}
-          </span>
+          {(date || chapter) && (
+            <span className="pp-date">
+              {date && <span className="when dated">{date}</span>}
+              {chapter && (
+                <span className="chap">
+                  {date ? " · " : ""}
+                  {chapter}
+                </span>
+              )}
+            </span>
+          )}
           {words && <span className="pp-words">{words}</span>}
           {teller && (
             <span className="pp-teller">
@@ -66,7 +82,7 @@ function RailCard({ story, memory, teller, preview }: Found & { teller: Teller |
   );
 }
 
-export default function MemoryRail({ items, label, tellerOf, preview }: { items: Found[]; label: string; tellerOf?: (f: Found) => Teller | null; preview?: boolean }) {
+export default function MemoryRail({ items, label, tellerOf, preview, quoted }: { items: Found[]; label: string; tellerOf?: (f: Found) => Teller | null; preview?: boolean; quoted?: string | null }) {
   const root = useRef<HTMLDivElement>(null);
   useRail(root, items.map((f) => f.memory.id).join("|"));
   if (!items.length) return null;
@@ -75,7 +91,7 @@ export default function MemoryRail({ items, label, tellerOf, preview }: { items:
       <span className="pp-line" aria-hidden="true" />
       <ol className="pp-list">
         {items.map((f) => (
-          <RailCard key={f.memory.id} {...f} teller={tellerOf ? tellerOf(f) : null} preview={preview} />
+          <RailCard key={f.memory.id} {...f} teller={tellerOf ? tellerOf(f) : null} preview={preview} quoted={!!quoted && f.memory.id === quoted} />
         ))}
       </ol>
     </div>

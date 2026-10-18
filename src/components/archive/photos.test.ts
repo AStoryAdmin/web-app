@@ -20,3 +20,13 @@ describe("readableParagraphs", () => {
     expect(readableParagraphs([poem])).toEqual([poem]);
   });
 });
+
+describe("a long spoken paragraph", () => {
+  it("is broken before the sentence that would carry it past the target", () => {
+    const t =
+      "You met me during the business take last year. It was different though. I was doing a PhD back then, but halfway in I realized I want to do a bit on the business side because I do consulting on the side projects and I get hooked to it. So I want to help growing ventures because I get to work with startups. If you heard of Miley Consulting, it’s like a lifetime opportunity. Currently I’m on a project with a professor from MSU who’s trying to commercialize his products and I want to help ventures growing that business. So that’s why I want to give a quick pause to determine my main interest in this before determining to pursue higher study.";
+    const out = readableParagraphs([t]);
+    expect(out.length).toBeGreaterThan(1);
+    for (const p of out) expect(p.length).toBeLessThan(560);
+  });
+});

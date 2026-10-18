@@ -21,7 +21,7 @@ import { Mark } from "./Brand";
 import { MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
 import { realChapter } from "./archive/photos";
-import { keptLine, ownWords } from "./archive/transcript";
+import { cardLine, ownWords } from "./archive/transcript";
 import Face from "./archive/Face";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
@@ -36,7 +36,7 @@ export type PrintSize = "lead" | "tall";
 /** The person's own words for the typed card: their kept line, else the first real sentence; never the server's summary. */
 function words(memory: Memory, max: number): string {
   const body = (memory.body || "").trim();
-  const kept = keptLine(body);
+  const kept = cardLine(body);
   if (kept) return smarten(kept);
   // otherwise the opening of their own words: a call tidied to the teller's turns, typed lines kept apart
   const own = ownWords(body);
@@ -66,14 +66,14 @@ export default function PrintCard({
   size = "tall",
   sides = [],
   index = 0,
-  rise = true,
+  rise = false,
 }: {
   memory: Memory;
   story: Story;
   size?: PrintSize;
   sides?: Contribution[];
   index?: number;
-  /** Its own CSS arrival; off where the page's scroll hook owns the entrance (the Archive). */
+  /** Its own CSS arrival. Off by default: the page owns each card's entrance (lib/arrive on Home, the scroll hook on the Archive). */
   rise?: boolean;
 }) {
   const { family } = useAccount();
@@ -107,7 +107,7 @@ export default function PrintCard({
       to={`/archive/${memory.id}`}
       style={rise ? { animationDelay: `${Math.min(index, 6) * 60}ms` } : undefined}
       onClick={() => markSeen(memory.id, sides.length)}
-      aria-label={`${meta.title}${dated ? `, ${meta.date}` : ""}${treasured ? ", treasured" : ""}`}
+      aria-label={`${smarten(meta.title)}${dated ? `, ${meta.date}` : ""}${treasured ? ", treasured" : ""}`}
     >
       {treasured && <i className="glint" aria-hidden="true" />}
       {treasured && <WaxSeal size={34} className="print-seal" />}
@@ -136,7 +136,7 @@ export default function PrintCard({
         )}
         <span className="cap">
           {realChapter(meta.chapter) && <span className="kicker">{meta.chapter}</span>}
-          <span className="title">{meta.title}</span>
+          <span className={`title${meta.title.length > 45 ? " long" : ""}`}>{smarten(meta.title)}</span>
           {dated && <span className="dateline dated">{meta.date}</span>}
         </span>
         {marks && (

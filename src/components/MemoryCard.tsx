@@ -18,7 +18,7 @@ import { useAccount } from "../state/accountContext";
 import { Avatar } from "./ui";
 import { LockIcon, MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
-import { keptLine, ownWords } from "./archive/transcript";
+import { cardLine, ownWords } from "./archive/transcript";
 import Face from "./archive/Face";
 import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
@@ -35,7 +35,7 @@ const minutes = (memory: Memory) => {
 /** The person's own words for the card: the first real sentence of what they said, never the summary. */
 function cardWords(memory: Memory): string {
   const body = (memory.body || "").trim();
-  const kept = keptLine(body);
+  const kept = cardLine(body);
   if (kept) return smarten(kept);
   // otherwise the opening of their own words: a call tidied to the teller's turns, typed lines kept apart
   const own = ownWords(body);
@@ -83,7 +83,7 @@ export default function MemoryCard({ memory, story, style, rise = true }: { memo
             </span>
           )}
         </div>
-        <h3>{meta.title}</h3>
+        <h3>{smarten(meta.title)}</h3>
         {dated && <p className="date dated">{meta.date}</p>}
         {words && <p className="excerpt">{words}</p>}
         <div className="foot">

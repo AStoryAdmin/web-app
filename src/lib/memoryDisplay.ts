@@ -1,5 +1,6 @@
 /** How a memory presents itself: the paper it sits on and who told it. */
 import type { Memory, Story } from "../data/stories";
+import { soundsSpoken } from "../components/archive/transcript";
 
 const PAPER_BY_CHAPTER: Record<string, string> = {
   Childhood: "sage",
@@ -19,8 +20,40 @@ export function paperFor(memory: Memory): string {
   return PAPER_BY_CHAPTER[memory.era] || "";
 }
 
+/** Whether a memory's words were said (a call, a conversation) rather than typed: the recording, the family call, the source, or the words themselves. */
+export function wasSpoken(memory: Memory): boolean {
+  if (memory.audio?.length || memory.familyCallId) return true;
+  if (memory.source && /call|talk|conversation|voice|interview/i.test(memory.source)) return true;
+  const transcript = (memory.audio || []).map((c) => c.transcript).join(" ");
+  return soundsSpoken(`${memory.body || ""} ${transcript}`);
+}
+
+const minutesOf = (memory: Memory) => {
+  const s = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
+  if (!s) return "";
+  if (s < 45) return "under a minute";
+  const m = Math.max(1, Math.round(s / 60));
+  return `${m} ${m === 1 ? "minute" : "minutes"}`;
+};
+
+/**
+ * Who told it and how, in three parts so a page can set the name in bold:
+ * "Told by" · "Bao" · " on a call · 6 minutes" / " in conversation";
+ * "Written by" · "Bao" · ""; "From" · "Linh" · "". The one rule for the
+ * memory page, the cards and "From the book".
+ */
+export function tellerParts(memory: Memory, story: Story): { verb: string; name: string; rest: string } {
+  if (memory.contributor) return { verb: "From", name: memory.contributor.split(",")[0].trim(), rest: "" };
+  if (memory.audio?.length) {
+    const mins = minutesOf(memory);
+    return { verb: "Told by", name: story.name, rest: ` on a call${mins ? ` · ${mins}` : ""}` };
+  }
+  if (wasSpoken(memory)) return { verb: "Told by", name: story.name, rest: " in conversation" };
+  return { verb: "Written by", name: story.name, rest: "" };
+}
+
+/** "Told by Bao in conversation", "Written by Bao", "From Linh". */
 export function toldBy(memory: Memory, story: Story): string {
-  if (memory.contributor) return `From ${memory.contributor.split(",")[0].trim()}`;
-  if (memory.audio?.length) return `Told by ${story.name}`;
-  return `Written by ${story.name}`;
+  const { verb, name, rest } = tellerParts(memory, story);
+  return `${verb} ${name}${rest}`;
 }

@@ -9,8 +9,10 @@ import { memoryDate, sortByDate } from "../../app-core/lib/timeline.js";
 import { quoteFor } from "../../app-core/lib/memoryCard.js";
 import { opening } from "../../lib/resurface";
 import { smarten } from "../../lib/typography";
+import { keptLine, ownWords, tellerTurns } from "../archive/transcript";
 import type { Contribution } from "../../data/contributions";
-import type { Person } from "../../data/family";
+import type { Family, Person } from "../../data/family";
+import { relationTo, type Index } from "../family/familyView";
 import type { Memory, Story } from "../../data/stories";
 
 export type Found = { story: Story; memory: Memory };
@@ -85,11 +87,56 @@ export function splitRail(told: Found[], tagged: Found[], own: Story | null): { 
   return { theirs: all.filter((f) => mine.has(f.memory.id)), others: all.filter((f) => !mine.has(f.memory.id)) };
 }
 
-/** One line of the person's own words for a card on the rail: the first real sentence, cut on a word. */
+/**
+ * One line of the person's own words for a card on the rail: the first real sentence, cut on a word. From a
+ * call or a chat only the teller's own turns count, tidied and with no "You:" or "AI:" labels; a memory with no
+ * words of theirs gets no line at all.
+ */
 export function oneLine(memory: Memory, max = 120): string {
   const body = (memory.body || "").trim();
-  if (body) return smarten(quoteFor(opening(body) || body, max) as string);
+  if (body) {
+    const own = ownWords(tellerTurns(body)).trim();
+    if (!own) return "";
+    return smarten(quoteFor(opening(own) || own, max) as string);
+  }
   const ex = (memory.excerpt || "").trim();
   if (!ex || /^the (speaker|narrator|storyteller)\b/i.test(ex)) return "";
   return smarten(quoteFor(ex, max) as string);
+}
+
+/** The line a page quotes from a memory: its kept line (one whole sentence of theirs, verbatim) when it has one, else the opening of their own words. */
+export function saidLine(memory: Memory, max = 190): string {
+  const kept = keptLine(memory.body || "");
+  return kept ? smarten(kept) : oneLine(memory, max);
+}
+
+const byBirth = (a: Person, b: Person) => (a.birthYear || 9999) - (b.birthYear || 9999);
+
+/**
+ * The people the tree joins to a person, nearest first: parents, partners, brothers and sisters, children,
+ * then the in-laws the tree joins through them (a partner's parents, a child's or a sibling's partner), then
+ * friends and anyone joined by a word of the family's own. Each once, with what they are to the person.
+ */
+export function kinOf(person: Person, family: Family | null, index: Index): { person: Person; rel: string }[] {
+  const byId = new Map((family?.people || []).map((p) => [p.id, p]));
+  const ids = (m: Map<string, string[]>, id: string) => (m.get(id) || []).filter((x) => byId.has(x));
+  const parents = ids(index.parentsOf, person.id);
+  const partners = ids(index.spousesOf, person.id);
+  const siblings = [...new Set(parents.flatMap((pid) => ids(index.childrenOf, pid)))].filter((x) => x !== person.id);
+  const children = ids(index.childrenOf, person.id);
+  const inLaws = [...partners.flatMap((id) => ids(index.parentsOf, id)), ...children.flatMap((id) => ids(index.spousesOf, id)), ...siblings.flatMap((id) => ids(index.spousesOf, id))];
+  const others = ((index.otherOf.get(person.id) || []) as { id: string; label: string }[]).map((o) => o.id).filter((x) => byId.has(x));
+  const seen = new Set<string>([person.id]);
+  const out: { person: Person; rel: string }[] = [];
+  for (const group of [parents, partners, siblings, children, inLaws, others]) {
+    for (const p of group
+      .map((x) => byId.get(x)!)
+      .filter((p) => p && !p.id.startsWith("story:"))
+      .sort(byBirth)) {
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      out.push({ person: p, rel: relationTo(index, p.id, person.id) });
+    }
+  }
+  return out;
 }

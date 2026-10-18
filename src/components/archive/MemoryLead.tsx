@@ -15,12 +15,8 @@ import { usePhotoUrl } from "../../lib/photoUrls";
 import { Avatar } from "../ui";
 import { realChapter } from "./photos";
 import WaxSeal from "./WaxSeal";
+import Face from "./Face";
 import type { Person } from "../../data/family";
-
-function Face({ person }: { person: Person }) {
-  const src = usePhotoUrl(person.photo);
-  return <Avatar src={src} name={person.givenName || person.familyName || "?"} size={24} />;
-}
 
 export function MemoryHead({
   title,

@@ -14,20 +14,21 @@ import type { Memory, Story } from "../../data/stories";
 import { listContributions, type Contribution } from "../../data/contributions";
 import { buildIndex } from "../../app-core/lib/familyGraph.js";
 import { quoteFor } from "../../app-core/lib/memoryCard.js";
-import { opening } from "../../lib/resurface";
 import { smarten } from "../../lib/typography";
 import { PenIcon, PhotoIcon } from "../icons";
 import Portrait from "./Portrait";
 import { Postmark } from "./Ornaments";
 import { firstName, linkState, personName, realPeople, relationTo, stateWords, type Index, type LinkState } from "./familyView";
 import { treePeople, yearsOf } from "./tree/treeModel";
+import { oneLine, saidLine } from "../person/personRail";
+import { ownWords, tellerTurns } from "../archive/transcript";
 
 type Voice = { id: string; personId: string | null; name: string; relationship: string; text: string; createdAt: string; memoryId: string | null };
 
 const words = (m: Memory) => (m.body || m.excerpt || "").trim();
 const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 
-export default function Storyteller({ family, story, meId, own, preview }: { family: Family | null; story: Story; meId: string | null | undefined; own: boolean; preview?: boolean }) {
+export default function Storyteller({ family, story, meId, own, preview, onInvite }: { family: Family | null; story: Story; meId: string | null | undefined; own: boolean; preview?: boolean; onInvite?: () => void }) {
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
   const people = useMemo(() => treePeople(realPeople(family), story), [family, story]);
   const teller = people.find((p) => p.storyId === story.id) || null;
@@ -37,16 +38,22 @@ export default function Storyteller({ family, story, meId, own, preview }: { fam
 
   // The family's lines: approved contributions, and memories that carry a contributor's name (one became the other).
   const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (preview) return;
     let live = true;
     listContributions(story.id, "approved")
-      .then((rows) => live && setContributions(rows))
-      .catch(() => {});
+      .then((rows) => {
+        if (!live) return;
+        setContributions(rows);
+        setFailed(false);
+      })
+      .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [story.id, preview]);
+  }, [story.id, preview, attempt]);
   const voices = useMemo<Voice[]>(() => {
     const seen = new Set<string>();
     const out: Voice[] = [];
@@ -76,8 +83,8 @@ export default function Storyteller({ family, story, meId, own, preview }: { fam
   const meta = [years, stateLine, countLine].filter(Boolean).join(" · ");
 
   // Their own words: the first real sentence of their latest memory, never the family's.
-  const latest = kept.filter((m) => !m.contributor && words(m).length >= 20).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-  const said = latest ? smarten(quoteFor(opening(words(latest)), 190) as string).replace(/^“|”$/g, "") : "";
+  const latest = kept.filter((m) => !m.contributor && saidLine(m).length >= 20).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const said = latest ? saidLine(latest, 160).replace(/^“|”$/g, "") : "";
   const pronoun = teller?.sex === "F" ? "her" : teller?.sex === "M" ? "his" : "their";
   const them = pronoun === "their" ? "them" : pronoun === "her" ? "her" : "him";
   const name = teller ? personName(teller) : story.name;
@@ -127,7 +134,7 @@ export default function Storyteller({ family, story, meId, own, preview }: { fam
                 <div>
                   <Postmark iso={v.createdAt} />
                   <blockquote>
-                    <p>{smarten(quoteFor(opening(v.text), 150) as string).replace(/^“|”$/g, "")}</p>
+                    <p>{(oneLine({ body: v.text } as Memory, 150) || smarten(quoteFor(ownWords(tellerTurns(v.text)), 150) as string)).replace(/^“|”$/g, "")}</p>
                   </blockquote>
                   <figcaption>
                     <b>{you ? "You" : who}</b>
@@ -137,8 +144,22 @@ export default function Storyteller({ family, story, meId, own, preview }: { fam
               </figure>
             );
           })
+        ) : failed ? (
+          <p className="st-empty" role="alert">
+            The family's lines couldn't be reached just now.{" "}
+            <button type="button" className="st-act" onClick={() => setAttempt((a) => a + 1)}>
+              Try again
+            </button>
+          </p>
         ) : (
-          <p className="st-empty">Nobody has added their side yet. Sending someone a link takes a minute.</p>
+          <div className="st-empty">
+            <p>Nobody has added their side yet. Sending someone a link takes a minute.</p>
+            {onInvite && !preview && (
+              <button type="button" className="st-act" onClick={onInvite}>
+                Send someone a link <span aria-hidden="true">→</span>
+              </button>
+            )}
+          </div>
         )}
       </section>
     </aside>

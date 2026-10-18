@@ -77,5 +77,7 @@ describe("one line of the words", () => {
     expect(oneLine(mem({ body: "Well. We planted tomatoes the first year and they came up badly, every one of them, but we kept going anyway." }), 60)).toMatch(/^We planted tomatoes.*…$/);
     expect(oneLine(mem({ excerpt: "The speaker recalls a garden." }))).toBe("");
     expect(oneLine(mem({}))).toBe("");
+    const chat = oneLine(mem({ body: "You: How to end chay AI: If you'd like to end the chat, you can simply stop replying." }));
+    expect(chat).not.toMatch(/AI:|You:|If you'd like/);
   });
 });

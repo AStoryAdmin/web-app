@@ -59,6 +59,16 @@ export const meOf = (family: Family | null, userId: string | null | undefined): 
 
 export const linkState = (p: Person, meId: string | null | undefined): LinkState => linkStateOf(p, meId || null) as LinkState;
 
+/**
+ * The state the pages show: linkState, except that somebody not on A Story yet who has a live family code
+ * (useMyCodes) is "invited · waiting for them", because they have been: the code is out.
+ */
+export function shownState(p: Person, meId: string | null | undefined, coded?: Set<string> | null): LinkState["key"] {
+  if (meId && p.userId === meId) return "you";
+  const key = linkState(p, meId).key;
+  return key === "listed" && coded?.has(p.id) ? "invited" : key;
+}
+
 /** "The Hartleys", or "Rose's family" when the story has no family name. */
 export function familyTitle(story: Story): string {
   const last = String(story.lastName || "").trim();

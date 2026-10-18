@@ -18,14 +18,15 @@
  * so the page zoom and the arrival tweens never move them; below 1100px
  * they are left out and the words under each face carry the relation.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { createContext, Fragment, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import type { Family, Person } from "../../../data/family";
 import type { Story } from "../../../data/stories";
 import { buildIndex } from "../../../app-core/lib/familyGraph.js";
 import { Button } from "../../ui";
+import { pageZoom } from "../../../lib/zoom";
 import Portrait from "../Portrait";
-import { firstName, linkState, memoriesBy, memoriesWith, personName, realPeople, stateWords, type Index } from "../familyView";
+import { firstName, memoriesBy, memoriesWith, personName, realPeople, shownState, stateWords, type Index } from "../familyView";
 import { PLACE_KINDS, placeWord, treePeople, yearsOf, type GhostKind } from "./treeModel";
 import { buildPlate, type PlateGhost, type PlateLink, type PlateNode, type Zone } from "./plateModel";
 import { useTreeMotion } from "./treeMotion";
@@ -40,7 +41,12 @@ type Props = {
   onAdd: (anchor: Person | null, kind: string | null) => void;
   onPlace: (person: Person, anchor: Person, kind: GhostKind) => void;
   canPlace: (person: Person) => boolean;
+  /** People a live family code was made for (useMyCodes): they are "invited · waiting for them". */
+  coded?: Set<string> | null;
 };
+
+/** The live codes, for every face in the plate without threading a prop through each one. */
+const Coded = createContext<Set<string> | null>(null);
 
 const isReal = (p: Person | null | undefined): p is Person => !!p && !p.id.startsWith("story:");
 const count = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
@@ -61,12 +67,15 @@ function StateWords({ words }: { words: string }) {
   return (
     <>
       {parts.map((p, i) => (
-        <span className="nw" key={p}>
-          {i === 0 && <i aria-hidden="true" />}
-          {p}
-          {i < parts.length - 1 ? " ·" : ""}
-          {i < parts.length - 1 ? " " : ""}
-        </span>
+        <Fragment key={p}>
+          {/* the space between phrases sits outside them: the only place the line may break */}
+          {i > 0 && " "}
+          <span className="nw">
+            {i === 0 && <i aria-hidden="true" />}
+            {p}
+            {i < parts.length - 1 ? " ·" : ""}
+          </span>
+        </Fragment>
       ))}
     </>
   );
@@ -76,7 +85,8 @@ function StateWords({ words }: { words: string }) {
 
 function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; story: Story; meId: string | null | undefined; preview?: boolean; hot: Set<string> | null; onHot: (id: string | null) => void }) {
   const p = node.person;
-  const state = meId && p.userId === meId ? "you" : linkState(p, meId).key;
+  const coded = useContext(Coded);
+  const state = shownState(p, meId, coded);
   const gone = !!p.deathYear;
   const stateLine = gone ? "" : state === "you" ? "you" : stateWords(state);
   const by = memoriesBy(p, story).length;
@@ -269,7 +279,7 @@ function wraps(plate: HTMLElement): boolean {
 
 /* ── The plate ─────────────────────────────────────────────────────────── */
 
-export default function FamilyTree({ family, story, meId, own, preview, onAdd, onPlace, canPlace }: Props) {
+export default function FamilyTree({ family, story, meId, own, preview, onAdd, onPlace, canPlace, coded = null }: Props) {
   const plateRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
@@ -299,17 +309,31 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     const el = plateRef.current;
     const svg = svgRef.current;
     if (!el || !svg) return;
-    // The largest faces that let every generation sit on one line.
+    // The largest faces that let every generation sit on one line, and then the plate in the window: the
+    // storyteller's whole tier above the fold always, and the whole plate when it can be (a family of six or
+    // fewer keeps its faces at the middle size or larger rather than shrinking to fit).
     let i = start;
     el.dataset.size = SIZES[i];
     while (i < SIZES.length - 1 && wraps(el)) el.dataset.size = SIZES[++i];
+    const docTop = (n: HTMLElement | null) => {
+      let y = 0;
+      for (; n; n = n.offsetParent as HTMLElement | null) y += n.offsetTop;
+      return y;
+    };
+    const fold = window.innerHeight / pageZoom() - 12;
+    const floor = drawn <= 6 ? Math.max(i, 1) : SIZES.length - 1;
+    const tiers = () => [...el.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf)")];
+    const bottom = (t: HTMLElement | undefined) => (t ? docTop(t) + t.offsetHeight - parseFloat(getComputedStyle(t).paddingBottom || "0") : 0);
+    const tooTall = () => bottom(tiers().pop()) > fold;
+    const homeLow = () => bottom(el.querySelector<HTMLElement>(".tp-tier.home") || undefined) > fold;
+    while (i < SIZES.length - 1 && ((i < floor && tooTall()) || homeLow())) el.dataset.size = SIZES[++i];
     if (getComputedStyle(svg).display === "none") {
       setThreads((prev) => (prev.length ? [] : prev));
       return;
     }
     setSize({ w: el.offsetWidth, h: el.offsetHeight });
     setThreads(measure(el, plate.links));
-  }, [plate.links, start]);
+  }, [plate.links, start, drawn]);
 
   useLayoutEffect(() => {
     draw();
@@ -334,10 +358,20 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
           })
         : null;
     ro?.observe(el);
+    // a taller or shorter window changes what fits above the fold
+    let tall = window.innerHeight;
+    const onResize = () => {
+      if (window.innerHeight !== tall) {
+        tall = window.innerHeight;
+        later();
+      }
+    };
+    window.addEventListener("resize", onResize);
     document.fonts?.ready.then(later).catch(() => {});
     return () => {
       window.clearTimeout(timer);
       ro?.disconnect();
+      window.removeEventListener("resize", onResize);
     };
   }, [draw]);
 
@@ -367,6 +401,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
   };
 
   return (
+    <Coded.Provider value={coded}>
     <section className="tp-wrap" aria-label="The family tree">
       <div className="tp" ref={plateRef} data-size={SIZES[start]} data-hot={hot ? "1" : undefined}>
         <svg ref={svgRef} className="tp-threads" aria-hidden="true" width={size.w || undefined} height={size.h || undefined} viewBox={size.w ? `0 0 ${size.w} ${size.h}` : undefined}>
@@ -381,7 +416,19 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
             <header className="tp-label">
               <span className="tp-dot" aria-hidden="true" />
               {tier.decade && <span className="tp-dec">{tier.decade}</span>}
-              <h3>{tier.title}</h3>
+              <h3>
+                {tier.title}
+                {tier.also && <span className="tp-also">{tier.also}</span>}
+              </h3>
+              {tier.asks.map((g) => {
+                const anchor = g.anchorId ? byId.get(g.anchorId) || null : null;
+                return (
+                  <button key={g.key} type="button" className="tp-ask" onClick={() => onAdd(isReal(anchor) ? anchor : null, g.kind)}>
+                    <Plus />
+                    {g.label}
+                  </button>
+                );
+              })}
             </header>
             <div className="tp-row">
               {(["left", "centre", "right"] as Zone[]).map((z) => (
@@ -411,5 +458,6 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
         )}
       </div>
     </section>
+    </Coded.Provider>
   );
 }

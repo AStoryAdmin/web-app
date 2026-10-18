@@ -22,20 +22,22 @@ import MemoryRail from "../components/person/MemoryRail";
 import RelatedRow from "../components/person/RelatedRow";
 import FamilyNotes from "../components/person/FamilyNotes";
 import Kin from "../components/person/Kin";
-import { Leaf, WhereNext } from "../components/family/Ornaments";
-import { quoteFor } from "../app-core/lib/memoryCard.js";
-import { opening } from "../lib/resurface";
-import { smarten } from "../lib/typography";
-import { railFor, relatedFor, spanLine, splitRail, type Found } from "../components/person/personRail";
+import { Leaf } from "../components/family/Ornaments";
+import WhereNext from "../components/book/WhereNext";
+import { useMyCodes } from "../components/family/useMyCodes";
+import { buildPlate } from "../components/family/tree/plateModel";
+import { treePeople } from "../components/family/tree/treeModel";
+import { kinOf, railFor, relatedFor, saidLine, spanLine, splitRail, type Found } from "../components/person/personRail";
 import type { Teller } from "../components/person/MemoryRail";
 import { sampleFamily } from "../components/family/tree/sampleFamily";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { track } from "../lib/analytics";
-import { familyCodeFor, householdFor, invitePerson, removePerson, savePerson, sendInviteEmail } from "../data/familyWrites";
+import { familyCodeFor, householdFor, invitePerson, removePerson, revokeCode, savePerson, sendInviteEmail } from "../data/familyWrites";
+import { spacedCode } from "../app-core/lib/familyCode.js";
 import { buildIndex } from "../app-core/lib/familyGraph.js";
 import { lifeLine, personMemories } from "../app-core/lib/personMemories.js";
-import { canEdit, linkState, personName, relationTo, stateWords, storytellerOf, type Index } from "../components/family/familyView";
+import { canEdit, expiresLabel, personName, realPeople, relationTo, shownState, stateWords, storytellerOf, type Index } from "../components/family/familyView";
 import type { Person as PersonType } from "../data/family";
 import type { Story } from "../data/stories";
 
@@ -66,6 +68,17 @@ export default function Person() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<{ code: string; emailed: boolean | null; email: string } | null>(null);
   const [askRemove, setAskRemove] = useState(false);
+
+  const mine = useMyCodes(!preview);
+  const [taking, setTaking] = useState(false);
+  // What the plate calls this person ("Nhi Tran's parent"), so the page and the tree never disagree.
+  const plateRel = useMemo(() => {
+    if (!person || !story) return "";
+    const all = treePeople(realPeople(family), story);
+    const t = all.find((p) => p.storyId === story.id);
+    const plate = buildPlate({ people: all, index, tellerId: t?.id || null });
+    return plate.tiers.flatMap((x) => x.units.flatMap((u) => u.nodes)).find((n) => n.id === person.id)?.rel || "";
+  }, [person, story, family, index]);
 
   const res = useMemo<Res | null>(() => {
     if (!person) return null;
@@ -124,7 +137,8 @@ export default function Person() {
   const teller = storytellerOf(family, story);
   const rel = teller ? relationTo(index, person.id, teller.id) : "";
   const isTeller = person.storyId === story.id;
-  const state = linkState(person, meId);
+  const stateKey = shownState(person, meId, preview ? null : mine.coded);
+  const liveCode = preview ? null : mine.codes?.find((c) => c.personId === person.id) || null;
   const editable = !preview && canEdit(person, family, meId);
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const name = personName(person);
@@ -143,15 +157,36 @@ export default function Person() {
   const span = spanLine(rail);
   const whose = teller && teller.userId && teller.userId === meId ? "your" : `${story.name}'s`;
   // The kicker already says "Storyteller"; the line under the name says what they are to the storyteller, and their years.
-  const subline = [preview ? "A sample family" : "", isTeller ? "Storyteller" : state.key === "you" ? "You" : rel ? `${whose === "your" ? "Your" : `${story.name}'s`} ${rel}` : "In the family", life].filter(Boolean).join(" · ");
+  const relWords = rel ? `${whose === "your" ? "Your" : `${story.name}'s`} ${rel}` : plateRel ? plateRel.charAt(0).toUpperCase() + plateRel.slice(1) : "In the family";
+  const subline = [preview ? "A sample family" : "", isTeller ? "Storyteller" : stateKey === "you" ? "You" : relWords, life].filter(Boolean).join(" · ");
   // Their own words, once on the page (decoration D22): the opening of the latest memory they told or kept, never a summary.
   const theirs = [...(res.own ? res.own.memories.filter((m) => m.status !== "in_progress" && !m.contributor).map((memory) => ({ story: res.own!, memory })) : []), ...res.told]
-    .filter((f) => (f.memory.body || "").trim().length >= 20)
+    .filter((f) => saidLine(f.memory).length >= 20)
     .sort((a, b) => b.memory.createdAt.localeCompare(a.memory.createdAt))[0];
-  const said = theirs ? smarten(quoteFor(opening(theirs.memory.body.trim()), 220) as string).replace(/^“|”$/g, "") : "";
-  const words = person.deathYear ? "" : stateWords(state.key);
-  const tone = person.deathYear ? "gone" : state.key === "you" || state.key === "joined" ? "on" : state.key === "invited" ? "waiting" : "off";
-  const inviteable = !preview && state.key !== "you" && state.key !== "remembered" && !isTeller && !person.deathYear;
+  const said = theirs ? saidLine(theirs.memory, 160).replace(/^“|”$/g, "") : "";
+  // The rail never repeats the sentence the plate above it quotes.
+  const quoted = theirs?.memory.id || null;
+  const undated = [...theirsShown, ...othersShown].filter((f) => !/\d{4}/.test(f.memory.period || "")).length;
+  const kin = kinOf(person, family, index);
+  // A third column only when it carries enough; otherwise the people and lines flow under the memories.
+  const three = kin.length + related.length >= 3;
+  const words = person.deathYear ? "" : stateWords(stateKey);
+  const tone = person.deathYear ? "gone" : stateKey === "you" || stateKey === "joined" ? "on" : stateKey === "invited" ? "waiting" : "off";
+  const inviteable = !preview && stateKey !== "you" && stateKey !== "remembered" && !isTeller && !person.deathYear;
+
+  const takeBack = async () => {
+    if (!liveCode) return;
+    setTaking(true);
+    setError(null);
+    try {
+      await revokeCode(liveCode.code);
+      mine.setCodes((prev) => (prev || []).filter((c) => c.code !== liveCode.code));
+    } catch (err) {
+      setError(`The code wasn't taken back (${(err as Error)?.message || "no connection"}).`);
+    } finally {
+      setTaking(false);
+    }
+  };
 
   const sendCode = async (email: string) => {
     setBusy("code");
@@ -258,7 +293,7 @@ export default function Person() {
                 {words ? (
                   <>
                     <i aria-hidden="true" />
-                    {state.key === "you" ? "You · on A Story" : words}
+                    {stateKey === "you" ? "You · on A Story" : words}
                   </>
                 ) : person.deathYear ? (
                   life
@@ -272,14 +307,31 @@ export default function Person() {
                 <div className="pp-invite">
                   {sent ? (
                     <CodeCard code={sent.code} who={first} story={story} senderName={senderName} emailed={sent.emailed} email={sent.email} />
-                  ) : state.key === "joined" ? (
+                  ) : stateKey === "joined" ? (
                     <p className="pp-why">They read what's shared and add what they remember, under their own name. Nobody writes as {story.name}.</p>
+                  ) : liveCode && !person.email ? (
+                    <>
+                      <p className="pp-why">
+                        Invited with a code, {expiresLabel(liveCode.expiresAt, mine.now)}; nothing here reaches {first} until they accept.
+                      </p>
+                      <p className="pp-code">
+                        <b>{spacedCode(liveCode.code) as string}</b>
+                      </p>
+                      <div className="acts">
+                        <Button small variant="outline" onClick={() => setSent({ code: liveCode.code, emailed: null, email: "" })}>
+                          Send the code again
+                        </Button>
+                        <Button small variant="quiet" loading={taking} onClick={() => void takeBack()}>
+                          Take back
+                        </Button>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <p className="pp-why">{person.email ? `Invited at ${person.email}; nothing here reaches them until they accept.` : `A code puts ${first} in the family tree; nothing here reaches them until they accept.`}</p>
                       {!person.email && <Field label="Email, if you have it" icon={<MailIcon />} type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Optional" autoComplete="off" />}
-                      <Button small variant={state.key === "invited" ? "outline" : "primary"} loading={busy === "code"} onClick={() => void sendCode(person.email || inviteEmail)}>
-                        {state.key === "invited" ? "Send the code again" : inviteEmail.trim() || person.email ? "Send the code" : "Make a code"}
+                      <Button small variant={stateKey === "invited" ? "outline" : "primary"} loading={busy === "code"} onClick={() => void sendCode(person.email || inviteEmail)}>
+                        {stateKey === "invited" ? "Send the code again" : inviteEmail.trim() || person.email ? "Send the code" : "Make a code"}
                       </Button>
                     </>
                   )}
@@ -318,7 +370,7 @@ export default function Person() {
                       </Button>
                     </div>
                   </form>
-                  {!isTeller && state.key !== "you" && (
+                  {!isTeller && stateKey !== "you" && (
                     <div className="removebox">
                       {askRemove ? (
                         <>
@@ -344,7 +396,7 @@ export default function Person() {
             </div>
           </aside>
 
-          <div className="pp-main">
+          <div className={`pp-main${three ? " three" : ""}`}>
             <div className="pp-story">
               {said && (
                 <figure className="pp-words-plate" data-rise>
@@ -362,7 +414,7 @@ export default function Person() {
               {rail.length > 0 ? (
                 <>
                   {theirsShown.length > 0 && (
-                    <section className="pp-group" aria-labelledby="pp-theirs-h">
+                    <section className="pp-group theirs" aria-labelledby="pp-theirs-h">
                       <header className="pp-head" data-rise>
                         <h2 id="pp-theirs-h">{isTeller ? `What ${first} has told` : `What ${first} has told the family`}</h2>
                         {!preview && othersShown.length === 0 && (
@@ -371,7 +423,7 @@ export default function Person() {
                           </Link>
                         )}
                       </header>
-                      <MemoryRail items={theirsShown} label={`What ${first} told`} preview={preview} />
+                      <MemoryRail items={theirsShown} label={`What ${first} told`} preview={preview} quoted={quoted} />
                     </section>
                   )}
                   {othersShown.length > 0 && (
@@ -384,14 +436,22 @@ export default function Person() {
                           </Link>
                         )}
                       </header>
-                      <MemoryRail items={othersShown} label={`Memories with ${first}, told by others`} tellerOf={tellerOf} preview={preview} />
+                      <MemoryRail items={othersShown} label={`Memories with ${first}, told by others`} tellerOf={tellerOf} preview={preview} quoted={quoted} />
                     </section>
                   )}
-                  {more > 0 && !preview && (
+                  {/* the dates nobody has given yet, gathered into one quiet row instead of "No date yet" on every card */}
+                  {(undated > 0 || (more > 0 && !preview)) && (
                     <p className="pp-more" data-rise>
-                      <Link className="pp-write" to="/archive">
-                        All {rail.length} with {first}, in the archive <span aria-hidden="true">→</span>
-                      </Link>
+                      {undated > 0 && !preview && (
+                        <Link className="pp-write" to="/archive">
+                          Give {undated === 1 ? "one memory" : `${undated} memories`} a year · about {Math.max(1, Math.round(undated / 2))} {undated <= 2 ? "minute" : "minutes"} <span aria-hidden="true">→</span>
+                        </Link>
+                      )}
+                      {more > 0 && !preview && (
+                        <Link className="pp-write" to="/archive">
+                          All {rail.length} with {first}, in the archive <span aria-hidden="true">→</span>
+                        </Link>
+                      )}
                     </p>
                   )}
                 </>
@@ -409,7 +469,7 @@ export default function Person() {
               )}
             </div>
             <div className="pp-extras">
-              <Kin person={person} family={family} index={index} preview={preview} />
+              <Kin person={person} kin={kin} preview={preview} />
               <RelatedRow items={related} />
               <FamilyNotes person={person} story={story} preview={preview} />
             </div>
@@ -417,7 +477,7 @@ export default function Person() {
         </div>
 
         <WhereNext
-          items={[
+          rows={[
             { to: "/", title: "Today's question", line: "One question a day, for whoever is telling." },
             { to: "/talk", title: "Talk it through", line: "Tell a memory out loud and it is written down for you." },
             { to: "/book", title: "The book", line: "How the family's memories print, page by page." },

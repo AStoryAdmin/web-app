@@ -2,12 +2,11 @@
  * The book-arts pieces the Family and person pages use (docs/research/
  * decoration-2026.md): the family's initial in a foil cartouche beside its
  * name (D17), the postmark on a line that arrived from somebody in the
- * family (D18), and "Where to next" at the foot of the page (BAOS §38).
- * The pressed fern beside the family's name (D19) waits for the founder's
+ * family (D18), the foil star on a section's rule and the leaf that
+ * closes a person's words (D9). The pressed fern beside the family's name (D19) waits for the founder's
  * asset in public/deco; nothing requests it until then. All decoration is aria-hidden and never
  * takes a pointer.
  */
-import { Link } from "react-router-dom";
 
 /** D17: the family's initial, blocked in foil inside an oval, as a stationer would. */
 export function Cartouche({ letter }: { letter: string }) {
@@ -55,33 +54,5 @@ export function Leaf({ className = "pp-leaf" }: { className?: string }) {
     <svg className={className} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
       <path d="M2 14C2 7 6.5 2.5 14 2c-.4 7.4-5 12-12 12Zm0 0 7-7" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  );
-}
-
-export type Next = { to: string; title: string; line: string };
-
-/** BAOS §38: three ruled rows at the foot of the page, a title, one line, a round arrow. */
-export function WhereNext({ items }: { items: Next[] }) {
-  return (
-    <nav className="wn" aria-labelledby="wn-h">
-      <h2 id="wn-h" className="wn-h">
-        Where to next<span className="stop">.</span>
-      </h2>
-      <ul>
-        {items.map((n) => (
-          <li key={n.to + n.title}>
-            <Link className="wn-row" to={n.to}>
-              <span className="wn-t">{n.title}</span>
-              <span className="wn-l">{n.line}</span>
-              <span className="wn-a" aria-hidden="true">
-                <svg viewBox="0 0 18 18" focusable="false">
-                  <path d="M3 9h12m-5-5 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
   );
 }

@@ -74,7 +74,7 @@ export default function Mosaic({
     const size = printLead && i === 0 ? "lead" : "tall";
     cells.push(
       <div key={m.id} className={`cell ${size}`} {...riseAttr}>
-        <PrintCard memory={m} story={story} size={size} sides={sides.get(m.id) || []} index={i} />
+        <PrintCard memory={m} story={story} size={size} sides={sides.get(m.id) || []} index={i} rise={false} />
       </div>,
     );
     if (printLead && quote && i === 1) {
@@ -105,7 +105,7 @@ export function InvitePrint({ story }: { story: Story }) {
   const own = story.relationship === "Myself";
   return (
     <div className="mosaic">
-      <Link className="print-card lead typed invite rise" to="/write" data-rise>
+      <Link className="print-card lead typed invite" to="/write" data-rise>
         <span className="frame" aria-hidden="true">
           <span className="typed-in">
             <img className="sample" src="/photos/family-04.webp" alt="" />

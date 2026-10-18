@@ -73,34 +73,6 @@ export function useArrive(ref: RefObject<HTMLElement | null>, key: unknown) {
   }, [ref, key]);
 }
 
-/** The large photograph settles into focus whenever a new one is shown. */
-export function useHeroArrival(ref: RefObject<HTMLElement | null>, key: unknown) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !key) return;
-    const mm = gsap.matchMedia();
-    mm.add(MOTION_OK, () => {
-      gsap.fromTo(el, { opacity: 0, scale: 1.03 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out", clearProps: "transform,opacity" });
-    });
-    return () => mm.revert();
-  }, [ref, key]);
-}
-
-/** The polaroids under `ref` drop onto the page and take their tilt, one after another. */
-export function usePolaroidArrival(ref: RefObject<HTMLElement | null>, key: unknown) {
-  useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-    const mm = gsap.matchMedia();
-    mm.add(MOTION_OK, () => {
-      const polaroids = gsap.utils.toArray<HTMLElement>(root.querySelectorAll("[data-polaroid]"));
-      if (!polaroids.length) return;
-      gsap.fromTo(polaroids, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.08, delay: 0.2, clearProps: "transform,opacity" });
-    });
-    return () => mm.revert();
-  }, [ref, key]);
-}
-
 /**
  * The memory cards below the fold wait, and rise into place as they come
  * into view, a few together, once; whatever is already in view is left to

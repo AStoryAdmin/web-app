@@ -29,7 +29,7 @@ import { firstName, personName, realPeople, storytellerOf } from "../components/
 import gsap from "gsap";
 import Shell from "../components/Shell";
 import WhereNext, { Stop, type NextRow } from "../components/book/WhereNext";
-import { Avatar, Problem } from "../components/ui";
+import { Avatar } from "../components/ui";
 import { CheckIcon, CloseIcon, ExpandIcon, HelpIcon, MicIcon, PenIcon, PhotoIcon, ShrinkIcon, SparkIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -88,6 +88,11 @@ const partOfDay = (d = new Date()) => {
   const h = d.getHours();
   return h < 5 ? "late at night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 22 ? "evening" : "late at night";
 };
+/** When a memory was first kept, for the running head of a page being edited ("Kept 3 October"). */
+const keptOn = (iso?: string) => {
+  const d = iso ? new Date(iso) : null;
+  return d && !Number.isNaN(d.getTime()) ? `Kept ${d.toLocaleDateString(undefined, { day: "numeric", month: "long" })}` : "From the book";
+};
 const countWords = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
 const reduced = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -106,7 +111,31 @@ function useMedia(query: string): boolean {
 
 function bookNameOf(story: Story): string {
   const own = story.relationship === "Myself";
-  return story.lastName ? `The ${story.lastName} book` : own ? "Your book" : `${story.name}'s book`;
+  return story.lastName ? `The ${story.lastName} book` : own ? "Your book" : `${story.name}’s book`;
+}
+
+/** The book's name inside a sentence ("Kept in the Vo book."), its words held together so a line never breaks inside it. */
+function bookNameIn(story: Story): string {
+  const own = story.relationship === "Myself";
+  const name = story.lastName ? `the ${story.lastName} book` : own ? "your book" : `${story.name}’s book`;
+  return name.replace(/ /g, "\u00a0");
+}
+
+/** Curly quotes and apostrophes for text that comes from the question bank or the server. */
+const smart = (t: string) =>
+  t
+    .replace(/(\w)'(\w)/g, "$1’$2")
+    .replace(/'(\d0s)/g, "’$1")
+    .replace(/(^|[\s(“])'/g, "$1‘")
+    .replace(/'/g, "’")
+    .replace(/(^|[\s(‘])"/g, "$1“")
+    .replace(/"/g, "”");
+
+/** What went wrong, in the product's words: never the browser's ("Failed to fetch"). The raw error goes to the console. */
+function plainCause(err: unknown): string {
+  console.warn("[writer]", err);
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  return offline || err instanceof TypeError ? "There’s no connection just now." : "Something went wrong on our side.";
 }
 
 /* ── Small pieces ─────────────────────────────────────────────────────── */
@@ -206,6 +235,8 @@ function KeptPage({ story, kept, number }: { story: Story; kept: Memory; number:
 
 /* ── Step 2: when, who, chapter, photographs ──────────────────────────── */
 
+type Block = "when" | "who" | "chapter" | "photo";
+
 function Afterwards({
   story,
   kept,
@@ -229,8 +260,8 @@ function Afterwards({
 }) {
   const { saveMemory, family } = useAccount();
   const [period, setPeriod] = useState(kept.period);
-  const [state, setState] = useState<"" | "saving" | "saved">("");
-  const [error, setError] = useState<string | null>(null);
+  // what the last press did, shown beside the block it was pressed in, with the way to try again
+  const [mark, setMark] = useState<{ block: Block | null; status: "" | "saving" | "saved"; error: string | null; retry: Partial<Memory> | null }>({ block: null, status: "", error: null, retry: null });
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const own = story.relationship === "Myself";
@@ -238,21 +269,20 @@ function Afterwards({
   const yearsHint = suggestYearsForEra(story, kept.era) as { from: number; to: number; ages: [number, number] } | null;
 
   const keep = useCallback(
-    async (patch: Partial<Memory>) => {
+    async (patch: Partial<Memory>, block: Block) => {
       const next = { ...kept, ...patch };
-      setState("saving");
-      setError(null);
+      setMark({ block, status: "saving", error: null, retry: null });
       try {
         await saveMemory(next, story.id);
         onKept(next);
-        setState("saved");
+        setMark({ block, status: "saved", error: null, retry: null });
       } catch (err) {
-        setState("");
-        setError(`That didn't save (${(err as Error)?.message || "no connection"}). Try once more.`);
+        setMark({ block, status: "", error: `${plainCause(err)} It isn’t kept yet.`, retry: patch });
       }
     },
     [kept, saveMemory, story.id, onKept],
   );
+  const fail = (block: Block, error: string) => setMark({ block, status: "", error, retry: null });
 
   // The date in their words saves on a pause, the chips at once.
   useEffect(() => {
@@ -260,7 +290,7 @@ function Afterwards({
     const t = setTimeout(() => {
       const year = /^\s*\d{4}\s*$/.test(period) ? parseYear(period) : null;
       const era = year ? (eraForAge(ageAt(story, year)) as string | null) || kept.era : kept.era;
-      void keep({ period: period.trim(), era });
+      void keep({ period: period.trim(), era }, "when");
     }, 700);
     return () => clearTimeout(t);
   }, [period, kept.period, kept.era, keep, story]);
@@ -269,7 +299,7 @@ function Afterwards({
     const label = formatDecade(dec) as string;
     const next = kept.period === label ? "" : label;
     setPeriod(next);
-    void keep({ period: next });
+    void keep({ period: next }, "when");
   };
 
   const addPhotos = async (files: FileList | null) => {
@@ -278,22 +308,22 @@ function Afterwards({
     if (!unlimited) {
       const left = weeklyPhotosLeft(email);
       if (left <= 0) {
-        setError(`Five photographs a week on Free. Plans include unlimited photographs, from $119 a year.`);
+        fail("photo", "Five photographs a week on Free. Plans include unlimited photographs, from $119 a year.");
         return;
       }
       allowed = Math.min(files.length, left);
     }
     setBusy(true);
-    setError(null);
+    setMark({ block: "photo", status: "saving", error: null, retry: null });
     try {
       const urls: string[] = [];
       for (const f of Array.from(files).slice(0, allowed)) urls.push(await uploadMemoryPhoto(story.id, kept.id, f));
       if (!unlimited) incrementWeeklyPhotos(email, urls.length);
       const photos = [...kept.photos, ...urls];
-      await keep({ photos, cover: kept.cover && photos.includes(kept.cover) ? kept.cover : photos[0] || null });
-      if (allowed < files.length) setError(`That's ${FREE_WEEKLY_PHOTOS} photographs for this week on Free; the rest didn't go in.`);
+      await keep({ photos, cover: kept.cover && photos.includes(kept.cover) ? kept.cover : photos[0] || null }, "photo");
+      if (allowed < files.length) fail("photo", `That’s ${FREE_WEEKLY_PHOTOS} photographs for this week on Free; the rest didn’t go in.`);
     } catch (err) {
-      setError(`A photograph didn't upload (${(err as Error)?.message || "unknown"}). The words are safe; try the picture again.`);
+      fail("photo", `${plainCause(err)} The photograph didn’t go in; the words are safe. Choose it again.`);
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -306,13 +336,39 @@ function Afterwards({
   // First names, unless two people share one; then the whole name tells them apart.
   const chipName = (p: (typeof people)[number]) => (people.filter((o) => firstName(o) === firstName(p)).length > 1 ? personName(p) : firstName(p));
   const there = kept.personIds || [];
-  const togglePerson = (id: string) => keep({ personIds: there.includes(id) ? there.filter((x) => x !== id) : [...there, id] });
+  const togglePerson = (id: string) => keep({ personIds: there.includes(id) ? there.filter((x) => x !== id) : [...there, id] }, "who");
+
+  // the mark beside the block that was pressed: "Keeping…", "Kept", or what went wrong and Try again
+  const stateOf = (block: Block) => (
+    <div className="w-block-state" aria-live="polite">
+      {mark.block === block && mark.error ? (
+        <p className="w-keep-error" role="alert">
+          <span>{mark.error}</span>
+          {mark.retry && (
+            <button type="button" className="w-retry" onClick={() => void keep(mark.retry as Partial<Memory>, block)}>
+              Try again
+            </button>
+          )}
+        </p>
+      ) : mark.block === block && mark.status ? (
+        <p className={`w-state ${mark.status}`}>
+          {mark.status === "saving" ? (
+            "Keeping…"
+          ) : (
+            <>
+              <CheckIcon /> Kept
+            </>
+          )}
+        </p>
+      ) : null}
+    </div>
+  );
 
   const deck = todaysDeck(story, { unlimited });
   const next = deck.find((p) => p.id !== question?.id) || null;
   const nextRows: NextRow[] = [
     next && !editing
-      ? { to: `/write?q=${encodeURIComponent(next.id)}`, title: next.question, line: unlimited ? "Another of today’s questions" : "The next of today’s questions" }
+      ? { to: `/write?q=${encodeURIComponent(next.id)}`, title: smart(next.question), line: unlimited ? "Another of today’s questions" : "The next of today’s questions" }
       : { to: "/write", title: "Write another", line: "A new page, in your own words" },
     { to: `/archive/${kept.id}`, title: "Read it in the book", line: "The page as the family will read it" },
     { to: "/", title: "Home", line: "Today, the week and the family" },
@@ -321,22 +377,23 @@ function Afterwards({
   const whenBlock = (
     <div className="w-choice" key="when">
       <h3>When it was</h3>
-      <div className="chiprow">
+      <div className="chiprow w-when-row">
         {decades.map((dec) => (
           <button key={dec} type="button" className="chip big" aria-pressed={kept.period === formatDecade(dec)} onClick={() => pickDecade(dec)}>
             {(formatDecade(dec) as string).replace(/^the /, "")}
           </button>
         ))}
+        <label className="w-line">
+          <span className="sr-only">Or the date in your words</span>
+          <input placeholder="or June 1975, the summer of ’68…" value={period} onChange={(e) => setPeriod(e.target.value)} />
+        </label>
       </div>
-      <label className="w-line">
-        <span className="sr-only">Or the date in your words</span>
-        <input placeholder="or June 1975, the summer of ’68…" value={period} onChange={(e) => setPeriod(e.target.value)} />
-      </label>
       {yearsHint && (
         <p className="w-note">
           {own ? "You" : story.name} would have been {yearsHint.ages[0]} to {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
         </p>
       )}
+      {stateOf("when")}
     </div>
   );
 
@@ -354,6 +411,7 @@ function Afterwards({
           Nobody is in the family yet. <Link to="/family">Add someone</Link> and they can be named here.
         </p>
       )}
+      {stateOf("who")}
     </div>
   );
 
@@ -362,12 +420,13 @@ function Afterwards({
       <h3>The chapter</h3>
       <div className="chiprow">
         {(ERAS as string[]).map((e) => (
-          <button key={e} type="button" className="chip big" aria-pressed={kept.era === e} onClick={() => keep({ era: e })}>
+          <button key={e} type="button" className="chip big" aria-pressed={kept.era === e} onClick={() => keep({ era: e }, "chapter")}>
             {e}
             {e === FAITH_CHAPTER && !unlimited ? " · always open" : ""}
           </button>
         ))}
       </div>
+      {stateOf("chapter")}
     </div>
   );
 
@@ -378,13 +437,14 @@ function Afterwards({
       {kept.photos.length > 0 && (
         <div className="wphotos">
           {kept.photos.map((u, i) => (
-            <Print key={u} url={u} tilt={[-3, 2, -1, 3][i % 4]} onRemove={() => keep({ photos: kept.photos.filter((x) => x !== u), cover: kept.cover === u ? null : kept.cover })} />
+            <Print key={u} url={u} tilt={[-3, 2, -1, 3][i % 4]} onRemove={() => keep({ photos: kept.photos.filter((x) => x !== u), cover: kept.cover === u ? null : kept.cover }, "photo")} />
           ))}
         </div>
       )}
       <button type="button" className="w-attach" onClick={() => fileRef.current?.click()} disabled={busy} aria-busy={busy || undefined}>
         <PhotoIcon /> {busy ? "Putting it in…" : kept.photos.length ? "Add another" : "Add a photograph"}
       </button>
+      {stateOf("photo")}
     </div>
   );
 
@@ -392,27 +452,15 @@ function Afterwards({
 
   return (
     <div className="w-after">
-      {error && <Problem message={error} onDismiss={() => setError(null)} />}
       <div className="w-after-grid">
         <KeptPage story={story} kept={kept} number={number} />
         <section className="w-choices" aria-labelledby="after-h">
           <header className="w-choices-head">
-            <div>
-              <h2 id="after-h">
-                A few more things, if you like
-                <Stop />
-              </h2>
-              <p className="w-note">Each is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
-            </div>
-            <p className={`w-state ${state}`} aria-live="polite">
-              {state === "saving" ? "Keeping…" : state === "saved" ? (
-                <>
-                  <CheckIcon /> Kept
-                </>
-              ) : (
-                ""
-              )}
-            </p>
+            <h2 id="after-h">
+              A few more things, if you like
+              <Stop />
+            </h2>
+            <p className="w-note">Each is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
           </header>
           <div className="w-choice-grid">{blocks}</div>
         </section>
@@ -504,6 +552,8 @@ function Writer({ story }: { story: Story }) {
   // the open journal needs a laptop's width; the margin beside it a large window's
   const spread = useMedia("(min-width: 1280px)");
   const rail = useMedia("(min-width: 1560px)");
+  // a laptop with its browser bars (about 640px tall): the page starts with two ruled lines, so the seal is in view
+  const short = useMedia("(max-height: 740px)");
 
   // Speaking: final phrases land at the end of the page.
   const dictation = useDictation((text) => {
@@ -518,7 +568,17 @@ function Writer({ story }: { story: Story }) {
   // Autosave the draft to this browser.
   useEffect(() => {
     if (!key || kept) return;
-    if (!(d.body || d.title)) return;
+    const blank = !(d.body.trim() || d.title.trim());
+    const unchanged = Boolean(editing) && d.title === editing?.title && d.body === editing?.body && d.era === editing?.era;
+    if (blank || unchanged) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        /* storage blocked */
+      }
+      queueMicrotask(() => setDraftState(""));
+      return;
+    }
     queueMicrotask(() => setDraftState("saving"));
     const t = setTimeout(() => {
       try {
@@ -529,7 +589,7 @@ function Writer({ story }: { story: Story }) {
       }
     }, 500);
     return () => clearTimeout(t);
-  }, [d, key, kept]);
+  }, [d, key, kept, editing]);
 
   // A guided question counts against the day when it is chosen, not at Keep.
   useEffect(() => {
@@ -565,7 +625,7 @@ function Writer({ story }: { story: Story }) {
 
   // The page grows with the words, in whole ruled lines; the title line grows too. On two pages the right-hand page
   // also stretches to the left one's height (CSS), so its minimum is small; one page starts with a few lines.
-  const minLines = focus ? 16 : spread ? 3 : 5;
+  const minLines = focus ? 16 : spread ? (short ? 2 : 3) : 5;
   const fitBody = useCallback(() => {
     const el = bodyRef.current;
     if (!el) return;
@@ -658,6 +718,7 @@ function Writer({ story }: { story: Story }) {
   const era = d.era || "Anything else";
   const words = countWords(d.body);
   const empty = !d.body.trim();
+  const changed = !editing || d.title !== editing.title || d.body !== editing.body || d.era !== editing.era;
   const starters = startersFor(own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
   const bookName = bookNameOf(story);
@@ -786,7 +847,7 @@ function Writer({ story }: { story: Story }) {
         ),
       );
     } catch (err) {
-      setError(`This memory hasn't been kept yet (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);
+      setError(`${plainCause(err)} Your words are still here; try again.`);
       setBusy("");
     }
   };
@@ -811,8 +872,11 @@ function Writer({ story }: { story: Story }) {
               Memory No. {n}
             </p>
             <h1>
-              Kept in {bookName}
-              <Stop />
+              Kept in{" "}
+              <span className="nw">
+                {bookNameIn(story)}
+                <Stop />
+              </span>
             </h1>
           </div>
         }
@@ -838,12 +902,12 @@ function Writer({ story }: { story: Story }) {
   const keepLabel = editing ? "Keep the changes" : "Keep it";
   const hint = question ? noteFor(question) || question.hint : "";
   const kicker = editing
-    ? `Editing memory No. ${number}`
+    ? "Editing"
     : `${question ? (own ? "Today’s question" : `A question for ${story.name}`) : wantsPhoto ? "A photograph" : "In your own words"}${withPerson ? ` · with ${firstName(withPerson)}` : ""}`;
   const heading = question
     ? question.question
     : editing
-      ? editing.title || "This memory"
+      ? "Change what you like."
       : wantsPhoto
         ? "Which photograph, and what was happening?"
         : own
@@ -866,9 +930,9 @@ function Writer({ story }: { story: Story }) {
     <header className="w-qhead">
       <p className="w-qkick">{kicker}</p>
       <h1 className="w-question" data-len={heading.length > 72 ? "xlong" : heading.length > 65 ? "long" : heading.length > 40 ? "mid" : undefined}>
-        {heading}
+        {smart(heading)}
       </h1>
-      {sub && <p className="w-sub">{sub}</p>}
+      {sub && <p className="w-sub">{smart(sub)}</p>}
     </header>
   );
   const others = deck.filter((p) => p.id !== question?.id);
@@ -881,7 +945,7 @@ function Writer({ story }: { story: Story }) {
             {others.map((p) => (
               <li key={p.id}>
                 <Link className="w-q" to={`/write?q=${encodeURIComponent(p.id)}`}>
-                  {p.question}
+                  <span>{smart(p.question)}</span>
                   {drafted.has(p.id) && <small>a page begun</small>}
                 </Link>
               </li>
@@ -1002,7 +1066,7 @@ function Writer({ story }: { story: Story }) {
             )}
           </p>
         )}
-        <p className="w-keep-note">
+        <p className={`w-keep-note${pressed ? " spent" : ""}`} aria-hidden={pressed || undefined}>
           {!empty && (
             <span className="w-kbd-hint">
               {focus && (
@@ -1031,7 +1095,7 @@ function Writer({ story }: { story: Story }) {
 
   return (
     <Shell bare wide>
-      <div className={`page desk w-desk${focus ? " focus" : ""}${empty ? "" : " writing"}`} ref={deskRef}>
+      <div className={`page desk w-desk${focus ? " focus" : ""}${!empty && changed ? " writing" : ""}`} ref={deskRef}>
         <div className={`w-grid ${layout}`}>
           {/* the book, open on the desk */}
           <div className="w-center">
@@ -1062,10 +1126,10 @@ function Writer({ story }: { story: Story }) {
                     <span>{focus ? "Leave focus" : "Focus"}</span>
                   </button>
                   <p className="running-head" aria-hidden="true">
-                    <span>{chapterName(d.era) || (spread ? "A page for today" : bookName)}</span>
+                    <span>{chapterName(d.era) || (editing ? editing.period || keptOn(editing.createdAt) : spread ? "A page for today" : bookName)}</span>
                   </p>
                   {/* with the cloth put away, the question comes onto the page */}
-                  {focus && question && <p className="w-focus-q">{question.question}</p>}
+                  {focus && question && <p className="w-focus-q">{smart(question.question)}</p>}
                   <textarea
                     ref={titleRef}
                     className="wtitle"
@@ -1097,6 +1161,7 @@ function Writer({ story }: { story: Story }) {
                   <textarea
                     ref={bodyRef}
                     className="wbody"
+                    rows={1}
                     placeholder={question ? "Start anywhere. A room, a smell, who was there." : "Start anywhere."}
                     value={d.body}
                     onChange={(e) => set({ body: e.target.value })}
@@ -1121,7 +1186,7 @@ function Writer({ story }: { story: Story }) {
                       {words} {words === 1 ? "word" : "words"}
                     </span>
                     <span aria-hidden="true">·</span>
-                    <span aria-live="polite">{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : "Nothing written yet"}</span>
+                    <span aria-live="polite">{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : editing && !empty ? "As it is in the book" : "Nothing written yet"}</span>
                   </p>
                   <span className="leaf-ear" aria-hidden="true" />
                 </article>
