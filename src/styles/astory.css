@@ -1051,7 +1051,7 @@ body.writing-focus .wbody { min-height: 60vh; }
 
 /* the invite sheet */
 .invite-sheet { width: min(640px, 100%); }
-.invite-sheet .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.invite-sheet .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
 .relgroup { margin-bottom: var(--s-4); }
 .relgroup > .meta { margin-bottom: var(--s-2); }
 .relgroup .chip.big { min-height: 44px; }
@@ -1283,7 +1283,7 @@ body.writing-focus .wbody { min-height: 60vh; }
 .acct-person { display: flex; align-items: center; gap: var(--s-4); margin-bottom: var(--s-5); }
 .acct-person > div { display: grid; }
 .acct-name { font-size: var(--t-h3); color: var(--heading); }
-.acct-two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+.acct-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
 .acct-form .field { margin-bottom: var(--s-4); }
 .acct-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .acct-note { margin: 0; }
