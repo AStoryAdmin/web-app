@@ -278,7 +278,8 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
         )}
         <Leaf page />
         <div className="hero">
-          <div className="hero-in">
+          {/* keyed by what the page shows: the title splitter (lib/arrive) rewrites the h1, so a changed hero is a fresh node, never React writing into split lines */}
+          <div className="hero-in" key={ready}>
             {back && (
               <button type="button" className="back" aria-label="Back" onClick={() => (back === true ? navigate(-1) : navigate(back))}>
                 <ChevronLeft />
