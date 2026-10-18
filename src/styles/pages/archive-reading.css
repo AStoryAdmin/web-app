@@ -228,7 +228,8 @@
 .mv-menu-ico svg { width: 17px; height: 17px; color: var(--accent); }
 .mv-menu-txt { display: grid; gap: 3px; }
 .mv-menu-txt small { font-size: 13px; color: var(--mv-soft); font-weight: 500; }
-.mv-menu-check { color: var(--mv-terra); font-weight: 700; }
+.mv-menu-check { display: inline-flex; width: 16px; color: var(--mv-terra); }
+.mv-menu-check svg { display: block; }
 .mv-menu-item.danger, .mv-menu-item.danger .mv-menu-ico svg { color: var(--danger); }
 
 /* what the family remembers: their words with a name line, hairlines between, no cards; after a ✦ rule */
@@ -326,6 +327,18 @@
 @media (max-width: 760px) {
   .hero .arc-stats-hero { gap: var(--s-4) var(--s-6); }
   .hero .arc-hs-book { flex-basis: 100%; padding-left: 0; border-left: 0; padding-top: var(--s-4); border-top: 1px solid var(--cloth-rule); }
+  /* three figures on one row, the book's share as one quiet line, less padding */
+  .hero .arc-stats-hero { flex-wrap: wrap; gap: 10px 22px; margin-top: var(--s-4); }
+  .hero .arc-stats-hero > div:not(.arc-hs-book) b { font-size: 26px; }
+  .hero .arc-stats-hero > div:not(.arc-hs-book) span { font-size: 13px; }
+  .hero .arc-hs-book { padding-top: var(--s-3); }
+  .hero .arc-hs-link { align-items: center; gap: 8px; }
+  .hero .arc-hs-link img, .hero .arc-hs-bar { display: none; }
+  .hero .arc-hs-txt { display: flex; align-items: baseline; gap: 6px; }
+  .hero .arc-hs-txt b { font-size: 15px; letter-spacing: 0; }
+  .hero .arc-hs-txt b small { font-size: 15px; color: inherit; }
+  .hero .arc-hs-txt > span { font-size: 14px; }
+  .hero .arc-wall { margin-top: 4px; }
 }
 
 /* the sheet starts with the work: no card above it */
@@ -345,16 +358,24 @@
 .sheet-page .arc-tools .arc-view .chip.big { min-height: 44px; font: 600 13px/1 var(--font-ui); letter-spacing: 0; text-transform: none; }
 .sheet-page .arc-tools .arc-view .chip.big:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
 .arc-page .arc-filters { margin-top: var(--s-4); }
+/* every control 44px at every width; the shared chip row's own margin is reset so the row stays one line */
+.sheet-page .arc-tools .arc-chips .chip.big, .sheet-page .arc-decaderow .chip.big { min-height: 44px; }
+.sheet-page .arc-tools .arc-view { padding: 0 4px; }
+.sheet-page .arc-tools .chiprow.scroll.arc-chips { margin-bottom: 0; }
+/* the phone: Prints/List at the end of the search row; the chapters (two or more) wrap under it, none off the edge */
 @media (max-width: 760px) {
   .arc-tools { gap: 4px 12px; }
-  .arc-tools .arc-search { flex-basis: 100%; max-width: none; }
-  .sheet-page .arc-tools .arc-chips { flex: 1 1 0; }
+  .arc-tools .arc-search { flex: 1 1 0; min-width: 0; max-width: none; }
+  .arc-tools .arc-view { order: 1; margin-left: 0; }
+  .sheet-page .arc-tools .arc-chips.chiprow.scroll { order: 2; flex: 1 1 100%; flex-wrap: wrap; overflow: visible; }
   .arc-page .arc-body { margin: 0; padding: 0; background: transparent; border-radius: 0; }
 }
 
 
-/* prints: square and compact; four across from 1100px, two on a phone (see "The prints" below for their words) */
+/* prints: square and compact; four across from 1100px (eight memories make two even rows), two on a phone (see "The
+   prints" below for their words) */
 .arc-prints .mosaic { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 16px; }
+@media (min-width: 1100px) { .arc-prints .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
 .arc-prints .print-card { padding: 6px 6px 8px; }
 .arc-prints .print-card .frame, .arc-prints .print-card.lead .frame { aspect-ratio: 1 / 1; }
 .arc-prints .print-card .cap { padding: 12px; gap: 3px; }
@@ -377,8 +398,24 @@
 @media (min-width: 1600px) { .arc-page .arc-cards .mem { grid-template-columns: 168px minmax(0, 1fr); column-gap: 24px; } }
 .arc-page .arc-cards .mem { position: relative; height: 100%; box-sizing: border-box; }
 .arc-page .arc-cards .mem .print { width: auto; }
-.arc-page .mem .excerpt { -webkit-line-clamp: unset; display: block; overflow: visible; text-wrap: pretty; }
+.arc-page .mem .excerpt { -webkit-line-clamp: unset; display: block; overflow: visible; text-wrap: pretty; color: var(--sheet-ink); font-size: 18px; }
+.arc-page .mem .kicker:not(.quiet) { color: var(--sage-ink); font-size: 12px; }
+.arc-page .mem .kicker.quiet { font: 500 13px/1 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
+.arc-page .mem .date.dated { color: var(--terracotta-ink); font-size: 13px; }
 .mem > .mem-seal { position: absolute; z-index: 2; top: -9px; right: -9px; margin: 0; }
+.mem .foot-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+@media (max-width: 599px) { .mem .foot-meta .kicker.quiet { display: none; } }
+/* no shadow at rest (a step of tone); one hover signal for a pointer (2px), its lift and return both easing (160ms);
+   every card answers a press. While a card rises GSAP sets its transition to none and clears it after
+   (archive/motion.ts useRiseOnScroll), so the two never fight */
+.arc-page .mem, .sheet-page .arc-page .mem { box-shadow: none; transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out); }
+.arc-page .mem:hover, .sheet-page .arc-page .mem:hover { box-shadow: none; transform: none; }
+.arc-page .mem:hover .print { transform: rotate(-1.2deg); }
+@media (hover: hover) and (pointer: fine) {
+  .arc-page .mem:hover, .sheet-page .arc-page .mem:hover { transform: translateY(-2px); background: var(--paper-print); }
+}
+.arc-page .mem:active, .print-card:active { transform: scale(0.98); transition-duration: 120ms; }
+@media (prefers-reduced-motion: reduce) { .arc-page .mem, .arc-page .mem:active, .print-card:active { transition: none; transform: none; } }
 
 .arc-tools + .arc-prints, .arc-tools ~ .arc-prints { margin-top: var(--s-6); }
 .arc-tools ~ section > .arc-prints { margin-top: var(--s-6); }
@@ -421,16 +458,13 @@
   .sheet-page .arc-page .arc-year h2 { font-size: 30px; }
   .sheet-page .arc-page .arc-year.undated h2 { font-size: 26px; }
   .arc-yrow-note, .arc-task { flex-basis: 100%; order: 4; }
-  .sheet-page .arc-page .arc-year > .arc-task { white-space: normal; margin-left: -10px; }
+  /* the task is one inline run under the heading, not two ragged columns; its time and arrow still never part */
+  .sheet-page .arc-page .arc-year > .arc-task, .arc-task { display: block; min-height: 44px; padding: 11px 0 0; margin: 0; white-space: normal; line-height: 1.5; border-radius: 0; }
+  .arc-task .arc-task-arrow { display: inline; }
 }
 .arc-tools ~ .arc-prints { margin-top: var(--s-8); }
 .arc-page .where-next { margin-top: calc(var(--s-16) + 16px); }
 
-/* the list's cards: the reading rules for their words (full ink, the kept line), sage and terracotta that pass as text */
-.arc-page .mem .excerpt { color: var(--sheet-ink); font-size: 18px; }
-.arc-page .mem .kicker:not(.quiet) { color: var(--sage-ink); font-size: 12px; }
-.arc-page .mem .kicker.quiet { font: 500 13px/1 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
-.arc-page .mem .date.dated { color: var(--terracotta-ink); font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .arc-task, .arc-task .arc-task-arrow { transition: none; } }
 
 /* ═════════════════════════ Treasured: the wax seal and the gilt edge (decoration D4, D2) ═════════════════════════
@@ -464,11 +498,14 @@
 .print-card[data-era="archival"] > .print-seal { top: 4px; right: 4px; }
 .print-card[data-era="modern"] { background: transparent; }
 
-/* a print's photograph, and the veil under its caption, wait for the image, then fade in (archive/develop.ts): never a
-   grey tile under a brown scrim while a signed photograph loads */
-.print-card .pic, .print-card .veil, .mem .print .pic { transition: opacity 240ms var(--ease-out); }
-.print-card .pic:not([data-loaded]), .print-card .pic:not([data-loaded]) ~ .veil, .mem .print .pic:not([data-loaded]) { opacity: 0; }
-@media (prefers-reduced-motion: reduce) { .print-card .pic, .print-card .veil, .mem .print .pic { transition: none; } }
+/* a print's photograph develops (archive/develop.ts): until the image has loaded the print is dark, the album's black
+   under the caption's veil, so the white title always reads; then the photograph fades in over it (240ms). The slow
+   hover zoom keeps its own 600ms, both ways. */
+.print-card .pic { transition: opacity 240ms var(--ease-out), transform 600ms var(--ease-out); }
+.mem .print .pic { transition: opacity 240ms var(--ease-out); }
+.print-card .pic:not([data-loaded]), .mem .print .pic:not([data-loaded]) { opacity: 0; }
+.print-card .frame:has(> .pic:not([data-loaded])) { background: var(--album-black); }
+@media (prefers-reduced-motion: reduce) { .print-card .pic, .mem .print .pic { transition: none; } }
 
 /* the caption takes the whole width: the marks (a mic, faces) sit in the photograph's top corner, out of its flow */
 .print-card .frame.has-marks .cap, .home-mem .print-card .frame.has-marks .cap, .arc-prints .print-card .frame.has-marks .cap { padding-right: 12px; padding-bottom: 12px; }
@@ -483,35 +520,7 @@
 .sheet-page .arc-page .arc-year .arc-task .arc-task-t { font-weight: 500; color: var(--ink-soft); }
 .sheet-page .arc-page .arc-year .arc-task .arc-task-arrow { color: var(--accent); }
 
-/* ═════════════════════════ Round 3 (reviewers' findings) ═════════════════════════ */
-/* every control 44px: the Prints/List switch and the chapter tabs, at every width */
-.sheet-page .arc-tools .arc-chips .chip.big, .sheet-page .arc-decaderow .chip.big { min-height: 44px; }
-.sheet-page .arc-tools .arc-view { padding: 0 4px; }
-
-
-/* the phone */
-@media (max-width: 760px) {
-  /* the hero: three figures on one row, the book's share as one quiet line, less padding */
-  .hero .arc-stats-hero { flex-wrap: wrap; gap: 10px 22px; margin-top: var(--s-4); }
-  .hero .arc-stats-hero > div:not(.arc-hs-book) b { font-size: 26px; }
-  .hero .arc-stats-hero > div:not(.arc-hs-book) span { font-size: 13px; }
-  .hero .arc-hs-book { padding-top: var(--s-3); }
-  .hero .arc-hs-link { align-items: center; gap: 8px; }
-  .hero .arc-hs-link img, .hero .arc-hs-bar { display: none; }
-  .hero .arc-hs-txt { display: flex; align-items: baseline; gap: 6px; }
-  .hero .arc-hs-txt b { font-size: 15px; letter-spacing: 0; }
-  .hero .arc-hs-txt b small { font-size: 15px; color: inherit; }
-  .hero .arc-hs-txt > span { font-size: 14px; }
-  .hero .arc-wall { margin-top: 4px; }
-  /* the tools: the chapters wrap (none hidden off the edge), the switch on a line of its own */
-  .sheet-page .arc-tools .arc-chips.chiprow.scroll { flex-wrap: wrap; overflow: visible; flex: 1 1 100%; }
-  .arc-tools .arc-view { margin-left: 0; }
-  /* the year task is one inline run under the heading, not two ragged columns */
-  .sheet-page .arc-page .arc-year > .arc-task, .arc-task { display: block; min-height: 44px; padding: 11px 0 0; margin: 0; white-space: normal; line-height: 1.5; border-radius: 0; }
-  .arc-task .arc-task-arrow { display: inline; }
-}
-
-/* ═════════════════════════ Round 4 (reviewers' findings) ═════════════════════════ */
+/* ═════════════════════════ The memory page at its edges: the kept line's sizes, the tidy note, the phone's tools, loading ═════════════════════════ */
 @media (min-width: 1680px) { .mv-kept { font-size: 26px; } }
 @media (max-width: 599px) { .mv-kept { font-size: 21px; margin-top: 12px; } }
 
@@ -537,28 +546,6 @@
 .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 16px; }
 .sk-grid i { display: block; aspect-ratio: 1; border: 1px solid var(--sheet-rule); border-radius: 6px; background: var(--paper-tone); }
 
-
-/* ── the Archive ── */
-/* the chapter tabs and the Prints/List switch sit on one line (the shared chip row's own margin is reset) */
-.sheet-page .arc-tools .chiprow.scroll.arc-chips { margin-bottom: 0; }
-/* a laptop and a big screen: four prints across, larger and readable, two even rows for eight memories */
-@media (min-width: 1100px) { .arc-prints .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
-/* the phone: Prints/List at the end of the search row, the chapters (when there are two or more) under it */
-@media (max-width: 760px) {
-  .arc-tools .arc-search { flex: 1 1 0; min-width: 0; }
-  .arc-tools .arc-view { order: 1; }
-  .sheet-page .arc-tools .arc-chips.chiprow.scroll { order: 2; }
-}
-
-
-/* the list's cards: no shadow at rest (a step of tone), one hover signal (2px) for a pointer, and every card answers a press */
-.arc-page .mem:hover, .sheet-page .arc-page .mem:hover { box-shadow: none; transform: none; }
-.arc-page .mem:hover .print { transform: rotate(-1.2deg); }
-@media (hover: hover) and (pointer: fine) {
-  .arc-page .mem:hover, .sheet-page .arc-page .mem:hover { transform: translateY(-2px); background: var(--paper-print); }
-}
-.arc-page .mem:active, .print-card:active { transform: scale(0.98); transition-duration: 120ms; }
-@media (prefers-reduced-motion: reduce) { .arc-page .mem, .arc-page .mem:active, .print-card:active { transition: none; transform: none; } }
 
 /* ═════════════════════════ The prints (Home's and the Archive's): one rule per property ═════════════════════════
    Titles run whole. A typed card's words are the memory's takeaway, whole, never an ellipsis: the card
@@ -597,9 +584,6 @@
   .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:not(.invite):has(.cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 2; }
 }
 
-/* the List view's cards: the hover lift and its return both ease (160ms); while a card rises GSAP sets its transition
-   to none and clears it after (archive/motion.ts useRiseOnScroll), so the two never fight */
-.arc-page .mem, .sheet-page .arc-page .mem { box-shadow: none; transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out); }
 
 /* the page turn: titles balanced, three lines on a phone */
 .mv-turn-link i { text-wrap: balance; }
@@ -617,7 +601,7 @@
 .ledge-line { display: block; width: min(320px, 80%); height: 1px; background: var(--foil); opacity: 0.7; }
 .sheet-page .ledge-title { margin: 22px 0 0; font-family: var(--book-display); font-weight: 600; font-size: 36px; line-height: 1.1; letter-spacing: -0.01em; color: var(--sheet-ink); text-wrap: balance; }
 .ledge-stop { color: var(--foil); }
-.ledge-text { margin: 12px 0 0; max-width: 30em; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--ink-soft); text-wrap: pretty; }
+.ledge-text { margin: 12px 0 0; max-width: 30em; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
 .ledge-acts { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 /* the not-found page: the group sits in the middle of the sheet's height on a desktop, not at its top */
 .mv-missing-page { display: grid; align-content: center; min-height: calc(100vh / var(--zoom, 1) - 260px); padding-top: 40px; padding-bottom: 64px; box-sizing: border-box; }
@@ -653,3 +637,12 @@
 
 /* the family's lines that failed to load: what failed and the way to try again */
 .mv .fv-failed { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-style: normal; font-family: var(--font-ui); font-size: 14px; }
+
+/* the tablet (761–1100px): the memory's tools take their own row under the teller, left-aligned (one row would need
+   544px of a 541px column); Home's "From the book" stands the full height of the card beside it, its words centred */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .mv-state { flex-basis: 100%; margin-left: -12px; margin-right: 0; }
+  .home-side { align-items: stretch; }
+  .home-side > .home-quote { display: grid; }
+  .home-side > .home-quote .fromthebook { height: 100%; box-sizing: border-box; align-content: center; }
+}

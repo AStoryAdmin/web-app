@@ -73,7 +73,7 @@ export default function PrintCard({
 }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
-  const photo = usePhotoUrl(meta.photo);
+  const photo = usePhotoUrl(meta.photo, size === "lead" ? undefined : 600);
   const dated = meta.date !== "No date yet";
   const said = meta.photo ? "" : words(memory);
   const people = (memory.personIds || [])

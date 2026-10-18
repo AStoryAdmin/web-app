@@ -28,6 +28,8 @@ const TAG = /\b(?:right|you know|isn't it|wasn't it|okay|yeah|huh)\?["”’]*$/
 const ASKER_GOES_ON = /^(?:because|our|we're|we’re|we are|we'll|we’ll|we will|we want|we were|and our|so our)\b/i;
 /** The mark that begins a paragraph holding the other person's question, set as the book's "We asked" line. */
 export const ASKED = "⁣";
+/** Marks, inside the cleaner only, the teller's words straight after a lifted question: they open on the answer. */
+const ANSWER = "\u2064";
 /** Labels a chat or call transcript puts in front of each turn. */
 const TURN = /(?:^|\s)(You|Me|AI|Assistant|A Story|Interviewer|Narrator|Q|A):\s+/g;
 const OTHER = /^(AI|Assistant|A Story|Interviewer|Q)$/i;
@@ -69,7 +71,7 @@ const sentencesOf = (s: string) => s.match(/[^.!?…]+(?:[.!?…]+["”’)]*|$)
 /** "Like" as filler goes ("I taught like teenagers" → "I taught teenagers"); the verb and the comparison stay. */
 function dropFillerLike(s: string): string {
   return s
-    .replace(/,\s*like,\s*/gi, ", ")
+    .replace(/,\s*like,\s*/gi, (m: string, at: number, all: string) => (HEDGES_AMOUNT.test(all.slice(at + m.length)) ? m : ", "))
     .replace(/\blike\b,?\s*/gi, (m: string, at: number, all: string) => (isFillerLike(all, at) ? "" : m))
     .replace(/\s{2,}/g, " ");
 }
@@ -88,8 +90,9 @@ function punctuateRunOn(s: string): string[] {
   for (;;) {
     re.lastIndex = 50;
     let m = re.exec(rest);
-    // "not only are you caring for them but then…" is one thought: its "but" is never a sentence break
-    while (m && /^\s*but\b/i.test(rest.slice(m.index)) && /\bnot only\b/i.test(rest.slice(0, m.index))) m = re.exec(rest);
+    // "not only are you caring for them but then…", "not just about cooking but also…" are one thought: their "but"
+    // is never a sentence break, and neither is a "but also"
+    while (m && (/^\s*but also\b/i.test(rest.slice(m.index)) || (/^\s*but\b/i.test(rest.slice(m.index)) && /\bnot (?:only|just|merely|simply)\b/i.test(rest.slice(0, m.index))))) m = re.exec(rest);
     if (!m || rest.length - m.index < 40) break;
     out.push(`${rest.slice(0, m.index).replace(/[,;:]$/, "")}.`);
     rest = cap(rest.slice(m.index + 1));
@@ -127,6 +130,8 @@ function dropRestarts(s: string): string {
 
 /** A word said twice on purpose: emphasis ("very, very"), grammar ("had had", "that that"), a refusal ("no, no"). */
 const MEANT_TWICE = /^(?:very|really|so|much|many|more|most|far|long|had|that|is|no|yes|bye|ha|again|over|round|on|now|go|come|well|never|ever|too)$/i;
+/** A repeat joined by a conjunction is said on purpose ("worse and worse and then", "again and again and finally"). */
+const JOINED = /\b(?:and|or|but|after|by|then|upon|over)$/i;
 /** A start broken off by a filler and said again, on a little word only ("my so my mom", "the uh the house"). */
 const LITTLE_RESTART = /\b(my|the|a|an|I|we|our|his|her|their|he|she|they|it|to|in|on|at|of|for|with|this|that)\s+(?:so|uh|um)\s+\1\b/gi;
 
@@ -136,11 +141,17 @@ const ABANDONED = /^(?:[\w'’]+\s+){1,3}so\s+(?=(?:I|we)\b)/i;
 const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
 
 /** One paragraph of speech, tidied. */
-export function cleanSpeech(text: string): string {
+export function cleanSpeech(text: string, { answer = false }: { answer?: boolean } = {}): string {
   const turns = tellerTurns(String(text || ""));
   const kept: string[] = [];
-  for (const s0 of sentencesOf(turns)
-    .map((s) => s.trim())
+  const all = sentencesOf(turns).map((s) => s.trim());
+  // straight after a "We asked" line, the teller's short reply ("For sure. Yeah, definitely.") is the answer: it stays
+  // whole, as said, so the page never shows a question with no answer
+  let lead = 0;
+  if (answer) while (lead < all.length && BACKCHANNEL.test(all[lead].replace(/["“”]/g, "").trim())) lead++;
+  const reply = all.slice(0, lead).join(" ");
+  for (const s0 of all
+    .slice(lead)
     // back-channel sentences go whole
     .filter((s) => s && !BACKCHANNEL.test(s.replace(/["“”]/g, "").trim()))
     .map((s) =>
@@ -150,7 +161,7 @@ export function cleanSpeech(text: string): string {
         .replace(FILLER, "$1")
         // stutters and false starts: a word or a short phrase said twice ("I, I", "so I, so I"); a doubling that
         // means something ("very, very", "had had", "that that", "no, no") is the speaker's and stays
-        .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, (m: string, x: string) => (MEANT_TWICE.test(x) ? m : x))
+        .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, (m: string, x: string) => (MEANT_TWICE.test(x) || JOINED.test(x) ? m : x))
         // a false start across a filler, on a little word only: "my so my mom" → "my mom"; never "X and X"
         // ("faster and faster", "more and more", "over and over" say something)
         .replace(LITTLE_RESTART, "$1")
@@ -167,7 +178,8 @@ export function cleanSpeech(text: string): string {
     if (n && (n === prev || (prev && prev.startsWith(n)) || kept.some((k) => norm(k) === n))) continue;
     kept.push(cap(s0));
   }
-  return kept
+  return [reply, ...kept]
+    .filter(Boolean)
     .join(" ")
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/([,;:])\s*([,.;:!?])/g, "$2")
@@ -200,6 +212,8 @@ function liftQuestions(paragraph: string): string[] {
       out[out.length - 1] += ` ${s}`;
       continue;
     }
+    // the first words after the question are the teller's answer
+    if (asking && !run) run = ANSWER;
     asking = false;
     run += `${s} `;
   }
@@ -211,7 +225,7 @@ function liftQuestions(paragraph: string): string[] {
 export function cleanTranscript(paragraphs: string[]): string[] {
   const out = paragraphs
     .flatMap((p) => liftQuestions(tellerTurns(p.replace(/\s*\n\s*/g, " "))))
-    .map((p) => (p.startsWith(ASKED) ? p : cleanSpeech(p)))
+    .map((p) => (p.startsWith(ASKED) ? p : p.startsWith(ANSWER) ? cleanSpeech(p.slice(ANSWER.length), { answer: true }) : cleanSpeech(p)))
     .filter((p) => p.replace(ASKED, "").trim());
   // the words open on the teller, not on a reply to a question the page never shows ("No, I just lost my grandparents…")
   if (out.length && !out[0].startsWith(ASKED)) out[0] = cap(out[0].replace(OPENING_REPLY, ""));
@@ -291,7 +305,7 @@ const OPENS_WEAK = /^["“‘]?(?:i mean|and then|and so|so|no|like|yeah|well|bu
 /** "It's", "That's", "And" open a kept line only when the sentence carries a feeling or a judgement. */
 const OPENS_SOFT = /^["“‘]?(?:and(?! then| so)|that'?s|that’s|it'?s|it’s)\b/i;
 /** The words that make a sentence worth remembering: a feeling, a judgement, a turn of a life. */
-const FEELING = /\b(always|never|love|loved|loving|miss|missed|remember|remembered|never forget|forget|dream|dreams|wish|wished|proud|happy|happiest|sad|hard|hardest|challenging|struggle|scared|afraid|grateful|thankful|lucky|blessed|beautiful|worth|best|favou?rite|special|important|mattered|meant|learned|opportunity|heart|hope|grief|joy|fear|courage|kindness)\b/i;
+const FEELING = /\b(always|never|love|loved|loving|miss|missed|remember|remembered|never forget|forget|dream|dreams|wish|wished|proud|happy|happiest|sad|hard|hardest|challenging|struggle|scared|afraid|grateful|thankful|lucky|blessed|beautiful|worth|best|favou?rite|special|important|mattered|meant|learned|opportunity|heart|hope|grief|joy|fear|courage|kindness|memorable|bond|bonds|bonding|bondings)\b/i;
 
 /**
  * A "like" that is filler ("she took home like hundreds", "and like worked"), not the verb ("I'd like to")
@@ -302,8 +316,16 @@ function fillerLike(s: string): boolean {
   return false;
 }
 
-/** Whether the "like" at `at` in `s` is filler: neither the verb ("I'd like to") nor a comparison ("like a teacher"). */
+/**
+ * What follows a "like" that hedges rather than fills: a number or an amount ("like hundreds of thousands", "like ten",
+ * "like a thousand", "like 300", "like nothing"), or a negation ("is like not non-existent"). Without the "like" a
+ * guess reads as a fact, or the meaning flips, so it stays. When in doubt the word is kept.
+ */
+const HEDGES_AMOUNT = /^,?\s*(?:[$£€]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|billions?|dozens?|half|nothing|none|every|everything|everyone|all|almost|about|maybe|most|some|several|not|no|never|barely|hardly|only)\b|(?:a|an)\s+(?:few|couple|lot|hundred|thousand|million|billion|dozen|half|bunch|ton|year|month|week|day|hour|minute|mile)s?\b)/i;
+
+/** Whether the "like" at `at` in `s` is filler: neither the verb ("I'd like to"), a comparison ("like a teacher"), nor a hedge on an amount ("like ten"). */
 function isFillerLike(s: string, at: number): boolean {
+  if (HEDGES_AMOUNT.test(s.slice(at + 4))) return false;
   const before = s.slice(0, at).trim().split(/\s+/).pop()?.toLowerCase() || "";
   const after = s.slice(at + 4).trim().split(/[\s,.!?]+/)[0]?.toLowerCase() || "";
   const verb = /^(i|we|they|you|he|she|would|'d|i'd|we'd|really|to|did|didn't|don't|do|not|feel|felt|looks?|looked|sounds?|liked?)$/.test(before);

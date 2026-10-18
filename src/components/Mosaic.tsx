@@ -1,10 +1,12 @@
 /**
- * The mosaic of prints: the newest memory as one large print across two
- * columns, the rest as tall prints three across (two on a phone), every
- * one of them the photograph itself with the words as a caption. The
- * day's "From the book" quote takes the large frame when the newest
- * memory has no photograph, and otherwise sits as a wide card under the
- * first row; the memory it quotes is never also a print.
+ * The mosaic of prints, every one the photograph itself (or, without one,
+ * the person's words typed on the print) with the title as its caption.
+ * Home shows it even (`lead={false}`, class "mosaic even"): six prints,
+ * three across and two on a phone, with "From the book" in the column
+ * beside it. With `lead` the newest memory is one large print across two
+ * columns; a `quote` then takes the large frame when that memory has no
+ * photograph, and otherwise sits as a wide card under the first row. The
+ * memory a quote comes from is never also a print.
  *
  * The family's sides (approved contributions, grouped by memory) are
  * loaded once here and handed to each print for its "New from Linh" dot.

@@ -7,6 +7,7 @@
  * keys move through it. Near the foot of the window it opens upward. Nothing animates under reduced motion.
  */
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { CheckIcon } from "../icons";
 
 export type ToolMenuItem = {
   key: string;
@@ -115,7 +116,7 @@ export default function ToolMenu({
                 <span>{it.label}</span>
                 {it.hint && <small>{it.hint}</small>}
               </span>
-              {choice && <span className="mv-menu-check" aria-hidden="true">{it.checked ? "✓" : ""}</span>}
+              {choice && <span className="mv-menu-check" aria-hidden="true">{it.checked && <CheckIcon width={16} height={16} />}</span>}
             </button>
           ))}
         </div>

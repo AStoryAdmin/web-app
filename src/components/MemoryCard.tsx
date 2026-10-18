@@ -1,9 +1,10 @@
 /**
  * One memory as a card: compact and warm, in the printed book's language
  * (astoryapp.com/samples). The photograph as a white-bordered print on the
- * left; the chapter as a sage kicker (none for "Anything else", which is
- * not a chapter), a wax seal over the card's corner when it is treasured, and on the right "Live
- * conversation · 16 min" or a lock; the title in the book's display face;
+ * left; a wax seal over the card's corner when it is treasured; the title
+ * in the book's display face (every title starts at the same height, so
+ * the chapter as a sage kicker, "Live conversation · 16 min" and a lock sit
+ * in the bottom row with the faces);
  * the date in terracotta when there is one (undated memories say nothing
  * here; the Archive asks once); the person's kept line, their own words,
  * never the server's third-person summary; the faces of the people in it;
@@ -44,7 +45,7 @@ function cardWords(memory: Memory): string {
 export default function MemoryCard({ memory, story, style, rise = true }: { memory: Memory; story: Story; style?: CSSProperties; /** Its own CSS arrival; off where the page’s scroll hook owns the entrance. */ rise?: boolean }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
-  const photo = usePhotoUrl(meta.photo);
+  const photo = usePhotoUrl(meta.photo, 400);
   const tellerPhoto = usePhotoUrl(memory.contributor ? null : story.photo);
   const teller = memory.contributor ? memory.contributor.split(",")[0].trim() : story.name;
   const words = cardWords(memory);
@@ -65,34 +66,32 @@ export default function MemoryCard({ memory, story, style, rise = true }: { memo
         </span>
       )}
       <div className="body">
-        <div className="chips">
-          {realChapter(meta.chapter) && <span className="kicker">{meta.chapter}</span>}
-          <span className="grow" />
-          {voice && (
-            <span className="kicker quiet">
-              <MicIcon /> Live conversation{minutes(memory) ? ` · ${minutes(memory)}` : ""}
-            </span>
-          )}
-          {memory.privacy === "private" && (
-            <span className="kicker quiet">
-              <LockIcon /> Private
-            </span>
-          )}
-        </div>
         <h3>{smarten(meta.title)}</h3>
         {dated && <p className="date dated">{meta.date}</p>}
         {words && <p className="excerpt">{words}</p>}
+        {/* the chapter, the call and "Private" sit in the bottom row with the faces, so every title starts at the same height */}
         <div className="foot">
-          {people.length > 0 ? (
-            <span className="faces" aria-label={people.map((p) => p.givenName).join(", ")}>
-              {people.slice(0, 3).map((p) => (
-                <Face key={p.id} person={p} size={24} />
-              ))}
-              {people.length > 3 && <span className="more-n">+{people.length - 3}</span>}
-            </span>
-          ) : (
-            <span />
-          )}
+          <span className="foot-meta">
+            {realChapter(meta.chapter) && <span className="kicker">{meta.chapter}</span>}
+            {voice && (
+              <span className="kicker quiet">
+                <MicIcon /> Live conversation{minutes(memory) ? ` · ${minutes(memory)}` : ""}
+              </span>
+            )}
+            {memory.privacy === "private" && (
+              <span className="kicker quiet">
+                <LockIcon /> Private
+              </span>
+            )}
+            {people.length > 0 && (
+              <span className="faces" aria-label={people.map((p) => p.givenName).join(", ")}>
+                {people.slice(0, 3).map((p) => (
+                  <Face key={p.id} person={p} size={24} />
+                ))}
+                {people.length > 3 && <span className="more-n">+{people.length - 3}</span>}
+              </span>
+            )}
+          </span>
           <span className="told" title={toldBy(memory, story)}>
             <Avatar src={tellerPhoto} name={teller} size={26} />
             <span className="sr-only">{toldBy(memory, story)}</span>

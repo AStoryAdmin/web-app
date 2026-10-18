@@ -205,14 +205,16 @@ export default function MemoryPage() {
   const tidied = spoken && tidyNow.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
   // the memory's one takeaway: the same line as its print, its List card and Home's quote
   const kept = smarten(takeaway(raw.join("\n")));
-  // where the takeaway stands decides how often it is set (said twice at most, never twice in a row):
-  // - the words open on it: no mark in place; typed lines are not head-quoted at all, and a short memory has no coda
+  // where the takeaway stands decides how often it is set (twice at most, never twice in a row):
+  // - the words open on it: nothing under the title; the opening sentence carries the gold mark, and a short memory
+  //   has no coda
   // - the words end on it: no coda
-  // - a memory that is only its takeaway ("How to end the chat.") is not set under the title as well
+  // - a memory that is only its takeaway ("How to end the chat.") is set once, as its words
   const opens = !!kept && opensOn(body.find((p) => !p.startsWith(ASKED)) || "", kept);
-  const keptHead = (body.length === 1 && body[0].length <= kept.length + 12) || (opens && !spoken) ? "" : kept;
-  const markIn = !!keptHead && !opens;
-  const coda = !!keptHead && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept) && !(opens && body.join(" ").length < 700);
+  const whole = body.length === 1 && body[0].length <= kept.length + 12;
+  const keptHead = whole || opens ? "" : kept;
+  const markIn = !!kept && !whole;
+  const coda = !!kept && !whole && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept) && !(opens && body.join(" ").length < 700);
   // one rule for who told it, shared with the cards and "From the book": "Told by Bao in conversation"
   const { verb: told, name: toldName, rest: toldRest } = tellerParts(memory, story);
 
@@ -307,7 +309,7 @@ export default function MemoryPage() {
               <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
-                    {markIn ? withMark(line, keptHead) : withLang(line)}
+                    {markIn ? withMark(line, kept) : withLang(line)}
                     {j < arr.length - 1 && <br />}
                   </span>
                 ))}

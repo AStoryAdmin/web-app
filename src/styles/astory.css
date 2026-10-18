@@ -3414,13 +3414,12 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
    right, held in view, the day's quote and one "at a glance" plate for the book, the family and calls. */
 .home-board { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(300px, 1fr); gap: 32px; align-items: start; margin-top: var(--s-6); }
 .home-mem .sechead { margin-bottom: var(--s-4); }
-.home-mem .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+/* Home's prints: three across (six memories fill two rows), two on a phone; the grid is set here once */
+.home-mem .mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .home-mem .print-card:not(.invite) { padding: 6px 6px 8px; }
 .home-mem .print-card:not(.invite) .frame, .home-mem .print-card.lead:not(.invite) .frame { aspect-ratio: 1 / 1; }
 .home-mem .print-card:not(.invite) .cap { padding: 12px; gap: 2px; }
 .home-mem .print-card:not(.invite) .cap .title { font-size: 19px; line-height: 1.12; -webkit-line-clamp: 2; }
-.home-mem .print-card:not(.invite) .cap .kicker { font-size: 10px; }
-.home-mem .print-card:not(.invite) .cap .dateline { font-size: 11px; }
 .home-mem .print-card:not(.invite) .typed-in .wm { display: none; }
 .home-mem .print-card:not(.invite) .cues { left: 8px; top: 8px; }
 
@@ -3444,7 +3443,6 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 @media (max-width: 1100px) {
   .home-board { grid-template-columns: minmax(0, 1fr); }
   .home-side { position: static; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-  .home-mem .mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .home-side { grid-template-columns: minmax(0, 1fr); }
@@ -3592,10 +3590,7 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
   .ribbon-track { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px); mask-image: linear-gradient(to right, transparent 0, #000 24px); }
 }
 @media (prefers-reduced-motion: reduce) { .ribbon-day .num, .ribbon-step { transition: none; } }
-/* Home prints never get so small that the words collide: as many columns as fit at 200px or more. A typed card's
-   words and their sizes live with the other prints, in pages/archive-reading.css */
-.home-mem .mosaic { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-@media (max-width: 760px) { .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Home's typed prints: their words and sizes live with the other prints, in pages/archive-reading.css */
 
 /* ───────────────────────── 55. Small print that can be read (lead) ───────────────────────── */
 /* docs/research/reading-2026.md measured the small-caps kickers and links below 4.5:1 on the paper (terracotta
@@ -3736,12 +3731,9 @@ body.writing-focus .sheet-page > .headband { display: none; }
 
 /* ───────────────────────── 60. Links that act are read as words (lead) ───────────────────────── */
 /* "All 8 →", "Open the book →", "Invite someone →" are controls: sentence case, 14px, a 44px target, never broken
-   over two lines. Small caps stay for the running head, the folio and the chapter kickers only. Home shows six
-   memories, which fill whole rows at three columns and at two. */
+   over two lines. Small caps stay for the running head, the folio and the chapter kickers only. */
 .sheet-page .more { text-transform: none; letter-spacing: 0; font: 600 14px/1.2 var(--font-ui); min-height: 44px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
 .sheet-page .more::after { font-size: 15px; }
-.home-mem .mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 760px) { .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* the loading placeholder's height under the page zoom */
 .sheet-page > .page[aria-busy="true"] { min-height: calc(40vh / var(--zoom, 1)); }
 .sheet-page > .page[aria-busy="true"] + .loading-mark { margin-top: calc(-40vh / var(--zoom, 1)); }

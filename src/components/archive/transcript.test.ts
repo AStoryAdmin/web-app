@@ -45,9 +45,9 @@ describe("round three of the transcript rules", () => {
     expect(cleanSpeech("So that doesn't count what my parents did, but yeah.")).toBe("So that doesn't count what my parents did.");
     expect(cleanSpeech("They won everything. Wow, that's amazing. So I'm like that too.")).toBe("They won everything. So I'm like that too.");
   });
-  it("lifts the other person's question onto its own line", async () => {
+  it("lifts the other person’s question onto its own line, and keeps the answer", async () => {
     const { cleanTranscript, ASKED } = await import("./transcript");
-    expect(cleanTranscript(["I won the challenge. Do they open to non-students as well? Yeah, definitely. They do."])).toEqual(["I won the challenge.", `${ASKED}Do they open to non-students as well?`, "They do."]);
+    expect(cleanTranscript(["I won the challenge. Do they open to non-students as well? Yeah, definitely. They do."])).toEqual(["I won the challenge.", `${ASKED}Do they open to non-students as well?`, "Yeah, definitely. They do."]);
   });
   it("breaks a block with no full stop before a clause word", async () => {
     const { splitRunOn } = await import("./transcript");
@@ -198,5 +198,57 @@ describe("finding the takeaway in the words", () => {
     expect(opensOn("I just lost my grandparents this year. And I was very close to them.", "I just lost my grandparents this year.")).toBe(true);
     expect(opensOn("We live in a small city\nIt’s in Vietnam\nMom was a teacher", "We live in a small city · It’s in Vietnam")).toBe(true);
     expect(opensOn("I was close to them. I just lost my grandparents this year.", "I just lost my grandparents this year.")).toBe(false);
+  });
+});
+
+describe("round 7: tidying keeps what was meant", () => {
+  it("keeps 'like' before a number, an amount or a negation", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech("She took home like hundreds of thousands of dollars.")).toContain("like hundreds");
+    expect(cleanSpeech("She was like ten years old.")).toContain("like ten");
+    expect(cleanSpeech("We had like a thousand dollars.")).toContain("like a thousand");
+    expect(cleanSpeech("It cost like 300 dollars.")).toContain("like 300");
+    expect(cleanSpeech("It cost like nothing back then.")).toContain("like nothing");
+    expect(cleanSpeech("Investing in Michigan is like not non-existent.")).toContain("is like not non-existent");
+    // filler still goes
+    expect(cleanSpeech("I taught like teenagers in the city.")).toBe("I taught teenagers in the city.");
+  });
+  it("keeps 'like' before an amount in the real call", async () => {
+    const { cleanTranscript } = await import("./transcript");
+    const { PITCH } = await import("./__fixtures__/calls");
+    expect(cleanTranscript(PITCH.split(/\n\s*\n/)).join(" ")).toContain("like hundreds of thousands");
+  });
+  it("never collapses a repeat across 'and'", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech("We went faster and faster and then we stopped.")).toBe("We went faster and faster and then we stopped.");
+    expect(cleanSpeech("We tried again and again and finally it worked.")).toBe("We tried again and again and finally it worked.");
+    expect(cleanSpeech("More and more and more people came.")).toBe("More and more and more people came.");
+    expect(cleanSpeech("It got worse and worse and then she left.")).toBe("It got worse and worse and then she left.");
+    // a true stutter still goes
+    expect(cleanSpeech("I, I went home and he was, he was tired.")).toBe("I went home and he was tired.");
+  });
+  it("never cuts a 'not just … but also' thought", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    const said =
+      "My grandmother raised all of us in that house and it was not just about cooking and cleaning for her but also about teaching us how to read and write when nobody else would.";
+    const out = cleanSpeech(said);
+    expect(out).not.toMatch(/for her\. But also/);
+    expect(out).toContain("for her but also about teaching");
+  });
+  it("keeps the teller's short answer after a 'We asked' line", async () => {
+    const { cleanTranscript, ASKED } = await import("./transcript");
+    const { PITCH } = await import("./__fixtures__/calls");
+    const out = cleanTranscript(PITCH.split(/\n\s*\n/));
+    const q = out.findIndex((p) => p.startsWith(ASKED));
+    expect(q).toBeGreaterThan(-1);
+    expect(out[q + 1]).toMatch(/^For sure\. Yeah, definitely\. That's what my friend Zanna/);
+  });
+});
+
+describe("round 7: the takeaway of 0ced", () => {
+  it("is the line about the teller's own grandparents, not the product", async () => {
+    const { takeaway } = await import("./transcript");
+    const { FASTER } = await import("./__fixtures__/calls");
+    expect(takeaway(FASTER)).toMatch(/very tight bondings with my grandparents/);
   });
 });

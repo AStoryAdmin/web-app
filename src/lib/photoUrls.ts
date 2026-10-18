@@ -68,28 +68,53 @@ function requestSigned(bucket: string, path: string): Promise<string | null> {
   });
 }
 
+/**
+ * A smaller rendition for a small frame: Supabase's image transform (`/render/image/sign/…?width=`), signed one photo
+ * at a time because the batch call cannot carry a transform. A print 170–490px wide asks for 600px and a List thumbnail
+ * for 400px, instead of the 1100–1200px original (measured on the founder's photographs: 600px is 15–33% fewer bytes
+ * and 400px about half; 800px is no smaller than the original, so a large print keeps the original). If the transform
+ * cannot be signed, the original is used.
+ */
+async function requestRendition(bucket: string, path: string, width: number): Promise<string | null> {
+  const key = `${bucket}/${path}@${width}`;
+  const hit = cached(key);
+  if (hit) return hit;
+  const sb = getSupabase();
+  try {
+    if (!sb) throw new Error("not connected");
+    const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, SIGN_TTL_SECONDS, { transform: { width } });
+    if (error || !data?.signedUrl) throw error || new Error("no url");
+    cache.set(key, { url: data.signedUrl, expiresAt: Date.now() + SIGN_TTL_SECONDS * 1000 });
+    return data.signedUrl;
+  } catch (err) {
+    console.warn("sign a smaller photo:", (err as Error)?.message || err);
+    return cached(`${bucket}/${path}`) ?? requestSigned(bucket, path);
+  }
+}
+
 /** A URL that loads right now, or null if it still has to be signed. */
-export function photoUrlNow(url: string | null | undefined): string | null {
+export function photoUrlNow(url: string | null | undefined, width?: number): string | null {
   if (!url) return null;
   const ref = privatePhotoRef(url);
   if (!ref) return url; // a data: URI, a demo picture, a public bucket
-  return cached(`${ref.bucket}/${ref.path}`);
+  return cached(`${ref.bucket}/${ref.path}${width ? `@${width}` : ""}`);
 }
 
-/** A URL that loads, signing it if it must. */
-export async function photoUrl(url: string | null | undefined): Promise<string | null> {
+/** A URL that loads, signing it if it must; with `width`, a rendition about that wide. */
+export async function photoUrl(url: string | null | undefined, width?: number): Promise<string | null> {
   if (!url) return null;
   const ref = privatePhotoRef(url);
   if (!ref) return url;
+  if (width) return requestRendition(ref.bucket, ref.path, width);
   return cached(`${ref.bucket}/${ref.path}`) ?? requestSigned(ref.bucket, ref.path);
 }
 
-/** The signed URL for one stored photo, for an <img>; null until it is ready. */
-export function usePhotoUrl(url: string | null | undefined): string | null {
-  const [signed, setSigned] = useState<string | null>(() => photoUrlNow(url));
+/** The signed URL for one stored photo, for an <img>; null until it is ready. `width` asks for a smaller rendition. */
+export function usePhotoUrl(url: string | null | undefined, width?: number): string | null {
+  const [signed, setSigned] = useState<string | null>(() => photoUrlNow(url, width));
   useEffect(() => {
     let live = true;
-    const now = photoUrlNow(url);
+    const now = photoUrlNow(url, width);
     if (now) {
       // Already known: no round trip, but keep the state in step with a new url.
       queueMicrotask(() => live && setSigned(now));
@@ -97,10 +122,10 @@ export function usePhotoUrl(url: string | null | undefined): string | null {
         live = false;
       };
     }
-    photoUrl(url).then((u) => live && setSigned(u));
+    photoUrl(url, width).then((u) => live && setSigned(u));
     return () => {
       live = false;
     };
-  }, [url]);
+  }, [url, width]);
   return signed;
 }
