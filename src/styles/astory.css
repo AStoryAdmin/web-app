@@ -102,6 +102,16 @@
   --gutter: 40px;
   --touch: 48px;
 
+  /* the Archive and the memory page (archive-reading.css): the album's black photo corners, the full view of a
+     photograph (always night, in both themes), the lifts of a menu and a print, the cloth's hairlines, the press of
+     a danger button */
+  --album-black: #3B291D; --album-black-deep: #241912; --album-black-sheen: #2E2219;
+  --night: rgba(23, 18, 16, 0.96); --night-veil: rgba(23, 18, 16, 0.6); --night-ink: #F3EBDD; --night-soft: #D9CFC2; --night-rule: rgba(243, 235, 221, 0.35);
+  --shadow-lift: 0 1px 2px rgba(42, 35, 32, 0.1), 0 18px 36px -18px rgba(42, 35, 32, 0.45);
+  --shadow-print-lift: 0 1px 2px rgba(42, 35, 32, 0.12), 0 26px 40px -20px rgba(42, 35, 32, 0.5);
+  --cloth-rule: rgba(246, 240, 230, 0.16); --cloth-track: rgba(246, 240, 230, 0.22); --cloth-object-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.4));
+  --danger-deep: #8E2E24;
+
   color-scheme: light;
 }
 
@@ -119,6 +129,8 @@
   --line: rgba(246,240,230,0.10); --line-strong: rgba(246,240,230,0.2);
   --shadow-2: 0 1px 2px rgba(0,0,0,0.4), 0 16px 40px -16px rgba(0,0,0,0.6);
   --shadow-float: 0 1px 2px rgba(0,0,0,0.5), 0 24px 60px -20px rgba(0,0,0,0.7);
+  --shadow-lift: 0 1px 2px rgba(0,0,0,0.4), 0 18px 36px -18px rgba(0,0,0,0.6); --shadow-print-lift: 0 1px 2px rgba(0,0,0,0.45), 0 26px 40px -20px rgba(0,0,0,0.65);
+  --danger-deep: #F0A296;
   color-scheme: dark;
 }
 
@@ -833,22 +845,11 @@ body.writing-focus .wbody { min-height: 60vh; }
 
 /* ── 21. Archive & memory (agent) ── */
 /* The Archive: the storyteller, the book, then a life by year with a decade rail beside it. */
-.arc-top { display: grid; grid-template-columns: 1fr; gap: var(--s-5); }
-.arc-profile { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--s-5); align-items: center; padding: var(--s-6); }
-.arc-profile .avatar { width: 96px; height: 96px; }
-.arc-profile h2 { font-size: var(--t-h3); }
-.arc-profile .meta { margin-top: 4px; }
 .arc-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1.5px solid var(--line); border-radius: var(--r-field); padding: var(--s-3) 0; }
 .arc-stats div { padding: 0 var(--s-5); border-left: 1px solid var(--line); min-width: 0; }
 .arc-stats div:first-child { border-left: 0; }
 .arc-stats b { display: block; font-size: var(--t-h3); color: var(--heading); line-height: 1.1; white-space: nowrap; }
 .arc-stats span { display: block; font-size: var(--t-small); color: var(--ink-soft); font-weight: 600; line-height: 1.25; margin-top: 4px; }
-.arc-book { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: var(--s-6); padding: var(--s-6); align-items: center; }
-.arc-book img { width: 128px; height: auto; filter: drop-shadow(0 10px 18px rgba(43, 33, 22, 0.25)); }
-.arc-book h2 { font-size: var(--t-h3); }
-.arc-book .n { font-size: 40px; font-weight: 700; color: var(--heading); line-height: 1; margin: var(--s-2) 0; }
-.arc-book .n small { font-size: var(--t-small); color: var(--ochre); font-weight: 700; margin-left: 6px; }
-.arc-book .acts { display: flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap; }
 .arc-banner { margin-top: var(--s-5); }
 .arc-body { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--s-10); margin-top: var(--s-8); align-items: start; }
 .arc-decades { position: sticky; top: var(--s-6); }
@@ -873,7 +874,6 @@ body.writing-focus .wbody { min-height: 60vh; }
 .arc-year span { font-size: var(--t-small); color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
 .arc-year::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); align-self: center; }
 .arc-cards { display: grid; gap: var(--s-4); }
-.arc-hint { font-size: var(--t-small); color: var(--ink-soft); margin: calc(-1 * var(--s-2)) 0 var(--s-4); }
 .arc-rec { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--s-4); align-items: center; padding: var(--s-4); border-radius: var(--r-card); background: var(--card); box-shadow: var(--shadow-1); text-decoration: none; color: inherit; transition: transform var(--dur-ui) var(--ease-out); }
 .arc-rec:hover { transform: translateY(-2px); }
 .arc-rec .pic { width: 120px; aspect-ratio: 1; object-fit: cover; border-radius: 14px; }
@@ -883,28 +883,15 @@ body.writing-focus .wbody { min-height: 60vh; }
 .arc-rec .dot { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; font-size: var(--t-small); }
 .arc-rec .dot::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: arc-pulse 1.6s ease-in-out infinite; }
 @keyframes arc-pulse { 50% { opacity: 0.3; } }
-.arc-empty { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--s-8); align-items: center; padding: var(--s-8); margin-top: var(--s-6); }
-.arc-empty img { width: 160px; height: auto; filter: drop-shadow(0 10px 18px rgba(43, 33, 22, 0.25)); }
-.arc-empty h2 { font-family: var(--font-story); font-weight: 600; font-size: var(--t-h2); margin-bottom: var(--s-3); }
-.arc-empty p { color: var(--ink-soft); margin-bottom: var(--s-5); max-width: 48ch; }
 .arc-none { padding: var(--s-8) var(--s-5); text-align: center; color: var(--ink-soft); display: grid; gap: var(--s-4); justify-items: center; margin-top: var(--s-6); }
 .arc-none p { font-size: var(--t-body); }
 @media (max-width: 1100px) {
-  .arc-top { grid-template-columns: 1fr; }
   .arc-body { grid-template-columns: 150px minmax(0, 1fr); gap: var(--s-6); }
 }
 @media (max-width: 760px) {
-  .arc-top { gap: var(--s-4); }
-  .arc-profile { grid-template-columns: 64px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-4); }
-  .arc-profile .avatar { width: 64px; height: 64px; }
-  .arc-profile .meta { font-size: 15px; }
   .arc-stats div { padding: 0 var(--s-2) 0 var(--s-3); }
   .arc-stats b { font-size: 19px; }
   .arc-stats span { font-size: 13px; }
-  .arc-book { grid-template-columns: 84px minmax(0, 1fr); gap: var(--s-4); padding: var(--s-4); }
-  .arc-book img { width: 84px; }
-  .arc-book .n { font-size: 32px; }
-  .arc-book .n small { display: block; margin: 4px 0 0; }
   .arc-body { display: block; margin: var(--s-6) calc(-1 * var(--gutter)) 0; padding: var(--s-5) var(--gutter) var(--s-4); background: var(--sheet); border-radius: var(--r-sheet) var(--r-sheet) 0 0; }
   .arc-decades { display: none; }
   .arc-decaderow { display: flex; margin: var(--s-3) 0 var(--s-2); }
@@ -913,8 +900,6 @@ body.writing-focus .wbody { min-height: 60vh; }
   .arc-rec { grid-template-columns: 96px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); }
   .arc-rec .pic { width: 96px; }
   .arc-rec h3 { font-size: 20px; }
-  .arc-empty { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: var(--s-6) var(--s-4); }
-  .arc-empty img { width: 120px; }
 }
 
 /* The memory page: on a laptop an open book, photographs on the left page and the words on the right. */
@@ -1222,8 +1207,6 @@ body.writing-focus .wbody { min-height: 60vh; }
 .bk-page.blank::after { display: none; }
 .bk-reader.single .bk-page { border-radius: 4px; }
 .bk-reader.single .bk-page::after { display: none; }
-.bk-reader .bk-spread { animation: bkfade 240ms var(--ease-out) both; }
-@keyframes bkfade { from { opacity: 0; } }
 
 /* the leaf that turns: its front is the page leaving, its back the page arriving */
 .bk-leaf { position: absolute; top: 0; bottom: 0; width: 50%; transform-style: preserve-3d; z-index: 2; will-change: transform; }
@@ -1742,7 +1725,6 @@ small { font-size: 13px; }
 .next-call .day small { font-size: 13px; letter-spacing: 0; }
 .field-label { text-transform: none; letter-spacing: 0.01em; font-weight: 600; color: var(--ink-soft); }
 .tnode .tag { text-transform: none; letter-spacing: 0.01em; font-size: 13px; font-weight: 600; padding: 3px 10px; }
-.arc-book .n small { font-weight: 600; color: var(--ink-soft); }
 .wall-foot a, .auth .resend button { font-weight: 600; }
 .auth .legal { color: var(--ink-soft); }
 .contrib .more { font-weight: 600; }
@@ -2529,7 +2511,6 @@ a.card, .arc-rec, a.banner { transition: transform var(--dur-ui) var(--ease-out)
 .hero-print .band .title { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.1; letter-spacing: -0.005em; color: var(--ink); text-wrap: balance; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .hero-print .band .when { font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.08em; font-variant-caps: all-small-caps; color: var(--accent); }
 /* the Archive: "Prints | List" at the top of the list, remembered in this browser; the pressed side steps up in tone, no fill */
-.arc-viewrow { display: flex; justify-content: flex-end; margin: var(--s-4) 0 0; }
 .arc-view { display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--r-pill); background: var(--sheet); }
 .arc-view .chip.big { min-height: 36px; padding: 0 var(--s-4); background: transparent; border-color: transparent; color: var(--ink-soft); transition: transform var(--dur-press) var(--ease-out), background var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out); }
 .arc-view .chip.big:hover { border-color: transparent; color: var(--ink); }
@@ -2589,7 +2570,6 @@ a.card, .arc-rec, a.banner { transition: transform var(--dur-ui) var(--ease-out)
   .print-card.invite .typed-in .line { font-size: 17px; }
   .mosaic-quote.lead .fromthebook { aspect-ratio: auto; padding: var(--s-5); }
   .mosaic-quote.wide .fromthebook { padding: var(--s-5); }
-  .arc-viewrow { justify-content: flex-start; }
   .arc-rail { --rail-pad: 22px; --rail-x: 5px; }
   .arc-rail .arc-decade-label { margin-top: var(--s-8); }
 }
@@ -2616,7 +2596,6 @@ a.card, .arc-rec, a.banner { transition: transform var(--dur-ui) var(--ease-out)
 .atiles { margin-top: var(--s-8); }
 .mpd-words { margin-top: var(--s-12); }
 .fv { margin-top: var(--s-16); }
-.ystrip { margin-top: var(--s-12); }
 .mpd .rd-foot { margin-top: var(--s-12); }
 
 /* the photograph: one print, 16:10, the white border of the book's prints, no shadow at rest */
@@ -2695,14 +2674,6 @@ a.card, .arc-rec, a.banner { transition: transform var(--dur-ui) var(--ease-out)
 .fv .done svg { width: 20px; height: 20px; }
 
 /* the strip of years: small pills, this memory's year filled */
-.ystrip { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.ystrip a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 68px; padding: 0 14px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); color: var(--ink-soft); text-decoration: none; font: 600 14px/1 var(--font-ui); letter-spacing: 0.02em;
-  transition: border-color var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out), transform 120ms var(--ease-out); }
-.ystrip a:hover { border-color: var(--chocolate); color: var(--heading); }
-.ystrip a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ystrip a:active { transform: scale(0.97); }
-.ystrip a.on { background: var(--accent); border-color: var(--accent); color: var(--on-chocolate); }
-
 /* the person page: "{Name} & {storyteller}" on the cloth, their face as a round print */
 .phero { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-6); align-items: center; }
 .phero.has-portrait { grid-template-columns: auto minmax(0, 1fr); }
@@ -2813,7 +2784,7 @@ a.card, .arc-rec, a.banner { transition: transform var(--dur-ui) var(--ease-out)
   .phero.has-portrait { grid-template-columns: minmax(0, 1fr); }
   .phero-portrait { width: 72px; height: 72px; }
 }
-@media (prefers-reduced-motion: reduce) { .atile, .ystrip a, .pp-card, .pp-thumb, .lead-person, .mpd-crumbs a, .fv-open, .fv-open span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .atile, .pp-card, .pp-thumb, .lead-person, .mpd-crumbs a, .fv-open, .fv-open span { transition: none; } }
 
 /* ── 39. The sheet is the book's paper (agent) ── */
 /* Below the cloth, the app is the printed book's paper (astoryapp.com/samples). The founder's words: the cloth was
@@ -2880,8 +2851,8 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 .sheet-page .trio .card h3 { margin-bottom: var(--s-3); }
 .sheet-page .trio .card.teal h3 { color: #F6EFE3; }
 /* the running text: what a person said, and anything set as a paragraph, in EB Garamond at 18/1.6 in the full ink */
-.sheet-page :is(.story, .story p, .said, .story-q, .story-title, .arc-yearnote, .edition-line, .nextq, .plans-promise, .card.empty p, .arc-empty p, .arc-none p, .book-empty .story, .mp-story, .mp-story .quiet, .rd-story, .rd-story p, .polaroid figcaption, .mp-polaroids .polaroid .cap, .mp-m-polaroids .polaroid .cap, .signoff, .heard, .starters button, .asks .chip, .after-next .nextq, .ft-head .meta, .fv-words, .mp-voice .words):not(.bk-reader *) { font-family: var(--book-body); }
-.sheet-page :is(.story, .story p, .arc-yearnote, .edition-line, .card.empty p, .arc-empty p, .arc-none p, .fv-words, .mp-voice .words):not(.bk-reader *) { font-size: 18px; line-height: 1.6; color: var(--sheet-ink); }
+.sheet-page :is(.story, .story p, .said, .story-q, .story-title, .arc-yearnote, .edition-line, .nextq, .plans-promise, .card.empty p, .arc-none p, .book-empty .story, .mp-story, .mp-story .quiet, .rd-story, .rd-story p, .polaroid figcaption, .mp-polaroids .polaroid .cap, .mp-m-polaroids .polaroid .cap, .signoff, .heard, .starters button, .asks .chip, .after-next .nextq, .ft-head .meta, .fv-words, .mp-voice .words):not(.bk-reader *) { font-family: var(--book-body); }
+.sheet-page :is(.story, .story p, .arc-yearnote, .edition-line, .card.empty p, .arc-none p, .fv-words, .mp-voice .words):not(.bk-reader *) { font-size: 18px; line-height: 1.6; color: var(--sheet-ink); }
 .sheet-page .news .item { font-family: var(--book-body); font-size: 17px; line-height: 1.5; color: var(--sheet-ink); }
 .sheet-page .news .item b { font-weight: 500; }
 .sheet-page .person strong { font-family: var(--book-display); font-weight: 600; font-size: 20px; line-height: 1.1; }
@@ -2892,11 +2863,11 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 .sheet-page .arc-stats b { font-size: 30px; }
 .sheet-page .acct-plan b { font-size: 26px; }
 /* the tracked small caps: the book's own language on the paper (the earlier "no uppercase" ruling was about cramped ochre labels) */
-.sheet-page .label, .sheet-page .field > span:first-child, .sheet-page .arc-decades h3, .sheet-page .progress .end, .sheet-page .bookmini .n small, .sheet-page .arc-book .n small, .sheet-page .plan-book .label, .sheet-page .plan-price span, .sheet-page .arc-year span, .sheet-page .arc-stats span, .sheet-page .bk-sw-label, .sheet-page .bk-where, .sheet-page .bk-head .meta {
+.sheet-page .label, .sheet-page .field > span:first-child, .sheet-page .arc-decades h3, .sheet-page .progress .end, .sheet-page .bookmini .n small, .sheet-page .plan-book .label, .sheet-page .plan-price span, .sheet-page .arc-year span, .sheet-page .arc-stats span, .sheet-page .bk-sw-label, .sheet-page .bk-where, .sheet-page .bk-head .meta {
   font-family: var(--font-ui); font-size: 11px; font-weight: 600; line-height: 1.4; letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker-grey); }
 .sheet-page .pagehead .label, .sheet-page .savedbox .label, .sheet-page .fromthebook .label, .sheet-page .arc-decade-label { color: var(--kicker-terracotta); }
 .sheet-page .label.quiet { color: var(--kicker-grey); opacity: 0.8; }
-.sheet-page .arc-book .n small, .sheet-page .bookmini .n small { margin: 6px 0 0; display: block; letter-spacing: 0.14em; }
+.sheet-page .bookmini .n small { margin: 6px 0 0; display: block; letter-spacing: 0.14em; }
 .sheet-page .pill.gold { display: inline-flex; align-items: center; min-height: 22px; padding: 0 9px; border-radius: 999px; background: var(--kicker-sage-bg); color: var(--kicker-sage); font: 600 11px/1 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; }
 .sheet-page .chip:not(.big, .asks .chip) { font: 600 11px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; min-height: 26px; padding: 0 10px; }
 .sheet-page .chip.green { background: var(--kicker-sage-bg); color: var(--kicker-sage); }
@@ -2973,8 +2944,7 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 /* "Your book": the keepsake book as the object with a contact shadow, the count in Cormorant 48 */
 .sheet-page .bookmini { gap: var(--s-5); align-items: center; }
 .sheet-page .bookmini img { width: 76px; filter: drop-shadow(0 12px 10px rgba(42, 35, 32, 0.28)) drop-shadow(0 2px 2px rgba(42, 35, 32, 0.18)); }
-.sheet-page .bookmini .n, .sheet-page .arc-book .n { font-family: var(--book-display); font-weight: 600; font-size: 48px; line-height: 0.95; letter-spacing: -0.01em; color: var(--sheet-ink); }
-.sheet-page .arc-book img { filter: drop-shadow(0 14px 12px rgba(42, 35, 32, 0.28)) drop-shadow(0 2px 2px rgba(42, 35, 32, 0.18)); }
+.sheet-page .bookmini .n { font-family: var(--book-display); font-weight: 600; font-size: 48px; line-height: 0.95; letter-spacing: -0.01em; color: var(--sheet-ink); }
 /* section heads carry the ✦ ornament rule above them; .ornament is the same divider on its own */
 .sheet-page .sechead { position: relative; padding-top: var(--s-6); margin-top: var(--s-10); }
 .sheet-page .sechead::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--sheet-rule); }
@@ -3031,7 +3001,7 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
   .sheet-page .arc-year h2 { font-size: 34px; }
   .sheet-page .arc-rail .arc-year h2 { font-size: 30px; }
   .sheet-page .bookmini img { width: 64px; }
-  .sheet-page .bookmini .n, .sheet-page .arc-book .n { font-size: 40px; }
+  .sheet-page .bookmini .n { font-size: 40px; }
   .sheet-page .plan-price b { font-size: 36px; }
   .sheet-page .acct-person > div { min-width: 0; }
   .sheet-page .acct-person .meta { font-size: 13px; overflow-wrap: anywhere; }
