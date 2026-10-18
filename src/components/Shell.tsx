@@ -244,9 +244,11 @@ type ShellProps = {
   wide?: boolean;
   /** The Book page wears the book's own teal cloth; everything else the brand's chocolate. */
   tone?: "teal";
+  /** The running head's book name, when the page shows some other book than the active story's (a sample family). */
+  book?: string;
 };
 
-export default function Shell({ children, hero, title, back, compact, bare, wide, tone }: ShellProps) {
+export default function Shell({ children, hero, title, back, compact, bare, wide, tone, book }: ShellProps) {
   const { user } = useAuth();
   const [teller, setTeller] = useState(false);
   const [add, setAdd] = useState(false);
@@ -264,7 +266,7 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   const path = location.pathname;
   const place = NAV.find((n) => (n.end ? path === n.to : path.startsWith(n.to)))?.label;
   const pageName = title ?? (path.startsWith("/account") ? "Account" : path.startsWith("/plans") ? "Plans" : path.startsWith("/talk") ? "Talk" : place ?? "");
-  const bookName = headStory ? (headStory.lastName ? `The ${headStory.lastName} book` : `${headStory.name}'s book`) : "A Story";
+  const bookName = book ?? (headStory ? (headStory.lastName ? `The ${headStory.lastName} book` : `${headStory.name}’s book`) : "A Story");
   const runningHead = !busy && !path.startsWith("/write") && pageName !== "";
   // Each page has its own paper (docs/research/decoration-2026.md D13): laid for the day's pages, linen for the family,
   // a smooth plate for reading and the book, bond for the account and the writer.
