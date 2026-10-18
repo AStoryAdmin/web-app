@@ -1,6 +1,6 @@
 /**
  * "A note from family": what this person sent for the story, each as a
- * card with a star, the words in the book's body face and, under them,
+ * card with a star, the words in the book’s body face and, under them,
  * which memory it was for. Only what a keeper has kept; nothing pending.
  */
 import { useEffect, useState } from "react";

@@ -3,7 +3,7 @@
  * print in a white paper ring with a gold hairline, or, with no
  * photograph, their initials engraved on a monogram seal. Never a tinted
  * square, never a blank box. One component for the tree, the storyteller,
- * the family's voices, the person page and the requests, so a face looks
+ * the family’s voices, the person page and the requests, so a face looks
  * the same everywhere on these pages.
  */
 import type { CSSProperties } from "react";

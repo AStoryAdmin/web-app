@@ -1,6 +1,6 @@
 /**
  * One person listed twice: the same name, at most one of the rows on A
- * Story (the founder's test family had "Nhi Tran" three times over). One
+ * Story (the founder’s test family had "Nhi Tran" three times over). One
  * quiet line per name, with the way out that fits each extra row
  * (data/family duplicateFix): merge it into the one that stays
  * (merge_people keeps edges, tags and credits), merge the two stories
@@ -32,7 +32,7 @@ export default function Duplicates({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  /** Stories an extra row points at that the account's list lacks: kept by me (so merged away) or by somebody else. */
+  /** Stories an extra row points at that the account’s list lacks: kept by me (so merged away) or by somebody else. */
   const [orphans, setOrphans] = useState<Record<string, boolean>>({});
   const myStoryIds = stories.map((s) => s.id);
   const groups = duplicateGroups(people).filter((g) => g.extras.every((p) => canEdit(p, family, meId)));
@@ -58,7 +58,7 @@ export default function Duplicates({
       if (problem) setNote(problem);
       else await onChanged();
     } catch (err) {
-      setNote(`That didn't go through (${(err as Error)?.message || "no connection"}).`);
+      setNote(`That didn’t go through (${(err as Error)?.message || "no connection"}).`);
     } finally {
       setBusy(null);
     }
@@ -130,7 +130,7 @@ export default function Duplicates({
               );
             return (
               <div key={x.id} className="acts">
-                {/* merging keeps the extra's ties, tags and credits; a one-tap remove beside it would throw them away */}
+                {/* merging keeps the extra’s ties, tags and credits; a one-tap remove beside it would throw them away */}
                 <Button variant="outline" small loading={busy === x.id} onClick={() => void merge(g.keep, x)}>
                   Merge into one
                 </Button>

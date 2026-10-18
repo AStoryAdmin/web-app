@@ -1,12 +1,12 @@
 /**
- * The rail on a person's page: a vertical terracotta line down the left
+ * The rail on a person’s page: a vertical terracotta line down the left
  * with a dot for each memory, and the memories hanging off it, the
  * photograph as a small white-bordered print on the left, the title in the
- * book's display face, the date and chapter, one line of the words.
+ * book’s display face, the date and chapter, one line of the words.
  * Oldest at the top, the newest last. When the memories were told by
- * somebody else (`tellerOf`), each one carries its teller's face and name,
+ * somebody else (`tellerOf`), each one carries its teller’s face and name,
  * and its date is never turned into an age: the age a story knows is its
- * own subject's, not the person who sent the memory in (BAOS 17, 29). A
+ * own subject’s, not the person who sent the memory in (BAOS 17, 29). A
  * card with no date, or the fallback chapter, prints neither (the page
  * gathers the undated into one row); the memory the page quotes above
  * keeps to its title.
@@ -37,9 +37,9 @@ const FALLBACK_CHAPTER = /^anything else$/i;
 function RailCard({ story, memory, teller, preview, quoted }: Found & { teller: Teller | null; preview?: boolean; quoted?: boolean }) {
   const photo = usePhotoUrl(cover(memory));
   const paper = paperFor(memory);
-  // the page's plate already quotes this one: the card keeps to its title and date
+  // the page’s plate already quotes this one: the card keeps to its title and date
   const words = quoted ? "" : oneLine(memory);
-  // An account somebody else sent in is dated as they dated it, never as the subject's age.
+  // An account somebody else sent in is dated as they dated it, never as the subject’s age.
   const { dated, text } = memoryDate(memory) as { dated: boolean; text: string };
   const date = !dated ? "" : teller || memory.contributor ? text.trim() : (dateLine(story, memory) as string);
   const chapter = memory.era && !FALLBACK_CHAPTER.test(memory.era) ? memory.era : "";

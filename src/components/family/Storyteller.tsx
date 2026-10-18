@@ -1,10 +1,10 @@
 /**
- * The storyteller's column beside the family: whose story this is, in
+ * The storyteller’s column beside the family: whose story this is, in
  * their own words (the opening of their latest memory, never a summary of
- * it), and the family's lines under it, each beside the face of whoever
+ * it), and the family’s lines under it, each beside the face of whoever
  * wrote it and what they are to the storyteller. Two quiet ways to add to
  * it. Their face is in the tree, the largest one, so it is not repeated
- * here. Nobody is ever written as somebody else: the family's lines are
+ * here. Nobody is ever written as somebody else: the family’s lines are
  * theirs, under their own name.
  */
 import { useEffect, useMemo, useState } from "react";
@@ -22,6 +22,7 @@ import { firstName, linkState, personName, realPeople, relationTo, stateWords, t
 import { treePeople, yearsOf } from "./tree/treeModel";
 import { oneLine, saidLine } from "../person/personRail";
 import { ownWords, tellerTurns } from "../archive/transcript";
+import { useRetryFocus } from "./useRetryFocus";
 
 type Voice = { id: string; personId: string | null; name: string; relationship: string; text: string; createdAt: string; memoryId: string | null };
 
@@ -36,11 +37,12 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
   const first = teller ? firstName(teller) : story.name;
   const q = preview ? "?preview=tree" : "";
 
-  // The family's lines: approved contributions, and memories that carry a contributor's name (one became the other).
+  // The family’s lines: approved contributions, and memories that carry a contributor’s name (one became the other).
   // null while they load (the sample has none to load)
   const [contributions, setContributions] = useState<Contribution[] | null>(preview ? [] : null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const { line: retryLine, arm: armRetry } = useRetryFocus();
   useEffect(() => {
     if (preview) return;
     let live = true;
@@ -83,7 +85,7 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
   const years = teller?.deathYear ? yearsOf({ birthYear: birth, deathYear: teller.deathYear }) : birth ? `born ${birth}` : "";
   const meta = [years, stateLine, countLine].filter(Boolean).join(" · ");
 
-  // Their own words: the first real sentence of their latest memory, never the family's.
+  // Their own words: the first real sentence of their latest memory, never the family’s.
   const latest = kept.filter((m) => !m.contributor && saidLine(m).length >= 20).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   const said = latest ? saidLine(latest, 160).replace(/^“|”$/g, "") : "";
   const pronoun = teller?.sex === "F" ? "her" : teller?.sex === "M" ? "his" : "their";
@@ -109,7 +111,7 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
           </figcaption>
         </figure>
       ) : (
-        <p className="st-said empty">{own ? "Your first memory will be quoted here, in your own words." : `${first}'s first memory will be quoted here, in ${pronoun} own words.`}</p>
+        <p className="st-said empty">{own ? "Your first memory will be quoted here, in your own words." : `${first}’s first memory will be quoted here, in ${pronoun} own words.`}</p>
       )}
 
       <div className="st-acts">
@@ -147,11 +149,12 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
           })
         ) : failed ? (
           <p className="st-empty bad" role="alert">
-            The family's lines couldn't be reached just now.{" "}
+            The family’s lines couldn’t be reached just now.{" "}
             <button
               type="button"
               className="st-act"
               onClick={() => {
+                armRetry();
                 setFailed(false);
                 setContributions(null);
                 setAttempt((a) => a + 1);
@@ -161,8 +164,8 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
             </button>
           </p>
         ) : contributions === null ? (
-          <p className="st-empty" aria-busy="true">
-            Looking for the family's lines…
+          <p className="st-empty" aria-busy="true" tabIndex={-1} ref={retryLine}>
+            Looking for the family’s lines…
           </p>
         ) : (
           <div className="st-empty">

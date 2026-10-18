@@ -1,5 +1,5 @@
 // The album groups a family into generations relative to the storyteller:
-// rows in order, couples together, nieces marked as somebody else's, ghosts
+// rows in order, couples together, nieces marked as somebody else’s, ghosts
 // only where a relation is missing, the unplaced on the shelf.
 import { describe, expect, it } from "vitest";
 import { buildIndex } from "../../../app-core/lib/familyGraph.js";
@@ -23,7 +23,7 @@ describe("the sample family", () => {
   const { index, people, teller, meId } = sample();
   const album = buildAlbum({ people, index, tellerId: teller.id, meId });
 
-  it("puts the storyteller's layer apart, with both husbands", () => {
+  it("puts the storyteller’s layer apart, with both husbands", () => {
     expect(album.teller?.id).toBe(id("rose"));
     expect(album.spouses.map((p) => p.id)).toEqual([id("frank"), id("tom")]);
     expect(album.lone).toBe(false);
@@ -31,7 +31,7 @@ describe("the sample family", () => {
 
   it("draws one row per generation, oldest first", () => {
     expect(album.rows.map((r) => r.level)).toEqual([-1, 0, 1, 2]);
-    expect(album.rows.map((r) => r.title)).toEqual(["Rose's parents", "Rose's sister and brother", "Rose's children", "Rose's grandchildren"]);
+    expect(album.rows.map((r) => r.title)).toEqual(["Rose’s parents", "Rose’s sister and brother", "Rose’s children", "Rose’s grandchildren"]);
     expect(album.generations).toBe(4);
   });
 
@@ -48,16 +48,16 @@ describe("the sample family", () => {
 
   it("says whose a niece is instead of calling her a daughter", () => {
     const children = album.rows[2];
-    expect(children.sub.get(id("claire"))).toBe("Margaret's");
+    expect(children.sub.get(id("claire"))).toBe("Margaret’s");
     expect(children.sub.has(id("daniel"))).toBe(false);
     expect(children.sub.has(id("mark"))).toBe(false);
-    expect(children.note).toBe("· and Margaret's");
-    expect(album.rows[3].sub.get(id("maya"))).toBe("Daniel's");
-    expect(album.rows[3].sub.get(id("sam"))).toBe("Anne's");
+    expect(children.note).toBe("· and Margaret’s");
+    expect(album.rows[3].sub.get(id("maya"))).toBe("Daniel’s");
+    expect(album.rows[3].sub.get(id("sam"))).toBe("Anne’s");
   });
 
   it("offers a ghost only where a relation is missing", () => {
-    expect(album.rows[0].ghosts.map((g) => g.label)).toEqual(["Walter's parents", "Edith's parents"]);
+    expect(album.rows[0].ghosts.map((g) => g.label)).toEqual(["Walter’s parents", "Edith’s parents"]);
     expect(album.rows[0].ghosts[0]).toMatchObject({ anchorId: id("walter"), kind: "parent" });
     expect(album.rows[1].ghosts.map((g) => g.label)).toEqual(["a sister or brother"]);
     expect(album.rows[2].ghosts.map((g) => g.label)).toEqual(["a child"]);
@@ -103,7 +103,7 @@ describe("a storyteller alone", () => {
   });
 });
 
-describe("a friend's father (the founder's own shape)", () => {
+describe("a friend’s father (the founder’s own shape)", () => {
   const mk = (id: string, givenName: string, extra: Partial<Person> = {}) => ({ id, givenName, familyName: "", sex: "", source: "manual", householdId: "h", ...extra }) as Person;
   const people = [mk("bao", "Bao", { storyId: "s1", userId: "me" }), mk("nhi", "Nhi"), mk("ty", "Ty"), mk("gbao", "GBao")];
   const edges = [
@@ -114,9 +114,9 @@ describe("a friend's father (the founder's own shape)", () => {
   const index = buildIndex({ people, edges }) as Index;
   const album = buildAlbum({ people, index, tellerId: "bao", meId: "me", own: true });
 
-  it("never calls a friend's father the storyteller's parent", () => {
-    expect(album.rows.map((r) => r.title)).toEqual(["Nhi's parent", "Your friends"]);
-    expect(album.rows[0].sub.get("ty")).toBe("Nhi's");
+  it("never calls a friend’s father the storyteller’s parent", () => {
+    expect(album.rows.map((r) => r.title)).toEqual(["Nhi’s parent", "Your friends"]);
+    expect(album.rows[0].sub.get("ty")).toBe("Nhi’s");
     expect(album.rows[0].note).toBe("");
     expect(album.rows[0].ghosts.map((g) => g.label)).toEqual(["a parent of yours"]);
     expect(album.rows[1].sub.get("nhi")).toBe("friend");
@@ -128,15 +128,15 @@ describe("the words", () => {
   const f = (sex: "M" | "F" | "") => ({ id: sex || "x", givenName: "A", familyName: "", sex, source: "manual" }) as unknown as Person;
   it("says your when the viewer is the storyteller", () => {
     expect(rowTitle(-1, [f("F"), f("M")], [], "Your")).toBe("Your parents");
-    expect(rowTitle(-1, [f("F")], [], "Rose's")).toBe("Rose's mother");
-    expect(rowTitle(1, [f("M")], [], "Rose's")).toBe("Rose's son");
-    expect(rowTitle(0, [f("F"), f("F")], [], "Rose's")).toBe("Rose's sisters");
-    expect(rowTitle(0, [f("F"), f("M")], [], "Rose's")).toBe("Rose's sister and brother");
-    expect(rowTitle(0, [f("")], [], "Rose's")).toBe("Rose's brothers and sisters");
-    expect(rowTitle(-2, [], [], "Rose's")).toBe("Rose's grandparents");
-    expect(rowTitle(-3, [], [], "Rose's")).toBe("Rose's great-grandparents");
-    expect(rowTitle(3, [], [], "Rose's")).toBe("Rose's great-grandchildren");
-    expect(rowTitle(0, [], [f("F"), f("M")], "Rose's", ["cousin-1-0", "cousin-1-0"])).toBe("Rose's cousins");
+    expect(rowTitle(-1, [f("F")], [], "Rose’s")).toBe("Rose’s mother");
+    expect(rowTitle(1, [f("M")], [], "Rose’s")).toBe("Rose’s son");
+    expect(rowTitle(0, [f("F"), f("F")], [], "Rose’s")).toBe("Rose’s sisters");
+    expect(rowTitle(0, [f("F"), f("M")], [], "Rose’s")).toBe("Rose’s sister and brother");
+    expect(rowTitle(0, [f("")], [], "Rose’s")).toBe("Rose’s brothers and sisters");
+    expect(rowTitle(-2, [], [], "Rose’s")).toBe("Rose’s grandparents");
+    expect(rowTitle(-3, [], [], "Rose’s")).toBe("Rose’s great-grandparents");
+    expect(rowTitle(3, [], [], "Rose’s")).toBe("Rose’s great-grandchildren");
+    expect(rowTitle(0, [], [f("F"), f("M")], "Rose’s", ["cousin-1-0", "cousin-1-0"])).toBe("Rose’s cousins");
     expect(rowTitle(0, [], [f("F"), f("M")], "Your", ["stated:friend", "stated:friend"])).toBe("Your friends");
     expect(rowTitle(0, [], [f("F"), f("M")], "Your", ["stated:friend", "cousin-1-0"])).toBe("Your family and friends");
     expect(rowTitle(0, [], [], "Your")).toBe("Your generation");
@@ -152,10 +152,10 @@ describe("the words", () => {
     expect(decadeOf([{ birthYear: 1941 }, { birthYear: 1944 }, { birthYear: 1966 }])).toBe("1940s");
     expect(decadeOf([{}, { birthYear: null }])).toBe("");
   });
-  it("names the storyteller's spouses", () => {
+  it("names the storyteller’s spouses", () => {
     const { index, teller, people } = sample();
     const spouses = people.filter((p) => [id("frank"), id("tom")].includes(p.id));
-    expect(spousesLabel(index, spouses, teller.id, "Rose's")).toBe("Rose's husbands");
+    expect(spousesLabel(index, spouses, teller.id, "Rose’s")).toBe("Rose’s husbands");
     expect(spousesLabel(index, spouses.slice(0, 1), teller.id, "Your")).toBe("Your husband");
   });
 });

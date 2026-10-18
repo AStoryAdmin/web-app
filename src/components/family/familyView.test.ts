@@ -9,7 +9,7 @@ const person = (o: Partial<Person>): Person => ({ id: "p", householdId: "h", giv
 const fam = (people: Person[]): Family => ({ people, edges: [], households: [] });
 
 describe("whose story: three groups, never mixed", () => {
-  it("sorts yours, the ones you keep, and the ones you've joined", () => {
+  it("sorts yours, the ones you keep, and the ones you’ve joined", () => {
     const mine = story({ id: "a", relationship: "Myself" });
     const kept = story({ id: "b", relationship: "Mother" });
     const joined = story({ id: "c", ownerId: "nhi", relationship: "Myself", name: "Nhi" });
@@ -17,7 +17,7 @@ describe("whose story: three groups, never mixed", () => {
     expect(storyGroupOf(kept, "me")).toBe("kept");
     expect(storyGroupOf(joined, "me")).toBe("joined");
     const groups = storyGroups([joined, kept, mine], "me");
-    expect(groups.map((g) => g.title)).toEqual(["Your story", "Stories you keep for someone", "Stories you've joined"]);
+    expect(groups.map((g) => g.title)).toEqual(["Your story", "Stories you keep for someone", "Stories you’ve joined"]);
     expect(groups.find((g) => g.key === "joined")?.stories.map((s) => s.id)).toEqual(["c"]);
   });
   it("treats a story with no owner recorded as yours, and leaves empty groups out", () => {
@@ -27,7 +27,7 @@ describe("whose story: three groups, never mixed", () => {
   });
 });
 
-describe("the three states, in the product's words", () => {
+describe("the three states, in the product’s words", () => {
   it("names them exactly", () => {
     expect(stateWords("listed")).toBe("not on A Story yet");
     expect(stateWords("invited")).toBe("invited · waiting for them");
@@ -48,7 +48,7 @@ describe("one person, never twice", () => {
     const f = fam([person({ id: "1", givenName: "Nhi", familyName: "Trần" }), person({ id: "2", givenName: "nhi ", familyName: "tran", userId: "u2" })]);
     expect(sameNamePeople(f, "Nhi", "Tran").map((p) => p.id)).toEqual(["1"]);
   });
-  it("groups the copies, keeps the account's row, then the one bound to a story, and ignores placeholders", () => {
+  it("groups the copies, keeps the account’s row, then the one bound to a story, and ignores placeholders", () => {
     const people = [
       person({ id: "a", createdAt: "2026-10-01" }),
       person({ id: "b", createdAt: "2026-10-02", storyId: "s1" }),

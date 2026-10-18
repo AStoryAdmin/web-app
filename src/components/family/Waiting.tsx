@@ -7,7 +7,7 @@
  * writes the field). Accept and Decline, nothing else.
  *
  * `<WaitingOnOthers>`: what you asked and are still waiting on, so a
- * request never disappears into silence: "asked to join Rose's story ·
+ * request never disappears into silence: "asked to join Rose’s story ·
  * waiting", "you suggested born 1946 for Linh · waiting".
  */
 import { useCallback, useEffect, useState } from "react";
@@ -21,11 +21,12 @@ import Portrait from "./Portrait";
 import { canEdit, personName, whenLabel } from "./familyView";
 import { useHold } from "./useHold";
 import HeldLine from "./HeldLine";
+import { useRetryFocus } from "./useRetryFocus";
 
 type Shape = { joins: JoinRequest[]; suggestions: Suggestion[] };
 
-const line = (s: Suggestion) => (suggestionLine(s) as string) || `${s.field}: ${s.value}`;
-// The app's helper is plain JS with a `= null` default; its type needs saying here.
+const line = (s: Suggestion) => ((suggestionLine(s) as string) || `${s.field}: ${s.value}`).replace(/'/g, "’");
+// The app’s helper is plain JS with a `= null` default; its type needs saying here.
 const patchFor = suggestionPatch as unknown as (s: Suggestion, person: Person | null) => Partial<Person> | null;
 
 /** Loads both kinds for one story and its family; tells the parent how many so the heading can count them. */
@@ -44,7 +45,7 @@ export function Asked({
   /** Whether this account keeps the story (owner or active manager): only keepers see join requests. */
   keeper: boolean;
   onCount?: (n: number) => void;
-  /** Whether the asks couldn't be reached, so the review above never says "nothing waiting" over the failure. */
+  /** Whether the asks couldn’t be reached, so the review above never says "nothing waiting" over the failure. */
   onFailed?: (failed: boolean) => void;
   onChanged?: () => Promise<void>;
 }) {
@@ -54,8 +55,9 @@ export function Asked({
   const [now, setNow] = useState(() => new Date(0));
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const onFail = useCallback((err: unknown) => setError(`That didn't go through (${(err as Error)?.message || "no connection"}). It's still here; try again.`), []);
-  const { held, hold, undo } = useHold(onFail);
+  const onFail = useCallback((err: unknown) => setError(`That didn’t go through (${(err as Error)?.message || "no connection"}). It’s still here; try again.`), []);
+  const { held, hold, undo, pause, resume, returnRef } = useHold(onFail);
+  const { line: retryLine, arm: armRetry } = useRetryFocus();
   const people = family?.people || [];
   const personOf = (id: string) => people.find((p) => p.id === id) || null;
 
@@ -77,9 +79,10 @@ export function Asked({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- people is derived from family
   }, [story.id, keeper, family, meId, attempt]);
 
+  // a held decline has been answered: it is not counted as waiting
   useEffect(() => {
-    if (items) onCount?.(items.joins.length + items.suggestions.length);
-  }, [items, onCount]);
+    if (items) onCount?.([...items.joins, ...items.suggestions].filter((x) => !held[x.id]).length);
+  }, [items, held, onCount]);
   useEffect(() => {
     onFailed?.(failed && !items);
   }, [failed, items, onFailed]);
@@ -89,8 +92,8 @@ export function Asked({
     setError(null);
     hold(
       r.id,
-      `Declined ${who}'s request`,
-      `Declining ${who}'s request…`,
+      `Declined ${who}’s request`,
+      `Declining ${who}’s request…`,
       async () => {
         const res = await answerJoinRequest(r.id, false);
         if (!res.ok) throw new Error(res.error);
@@ -103,13 +106,13 @@ export function Asked({
     setError(null);
     hold(
       s.id,
-      `Declined ${s.byName.split(" ")[0]}'s suggestion`,
-      `Declining ${s.byName.split(" ")[0]}'s suggestion…`,
+      `Declined ${s.byName.split(" ")[0]}’s suggestion`,
+      `Declining ${s.byName.split(" ")[0]}’s suggestion…`,
       () => resolveSuggestion(s.id, false, meId),
       () => setItems((prev) => (prev ? { ...prev, suggestions: prev.suggestions.filter((x) => x.id !== s.id) } : prev)),
     );
   };
-  const heldLine = (id: string) => <HeldLine key={id} held={held[id]} onUndo={() => undo(id)} />;
+  const heldLine = (id: string) => <HeldLine key={id} held={held[id]} onUndo={() => undo(id)} onPause={() => pause(id)} onResume={() => resume(id)} />;
 
   const answerJoin = async (r: JoinRequest, yes: boolean) => {
     setBusy(r.id);
@@ -131,14 +134,14 @@ export function Asked({
       if (yes) {
         const person = personOf(s.personId);
         const patch = person ? patchFor(s, person) : null;
-        if (!person || !patch) throw new Error("that suggestion couldn't be read");
+        if (!person || !patch) throw new Error("that suggestion couldn’t be read");
         await savePerson({ ...person, ...patch } as Person, person.householdId || s.householdId);
       }
       await resolveSuggestion(s.id, yes, meId);
       setItems((prev) => (prev ? { ...prev, suggestions: prev.suggestions.filter((x) => x.id !== s.id) } : prev));
       if (yes) await onChanged?.();
     } catch (err) {
-      setError(`That didn't go through (${(err as Error)?.message || "no connection"}). It's still here; try again.`);
+      setError(`That didn’t go through (${(err as Error)?.message || "no connection"}). It’s still here; try again.`);
     } finally {
       setBusy(null);
     }
@@ -147,17 +150,25 @@ export function Asked({
   if (failed && !items)
     return (
       <p className="meta bad" role="alert">
-        What the family asked couldn't be reached just now.{" "}
+        What the family asked couldn’t be reached just now.{" "}
         <button
           type="button"
           className="fp-retry"
           onClick={() => {
+            armRetry();
             setFailed(false);
             setAttempt((n) => n + 1);
           }}
         >
           Try again
         </button>
+      </p>
+    );
+  // looking again after a failure: say so where the failure was, and keep the keyboard there
+  if (!items && attempt > 0)
+    return (
+      <p className="meta" aria-busy="true" tabIndex={-1} ref={retryLine}>
+        Looking again…
       </p>
     );
   if (!items || (!items.joins.length && !items.suggestions.length)) return null;
@@ -176,14 +187,14 @@ export function Asked({
             <Portrait given={who} size={44} />
             <div>
               <p>
-                <b>{who}</b> asked to join {story.name}'s story · {whenLabel(r.createdAt, now)}
+                <b>{who}</b> asked to join {story.name}’s story · {whenLabel(r.createdAt, now)}
               </p>
               <p className="meta">Yes makes them a keeper: they read everything, private memories too, and can edit. To let them add what they remember without that, send them the family code instead.</p>
               <div className="acts">
                 <Button small loading={busy === r.id} onClick={() => void answerJoin(r, true)}>
                   Accept
                 </Button>
-                <Button variant="quiet" small disabled={busy === r.id} onClick={() => declineJoin(r, who)} data-undo-to={r.id}>
+                <Button variant="quiet" small disabled={busy === r.id} onClick={() => declineJoin(r, who)} ref={returnRef(r.id)}>
                   Decline
                 </Button>
               </div>
@@ -206,7 +217,7 @@ export function Asked({
                 <Button small loading={busy === s.id} onClick={() => void answerSuggestion(s, true)}>
                   Accept
                 </Button>
-                <Button variant="quiet" small disabled={busy === s.id} onClick={() => declineSuggestion(s)} data-undo-to={s.id}>
+                <Button variant="quiet" small disabled={busy === s.id} onClick={() => declineSuggestion(s)} ref={returnRef(s.id)}>
                   Decline
                 </Button>
               </div>
@@ -226,6 +237,7 @@ export function WaitingOnOthers({ meId, family }: { meId: string | null | undefi
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => new Date(0));
+  const { line: retryLine, arm: armRetry } = useRetryFocus();
   const people = family?.people || [];
 
   useEffect(() => {
@@ -245,7 +257,7 @@ export function WaitingOnOthers({ meId, family }: { meId: string | null | undefi
         joins: joins.map((r, i) => {
           const c = cards[i];
           const name = c?.name || people.find((p) => p.storyId === r.storyId)?.givenName || "a story";
-          return { id: r.id, label: `${name}'s story${c?.keeperName ? `, kept by ${c.keeperName}` : ""}`, at: r.createdAt };
+          return { id: r.id, label: `${name}’s story${c?.keeperName ? `, kept by ${c.keeperName}` : ""}`, at: r.createdAt };
         }),
         suggestions: all.filter((s) => s.by === meId),
       });
@@ -260,17 +272,24 @@ export function WaitingOnOthers({ meId, family }: { meId: string | null | undefi
   if (failed && !mine)
     return (
       <p className="meta bad" role="alert">
-        What you asked of others couldn't be reached just now.{" "}
+        What you asked of others couldn’t be reached just now.{" "}
         <button
           type="button"
           className="fp-retry"
           onClick={() => {
+            armRetry();
             setFailed(false);
             setAttempt((n) => n + 1);
           }}
         >
           Try again
         </button>
+      </p>
+    );
+  if (!mine && attempt > 0)
+    return (
+      <p className="meta" aria-busy="true" tabIndex={-1} ref={retryLine}>
+        Looking again…
       </p>
     );
   if (!mine || (!mine.joins.length && !mine.suggestions.length)) return null;

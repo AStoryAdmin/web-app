@@ -1,5 +1,5 @@
 /**
- * "{Name}'s family": the people the tree joins to this person, each as a
+ * "{Name}’s family": the people the tree joins to this person, each as a
  * small portrait with their name and what they are to this person
  * ("mother", "husband", "son", "friend", "son-in-law"): parents first,
  * then partners, brothers and sisters, children, the in-laws the tree
@@ -17,7 +17,7 @@ export default function Kin({ person, kin, preview }: { person: Person; kin: { p
   return (
     <section className="pk" aria-labelledby="pk-h">
       <h2 id="pk-h" className="pk-h">
-        {person.givenName ? `${person.givenName}'s family` : "Their family"}
+        {person.givenName ? `${person.givenName}’s family` : "Their family"}
       </h2>
       <ul className="pk-list">
         {kin.map(({ person: p, rel }) => (

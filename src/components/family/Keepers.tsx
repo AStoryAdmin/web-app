@@ -1,6 +1,6 @@
 /**
  * Who can edit a story: its keepers. A deliberate, separate choice from
- * the family tree (a code never makes a keeper). Only the story's owner
+ * the family tree (a code never makes a keeper). Only the story’s owner
  * sees this; they invite by email and the invitation links itself when
  * that address signs in.
  */
@@ -11,12 +11,14 @@ import { inviteManager, listManagers, removeManager, type Manager } from "../../
 import { keeperName } from "../../app-core/lib/keeperName.js";
 import { Button, Chip, Field } from "../ui";
 import Portrait from "./Portrait";
+import { useRetryFocus } from "./useRetryFocus";
 import { MailIcon } from "../icons";
 
 export default function Keepers({ story, people, senderName }: { story: Story; people: Person[]; senderName: string }) {
   const [list, setList] = useState<Manager[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const { line: retryLine, arm: armRetry } = useRetryFocus();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
     setBusy(false);
     if (!r.ok) return setNote({ text: r.error, bad: true });
     setEmail("");
-    setNote({ text: r.emailed ? `Sent to ${to}. They can edit once they sign in with that address.` : `Saved. The email didn't go; tell ${to} to sign in with that address.` });
+    setNote({ text: r.emailed ? `Sent to ${to}. They can edit once they sign in with that address.` : `Saved. The email didn’t go; tell ${to} to sign in with that address.` });
     setList(await listManagers(story.id).catch(() => list));
   };
 
@@ -61,29 +63,30 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
       setList((prev) => (prev || []).filter((x) => x.id !== m.id));
       setAsking(null);
     } catch (err) {
-      setNote({ text: `That didn't go through (${(err as Error)?.message || "no connection"}).`, bad: true });
+      setNote({ text: `That didn’t go through (${(err as Error)?.message || "no connection"}).`, bad: true });
     } finally {
       setRemoving(null);
     }
   };
 
   return (
-    <section className="card keepers" aria-label={`Who can edit ${story.name}'s story`}>
-      <h2>Who can edit {story.name}'s story</h2>
+    <section className="card keepers" aria-label={`Who can edit ${story.name}’s story`}>
+      <h2>Who can edit {story.name}’s story</h2>
       <p className="meta">Keepers can change the story; the family tree reads and adds.</p>
       <ul className="keeperlist">
         {list === null && !failed && (
-          <li className="meta" aria-busy="true">
+          <li className="meta" aria-busy="true" tabIndex={-1} ref={retryLine}>
             Looking for keepers…
           </li>
         )}
         {failed && list === null && (
           <li className="meta bad" role="alert">
-            The keepers couldn't be reached just now.{" "}
+            The keepers couldn’t be reached just now.{" "}
             <button
               type="button"
               className="fp-retry"
               onClick={() => {
+                armRetry();
                 setFailed(false);
                 setAttempt((a) => a + 1);
               }}

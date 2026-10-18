@@ -1,5 +1,5 @@
 /**
- * How the person page's rail arrives: the terracotta line draws itself
+ * How the person page’s rail arrives: the terracotta line draws itself
  * down from the top, and each card rises into place as it comes into
  * view, its dot inking at the same moment (from 0.6, never from nothing).
  * Transform and opacity only; nothing sideways; under

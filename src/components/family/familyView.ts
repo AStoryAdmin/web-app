@@ -36,7 +36,7 @@ export function siteUrl(): string {
   return origin || SITE_URL;
 }
 
-/** Where a family code opens: the web's own join page (App.tsx wires /join/:code). */
+/** Where a family code opens: the web’s own join page (App.tsx wires /join/:code). */
 export const joinUrl = (code: string) => `${siteUrl()}/join/${normaliseFamilyCode(code)}`;
 
 /** Where a relative without an account adds to a story (App.tsx wires /c/:slug). */
@@ -69,10 +69,10 @@ export function shownState(p: Person, meId: string | null | undefined, coded?: S
   return key === "listed" && coded?.has(p.id) ? "invited" : key;
 }
 
-/** "The Hartleys", or "Rose's family" when the story has no family name. */
+/** "The Hartleys", or "Rose’s family" when the story has no family name. */
 export function familyTitle(story: Story): string {
   const last = String(story.lastName || "").trim();
-  if (!last) return `${story.name}'s family`;
+  if (!last) return `${story.name}’s family`;
   return /s$/i.test(last) ? `The ${last} family` : `The ${last}s`;
 }
 
@@ -131,7 +131,7 @@ export function memoriesWith(person: Person, story: Story | null): Memory[] {
 
 const n = (k: number, one: string, many = `${one}s`) => `${k} ${k === 1 ? one : many}`;
 
-/* ── The three states, in the product's words (docs/PRD.md §3.3a) ──────── */
+/* ── The three states, in the product’s words (docs/PRD.md §3.3a) ──────── */
 
 /** "not on A Story yet", "invited · waiting for them", "on A Story"; "" for somebody who has passed. */
 export function stateWords(state: LinkState["key"]): string {
@@ -189,7 +189,7 @@ export function statusChip(person: Person, meId: string | null | undefined): { l
 export type StoryGroupKey = "own" | "kept" | "joined";
 export type StoryGroup = { key: StoryGroupKey; title: string; meaning: string; stories: Story[] };
 
-/** Which of the three a story is for this account: yours, one you keep for someone, or one you've joined. */
+/** Which of the three a story is for this account: yours, one you keep for someone, or one you’ve joined. */
 export function storyGroupOf(story: Story, meId: string | null | undefined): StoryGroupKey {
   const mine = !story.ownerId || !meId || story.ownerId === meId;
   if (!mine) return "joined";
@@ -204,7 +204,7 @@ export function storyGroups(stories: Story[], meId: string | null | undefined): 
   const defs: Omit<StoryGroup, "stories">[] = [
     { key: "own", title: "Your story", meaning: "About you, in your words." },
     { key: "kept", title: "Stories you keep for someone", meaning: "You keep it for them, as they tell it." },
-    { key: "joined", title: "Stories you've joined", meaning: "Their story, their account. You add what you remember, under your own name." },
+    { key: "joined", title: "Stories you’ve joined", meaning: "Their story, their account. You add what you remember, under your own name." },
   ];
   return defs.map((d) => ({ ...d, stories: stories.filter((s) => storyGroupOf(s, meId) === d.key) })).filter((g) => g.stories.length > 0);
 }

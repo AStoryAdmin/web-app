@@ -1,4 +1,4 @@
-// The plate puts the storyteller's own line down the middle of every tier,
+// The plate puts the storyteller’s own line down the middle of every tier,
 // everyone else on the side of whoever they are joined to (so threads never
 // cross), at most one ring per tier, and what each person is to the
 // storyteller in words.
@@ -28,15 +28,15 @@ const draw = (plate: Plate, level: number) => {
 describe("the sample family on the plate", () => {
   const plate = sample();
 
-  it("draws four generations of people, oldest first, under the storyteller's words for them", () => {
+  it("draws four generations of people, oldest first, under the storyteller’s words for them", () => {
     expect(plate.tiers.map((t) => t.level)).toEqual([-1, 0, 1, 2]);
     expect(plate.generations).toBe(4);
-    expect(plate.tiers.map((t) => t.title)).toEqual(["Rose's parents", "Rose's generation", "Rose's children", "Rose's grandchildren"]);
-    expect(plate.tiers.map((t) => t.also)).toEqual(["", "", "and Margaret's", ""]);
+    expect(plate.tiers.map((t) => t.title)).toEqual(["Rose’s parents", "Rose’s generation", "Rose’s children", "Rose’s grandchildren"]);
+    expect(plate.tiers.map((t) => t.also)).toEqual(["", "", "and Margaret’s", ""]);
     expect(plate.tiers.map((t) => t.decade)).toEqual(["1910s", "1940s", "1960s", "2000s"]);
   });
 
-  it("keeps Rose's own line on the axis, everyone else on the side they belong to", () => {
+  it("keeps Rose’s own line on the axis, everyone else on the side they belong to", () => {
     expect(draw(plate, -1)).toBe(" | walter&edith | ");
     expect(draw(plate, 0)).toBe("peggy&jim | frank&rose&tom | +sibling arthur");
     expect(draw(plate, 1)).toBe("claire | daniel anne&mark +child | ");
@@ -56,19 +56,19 @@ describe("the sample family on the plate", () => {
   it("says what each person is to Rose", () => {
     const rel = (k: string) => plate.tiers.flatMap((t) => t.units.flatMap((u) => u.nodes)).find((n) => n.id === id(k))!.rel;
     expect(rel("walter")).toBe("father");
-    expect(rel("claire")).toBe("Margaret's daughter");
-    expect(rel("maya")).toBe("Daniel's daughter");
+    expect(rel("claire")).toBe("Margaret’s daughter");
+    expect(rel("maya")).toBe("Daniel’s daughter");
     expect(rel("rose")).toBe("");
   });
 
   it("offers at most one ring a tier, and a generation with nobody in it as a line in the margin", () => {
     expect(plate.tiers.every((t) => t.ghosts.length <= 1)).toBe(true);
-    expect(plate.tiers[0].asks.map((g) => g.label)).toEqual(["Rose's grandparents"]);
+    expect(plate.tiers[0].asks.map((g) => g.label)).toEqual(["Rose’s grandparents"]);
     expect(plate.unplaced.map((p) => p.id)).toEqual([id("nora")]);
   });
 });
 
-describe("a friend's father (the founder's own shape)", () => {
+describe("a friend’s father (the founder’s own shape)", () => {
   const mk = (pid: string, givenName: string, extra: Partial<Person> = {}) => ({ id: pid, givenName, familyName: "", sex: "", source: "manual", householdId: "h", ...extra }) as Person;
   const people = [mk("bao", "Bao", { storyId: "s1", userId: "me" }), mk("gbao", "GBao"), mk("nhi", "Nhi"), mk("nhit", "Nhi", { familyName: "Tran" }), mk("ty", "Ty")];
   const edges = [
@@ -85,15 +85,15 @@ describe("a friend's father (the founder's own shape)", () => {
     expect(Math.abs(l.split(" ").filter(Boolean).length - r.split(" ").filter(Boolean).length)).toBeLessThanOrEqual(1);
   });
 
-  it("puts a friend's father above the friend, apart from the storyteller's own parent ring", () => {
+  it("puts a friend’s father above the friend, apart from the storyteller’s own parent ring", () => {
     const [l0, , r0] = draw(plate, 0).split(" | ");
     const [l1, c1, r1] = draw(plate, -1).split(" | ");
     expect(c1).toBe("+parent");
     expect(l0.includes("nhit") ? l1 : r1).toBe("ty");
     expect(r0.includes("nhit") ? l1 : r1).toBe("");
     expect(plate.tiers[0].title).toBe("Your parents");
-    expect(plate.tiers[0].also).toBe("and Nhi Tran's");
-    expect(plate.tiers[0].units[0].nodes[0].rel).toBe("Nhi Tran's parent");
+    expect(plate.tiers[0].also).toBe("and Nhi Tran’s");
+    expect(plate.tiers[0].units[0].nodes[0].rel).toBe("Nhi Tran’s parent");
   });
 
   it("counts the generations that hold people", () => {

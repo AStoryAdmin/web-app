@@ -1,14 +1,14 @@
 /**
  * The book-arts pieces the Family and person pages use (docs/research/
- * decoration-2026.md): the family's initial in a foil cartouche beside its
+ * decoration-2026.md): the family’s initial in a foil cartouche beside its
  * name (D17), the postmark on a line that arrived from somebody in the
- * family (D18), the foil star on a section's rule and the leaf that
- * closes a person's words (D9). The pressed fern beside the family's name (D19) waits for the founder's
+ * family (D18), the foil star on a section’s rule and the leaf that
+ * closes a person’s words (D9). The pressed fern beside the family’s name (D19) waits for the founder’s
  * asset in public/deco; nothing requests it until then. All decoration is aria-hidden and never
  * takes a pointer.
  */
 
-/** D17: the family's initial, blocked in foil inside an oval, as a stationer would. */
+/** D17: the family’s initial, blocked in foil inside an oval, as a stationer would. */
 export function Cartouche({ letter }: { letter: string }) {
   return (
     <svg className="orn-cartouche" viewBox="0 0 72 88" aria-hidden="true" focusable="false">
@@ -39,7 +39,7 @@ export function Postmark({ iso }: { iso: string }) {
   );
 }
 
-/** The foil star that sits on a section's rule (the samples' ✦), drawn rather than typed. */
+/** The foil star that sits on a section’s rule (the samples' ✦), drawn rather than typed. */
 export function Star({ className = "orn-star" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 14 14" aria-hidden="true" focusable="false">
@@ -48,7 +48,7 @@ export function Star({ className = "orn-star" }: { className?: string }) {
   );
 }
 
-/** The leaf fleuron that closes a person's own words (D9). */
+/** The leaf fleuron that closes a person’s own words (D9). */
 export function Leaf({ className = "pp-leaf" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" aria-hidden="true" focusable="false">

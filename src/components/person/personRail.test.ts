@@ -1,6 +1,6 @@
-// What a person's page lays along its rail: oldest first, the newest last; related by chapter or year; their own notes.
+// What a person’s page lays along its rail: oldest first, the newest last; related by chapter or year; their own notes.
 import { describe, expect, it } from "vitest";
-import { noteIsFrom, oneLine, railFor, relatedFor, spanLine, splitRail } from "./personRail";
+import { fitsPerson, noteIsFrom, oneLine, promptsAbout, railFor, relatedFor, spanLine, splitRail } from "./personRail";
 import type { Contribution } from "../../data/contributions";
 import type { Person } from "../../data/family";
 import type { Memory, Story } from "../../data/stories";
@@ -19,7 +19,7 @@ describe("the rail", () => {
     expect(rail.map((f) => f.memory.id)).toEqual(["b", "a"]);
     expect(railFor([], [{ story: s, memory: c }, { story: s, memory: a }], null).map((f) => f.memory.id)).toEqual(["a", "c"]);
   });
-  it("is the storyteller's own story when it is theirs, without what is still being written up", () => {
+  it("is the storyteller’s own story when it is theirs, without what is still being written up", () => {
     const own = story([mem({ id: "x", period: "1990" }), mem({ id: "y", period: "1980", status: "in_progress" })]);
     expect(railFor([], [], own).map((f) => f.memory.id)).toEqual(["x"]);
   });
@@ -73,11 +73,35 @@ describe("a note from family", () => {
 });
 
 describe("one line of the words", () => {
-  it("takes the first real sentence and cuts on a word, never the server's summary", () => {
+  it("takes the first real sentence and cuts on a word, never the server’s summary", () => {
     expect(oneLine(mem({ body: "Well. We planted tomatoes the first year and they came up badly, every one of them, but we kept going anyway." }), 60)).toMatch(/^We planted tomatoes.*…$/);
     expect(oneLine(mem({ excerpt: "The speaker recalls a garden." }))).toBe("");
     expect(oneLine(mem({}))).toBe("");
-    const chat = oneLine(mem({ body: "You: How to end chay AI: If you'd like to end the chat, you can simply stop replying." }));
-    expect(chat).not.toMatch(/AI:|You:|If you'd like/);
+    const chat = oneLine(mem({ body: "You: How to end chay AI: If you’d like to end the chat, you can simply stop replying." }));
+    expect(chat).not.toMatch(/AI:|You:|If you’d like/);
+  });
+});
+
+describe("questions about somebody nobody has written about yet", () => {
+  const who = (over: Partial<Person>) => ({ id: "p-1", givenName: "Maya", familyName: "Hartley", birthYear: 1998, deathYear: null, ...over }) as unknown as Person;
+  it("are about the person, of their time of life, in their tense", () => {
+    expect(fitsPerson("faith-house-had", who({}))).toBe(false);
+    expect(fitsPerson("world-cost-remember", who({ birthYear: 1998 }))).toBe(false);
+    expect(fitsPerson("world-cost-remember", who({ birthYear: 1941 }))).toBe(true);
+    expect(fitsPerson("world-cost-remember", who({ birthYear: null }))).toBe(false);
+    expect(fitsPerson("work-hours", who({ birthYear: 2004 }))).toBe(false);
+    expect(fitsPerson("family-fridge", who({ birthYear: 1910, deathYear: 1990 }))).toBe(false);
+    expect(fitsPerson("family-fridge", who({}))).toBe(true);
+  });
+  it("are three, from three topics, the same three each time, and never say \"them’s\"", () => {
+    for (const id of ["p-1", "36cfd520-c499-4771-b0e2-ffc64cabefb1", "sample-sam", "x"]) {
+      const a = promptsAbout(who({ id }));
+      expect(a).toHaveLength(3);
+      expect(new Set(a.map((q) => q.id)).size).toBe(3);
+      expect(promptsAbout(who({ id }))).toEqual(a);
+    }
+    const nameless = promptsAbout(who({ givenName: "" }), 40);
+    expect(nameless.every((q) => !/them’s/.test(q.question))).toBe(true);
+    expect(nameless.some((q) => /this person/.test(q.question))).toBe(true);
   });
 });

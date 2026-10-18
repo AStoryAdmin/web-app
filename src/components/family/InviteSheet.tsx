@@ -2,7 +2,7 @@
  * Adding somebody to the family, and the code that brings them in.
  *
  * One sheet: their name, what they are to the storyteller, an email if
- * you have it. Saving puts them in the tree (the app's planRelative keeps
+ * you have it. Saving puts them in the tree (the app’s planRelative keeps
  * the shape right, placeholders and all), then shows the code, the link
  * and a QR to pass on. A code joins the FAMILY TREE: it never makes anyone
  * a keeper of the story (docs/PRODUCT-DECISIONS.md §6).
@@ -66,7 +66,7 @@ export function CodeCard({ code, who, story, senderName, emailed, email, emailRe
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   return (
     <div className="codecard">
-      <p className="label">{who}'s family code</p>
+      <p className="label">{who}’s family code</p>
       <div className="codebox">
         <div className="codebig" aria-label={`Family code ${[...code].join(" ")}`}>
           {spacedCode(code) as string}
@@ -85,7 +85,7 @@ export function CodeCard({ code, who, story, senderName, emailed, email, emailRe
         </Button>
       </div>
       <div className="qrwrap">
-        <div className="qr" role="img" aria-label={`QR code for ${who}'s link`} dangerouslySetInnerHTML={{ __html: svg }} />
+        <div className="qr" role="img" aria-label={`QR code for ${who}’s link`} dangerouslySetInnerHTML={{ __html: svg }} />
         <div>
           <p className="strong">Or let them scan this</p>
           <p className="meta">Good for a phone across the table. They type the six letters into A Story, or open the link.</p>
@@ -108,7 +108,7 @@ export function CodeCard({ code, who, story, senderName, emailed, email, emailRe
       )}
       {emailed === false && email && (
         <p className="meta invite-fail" role="alert">
-          The email to {email} didn't send: {emailReason || "no reason came back"}. The code still works: <b>{spacedCode(code) as string}</b>. Send it by text, or read it out.
+          The email to {email} didn’t send: {emailReason || "no reason came back"}. The code still works: <b>{spacedCode(code) as string}</b>. Send it by text, or read it out.
         </p>
       )}
     </div>
@@ -133,7 +133,7 @@ export default function InviteSheet({
   senderName: string;
   /** Who the new person is related to; the storyteller when not given. */
   anchor?: Person | null;
-  /** A relation already chosen (the tree's "Add a parent"): a RELATIVE_KINDS key, still changeable. */
+  /** A relation already chosen (the tree’s "Add a parent"): a RELATIVE_KINDS key, still changeable. */
   presetKind?: string;
   onClose: () => void;
   /** Called after the rows have landed, before the code is shown (reload). */
@@ -183,7 +183,7 @@ export default function InviteSheet({
       setTwin(null);
       setDone({ person, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, ...emailOutcome(sent), email: mail, reused: true });
     } catch (err) {
-      setError(`That didn't go (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
+      setError(`That didn’t go (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
     } finally {
       setBusy(false);
     }
@@ -227,7 +227,7 @@ export default function InviteSheet({
         return;
       }
       if ("error" in planned) {
-        setError(planned.error === "two-parents" ? `${relatedTo} already has two parents in the tree.` : "That relation didn't fit. Try another.");
+        setError(planned.error === "two-parents" ? `${relatedTo} already has two parents in the tree.` : "That relation didn’t fit. Try another.");
         return;
       }
       for (const p of planned.people) await savePerson(p, householdId);
@@ -246,7 +246,7 @@ export default function InviteSheet({
       await onSaved();
       setDone({ person: saved, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, ...emailOutcome(sent), email: mail });
     } catch (err) {
-      setError(`That didn't save (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
+      setError(`That didn’t save (${(err as Error)?.message || "no connection"}). Nothing was lost; try again.`);
     } finally {
       setBusy(false);
     }
@@ -282,8 +282,8 @@ export default function InviteSheet({
                 {done.codeError === "already"
                   ? `${done.person.givenName} is already on A Story, so no code is needed${done.email ? ", and no email was sent" : ""}.`
                   : done.codeError === "not_ready"
-                    ? `Codes aren't switched on for this family yet, so there was nothing to send${done.email ? ` to ${done.email}` : ""}. Try again later from their page.`
-                    : `A code couldn't be made just now${done.email ? `, so no email went to ${done.email}` : ""}. Open their page later and send one.`}
+                    ? `Codes aren’t switched on for this family yet, so there was nothing to send${done.email ? ` to ${done.email}` : ""}. Try again later from their page.`
+                    : `A code couldn’t be made just now${done.email ? `, so no email went to ${done.email}` : ""}. Open their page later and send one.`}
               </p>
             )}
             <div className="acts is-top5">
@@ -310,7 +310,7 @@ export default function InviteSheet({
             </p>
             <div className="acts">
               <Button loading={busy} onClick={() => void reuse(twin, email.trim().toLowerCase())}>
-                {email.trim() ? `Yes, send the code to that ${twin.givenName}` : `Yes, that's the same ${twin.givenName}`}
+                {email.trim() ? `Yes, send the code to that ${twin.givenName}` : `Yes, that’s the same ${twin.givenName}`}
               </Button>
               <Button
                 variant="quiet"
@@ -330,7 +330,7 @@ export default function InviteSheet({
         ) : need ? (
           <>
             <p className="meta is-gap">
-              {given.trim()} is {relatedTo}'s {word(kindKey).toLowerCase()}. Through whom?
+              {given.trim()} is {relatedTo}’s {word(kindKey).toLowerCase()}. Through whom?
             </p>
             <div className="choices">
               {need.candidates.map((id) => (
@@ -388,8 +388,8 @@ export default function InviteSheet({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="We'll send them the code"
-              hint="Without one, you'll get a code and a link to pass on yourself."
+              placeholder="We’ll send them the code"
+              hint="Without one, you’ll get a code and a link to pass on yourself."
               autoComplete="off"
             />
             {error && (

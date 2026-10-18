@@ -1,13 +1,13 @@
 /**
  * The family tree as an engraved plate (plateModel): one tier per
- * generation down a terracotta rail, the generation's name and decade in
- * the margin, and in every tier three parts: the storyteller's own line on
+ * generation down a terracotta rail, the generation’s name and decade in
+ * the margin, and in every tier three parts: the storyteller’s own line on
  * the axis (the storyteller the largest face, their parents straight above
  * them, their children below), everyone else to the left or the right on
  * the side of whoever they are joined to. Couples are joined by an
  * ampersand, and a fine gold thread runs from each couple to each of their
  * children. Under every face only three things: the name, what they are to
- * the storyteller, and their state in the product's three words; their
+ * the storyteller, and their state in the product’s three words; their
  * years and how many memories they are in come up on hover or focus. At
  * most one dashed ring per tier, where somebody is missing. A small family
  * is drawn large; the faces step down only when a generation no longer
@@ -42,7 +42,7 @@ type Props = {
   onPlace: (person: Person, anchor: Person, kind: GhostKind) => void;
   canPlace: (person: Person) => boolean;
   /** People a live family code was made for (useMyCodes): they are "invited · waiting for them".
-      "unknown" while the codes are loading or couldn't be reached: then nobody is called "not on A Story yet". */
+      "unknown" while the codes are loading or couldn’t be reached: then nobody is called "not on A Story yet". */
   coded?: Set<string> | null | "unknown";
 };
 
@@ -62,7 +62,7 @@ const Plus = () => (
   </svg>
 );
 
-/** The state in the product's exact words with its dot, never broken inside a phrase: "invited ·" may end a line, nothing else does. */
+/** The state in the product’s exact words with its dot, never broken inside a phrase: "invited ·" may end a line, nothing else does. */
 function StateWords({ words }: { words: string }) {
   const parts = words.split(" · ");
   return (
@@ -74,7 +74,7 @@ function StateWords({ words }: { words: string }) {
           <span className="nw">
             {i === 0 && <i aria-hidden="true" />}
             {p}
-            {i < parts.length - 1 ? " ·" : ""}
+            {i < parts.length - 1 && <span className="tp-sep"> ·</span>}
           </span>
         </Fragment>
       ))}
@@ -231,8 +231,8 @@ type Thread = { key: string; d: string; dashed: boolean; ends: string[] };
 
 /** One thread per link: straight down out of the upper tier, a curve across the gap, straight down onto the face. */
 function measure(plate: HTMLElement, links: PlateLink[]): Thread[] {
-  // Layout boxes, not screen rectangles: offsets are in the plate's own CSS pixels whatever the page zoom
-  // (lib/zoom) and whatever a face's arrival tween is doing to its transform at the moment of measuring.
+  // Layout boxes, not screen rectangles: offsets are in the plate’s own CSS pixels whatever the page zoom
+  // (lib/zoom) and whatever a face’s arrival tween is doing to its transform at the moment of measuring.
   const at = (el: Element) => {
     let x = 0;
     let y = 0;
@@ -273,14 +273,14 @@ function measure(plate: HTMLElement, links: PlateLink[]): Thread[] {
 }
 
 /**
- * True when a generation no longer fits its line. On the plate's grid the side zones are as wide as their faces,
+ * True when a generation no longer fits its line. On the plate’s grid the side zones are as wide as their faces,
  * so a tier that is too wide shows as a row wider than its track, or as sides of unequal width (which would push
  * the storyteller off the axis); on a narrower window, where the faces flow, as a face on a second line.
  */
 function wraps(plate: HTMLElement): boolean {
   for (const row of plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) .tp-row")) {
     if (getComputedStyle(row).display === "grid") {
-      // a side whose faces need more room than its track (text running past a face's box doesn't count)
+      // a side whose faces need more room than its track (text running past a face’s box doesn’t count)
       for (const zone of row.querySelectorAll<HTMLElement>(".tp-zone")) {
         const kids = [...zone.children] as HTMLElement[];
         const gap = parseFloat(getComputedStyle(zone).columnGap) || 0;
@@ -332,7 +332,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     const svg = svgRef.current;
     if (!el || !svg) return;
     // The largest faces that let every generation sit on one line, and then the plate in the window: the
-    // storyteller's whole tier above the fold always, and the whole plate when it can be (a family of six or
+    // storyteller’s whole tier above the fold always, and the whole plate when it can be (a family of six or
     // fewer keeps its faces at the middle size or larger rather than shrinking to fit).
     let i = start;
     el.dataset.size = SIZES[i];
@@ -382,7 +382,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
       window.clearTimeout(timer);
       timer = window.setTimeout(draw, 40);
     };
-    // Redraw when the plate's width changes (a new size class may fit) or the fonts arrive; height changes follow from those.
+    // Redraw when the plate’s width changes (a new size class may fit) or the fonts arrive; height changes follow from those.
     const ro =
       typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(() => {

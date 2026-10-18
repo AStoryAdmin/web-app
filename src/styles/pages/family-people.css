@@ -8,7 +8,7 @@
    each couple to their children, one dashed ring where somebody is missing. Every vw is divided by --zoom (lib/zoom).
    Five type sizes do all the work: display, section, name, words, small (the tokens below). */
 
-:is(.fp, .pp2, .pp-missing) { --fz-display: 58px; --fz-section: 28px; --fz-name: 20px; --fz-words: 18px; --fz-small: 13px; }
+:is(.fp, .pp2, .pp-missing) { --fz-display: 58px; --fz-statement: 32px; --fz-section: 28px; --fz-name: 20px; --fz-words: 18px; --fz-small: 13px; }
 /* every section heading on these pages is the section size: higher than astory's .sheet-page .page h2:not(…) (0,3,1) */
 .sheet-page .page:is(.fp, .pp2, .pp-missing) :is(h2, .st-name, .pk-h) { font-size: var(--fz-section); line-height: 1.1; }
 
@@ -322,7 +322,7 @@
 
 /* ───────────── a phone ───────────── */
 @media (max-width: 760px) {
-  :is(.fp, .pp2, .pp-missing) { --fz-display: 40px; --fz-section: 26px; --fz-name: 19px; --fz-words: 18px; }
+  :is(.fp, .pp2, .pp-missing) { --fz-display: 40px; --fz-statement: 24px; --fz-section: 26px; --fz-name: 19px; --fz-words: 18px; }
   .fp-head { margin-bottom: 28px; padding-bottom: 18px; }
   .fp-head .btn { width: 100%; justify-content: center; }
   .sheet-page .fp .fp-head h1 { font-size: var(--fz-display); }
@@ -512,12 +512,6 @@
 .fp .dupe .acts a.meta:hover { color: inherit; }
 @media (hover: hover) and (pointer: fine) { .fp .dupe .acts a.meta:hover { color: var(--sheet-ink); } }
 
-/* a person with no memories yet: the empty state and their family side by side on a wide window (baos 5) */
-@media (min-width: 1280px) {
-  .pp-main.bare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); gap: 64px; align-items: start; }
-  .pp-main.bare .pp-extras > :first-child { margin-top: 0; }
-  .pp-main.bare .pp-extras .pk-list { grid-template-columns: minmax(0, 1fr); }
-}
 .pp2 .pp-more { align-items: center; }
 
 /* ── round 5 ─────────────────────────────────────────────────────────── */
@@ -534,39 +528,44 @@
 .pp-write, .st-empty .st-act { display: inline-block; min-height: 44px; line-height: 44px; }
 .pp-write span, .st-empty .st-act span { display: inline; }
 
-/* the kept line on a person's page is set at display size: a short line never sits small in a wide frame */
-.pp-words-plate { width: fit-content; min-width: min(100%, 440px); max-width: 100%; }
-.pp-words-plate p { max-width: 30ch; font-family: var(--book-display); font-weight: 500; font-size: 31px; line-height: 1.28; letter-spacing: -0.003em; }
-.pp-words-plate.long p { max-width: 38ch; font-size: 26px; line-height: 1.32; }
+/* the kept line on a person's page: an epigraph at the statement size, centred over the memories in a frame
+   that fits it; a long line takes a wider measure, never a smaller size */
+.pp-words-plate { width: fit-content; min-width: min(100%, 440px); max-width: 100%; margin-inline: auto; text-align: center; }
+.pp-words-plate p { max-width: 30ch; margin-inline: auto; font-family: var(--book-display); font-weight: 500; font-size: var(--fz-statement); line-height: 1.28; letter-spacing: -0.003em; }
+.pp-words-plate p::before, .pp-words-plate p::after { content: none; }
+.pp-words-plate.long p { max-width: 38ch; }
+@media (min-width: 1600px) {
+  .pp2 { --fz-statement: 36px; }
+}
 
 /* nothing with them yet: the empty state's words and a short ruled list of real questions about them */
 .pp-none { padding-top: 0; }
 .pp-none > div { flex: 1; min-width: 0; }
-.pp-prompts { list-style: none; margin: 22px 0 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
+/* the rows keep to the paragraph's measure, so each arrow sits by its words */
+.pp-prompts { list-style: none; max-width: 560px; margin: 22px 0 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
 .pp-prompts li { border-bottom: 1px solid var(--sheet-rule); }
-.pp-prompts a { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; min-height: 44px; padding: 13px 2px; color: var(--sheet-ink); text-decoration: none;
-  transition: color 160ms var(--ease-out); }
+.pp-prompts a { display: flex; align-items: baseline; justify-content: flex-start; gap: 10px; min-height: 44px; padding: 13px 2px; color: var(--sheet-ink); text-decoration: none;
+  transition: color 160ms var(--ease-out), transform 120ms var(--ease-out); }
 .pp-q { font-family: var(--book-body); font-style: italic; font-size: var(--fz-words); line-height: 1.4; text-wrap: pretty; }
 .pp-q-a { flex: none; color: var(--accent); transition: transform 160ms var(--ease-out); }
-.pp-prompts a:active { transform: scale(0.99); }
+.pp-prompts a:active { transform: scale(0.98); }
 .pp-prompts a:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
   .pp-prompts a:hover { color: var(--accent-deep); }
   .pp-prompts a:hover .pp-q-a { transform: translateX(3px); }
 }
-/* the empty state and their family side by side only where both have room; no leftover track beside it */
-@media (min-width: 1280px) {
-  .pp-main.bare { display: block; }
-}
-@media (min-width: 1600px) {
-  .pp-main.bare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); gap: 64px; }
-  .pp-main.bare:has(> .pp-extras:empty) { display: block; }
-}
+/* nothing with them yet: the empty state, then their family under it with the gap between sections, at every
+   width; the column then runs as long as the portrait card beside it (no bare paper under a short column) */
+.pp-main.bare { display: block; }
 @media (max-width: 760px) {
   .pp-words-plate { min-width: 0; }
-  .pp-words-plate p { font-size: 25px; }
-  .pp-words-plate.long p { font-size: 22px; }
   .pp-prompts { margin-top: 16px; }
+  /* the dating row starts at the column's edge, the task on one line inside it, no hanging margins */
+  .pp2 .pp-more { padding-left: 0; }
+  .pp2 .pp-more .arc-task { margin: 0; padding: 0; }
+  /* a hero's parts each on a line of their own, without dots, so no dot is left at a line's end */
+  :is(.phero-sub, .fp-sub) .sub-part { display: block; }
+  :is(.phero-sub, .fp-sub) .sub-dot { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pp-prompts a, .pp-q-a { transition: none; }
@@ -577,3 +576,15 @@
 .tp[data-snug] .tp-face { margin-bottom: 4px; }
 .tp[data-snug] :is(.tp-rel, .tp-state) { margin-top: 0; }
 .tp[data-snug] .tp-tier:last-child { padding-bottom: 0; }
+
+/* ── round 6 ─────────────────────────────────────────────────────────── */
+/* the asks sit in one fixed place in the review section; their wrapper draws nothing */
+.review-asked { display: contents; }
+/* a code being taken back: its held line in the code's row */
+.fp-codes li.held { display: flex; flex-wrap: wrap; align-items: center; column-gap: 0.3em; min-height: 56px; padding: 0; }
+/* a state of two phrases in the tree: each phrase on its own line where the face is too narrow for both, without
+   the dot, so "invited ·" never hangs; the largest faces have room for one line, dot and all */
+.tp-state .nw { display: block; }
+.tp-state .tp-sep { display: none; }
+.tp[data-size="l"] .tp-state .nw { display: inline; }
+.tp[data-size="l"] .tp-state .tp-sep { display: inline; }
