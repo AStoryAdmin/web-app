@@ -364,7 +364,7 @@
 
 /* signing in: the email, the password, then this browser, as parts of one section */
 .acct-parts { display: grid; gap: var(--s-8); }
-.acct-part { display: grid; gap: var(--s-2); align-content: start; min-width: 0; scroll-margin-top: calc(var(--top-h) + 64px); }
+.acct-part { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); align-content: start; min-width: 0; scroll-margin-top: calc(var(--top-h) + 64px); }
 .sheet-page .acct-part h3 { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.15; color: var(--sheet-ink); }
 .acct-part .acct-lead { margin: 0 0 var(--s-2); }
 .acct-pair { display: block; min-width: 0; }
@@ -716,7 +716,23 @@
 /* ═════════════════════════ 6. The wall (/p/:slug): the book opened at its frontispiece ═════════════════════════ */
 .wall { min-height: calc(100vh / var(--zoom, 1)); }
 /* the leaves fill by measuring the row's width: a scrollbar that came and went would change it, so its gutter stays */
-html:has(.wall) { scrollbar-gutter: stable; }
+/* the app keeps its scrollbar's track, so no arrival or skeleton height can move the page sideways. (Chromium doesn't
+   honour scrollbar-gutter on the root, so the track is kept; overlay scrollbars on phones and macOS show nothing.)
+   No weight, so a page that locks its scroll (the sign-in ritual, the front door's book) still wins. */
+:where(html) { overflow-y: scroll; scrollbar-gutter: stable; }
+/* a phone: a person's subline runs inline as one line of text (each part kept whole), so its height never depends on
+   how many parts a person has; and the Archive's three figures keep one row, their labels wrapping inside their own
+   column with two lines' room, so every variant is the same height */
+@media (max-width: 760.98px) {
+  .hero .phero-sub .sub-part { display: inline; }
+  .hero .phero-sub .sub-dot { display: inline; }
+  .hero .arc-stats-hero.hero-stats { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; align-items: start; column-gap: 22px; }
+  .hero .arc-stats-hero.hero-stats > div:not(.arc-hs-book) span { min-height: 2lh; line-height: 1.3; }
+  .hero .arc-stats-hero.hero-stats > div:not(.arc-hs-book) b { white-space: nowrap; }
+  .hero .arc-stats-hero.hero-stats > .arc-hs-book { grid-column: 1 / -1; }
+}
+/* the narrowest phones: the greeting may wrap rather than run past the edge */
+@media (max-width: 340.98px) { .hero .home-hero h1 .nw { white-space: normal; } }
 /* the wall has no tab bar: on a phone its sheet's pressed mark keeps the desktop's foot band */
 @media (max-width: 760.98px) { .wall .wall-sheet.sheet-page::after { bottom: 10px; } }
 .wall-cloth.cloth { padding-top: 0; padding-bottom: calc(var(--s-10) + 28px); }
@@ -815,8 +831,12 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .wall-leaves > .wall-leaf:nth-child(3n+2):last-child { grid-column: span 2; }
 }
 /* what the family added: notecards on the paper, told apart by tone and an edge, not a shadow */
-.wall-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); align-items: stretch; }
-.wall-note { margin: 0; padding: var(--s-6) var(--s-8); background: var(--paper-tone); border: 1px solid var(--sheet-rule); }
+/* what the family added, set as the book sets a callout: words between two hairlines on the paper, square, untinted;
+   one note takes the whole measure, and below 1100px they stack */
+.wall-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6) var(--s-10); align-items: start; }
+.wall-notes:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+.wall .wall-note { margin: 0; padding: var(--s-5) 0; background: none; border: 0; border-block: 1px solid var(--sheet-rule); border-radius: 0; box-shadow: none; max-width: 70ch; }
+@media (max-width: 1100.98px) { .wall-notes { grid-template-columns: minmax(0, 1fr); } }
 .wall-note p { font: italic 400 19px/1.5 var(--book-body); color: var(--sheet-ink); }
 .wall-note footer { margin-top: var(--s-3); font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
 /* nothing shared yet: the dog, one sentence, the time, one action */
@@ -870,7 +890,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) > :is(.wall-date, h3, .wall-print, .wall-words, .wall-more) { grid-column: auto; grid-row: auto; max-width: none; }
   .sheet-page .wall-leaf h3 { font-size: 24px; }
   .wall-notes { grid-template-columns: minmax(0, 1fr); }
-  .wall-note { padding: var(--s-5); }
+  .wall .wall-note { padding: var(--s-4) 0; }
   .wall-none { padding: var(--s-10) var(--s-6); }
   .wall-none h1 { font-size: 32px; }
 }
@@ -901,6 +921,11 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .talk-skel { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); }
 /* the card's outline takes the card's own half-degree tilt, so its corners land where the card's do */
 .talk-skel .bka-sk-block { min-height: 301px; transform: rotate(-0.5deg); }
+@media (min-width: 1600px) { .talk-skel .bka-sk-block { min-height: 313px; } }
+/* held words drawn as hairlines: a rule under every line of each held element, at its own size */
+.sk-ruled :is(h2, p, b, span) { position: relative; }
+.sk-ruled :is(h2, p, li > b, li > span)::after { content: ""; position: absolute; inset: 0; visibility: visible; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 calc(1lh - 1px), var(--sheet-rule) calc(1lh - 1px) 1lh); }
 /* Account: the index's group labels over 44px rows, and the real sections' grid with the bookplate first */
 .acct-skel-index { gap: 0; }
 .acct-skel-index .bka-sk-line.nav { height: 44px; border-bottom: 0; position: relative; }
@@ -916,7 +941,6 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .bk-skel-under { display: block; order: 1; height: 56px; margin-top: var(--s-3); }
   .talk-skel { grid-template-columns: minmax(0, 1fr); row-gap: var(--s-10); }
   /* stacked: the words' place at their arrived height, the card's outline where the card lands, across the column */
-  .talk-skel > .bka-sk-col { min-height: 405px; }
   .talk-skel .bka-sk-block { min-height: 253px; margin-top: 0; }
 }
 /* one page at a time (a phone, or a window taller than it is wide): the block is one square page, as the reader shows */
@@ -927,12 +951,9 @@ html:has(.wall) { scrollbar-gutter: stable; }
   /* the row under the book stacks: the note and "Read this page", the buttons, the dashes */
   .bk-skel-under { height: 116px; }
 }
-/* the lead sets in one line only from 1031px (two below), so the words are 31px shorter there */
-@media (min-width: 1031px) and (max-width: 1100.98px) { .talk-skel > .bka-sk-col { min-height: 374px; } }
 @media (max-width: 760.98px) {
   .bk-skel-under { height: 98px; margin-top: var(--s-1); }
   .talk-skel .bka-sk-block { order: -1; min-height: 245px; margin-top: 0; transform: none; }
-  .talk-skel > .bka-sk-col { min-height: 0; }
   .acct-skel .acct-skel-index { display: none; }
   .acct-skel-jump { display: block; height: 48px; margin-bottom: var(--s-4); }
 }

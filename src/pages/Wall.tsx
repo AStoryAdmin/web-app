@@ -13,7 +13,7 @@
  * bookStructure and printedChapterName), so the wall and the Book never
  * disagree. What the family added closes the page as notecards.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Lockup } from "../components/Brand";
 import { useLight } from "../components/delight/Light";
@@ -255,9 +255,10 @@ function Bench({ children }: { children: React.ReactNode }) {
  * While the story is fetched: the wall's own frame in hairlines, the portrait ring and two lines on the cloth, the
  * contents column and a row of leaf outlines on the sheet, with the mark drawing over them (Bao's Standard rule 42).
  */
-function WallWait() {
+function WallWait({ onShown }: { onShown: () => void }) {
   const ground = useRef<HTMLDivElement>(null);
   useLight(ground);
+  useLayoutEffect(onShown, [onShown]);
   return (
     <div className="wall wall-skel">
       <div className="wall-cloth cloth on-dark" ref={ground}>
@@ -310,6 +311,11 @@ function WallWait() {
 export default function Wall() {
   const { slug } = useParams();
   const [story, setStory] = useState<WallStory | null | undefined>(undefined);
+  // whether the waiting frame was shown (set from its layout effect), so the arrival knows the sheet already stands
+  const waited = useRef(false);
+  const markWaited = useCallback(() => {
+    waited.current = true;
+  }, []);
   const root = useRef<HTMLDivElement>(null);
   const ground = useRef<HTMLDivElement>(null);
   useLight(ground);
@@ -327,14 +333,16 @@ export default function Wall() {
   // One authored arrival: the name rises line by line, the sheet settles (lib/arrive). The leaves below are never
   // held back for it: they move on the scroll's own timeline (CSS), so nothing waits on an observer.
   // (a layout effect, so the from-state is set before the first paint)
+  // When the waiting frame was on screen, its sheet already stood at full strength: the story's own sheet takes its
+  // place where it stands, and only what is inside rises (no second rise from nothing).
   useLayoutEffect(() => {
     if (!story || !root.current) return;
-    return arrive(root.current);
+    return arrive(root.current, { inside: waited.current });
   }, [story]);
 
   const photo = usePrint(story?.photo_url ?? null);
 
-  if (story === undefined) return <WallWait />;
+  if (story === undefined) return <WallWait onShown={markWaited} />;
 
   if (story === null) {
     return (

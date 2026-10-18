@@ -122,9 +122,9 @@ export default function Person() {
           <div className="phero" aria-hidden="true">
             <div className="phero-words">
               <p className="phero-title hold-words">&nbsp;</p>
-              {/* on a phone each subline part is its own line: the sample family has three, a person usually two */}
+              {/* the subline runs inline as one line of text on every width; the skeleton holds that one line */}
               <p className="phero-sub hold-words">
-                {(preview ? ["A sample family", " ", " "] : [" ", " "]).map((part, i) => (
+                {(preview ? ["A sample family", " ", " "] : [" "]).map((part, i) => (
                   <span className="sub-part" key={i}>
                     {i > 0 && <span className="sub-dot"> · </span>}
                     <span className="nw">{part}</span>

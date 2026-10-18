@@ -400,7 +400,7 @@ export default function Archive() {
             {stats.span ? (
               <div>
                 <b>{stats.span.from === stats.span.to ? String(stats.span.from) : `${stats.span.from}–${stats.span.to}`}</b>
-                <span>{stats.span.from === stats.span.to ? "The one year dated so far" : "The years it reaches"}</span>
+                <span>{stats.span.from === stats.span.to ? "The one year dated" : "The years it reaches"}</span>
               </div>
             ) : (
               <div>

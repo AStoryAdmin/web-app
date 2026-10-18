@@ -48,14 +48,28 @@ export default function Talk() {
       >
         {/* the words and their three steps on the left, the question's card on the right, in hairlines */}
         <div className="page talk-page bka-skel talk-skel" data-busy="true">
-          <span className="bka-sk-col" aria-hidden="true">
-            <i className="bka-sk-line tall w70" />
-            <i className="bka-sk-line" />
-            <i className="bka-sk-line w85" />
-            <i className="bka-sk-line w40" />
-            <i className="bka-sk-line" />
-            <i className="bka-sk-line w70" />
-          </span>
+          {/* the words themselves, held invisible at their own size and ruled in hairlines, so the column is its real
+              height at every width (your own story, the usual case) */}
+          <section className="talk-words hold-words sk-ruled" aria-hidden="true">
+            <h2>
+              On the phone, for now<Stop />
+            </h2>
+            <p className="talk-lead">A Story talks with you in the A Story app on the phone. Talking here in the browser is coming; until then, the question keeps.</p>
+            <ol className="talk-steps">
+              <li>
+                <b>It rings</b>
+                <span>at the hour you chose in the app.</span>
+              </li>
+              <li>
+                <b>It listens</b>
+                <span>while you talk.</span>
+              </li>
+              <li>
+                <b>The memory appears here</b>
+                <span>by evening, in your own words.</span>
+              </li>
+            </ol>
+          </section>
           {/* the heart draws inside the card's outline, where today's question will be set */}
           <span className="bka-sk-block">
             <LoadingMark />

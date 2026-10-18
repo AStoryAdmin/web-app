@@ -4,7 +4,7 @@
  * up, what the family added, the calls, and the most recent memories.
  * Nothing to configure; the place to come back to.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import Mosaic, { InvitePrint } from "../components/Mosaic";
@@ -16,6 +16,7 @@ import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { greeting, noteFor, recordSkip, skipsToday, todaysDeck, todaysQuestion } from "../lib/today";
 import { isPaid } from "../lib/plan";
+import { dayKey } from "../app-core/lib/dailyQuestion.js";
 import { stripDays } from "../app-core/lib/weekStrip.js";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { track } from "../lib/analytics";
@@ -23,6 +24,31 @@ import { resurface } from "../lib/resurface";
 
 const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 
+
+/** Today's questions left as this browser last counted them (the skips are kept per story and day), before the story is known. */
+function heldQuestionsLeft(): number {
+  try {
+    const day = `-${dayKey()}`;
+    let skips = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) || "";
+      if (k.startsWith("astory-skips-") && k.endsWith(day)) skips = Math.max(skips, Number(localStorage.getItem(k) || 0));
+    }
+    return Math.max(1, 3 - skips);
+  } catch {
+    return 3;
+  }
+}
+
+/** Whether this viewer's plan was paid when the page last arrived (the plan comes with the account, after the skeleton). */
+const PLAN_SEEN = "astory-home-paid";
+function heldPaid(): boolean {
+  try {
+    return localStorage.getItem(PLAN_SEEN) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -32,12 +58,23 @@ export default function Home() {
 
   const relative = !!story && story.relationship !== "Myself" && story.ownerId !== user?.id && false;
   const unlimited = isPaid(user?.plan ?? "free");
+  // remembered for the next cold load's skeleton (a per-viewer convenience)
+  useEffect(() => {
+    if (account === undefined) return;
+    try {
+      localStorage.setItem(PLAN_SEEN, unlimited ? "1" : "0");
+    } catch {
+      /* storage refused: the skeleton holds the free shape */
+    }
+  }, [account, unlimited]);
   const deck = useMemo(() => (story ? todaysDeck(story, { relative, unlimited }) : []), [story, relative, unlimited]);
   const question = useMemo(() => (story ? todaysQuestion(story, { relative, unlimited }) : null), [story, relative, unlimited, skips]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // While the account loads: the arrived hero's frame (same Shell key, so the sheet rises once), its greeting already
   // known, the question's place held invisible at its size; the page's own words rise in when they come.
-  if (account === undefined)
+  if (account === undefined) {
+    const heldUnlimited = heldPaid();
+    const heldLeft = heldUnlimited ? 3 : heldQuestionsLeft();
     return (
       <Shell
         hero={
@@ -64,7 +101,7 @@ export default function Home() {
             </div>
             <div className="ask hold-words" aria-hidden="true">
               <span className="pill gold">A little question for today</span>
-              <p className="story-q q">What did the kitchen smell like when you were small?</p>
+              <p className="story-q q">Where did you go as a child to be alone?</p>
               <div className="acts">
                 <span className="btn primary">
                   <PenIcon />
@@ -74,10 +111,10 @@ export default function Home() {
                   <MicIcon />
                   Talk it through on a call
                 </span>
-                <span className="btn quiet sm">Ask me another</span>
+                {heldLeft > 1 && <span className="btn quiet sm">Ask me another</span>}
               </div>
-              {/* the plan is known from sign-in: a free account's note under the acts is held too */}
-              {!unlimited && <p className="meta note">3 of today’s three waiting.</p>}
+              {/* the plan is known from sign-in: a free account's note under the acts is held too, at today's count */}
+              {!heldUnlimited && <p className="meta note">{heldLeft === 1 ? "The last of today’s three. Three new ones tomorrow." : `${heldLeft} of today’s three waiting.`}</p>}
             </div>
           </div>
         }
@@ -85,6 +122,7 @@ export default function Home() {
         <div className="page" aria-busy="true" />
       </Shell>
     );
+  }
   if (account === null && loadError) {
     return (
       <Shell compact title="Home">
