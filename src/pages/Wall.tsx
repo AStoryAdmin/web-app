@@ -398,9 +398,10 @@ export default function Wall() {
               </p>
               {(count > 0 || family > 0) && (
               <p className="wall-counts" data-rise>
-                {memories(count)}
-                {chapters.length > 1 ? ` · ${chapters.length} chapters` : ""}
-                {family ? ` · ${family} from the family` : ""}
+                {/* each count stays whole; its dot travels with it, so a wrap never splits "1 from the family" */}
+                <span className="nw">{memories(count)}</span>
+                {chapters.length > 1 && <> <span className="nw">· {chapters.length} chapters</span></>}
+                {family > 0 && <> <span className="nw">· {family} from the family</span></>}
                 {/* on a narrow phone the tail takes its own line, so the line count never depends on the counts */}
                 <span className="wall-counts-tail">
                   <span className="wall-counts-dot"> · </span>shared by the family<span className="wall-counts-more">, for anyone with the link</span>
