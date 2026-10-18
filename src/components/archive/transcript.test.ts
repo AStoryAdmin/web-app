@@ -841,7 +841,8 @@ function marksIn(paragraph: string): { opens: boolean; single: boolean }[] {
     const word = /\p{L}/u.test(prev) && /\p{L}/u.test(next);
     const opensHere = prev === "" || /[\s([{“‘«—–-]/.test(prev);
     if ("“«".includes(c)) push(true, false);
-    else if ("”»".includes(c)) push(false, false);
+    // a ” after a digit is an inch mark, like a " there
+    else if ("”»".includes(c) && !(c === "”" && /\d/.test(prev))) push(false, false);
     else if (c === "‘" && !word) push(true, true);
     else if (c === "’" && !word && !(/\p{L}/u.test(prev) && /\s/.test(next))) push(opensHere, true);
     else if (c === '"' && !/\d/.test(prev)) push(opensHere && next !== "" && !/\s/.test(next), false);
@@ -917,11 +918,14 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       // a thought being quoted: the words after it run to a ? or ! in the same sentence
       if (/^[^.!?…]*[?!]/.test(after)) return "before a quoted thought";
       // where it may hedge, decided by the next word alone: a number, a teen, an ordinal, or 17a's closed list
-      const nextWord = (after.match(/^\s*([^\s,.;:!?…"“”‘’']+)/u)?.[1] ?? "").toLowerCase();
-      const numberWords = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands million millions dozen dozens".split(" ");
+      const fullWord = (after.match(/^\s*([^\s,.;:!?…"“”‘’']+)/u)?.[1] ?? "").toLowerCase();
+      // a hyphenated number is decided on its part before the hyphen ("twenty-five", "one-third")
+      const head = fullWord.split("-")[0];
+      const numberWords = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands million millions billion billions dozen dozens".split(" ");
       const ordinals = "first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth hundredth thousandth".split(" ");
       const closedList = "a an the this that these those last next every each all some any half whole few couple several most nothing none zero once twice forever always never about around almost nearly maybe over under at in on for since until till from by during tonight today yesterday tomorrow midnight noon midday dawn sunrise sunset".split(" ");
-      if (/^[$£€¥]?\d/.test(nextWord) || numberWords.includes(nextWord) || ordinals.includes(nextWord) || /(?:teenth|tieth)$/.test(nextWord) || closedList.includes(nextWord)) return "before a word where it may hedge";
+      const numberLike = (w: string) => numberWords.includes(w) || ordinals.includes(w) || /^\w+(?:teenth|tieth)$/.test(w);
+      if (/^[$£€¥]?\d/.test(fullWord) || numberLike(head) || closedList.includes(fullWord)) return "before a word where it may hedge";
       return "";
     }
     case "c-slip": {
@@ -1844,6 +1848,131 @@ describe("round 17: (b) and (e) as closed tests, every r16 reviewer string", () 
           if (why) failures.push(`${piece.said} :: ${cut[2]} :: ${why}`);
         }
       }
+    }
+    expect(failures).toEqual([]);
+  });
+});
+
+/* ───────── Round 20: hyphenated numbers, the curly inch mark, every input of the r19 skills mutant table ───────── */
+
+export const R20_KEEP: string[] = [
+  // a hyphenated number is decided on its part before the hyphen; billions
+  "We had, like, twenty-five cows.",
+  "We waited, like, forty-five minutes.",
+  "It took, like, one-third of the rice.",
+  "We moved on, like, twenty-first of May.",
+  "We counted, like, billions of stars.",
+  "We owed, like, a billion dong.",
+  // Q7: a ’ after a full stop is a mark
+  "He said no.’ Wow.",
+  // Q2: « is a mark
+  "She said, «Okay. Wow. That's amazing.» Then left.",
+  // L4, L20: hundreds; the list is not case-sensitive
+  "We met, like, hundreds of people.",
+  "We waited, like, Five hours.",
+];
+
+export const R20_CUT: [string, string][] = [
+  // a ” or ″ after a digit is an inch mark, not a quotation mark
+  ["The table was 32” wide. Wow. We moved.", "The table was 32” wide. We moved."],
+  ["The table was 32″ wide. Wow. We moved.", "The table was 32″ wide. We moved."],
+  // a hyphenated word whose first part is not a number still goes
+  ["We drove, like, cross-country.", "We drove cross-country."],
+];
+
+export const R20_TRANSCRIPT: [string[], string[]][] = [
+  // Q20: a mark-free middle paragraph after a “
+  [["She said, “We went.", "Wow.", "Then we left.”"], ["She said, “We went.", "Wow.", "Then we left.”"]],
+  // Q15 / Q19: the same with a straight ' and a straight "
+  [["He said, 'We went.", "Wow. That's amazing.", "Then we left.'"], ["He said, 'We went.", "Wow. That's amazing.", "Then we left.'"]],
+  [["He said, \"We went.", "Wow. That's amazing.", "Then we left.\""], ["He said, \"We went.", "Wow. That's amazing.", "Then we left.\""]],
+  // A6 / W5: the double count carries over two mark-free paragraphs
+  [["She said, “We went home.", "We ate.", "Wow. That's amazing.", "Then we left.”"], ["She said, “We went home.", "We ate.", "Wow. That's amazing.", "Then we left.”"]],
+  // S3: the single count carries too
+  [["She said, ‘We went.", "We ate.", "Wow.", "Then we left.’"], ["She said, ‘We went.", "We ate.", "Wow.", "Then we left.’"]],
+  // S5 / W7 / W8: a stray close never takes a count below zero, so the later open still holds
+  [["He said no.’ Then left.", "She said, ‘We went.", "Wow.", "Then we left.’"], ["He said no.’ Then left.", "She said, ‘We went.", "Wow.", "Then we left.’"]],
+  [["He said no.\" Then left.", "She said, \"We went.", "Wow.", "Then we left.\""], ["He said no.\" Then left.", "She said, \"We went.", "Wow.", "Then we left.\""]],
+  [["He said no.' Then left.", "She said, 'We went.", "Wow.", "Then we left.'"], ["He said no.' Then left.", "She said, 'We went.", "Wow.", "Then we left.'"]],
+  // Q2: a « opens a quotation that runs over a mark-free paragraph
+  [["She said, «We went.", "Wow.", "Then we left.»"], ["She said, «We went.", "Wow.", "Then we left.»"]],
+  // Q20: a “ opens, so a quotation inside a quotation, closed once, still leaves the outer one open
+  [["She said, “He told me, “go.” And we went.", "Wow.", "Then we left.”"], ["She said, “He told me, “go.” And we went.", "Wow.", "Then we left.”"]],
+  // Q22: a ’ at a word's start does not close the ‘
+  [["She said, ‘We went. ’Twas cold.", "Wow.", "Then we left.’"], ["She said, ‘We went. ’Twas cold.", "Wow.", "Then we left.’"]],
+];
+
+describe("round 20: hyphenated numbers, the curly inch mark, the r19 mutant inputs", () => {
+  it.each(R20_KEEP)("keeps %s", async (said) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(said);
+  });
+  it.each(R20_CUT)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+  it.each(R20_TRANSCRIPT)("%s", async (said, shown) => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(said)).toEqual(shown);
+  });
+  it("the contract holds on every round-20 string, and the checker refuses each forbidden cut (M4, M5, M11, M12, M14, M15, M17)", async () => {
+    const { cleanSpeech, explainTranscript } = await import("./transcript");
+    const failures: string[] = [];
+    for (const said of [...R20_KEEP, ...R20_CUT.map(([x]) => x)]) {
+      for (const opening of [false, true]) {
+        const { said: base, out, cuts } = cleanSpeech(said, { opening, explain: true });
+        for (const cut of cuts) {
+          const why = breaksRule(base, cut, { opening, answer: false, named: false, cuts });
+          if (why) failures.push(`${said} (opening ${opening}) :: ${cut[2]} "${base.slice(cut[0], cut[1])}" :: ${why}`);
+        }
+        if (!onlyCutsRemoved(base, out, cuts)) failures.push(`${said} :: words changed outside the cuts: "${out}"`);
+      }
+    }
+    for (const [paragraphs] of R20_TRANSCRIPT) {
+      for (const piece of explainTranscript(paragraphs)) {
+        if (piece.asked) continue;
+        for (const cut of piece.cuts as Cut[]) {
+          const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], paragraph: paragraphs[piece.para], prior: paragraphs.slice(0, piece.para) });
+          if (why) failures.push(`${piece.said} :: ${cut[2]} :: ${why}`);
+        }
+      }
+    }
+    const at = (said: string, piece: string, rule: string): Cut => {
+      const i = said.indexOf(piece);
+      if (i < 0) throw new Error(`"${piece}" not in "${said}"`);
+      return [i, i + piece.length, rule];
+    };
+    const forbidden: [string, Cut, string[]][] = [
+      // M4: a ‘ is a mark
+      ["She said, ‘We went. Wow.", at("She said, ‘We went. Wow.", "Wow.", "e-reaction"), []],
+      // M5: a ’ after a full stop is a mark
+      ["He said no.’ Wow.", at("He said no.’ Wow.", "Wow.", "e-reaction"), []],
+      // M11: after a paragraph that leaves a ‘ open
+      ["Wow.", [0, 4, "e-reaction"], ["She said, ‘We went."]],
+      // M14: a possessive ’ never closes a “
+      ["Wow.", [0, 4, "e-reaction"], ["She said, “We went to the boys’ house."]],
+      // M14: a stray ’ closes a ‘, never the open “
+      ["Wow.", [0, 4, "e-reaction"], ["She said, “It was hers.’"]],
+      // M15 / M17: a stray ” before an open “ never cancels it
+      ["Wow.", [0, 4, "e-reaction"], ["He said no.” Then she said, “We went."]],
+      ["Wow.", [0, 4, "e-reaction"], ["He said no.”", "Then she said, “We went."]],
+      // M12: midnight is on the closed list
+      ["We met, like, midnight.", at("We met, like, midnight.", ", like,", "b-like"), []],
+      // a hyphenated number hedges
+      ["We had, like, twenty-five cows.", at("We had, like, twenty-five cows.", ", like,", "b-like"), []],
+      ["It took, like, one-third of the rice.", at("It took, like, one-third of the rice.", ", like,", "b-like"), []],
+    ];
+    for (const [said, cut, prior] of forbidden) {
+      if (!breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior })) failures.push(`the checker accepts a forbidden cut: ${said} after ${JSON.stringify(prior)} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
+    }
+    const allowed: [string, Cut, string[]][] = [
+      ["The table was 32” wide. Wow. We moved.", at("The table was 32” wide. Wow. We moved.", "Wow.", "e-reaction"), []],
+      ["We drove, like, cross-country.", at("We drove, like, cross-country.", ", like,", "b-like"), []],
+      ["Wow.", [0, 4, "e-reaction"], ["She said, “We went.”"]],
+    ];
+    for (const [said, cut, prior] of allowed) {
+      const why = breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior });
+      if (why) failures.push(`the checker refuses an allowed cut: ${said} :: ${cut[2]} :: ${why}`);
     }
     expect(failures).toEqual([]);
   });

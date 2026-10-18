@@ -63,10 +63,11 @@ const LIKE_QUOTES_AFTER = /\b(?:(?:am|is|are|was|were|be|been|being|['’]s|['�
  * number, a teen or an ordinal; a, an, the, this, that, these, those, last, next, every, each, all, some, any, half,
  * whole, few, couple, several, most, nothing, none, zero, once, twice, forever, always, never; about, around, almost, nearly,
  * maybe, over, under, at, in, on, for, since, until, till, from, by, during; tonight, today, yesterday, tomorrow, midnight, noon, midday, dawn, sunrise, sunset.
+ * A hyphenated number is decided on its part before the hyphen ("twenty-five", "one-third", "twenty-first").
  * ("We paid, like, two hundred dollars" stays.)
  */
 const LIKE_HEDGES_NEXT =
-  /^\s*(?:[$£€¥]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|a|an|the|this|that|these|those|last|next|every|each|all|some|any|half|whole|few|couple|several|most|nothing|none|zero|once|twice|forever|always|never|about|around|almost|nearly|maybe|over|under|at|in|on|for|since|until|till|from|by|during|tonight|today|yesterday|tomorrow|midnight|noon|midday|dawn|sunrise|sunset)(?![\p{L}'’-]))/iu;
+  /^\s*(?:[$£€¥]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|billions?|dozens?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth)(?![\p{L}'’])|(?:a|an|the|this|that|these|those|last|next|every|each|all|some|any|half|whole|few|couple|several|most|nothing|none|zero|once|twice|forever|always|never|about|around|almost|nearly|maybe|over|under|at|in|on|for|since|until|till|from|by|during|tonight|today|yesterday|tomorrow|midnight|noon|midday|dawn|sunrise|sunset)(?![\p{L}'’-]))/iu;
 /** (b) A thought being quoted: the words after ", like," run to a ? or ! in the same sentence ("standing there, like, what is going on?"). */
 const LIKE_QUOTES_THOUGHT = /^[^.!?…]*[?!]/;
 /** (c) "I", "the", "and" or "that's" said twice in a row with a comma between. */
@@ -99,6 +100,8 @@ function quoteMarks(text: string, from = { double: 0, single: 0 }): { any: boole
       any = true;
       double++;
     } else if (c === "”" || c === "»") {
+      // a ” after a digit is an inch mark (32” wide), like a straight " there
+      if (c === "”" && /\d/.test(prev)) continue;
       any = true;
       double = Math.max(0, double - 1);
     } else if (c === "‘" || c === "’") {
