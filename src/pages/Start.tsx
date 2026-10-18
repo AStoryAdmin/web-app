@@ -92,6 +92,10 @@ function AskToJoin({ people, myName }: { people: Person[]; myName: string }) {
 
 type Way = "other" | "self" | "join";
 
+/** What step 2 says when you join someone's story (also held, invisible, in its loading frame). */
+const JOIN_RECAP =
+  "Ask them, or whoever keeps their story, for the six-letter family code on their Family page, or the link. Nothing is written in their name: you read what they chose to share and add what you remember, under your own name, and they approve it.";
+
 /** The three ways, in the product's own words (docs/PRD.md §3.3a). `writes` says who holds the pen, every time. */
 const WAYS: { key: Way; title: string; writes: string; body: string; act: string }[] = [
   {
@@ -192,6 +196,39 @@ export default function Start() {
             </span>
           )}
         </header>
+        {join ? (
+          // a join link (what a relative is sent): step 2's frame at its arrived size, the heart in the code field's place
+          <main className="start-sheet step-2">
+            <div className="start-step">
+              <aside className="start-recap" aria-hidden="true">
+                <span className="start-back">
+                  <span>←</span> The three ways
+                </span>
+                <p className="start-step-line">Step 2 of 2 · they write; you add</p>
+                <h1>
+                  Join their story<span className="stop">.</span>
+                </h1>
+                <p className="start-recap-body">{JOIN_RECAP}</p>
+              </aside>
+              <div className="start-form">
+                <div className="start-code start-sk-code">
+                  <div className="start-sk-hold" aria-hidden="true">
+                    <Field label="Their family code" placeholder="ABC123" value="" onChange={() => {}} tabIndex={-1} />
+                    <div className="start-acts">
+                      <Button type="button" disabled>
+                        Open it
+                      </Button>
+                      <span className="acct-why">Type the code they gave you first.</span>
+                    </div>
+                  </div>
+                  <span className="start-sk-mark">
+                    <LoadingMark />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </main>
+        ) : (
         <main className="start-sheet">
           <section>
             <div className="start-top" aria-hidden="true">
@@ -221,6 +258,7 @@ export default function Start() {
             </p>
           </section>
         </main>
+        )}
       </div>
     );
   if (!another && stories.length > 0) return <Navigate to="/" replace />;
@@ -317,7 +355,7 @@ export default function Start() {
               </h1>
               <p className="start-recap-body">
                 {who === "join"
-                  ? "Ask them, or whoever keeps their story, for the six-letter family code on their Family page, or the link. Nothing is written in their name: you read what they chose to share and add what you remember, under your own name, and they approve it."
+                  ? JOIN_RECAP
                   : who === "other"
                     ? "This is for someone who is not on A Story, or who would rather you did the typing. What you write is kept in their name, as told to you. If they join later, you can hand the story to them."
                     : "In your own words, at your own pace. The family reads what you share."}

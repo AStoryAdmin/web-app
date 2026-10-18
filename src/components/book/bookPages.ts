@@ -345,7 +345,7 @@ export function buildBook(
   const design = normaliseDesign(story.bookDesign) as Structure["design"];
   // the words a person typed for the book (its title, the motto, the back) are set like everything else they wrote
   const raw = keepsakeWords(design, s, story) as Words;
-  const w: Words = { ...raw, title: smarten(raw.title), tagline: smarten(raw.tagline), backMessage: smarten(raw.backMessage) };
+  const w: Words = { ...raw, title: smarten(raw.title), line: smarten(raw.line), tagline: smarten(raw.tagline), backMessage: smarten(raw.backMessage) };
   const her = pronounFor(story, design) as string;
   const possessive = her === "he" ? "his" : her === "she" ? "her" : "their";
   const cover = coverColour(design.cover.color);
@@ -390,7 +390,7 @@ export function buildBook(
     name: s.name,
     fullName: s.fullName,
     title: w.title,
-    subtitle: s.subtitle,
+    subtitle: smarten(s.subtitle),
     span: s.span,
     memories: s.memories,
     photos: s.photos,

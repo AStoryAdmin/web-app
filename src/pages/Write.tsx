@@ -483,7 +483,13 @@ function Afterwards({
 export default function Write() {
   const { account, activeStory: story } = useAccount();
   const [params] = useSearchParams();
-  if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
+  // the writer's own frame (bare, wide) while the account loads, so its arrival runs once
+  if (account === undefined)
+    return (
+      <Shell bare wide>
+        <div className="page" aria-busy="true" />
+      </Shell>
+    );
   if (!story) return <Navigate to="/start" replace />;
   return <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}`} story={story} />;
 }

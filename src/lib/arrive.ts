@@ -165,7 +165,11 @@ export function arrive(root: HTMLElement, { inside = false }: { inside?: boolean
       }
       // the gold foil rule is stamped left to right, after the words
       const foil = hero.querySelector<HTMLElement>(".foil:not([data-rise])");
-      if (foil) tl.fromTo(foil, { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.8, ease: MOVE, clearProps: "transform" }, 0.45);
+      // stamped once: a foil kept from the loading skeleton isn't stamped again
+      if (foil && !(inside && foil.dataset.risen)) {
+        foil.dataset.risen = "1";
+        tl.fromTo(foil, { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.8, ease: MOVE, clearProps: "transform" }, 0.45);
+      }
       if (rest.length) tl.fromTo(rest, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, stagger: 0.07 }, 0.25);
       const object = hero.querySelector<HTMLElement>(".object");
       if (object) tl.fromTo(object, { y: 40, opacity: 0, rotate: 2 }, { y: 0, opacity: 1, rotate: 0, duration: 1.1, ease: OUT }, 0.2);
@@ -175,7 +179,7 @@ export function arrive(root: HTMLElement, { inside = false }: { inside?: boolean
       // the headband is sewn on as the sheet settles (decoration D3)
       const band = sheet.querySelector<HTMLElement>(":scope > .headband");
       if (band && !inside) tl.fromTo(band, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: OUT, clearProps: "clipPath" }, viaTransition ? 0.15 : 0.5);
-      if (now.length) tl.fromTo(now, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, clearProps: "transform" }, 0.55);
+      if (now.length) tl.fromTo(now, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, clearProps: "transform" }, inside ? 0.08 : 0.55);
       if (later.length) {
         gsap.set(later, { y: 14, opacity: 0 });
         stops.push(onEnter(later, riseIn));

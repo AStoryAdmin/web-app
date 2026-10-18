@@ -55,8 +55,12 @@ function useBookChrome(page: RefObject<HTMLDivElement | null>, on: boolean) {
       if (!stage || !under || !stage.offsetHeight) return;
       const top = pageTop(stage);
       const below = pageTop(under) + under.offsetHeight - (top + stage.offsetHeight);
+      // the phone's tab bar covers the foot of the window: the fit counts only the paper you can see
+      const bar = document.querySelector<HTMLElement>(".tabbar");
+      const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+      const tab = bar && getComputedStyle(bar).display !== "none" ? Math.max(0, (window.innerHeight - bar.getBoundingClientRect().top) / zoom) : 0;
       // 13px of paper under the last control, as on a laptop (235 + 68 + 13 = the 316 the stylesheet starts from)
-      el.style.setProperty("--bk-chrome", `${Math.ceil(top + below + 13)}px`);
+      el.style.setProperty("--bk-chrome", `${Math.ceil(top + below + 13 + tab)}px`);
     };
     measure();
     const ro = new ResizeObserver(measure);

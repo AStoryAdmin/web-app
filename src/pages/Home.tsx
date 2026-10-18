@@ -35,7 +35,40 @@ export default function Home() {
   const deck = useMemo(() => (story ? todaysDeck(story, { relative, unlimited }) : []), [story, relative, unlimited]);
   const question = useMemo(() => (story ? todaysQuestion(story, { relative, unlimited }) : null), [story, relative, unlimited, skips]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
+  // While the account loads: the arrived hero's frame (same Shell key, so the sheet rises once), its greeting already
+  // known, the question's place held invisible at its size; the page's own words rise in when they come.
+  if (account === undefined)
+    return (
+      <Shell
+        hero={
+          <div className="hero-grid home-hero">
+            <div className="greet">
+              <p className="label">
+                <span className="hold-words">&nbsp;</span>
+                <span className="mobile-only">
+                  {" "}
+                  <span className="teller-pick hold-words">&nbsp;</span>
+                </span>
+              </p>
+              <h1>
+                <span className="nw">{greeting("")},</span> <span className="hl nw">{user?.firstName || "friend"}.</span>
+              </h1>
+              <span className="foil" />
+            </div>
+            <div className="ask hold-words" aria-hidden="true">
+              <span className="pill gold">A little question for today</span>
+              <p className="story-q q">What did the kitchen smell like when you were small?</p>
+              <div className="acts">
+                <span className="btn">Write it</span>
+                <span className="btn quiet">Talk it through on a call</span>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <div className="page" aria-busy="true" />
+      </Shell>
+    );
   if (account === null && loadError) {
     return (
       <Shell compact title="Home">

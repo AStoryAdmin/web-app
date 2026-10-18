@@ -290,7 +290,9 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   const [keysOpen, setKeysOpen] = useState(false);
   useKeyLayer(navigate, openKeys(setKeysOpen));
   // once per page, and again when a page swaps its busy placeholder for its content (the hero or title changes)
-  const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${title ?? ""}`;
+  // (a bare page shows no hero, so its title, which only names the running head, doesn't re-key the arrival: a memory's
+  // chapter isn't known until it loads)
+  const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${bare ? "b" : (title ?? "")}`;
   useEffect(() => {
     const el = root.current;
     if (!el) return;

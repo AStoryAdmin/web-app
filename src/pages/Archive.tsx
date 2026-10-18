@@ -240,7 +240,26 @@ export default function Archive() {
 
   if (account === undefined)
     return (
-      <Shell compact title="The Archive">
+      <Shell
+        hero={
+          // the arrived hero's frame (same Shell key, so the sheet rises once): the title as it will be, the name and
+          // the wall line held invisible at their size
+          <>
+            <p className="label">
+              <span className="arc-hero-name hold-words">&nbsp;</span>
+              <span className="mobile-only">
+                {" "}
+                <span className="teller-pick hold-words">&nbsp;</span>
+              </span>
+            </p>
+            <h1>
+              The Archive
+              <Stop />
+            </h1>
+            <p className="meta arc-wall hold-words">&nbsp;</p>
+          </>
+        }
+      >
         <div className="page arc-page arc-skeleton" aria-busy="true">
           <span className="sk-line w40" />
           <span className="sk-grid">

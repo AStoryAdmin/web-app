@@ -113,7 +113,19 @@ export default function Person() {
   const back = preview ? "/family?preview=tree" : "/family";
   if (account === undefined)
     return (
-      <Shell wide back={back} book={preview ? "A sample family" : undefined}>
+      <Shell
+        wide
+        back={back}
+        book={preview ? "A sample family" : undefined}
+        hero={
+          // the arrived hero's frame (same Shell key, so the sheet rises once): one title line held invisible
+          <div className="phero" aria-hidden="true">
+            <div className="phero-words">
+              <p className="phero-title hold-words">&nbsp;</p>
+            </div>
+          </div>
+        }
+      >
         {/* the mark draws itself over a hairline sketch of the page to come */}
         <div className="page pp2 pp-skel" aria-busy="true">
           <span className="sk-plate" />

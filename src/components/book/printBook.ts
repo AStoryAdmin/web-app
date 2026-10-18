@@ -11,6 +11,7 @@
  */
 import { smarten } from "../../lib/typography";
 import { buildLegacyHtml } from "../../app-core/lib/legacyBook.js";
+import { bodyHash } from "../../app-core/lib/bookDesign.js";
 import { photoUrl } from "../../lib/photoUrls";
 import type { Story } from "../../data/stories";
 
@@ -54,25 +55,48 @@ export async function signStoryPhotos(story: Story): Promise<Story> {
   };
 }
 
+/** Set a body as the screen sets it: paragraph by paragraph, so smarten's dash rules never join across a line break. */
+const NL = String.fromCharCode(10);
+const paras = (t: unknown) => String(t ?? "").split(NL).map(smarten).join(NL);
+
 /**
  * The typesetter's pass over what people typed, before app-core sets the printed book: each memory's title and words,
- * and the book's own title, motto and dedication, with curly quotes, dashes and ellipses, as the screen sets them.
- * The kept rows are untouched (lib/typography).
+ * the book's title, subtitle, motto, back message and dedication, with curly quotes, dashes and ellipses, as the screen
+ * sets them. The kept rows are untouched (lib/typography).
+ *
+ * A third-person book prints a memory's retold words only while the retelling's hash matches the memory's body
+ * (app-core printedBody). So the retold entries that match the raw body are typeset too and re-keyed to the typeset
+ * body's hash; a stale retelling stays stale, as it would have.
  */
-function typeset(story: Story): Story {
+export function typeset(story: Story): Story {
   const set = (v: unknown) => (typeof v === "string" ? smarten(v) : v);
-  const design = story.bookDesign as (Record<string, unknown> & { cover?: Record<string, unknown> }) | null;
+  type Retold = { h: string; body: string };
+  const design = story.bookDesign as (Record<string, unknown> & { cover?: Record<string, unknown>; retold?: Record<string, Retold> }) | null;
   const cover = design?.cover;
+  const bodies = new Map(story.memories.map((m) => [m.id, typeof m.body === "string" ? paras(m.body) : m.body]));
+  let retold = design?.retold;
+  if (retold && typeof retold === "object") {
+    const next: Record<string, Retold> = {};
+    for (const [id, r] of Object.entries(retold)) {
+      const m = story.memories.find((x) => x.id === id);
+      const body = bodies.get(id);
+      next[id] = m && body !== undefined && r && typeof r.body === "string" && r.h === bodyHash(m.body) ? { h: bodyHash(body) as string, body: paras(r.body) } : r;
+    }
+    retold = next;
+  }
   return {
     ...story,
     bookDesign: design
       ? {
           ...design,
           dedication: set(design.dedication),
-          cover: cover ? { ...cover, title: set(cover.title), tagline: set(cover.tagline), backMessage: set(cover.backMessage) } : cover,
+          ...(retold ? { retold } : {}),
+          cover: cover
+            ? { ...cover, title: set(cover.title), subtitle: set(cover.subtitle), tagline: set(cover.tagline), backMessage: set(cover.backMessage) }
+            : cover,
         }
       : story.bookDesign,
-    memories: story.memories.map((m) => ({ ...m, title: set(m.title) as string, body: set(m.body) as string })),
+    memories: story.memories.map((m) => ({ ...m, title: set(m.title) as string, body: bodies.get(m.id) as string })),
   };
 }
 
