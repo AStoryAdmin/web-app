@@ -245,7 +245,7 @@
   .tp-threads { display: none; }
   .tp-tier { display: block; padding: 0 0 32px 30px; }
   .tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label { padding: 0; margin-bottom: 14px; }
-  .tp-also { display: inline; margin: 0; white-space: nowrap; }
+  .tp-also { display: inline-block; max-width: 100%; margin: 0; }
   /* the label is a wrapping row: the gap spaces the heading and its asks, and an ask that wraps starts on the
      heading's own edge */
   .tp-label { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
@@ -676,7 +676,7 @@
 .tp[data-stack] .tp-tier { display: block; padding: 0 0 32px 30px; }
 .tp[data-stack] :is(.tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label) { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; padding: 0; margin-bottom: 14px; }
 .tp[data-stack] .tp-label .tp-hint { flex-basis: 100%; }
-.tp[data-stack] .tp-also { display: inline; margin: 0; white-space: nowrap; }
+.tp[data-stack] .tp-also { display: inline-block; max-width: 100%; margin: 0; }
 .tp[data-stack] :is(.tp-dot, .tp-tier.home .tp-dot, .tp-tier.rings .tp-dot) { left: -30px; top: 3px; }
 .tp[data-stack] .tp-dec { display: inline-block; margin: 0; }
 .sheet-page .tp[data-stack] .tp-label h3 { display: inline; }

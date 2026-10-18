@@ -555,13 +555,13 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
         <span className="tp-rail" aria-hidden="true" />
 
         {plate.tiers.map((tier) => (
-          <section key={tier.key} className={`tp-tier${tier.home ? " home" : ""}${tier.units.length ? "" : " rings"}`} aria-label={tier.title}>
+          <section key={tier.key} className={`tp-tier${tier.home ? " home" : ""}${tier.units.length ? "" : " rings"}`} aria-labelledby={`tp-h-${tier.key}`}>
             <header className="tp-label">
               <span className="tp-dot" aria-hidden="true" />
               {/* the decade and the generation's name flow together as one item; the asks wrap after them */}
               <div className="tp-name">
                 {tier.decade && <span className="tp-dec">{tier.decade}</span>}
-                <h3>
+                <h3 id={`tp-h-${tier.key}`}>
                   {tier.title}
                   {tier.also && <><span className="tp-sp"> </span><span className="tp-also">{tier.also}</span></>}
                 </h3>
