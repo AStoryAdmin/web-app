@@ -735,6 +735,8 @@
 }
 /* the narrowest phones: the greeting may wrap rather than run past the edge */
 @media (max-width: 340.98px) { .hero .home-hero h1 .nw { white-space: normal; } }
+/* a person's "give memories a year" task wraps on a narrow phone rather than running its arrow off the edge */
+@media (max-width: 400.98px) { .pp2 .arc-task { white-space: normal; flex-wrap: wrap; max-width: 100%; margin-right: 0; } }
 /* the wall has no tab bar: on a phone its sheet's pressed mark keeps the desktop's foot band */
 @media (max-width: 760.98px) { .wall .wall-sheet.sheet-page::after { bottom: 10px; } }
 .wall-cloth.cloth { padding-top: 0; padding-bottom: calc(var(--s-10) + 28px); }

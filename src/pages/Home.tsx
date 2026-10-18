@@ -42,6 +42,17 @@ function heldQuestionsLeft(): number {
 
 /** Whether this viewer's plan was paid when the page last arrived (the plan comes with the account, after the skeleton). */
 const PLAN_SEEN = "astory-home-paid";
+/** Today's question as this browser last showed it, so a reload the same day holds its exact words. */
+const QUESTION_SEEN = "astory-home-question";
+function heldQuestion(): string | null {
+  try {
+    const seen = JSON.parse(localStorage.getItem(QUESTION_SEEN) || "null") as { day?: string; q?: string } | null;
+    return seen && seen.day === dayKey() && seen.q ? seen.q : null;
+  } catch {
+    return null;
+  }
+}
+
 function heldPaid(): boolean {
   try {
     return localStorage.getItem(PLAN_SEEN) === "1";
@@ -69,11 +80,20 @@ export default function Home() {
   }, [account, unlimited]);
   const deck = useMemo(() => (story ? todaysDeck(story, { relative, unlimited }) : []), [story, relative, unlimited]);
   const question = useMemo(() => (story ? todaysQuestion(story, { relative, unlimited }) : null), [story, relative, unlimited, skips]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!question) return;
+    try {
+      localStorage.setItem(QUESTION_SEEN, JSON.stringify({ day: dayKey(), q: question.question }));
+    } catch {
+      /* storage refused: the skeleton holds its sample question */
+    }
+  }, [question]);
 
   // While the account loads: the arrived hero's frame (same Shell key, so the sheet rises once), its greeting already
   // known, the question's place held invisible at its size; the page's own words rise in when they come.
   if (account === undefined) {
-    const heldUnlimited = heldPaid();
+    // sign-in knows the plan; the remembered one is only the fallback
+    const heldUnlimited = user?.plan ? isPaid(user.plan) : heldPaid();
     const heldLeft = heldUnlimited ? 3 : heldQuestionsLeft();
     return (
       <Shell
@@ -101,7 +121,7 @@ export default function Home() {
             </div>
             <div className="ask hold-words" aria-hidden="true">
               <span className="pill gold">A little question for today</span>
-              <p className="story-q q">Where did you go as a child to be alone?</p>
+              <p className="story-q q">{heldQuestion() ?? "Where did you go as a child to be alone?"}</p>
               <div className="acts">
                 <span className="btn primary">
                   <PenIcon />

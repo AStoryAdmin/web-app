@@ -122,13 +122,19 @@ export default function Person() {
           // the arrived hero's frame (same Shell key, so the sheet rises once): the title and its subline held invisible
           <div className="phero" aria-hidden="true">
             <div className="phero-words">
-              <p className="phero-title hold-words">&nbsp;</p>
-              {/* the subline runs inline as one line of text on every width; the skeleton holds that one line */}
+              {/* the sample family is fixed content, so it holds its real shape: a two-word name with "& Rose." and the
+                  long dated subline; a real person holds one title line and one subline line */}
+              <p className="phero-title hold-words">{preview ? (personId === "sample-rose" ? "Rose Hartley." : "Walter Carey & Rose.") : " "}</p>
               <p className="phero-sub hold-words">
-                {(preview ? ["A sample family", " ", " "] : [" "]).map((part, i) => (
-                  <span className="sub-part" key={i}>
-                    {i > 0 && <span className="sub-dot"> · </span>}
-                    <span className="nw">{part}</span>
+                {(preview ? ["A sample family", "Rose’s mother", "Born 1912", "Passed away 1979"] : [" "]).map((part, i) => (
+                  <span key={i}>
+                    {i > 0 && " "}
+                    <span className="sub-part">
+                      <span className="nw">
+                        {i > 0 && <span className="sub-dot">· </span>}
+                        {part}
+                      </span>
+                    </span>
                   </span>
                 ))}
               </p>
@@ -317,10 +323,16 @@ export default function Person() {
             {subline.length > 0 && (
               <p className="phero-sub" data-rise>
                 {/* each part whole; on a phone each takes its own line and the dots go, so none is left at a line’s end */}
+                {/* each dot is glued to the part it introduces, so a wrap carries "· part" to the next line together */}
                 {subline.map((part, i) => (
-                  <span className="sub-part" key={part}>
-                    {i > 0 && <span className="sub-dot"> · </span>}
-                    <span className="nw">{part}</span>
+                  <span key={part}>
+                    {i > 0 && " "}
+                    <span className="sub-part">
+                      <span className="nw">
+                        {i > 0 && <span className="sub-dot">· </span>}
+                        {part}
+                      </span>
+                    </span>
                   </span>
                 ))}
               </p>

@@ -574,7 +574,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 /* ───────────────────────── 17. Sheets and dialogs, the home sheet ───────────────────────── */
 .scrim { position: fixed; inset: 0; z-index: 50; background: rgba(42,35,32,0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: end center; padding: var(--s-4); }
-.sheetbox { width: min(520px, 100%); max-height: 86vh; overflow: auto; background: var(--card); border-radius: var(--r-sheet); padding: var(--s-6); box-shadow: var(--shadow-float); animation: rise var(--dur-sheet) var(--ease-out) both; }
+.sheetbox { width: min(520px, 100%); max-height: calc(86vh / var(--zoom, 1)); overflow: auto; background: var(--card); border-radius: var(--r-sheet); padding: var(--s-6); box-shadow: var(--shadow-float); animation: rise var(--dur-sheet) var(--ease-out) both; }
 .sheethead { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-5); }
 .sheethead h2 { font-size: var(--t-h3); }
 .addgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
