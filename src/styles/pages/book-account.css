@@ -722,6 +722,9 @@
    front door's book) has no bar to keep room for, so the cloth reaches the window's edge. */
 :where(html:not(:has(.auth.ritual, .door[data-layout="book"]))) { overflow-y: scroll; scrollbar-gutter: stable; }
 :where(html) { scrollbar-color: color-mix(in srgb, var(--ink-soft) 55%, transparent) transparent; }
+/* the pages that are all cloth (the wall's not-shared and not-found bench, Start) keep the track in the cloth's colour,
+   with a light thumb, not a cream strip down the window's edge */
+html:has(.wall-bench, .start) { background-color: var(--chocolate); scrollbar-color: color-mix(in srgb, var(--on-chocolate) 35%, transparent) var(--chocolate); }
 /* a phone: a person's subline runs inline as one line of text (each part kept whole), so its height never depends on
    how many parts a person has; and the Archive's three figures keep one row, their labels wrapping inside their own
    column with two lines' room, so every variant is the same height */
@@ -736,7 +739,10 @@
 /* the narrowest phones: the greeting may wrap rather than run past the edge */
 @media (max-width: 340.98px) { .hero .home-hero h1 .nw { white-space: normal; } }
 /* a person's "give memories a year" task wraps on a narrow phone rather than running its arrow off the edge */
-@media (max-width: 400.98px) { .pp2 .arc-task { white-space: normal; flex-wrap: wrap; max-width: 100%; margin-right: 0; } }
+@media (max-width: 400.98px) {
+  .pp2 .pp-more .arc-task.arc-task { display: block; white-space: normal; padding-block: 12px; margin-right: 0; max-width: 100%; }
+  .pp2 .pp-more .arc-task .arc-task-t { white-space: nowrap; }
+}
 /* the wall has no tab bar: on a phone its sheet's pressed mark keeps the desktop's foot band */
 @media (max-width: 760.98px) { .wall .wall-sheet.sheet-page::after { bottom: 10px; } }
 .wall-cloth.cloth { padding-top: 0; padding-bottom: calc(var(--s-10) + 28px); }

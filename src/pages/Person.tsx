@@ -112,6 +112,21 @@ export default function Person() {
   }, [res, rail, story]);
 
   const back = preview ? "/family?preview=tree" : "/family";
+  // The sample family is fixed content, known before the account: its loading hero holds each person's own name and
+  // subline, worked out exactly as the arrived hero does below (nobody in the sample is "you").
+  const heldSample = (() => {
+    if (!preview || !person || !story) return null;
+    const teller = storytellerOf(family, story);
+    const rel = teller ? relationTo(index, person.id, teller.id) : "";
+    const isTeller = person.storyId === story.id;
+    const stateKey = shownState(person, null, null);
+    const life = (lifeLine(person) as string).replace(/(Born|Passed away) (\d)/g, "$1 $2");
+    const relWords = rel ? `${story.name}’s ${rel}` : plateRel ? plateRel.charAt(0).toUpperCase() + plateRel.slice(1) : "In the family";
+    return {
+      title: isTeller ? `${personName(person)}.` : `${personName(person)} & ${story.name}.`,
+      subline: ["A sample family", isTeller ? "Storyteller" : stateKey === "you" ? "You" : relWords, life].filter(Boolean),
+    };
+  })();
   if (account === undefined)
     return (
       <Shell
@@ -124,9 +139,9 @@ export default function Person() {
             <div className="phero-words">
               {/* the sample family is fixed content, so it holds its real shape: a two-word name with "& Rose." and the
                   long dated subline; a real person holds one title line and one subline line */}
-              <p className="phero-title hold-words">{preview ? (personId === "sample-rose" ? "Rose Hartley." : "Walter Carey & Rose.") : " "}</p>
+              <p className="phero-title hold-words">{heldSample ? heldSample.title : " "}</p>
               <p className="phero-sub hold-words">
-                {(preview ? ["A sample family", "Rose’s mother", "Born 1912", "Passed away 1979"] : [" "]).map((part, i) => (
+                {(heldSample ? heldSample.subline : [" "]).map((part, i) => (
                   <span key={i}>
                     {i > 0 && " "}
                     <span className="sub-part">
