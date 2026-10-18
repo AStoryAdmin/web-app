@@ -843,7 +843,7 @@ function marksIn(paragraph: string): { opens: boolean; single: boolean }[] {
     if ("“«".includes(c)) push(true, false);
     else if ("”»".includes(c)) push(false, false);
     else if (c === "‘" && !word) push(true, true);
-    else if (c === "’" && !word) push(opensHere, true);
+    else if (c === "’" && !word && !(/\p{L}/u.test(prev) && /\s/.test(next))) push(opensHere, true);
     else if (c === '"' && !/\d/.test(prev)) push(opensHere && next !== "" && !/\s/.test(next), false);
     else if (c === "'") {
       if ((prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) push(true, true);
@@ -856,13 +856,14 @@ function marksIn(paragraph: string): { opens: boolean; single: boolean }[] {
 function reactionsMayGo(paragraph: string, before: string[]): string {
   if (marksIn(paragraph).length) return "a paragraph with a quotation mark";
   // a ’ only ever closes a ‘: the double and single marks are counted apart
+  // walked in order, a close never below zero, so a stray close can't cancel a later open
   let double = 0;
   let single = 0;
   for (const p of before) {
-    const marks = marksIn(p);
-    const net = (s: boolean) => marks.filter((m) => m.single === s && m.opens).length - marks.filter((m) => m.single === s && !m.opens).length;
-    double = Math.max(0, double + net(false));
-    single = Math.max(0, single + net(true));
+    for (const m of marksIn(p)) {
+      if (m.single) single = m.opens ? single + 1 : Math.max(0, single - 1);
+      else double = m.opens ? double + 1 : Math.max(0, double - 1);
+    }
   }
   return double > 0 || single > 0 ? "after a paragraph that leaves a quotation open" : "";
 }
@@ -1641,7 +1642,7 @@ export const R16_CUT: [string, string][] = [
   ["At, like, midnight we left.", "At, like, midnight we left."],
   ["We met at, like, noon.", "We met at, like, noon."],
   // a ’ that is not inside a word is a quotation mark: the paragraph keeps its reactions
-  ["The boys’ room was full. Wow. We moved.", "The boys’ room was full. Wow. We moved."],
+  ["The boys’ room was full. Wow. We moved.", "The boys’ room was full. We moved."], // round 19: a possessive ’ is not a quotation mark
   // X7: "maybe" is not "be"; X10: "being" is not on the be list
   ["It was maybe, um, Lan, Mai and Hoa.", "It was maybe, Lan, Mai and Hoa."],
   ["Being, um, poor, hungry, we left.", "Being, poor, hungry, we left."],
@@ -1723,7 +1724,6 @@ describe("round 16: 17a at ec7c671 and after, every reviewer string and the r15 
       if (!breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior })) failures.push(`the checker accepts a forbidden cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
     }
     forbidden.push(
-      ["The boys’ room was full. Wow. We moved.", at("The boys’ room was full. Wow. We moved.", "Wow.", "e-reaction")],
       // a paragraph after one that leaves a quotation open
       ["Wow. We moved.", at("Wow. We moved.", "Wow.", "e-reaction"), "He said, “We went. "],
     );
@@ -1790,6 +1790,9 @@ export const R17_CUT: [string, string][] = [
 ];
 
 export const R17_TRANSCRIPT: [string[], string[]][] = [
+  // round 19: marks walked in order (a stray close never cancels a later open), and a possessive ’ never closes a ‘
+  [["Mom said ” ok. He said, “We went.", "Wow. We stayed.", "Then we left.”"], ["Mom said ” ok. He said, “We went.", "Wow. We stayed.", "Then we left.”"]],
+  [["He wrote, ‘Dear Mom, the boys’ room is cold.", "Wow. It's cold here.", "Love, Lan.’"], ["He wrote, ‘Dear Mom, the boys’ room is cold.", "Wow. It's cold here.", "Love, Lan.’"]],
   // round 18: a ’ only ever closes a ‘, so a plural possessive never closes an open “ for the next paragraph
   [["He said, “We went to the boys’ room.", "Wow. We stayed.", "Then we left.”"], ["He said, “We went to the boys’ room.", "Wow. We stayed.", "Then we left.”"]],
   [["She said, “We slept at the Nguyens’.", "Wow. It was big.", "Then we left.”"], ["She said, “We slept at the Nguyens’.", "Wow. It was big.", "Then we left.”"]],

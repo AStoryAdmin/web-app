@@ -83,11 +83,13 @@ const REACTION = /^(?:wow|wow, that['’]s amazing|that['’]s amazing|that['’
  * an inch mark after a digit (5'6", 32" wide) are not quotation marks. `any`: the paragraph holds one; `opens` and
  * `closes`: how many open and close a quotation, so a paragraph that leaves its marks open is known.
  */
-function quoteMarks(text: string): { any: boolean; double: number; single: number } {
-  // double marks (“ ” « » ") and single marks (‘ ’ ') are counted apart: a ’ only ever closes a ‘, never a “
+function quoteMarks(text: string, from = { double: 0, single: 0 }): { any: boolean; double: number; single: number } {
+  // double marks (“ ” « » ") and single marks (‘ ’ ') are counted apart: a ’ only ever closes a ‘, never a “. The marks
+  // are walked in order from what earlier paragraphs left open, and a close never takes a count below zero, so a stray
+  // closing mark can't cancel an opening one that comes after it.
   let any = false;
-  let double = 0;
-  let single = 0;
+  let double = from.double;
+  let single = from.single;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     const prev = i > 0 ? text[i - 1] : "";
@@ -98,19 +100,21 @@ function quoteMarks(text: string): { any: boolean; double: number; single: numbe
       double++;
     } else if (c === "”" || c === "»") {
       any = true;
-      double--;
+      double = Math.max(0, double - 1);
     } else if (c === "‘" || c === "’") {
-      // inside a word it is an apostrophe ("That’s", "rock’n’roll")
+      // inside a word it is an apostrophe ("That’s", "rock’n’roll"), and so is a ’ after a letter before a space or a
+      // letter ("the boys’ room"): only a ’ before punctuation or the end closes a ‘
       if (/\p{L}/u.test(prev) && /\p{L}/u.test(next)) continue;
+      if (c === "’" && /\p{L}/u.test(prev) && /\s/.test(next)) continue;
       any = true;
       if (c === "‘") single++;
-      else if (!atStart) single--;
+      else if (!atStart) single = Math.max(0, single - 1);
     } else if (c === '"') {
       // after a digit it is an inch mark
       if (/\d/.test(prev)) continue;
       any = true;
       if (atStart && next && !/\s/.test(next)) double++;
-      else double--;
+      else double = Math.max(0, double - 1);
     } else if (c === "'") {
       // only a straight ' that opens or closes is a quotation mark
       if ((prev === "" || /[\s,:]/.test(prev)) && next && !/\s/.test(next)) {
@@ -118,7 +122,7 @@ function quoteMarks(text: string): { any: boolean; double: number; single: numbe
         single++;
       } else if (/[.!?,]/.test(prev)) {
         any = true;
-        single--;
+        single = Math.max(0, single - 1);
       }
     }
   }
@@ -132,10 +136,10 @@ function reactionsAllowed(paragraphs: string[]): boolean[] {
   let double = 0;
   let single = 0;
   return paragraphs.map((p) => {
-    const m = quoteMarks(p);
+    const m = quoteMarks(p, { double, single });
     const allowed = double === 0 && single === 0 && !m.any;
-    double = Math.max(0, double + m.double);
-    single = Math.max(0, single + m.single);
+    double = m.double;
+    single = m.single;
     return allowed;
   });
 }
