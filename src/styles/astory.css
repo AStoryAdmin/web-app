@@ -2869,8 +2869,9 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 
 /* 2. Type on the paper ─ the display face for every heading on the sheet (not the reader's, not the leaf's) */
 .sheet-page .page :is(h1, h2):not(.bk-reader *, .leaf-one *, .mem *, .print-card *) { font-family: var(--book-display); font-weight: 600; line-height: 1.08; letter-spacing: -0.005em; color: var(--sheet-ink); text-wrap: balance; text-transform: none; }
-.sheet-page .page h1:not(.bk-reader *, .leaf-one *) { font-size: clamp(32px, 3vw, 40px); }
-.sheet-page .page h2:not(.bk-reader *, .leaf-one *, .mem *, .print-card *) { font-size: 34px; }
+/* the sheet's default heading sizes; :where keeps the page part at zero weight, so a page's own heading rule (any class) wins */
+:where(.sheet-page .page) h1:not(.bk-reader *, .leaf-one *) { font-size: clamp(32px, calc(3vw / var(--zoom, 1)), 40px); }
+:where(.sheet-page .page) h2:not(.bk-reader *, .leaf-one *, .mem *, .print-card *) { font-size: 34px; }
 .sheet-page .card h2:not(.bk-reader *), .sheet-page .people > h2, .sheet-page .tree > h2, .sheet-page .invite h2, .sheet-page .keepers h2, .sheet-page .acct h2, .sheet-page .plan-head h2, .sheet-page .ft-head h2, .sheet-page .mp-voices h2 { font-size: 28px; }
 .sheet-page .sechead h2 { font-size: 34px; }
 .sheet-page .card h3:not(.bk-reader *, .mem *), .sheet-page .trio .card h3, .sheet-page .edition-head h3 { font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.1; letter-spacing: -0.005em; color: var(--sheet-ink); text-transform: none; }
@@ -3012,9 +3013,9 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
   .sheet-page::after { width: 120px; height: 132px; right: var(--gutter); bottom: 112px; }
   .running-head-sheet { font-size: 10px; letter-spacing: 0.18em; }
   .folio-sheet { bottom: 100px; font-size: 10px; }
-  .sheet-page .page h2:not(.bk-reader *, .leaf-one *, .mem *, .print-card *), .sheet-page .sechead h2 { font-size: 28px; }
+  :where(.sheet-page .page) h2:not(.bk-reader *, .leaf-one *, .mem *, .print-card *), .sheet-page .sechead h2 { font-size: 28px; }
   .sheet-page .card h2:not(.bk-reader *), .sheet-page .people > h2, .sheet-page .tree > h2, .sheet-page .invite h2, .sheet-page .keepers h2, .sheet-page .acct h2, .sheet-page .plan-head h2, .sheet-page .ft-head h2 { font-size: 24px; }
-  .sheet-page .page h1:not(.bk-reader *, .leaf-one *) { font-size: 30px; }
+  :where(.sheet-page .page) h1:not(.bk-reader *, .leaf-one *) { font-size: 30px; }
   .sheet-page .card h3:not(.bk-reader *, .mem *), .sheet-page .trio .card h3 { font-size: 23px; }
   .sheet-page .label, .sheet-page .field > span:first-child, .sheet-page .progress .end, .sheet-page .arc-year span, .sheet-page .more, .sheet-page .pill.gold { font-size: 10.5px; }
   .sheet-page .week { gap: 6px; }
