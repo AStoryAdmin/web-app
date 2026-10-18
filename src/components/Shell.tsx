@@ -19,6 +19,7 @@ import { storyLine } from "../lib/storyLine";
 import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
 import { scrollShell } from "../lib/scrollShell";
+import { useTransitionLinks } from "../lib/pageTransition";
 import { useLight } from "./delight/Light";
 import Leaf from "./delight/Leaf";
 import { usePillThumb } from "../lib/pillThumb";
@@ -177,11 +178,15 @@ type ShellProps = {
   back?: string | true;
   /** A short cloth band (for writing, reading, settings) instead of the full hero. */
   compact?: boolean;
+  /** No hero at all: only a strip of cloth under the bar, so the sheet starts near the top and the page has the whole screen. The page puts its own title on the sheet. */
+  bare?: boolean;
+  /** The sheet's column takes the full width of the window (with a gutter), for pages laid out in several columns. */
+  wide?: boolean;
   /** The Book page wears the book's own teal cloth; everything else the brand's chocolate. */
   tone?: "teal";
 };
 
-export default function Shell({ children, hero, title, back, compact, tone }: ShellProps) {
+export default function Shell({ children, hero, title, back, compact, bare, wide, tone }: ShellProps) {
   const { user } = useAuth();
   const [teller, setTeller] = useState(false);
   const [add, setAdd] = useState(false);
@@ -204,6 +209,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
 
   useLight(cloth);
   usePillThumb(pills, location.pathname);
+  useTransitionLinks(navigate);
   // once per page, and again when a page swaps its busy placeholder for its content (the hero or title changes)
   const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${title ?? ""}`;
   useEffect(() => {
@@ -250,7 +256,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
           </div>
         </div>
       </header>
-      <div className={`cloth on-dark${compact ? " compact" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
+      <div className={`cloth on-dark${compact ? " compact" : ""}${bare ? " bare" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
         <span className="lamp" aria-hidden="true" />
         <Leaf page />
         <div className="hero">
@@ -265,7 +271,7 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
         </div>
       </div>
 
-      <main className="sheet-page" id="main">
+      <main className={`sheet-page${wide ? " wide" : ""}`} id="main">
         {runningHead && (
           <p className="running-head-sheet" aria-hidden="true">
             <span>{bookName}</span>

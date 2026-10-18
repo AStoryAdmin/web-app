@@ -13,6 +13,7 @@
  */
 import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
+import { tookTransition } from "./pageTransition";
 
 gsap.registerPlugin(SplitText);
 
@@ -98,6 +99,8 @@ function developPhotographs(root: HTMLElement): () => void {
 }
 
 export function arrive(root: HTMLElement): () => void {
+  // after a view transition the sheet is already in place (lib/pageTransition): only what is inside it rises
+  const viaTransition = tookTransition();
   const mm = gsap.matchMedia();
   mm.add(MOTION_OK, () => {
     const hero = root.querySelector<HTMLElement>(".hero");
@@ -126,7 +129,7 @@ export function arrive(root: HTMLElement): () => void {
       if (object) tl.fromTo(object, { y: 40, opacity: 0, rotate: 2 }, { y: 0, opacity: 1, rotate: 0, duration: 1.1, ease: "power4.out" }, 0.2);
     }
     if (sheet) {
-      tl.fromTo(sheet, { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power4.out", clearProps: "transform" }, 0.3);
+      if (!viaTransition) tl.fromTo(sheet, { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power4.out", clearProps: "transform" }, 0.3);
       if (now.length) tl.fromTo(now, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, clearProps: "transform" }, 0.55);
       if (later.length) {
         gsap.set(later, { y: 14, opacity: 0 });

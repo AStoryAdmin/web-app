@@ -3638,3 +3638,39 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
   .hero .ask { padding-top: var(--s-3); padding-bottom: var(--s-5); }
   .shell > .top .add { display: none; }
 }
+/* the condensed bar is the same cloth as the hero (and teal on the Book page), not a second texture */
+.top.stuck { background: linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)), url("/book/bookcloth.jpg") 0 0 / 300px 300px, var(--chocolate); background-blend-mode: normal, overlay, normal; }
+.top.teal.stuck { background: linear-gradient(rgba(15, 74, 88, 0.42), rgba(15, 74, 88, 0.42)), url("/book/bookcloth.jpg") 0 0 / 300px 300px, var(--teal); background-blend-mode: normal, overlay, normal; }
+.top.teal .pillnav a[aria-current="page"] { color: var(--teal); }
+
+/* ───────────────────────── 53. Between pages, and layouts per page (lead) ───────────────────────── */
+/* Every in-app link is a View Transition (lib/pageTransition). The bar holds still. The brown cloth morphs to the
+   next page's height on the house movement curve, its old picture fading as the new one comes in. The old sheet
+   settles and fades; the new sheet rises a little into place. 560 ms in all, transform and opacity only, nothing
+   under reduced motion. A page may choose its own frame: `bare` (no hero, the sheet starts under the bar) and
+   `wide` (the column takes the whole window), so each page gets the layout that suits it. */
+.cloth { view-transition-name: cloth; }
+.sheet-page { view-transition-name: sheet; }
+::view-transition-old(root) { animation: 200ms var(--ease-out) both vt-fade; }
+::view-transition-new(root) { animation: 260ms var(--ease-out) both vt-appear; }
+::view-transition-group(cloth), ::view-transition-group(sheet) { animation-duration: 560ms; animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1); overflow: clip; }
+::view-transition-image-pair(cloth), ::view-transition-image-pair(sheet) { isolation: auto; }
+::view-transition-old(cloth), ::view-transition-new(cloth) { height: 100%; object-fit: cover; object-position: 50% 0; mix-blend-mode: normal; }
+::view-transition-old(cloth) { animation: 300ms var(--ease-out) both vt-fade; }
+::view-transition-new(cloth) { animation: 420ms var(--ease-out) 90ms both vt-appear; }
+::view-transition-old(sheet), ::view-transition-new(sheet) { height: auto; object-fit: none; object-position: 50% 0; mix-blend-mode: normal; }
+::view-transition-old(sheet) { animation: 240ms var(--ease-out) both vt-settle; }
+::view-transition-new(sheet) { animation: 520ms cubic-bezier(0.23, 1, 0.32, 1) 60ms both vt-rise; }
+@keyframes vt-fade { to { opacity: 0; } }
+@keyframes vt-appear { from { opacity: 0; } }
+@keyframes vt-settle { to { opacity: 0; transform: translateY(14px) scale(0.992); } }
+@keyframes vt-rise { from { opacity: 0; transform: translateY(28px); } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* bare: no hero band, only cloth under the bar; the sheet starts near the top of the window */
+.cloth.bare .hero { display: none; }
+.cloth.bare { padding-bottom: 40px; }
+/* wide: the sheet's column takes the window, with a gutter that grows with it */
+.sheet-page.wide .page, .sheet-page.wide .running-head-sheet { max-width: none; padding-left: clamp(20px, 3.2vw, 72px); padding-right: clamp(20px, 3.2vw, 72px); }

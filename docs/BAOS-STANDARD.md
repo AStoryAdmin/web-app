@@ -23,6 +23,7 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 10. **No orphans.** No lone icon on a row, no single card alone in a row, no rule that spans only one of two columns. Columns align and tops line up.
 11. **One screen when it should be one screen.** The sign-in and the other signed-out pages fit the window on a desktop and never scroll into empty cream. The book scales up and down to fit.
 12. **The ratio must hold** at every size and zoom. Nothing stretches, squashes or collapses. Never use `vh` or `vw` without dividing by `--zoom`. Never size an element in its own `cqw`.
+13a. **Each page chooses its own frame.** "Per navigation, the layout page can change to give you the best estate and layout to play with." The Shell offers a full hero, `compact` and `bare` heroes, and a `wide` column. Choose per page whatever uses the screen best.
 13. **Don't squeeze things into one page** where a flow needs steps. For example, the writer puts the question on top, gives one page to the words, and asks when, chapter and photograph as a step after Keep.
 
 ## 3. The look
@@ -37,9 +38,12 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 21. **Real assets.** Use the founder's watercolour puppy (`public/dog/*`) and photographs from the locked master library, never cropped from contact sheets and never filtered. When imagery is missing, write prompts for the founder to generate in GPT; don't generate it. Never use the book slipcase image.
 22. **The book preview is the samples page.** The reader and every book object match astoryapp.com/samples exactly ("printed exactly the way yours will be").
 
+17a. **Reading comes first.** "The paragraph is not eye friendly to read." Long text follows docs/research/reading-2026.md: a measured column, generous size and line height, full-strength ink on the paper, no ornament that gets in the way. No tinted bubbles, no heavy pill buttons, no clipped rounded photo frames: the founder called them "unacceptable".
+
 ## 4. Motion and interaction
 
 23. **The site moves.** Every signed-in page has arrival, scroll and transition effects in the house easings: entrances on `cubic-bezier(0.23, 1, 0.32, 1)`, movement on `cubic-bezier(0.77, 0, 0.175, 1)`. Transform and opacity only. Every effect has a reduced-motion fallback.
+23a. **Moving between pages is smooth and premium.** "Make the transition smooth and give the premium feeling." Every in-app link is a View Transition: the bar holds, the cloth morphs to the next page's height, the old sheet settles away and the new one rises. Nothing jumps or flashes.
 24. **The navigation follows you.** The top bar is fixed and condenses when you scroll. The cream sheet slides up over the brown, and the brown only shows when you are back at the top.
 25. **Nothing is ever left hidden or half-faded** by an animation that didn't finish. Content never depends on the frame clock or on an observer firing.
 26. **Pointer effects line up with the pointer** at any zoom. The pressed leaf follows the cursor over the whole page, cream included. The nav highlight sits under its own tab.
