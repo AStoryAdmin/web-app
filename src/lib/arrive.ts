@@ -137,9 +137,9 @@ function developPhotographs(root: HTMLElement): () => void {
  * The page's arrival. `inside`: the sheet is already in place (a page that replaced its own loading skeleton), so only
  * what is inside rises, as after a view transition, and the headband, already sewn, is left alone.
  */
-export function arrive(root: HTMLElement, { inside = false }: { inside?: boolean } = {}): () => void {
+export function arrive(root: HTMLElement, { inside = false, via }: { inside?: boolean; via?: boolean } = {}): () => void {
   // after a view transition the sheet is already in place (lib/pageTransition): only what is inside it rises
-  const viaTransition = inside || tookTransition();
+  const viaTransition = inside || (via ?? tookTransition());
   const mm = gsap.matchMedia();
   mm.add(MOTION_OK, () => {
     const hero = root.querySelector<HTMLElement>(".hero");

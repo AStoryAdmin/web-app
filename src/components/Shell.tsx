@@ -19,7 +19,7 @@ import { storyLine } from "../lib/storyLine";
 import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
 import { scrollShell } from "../lib/scrollShell";
-import { useTransitionLinks } from "../lib/pageTransition";
+import { tookTransition, useTransitionLinks } from "../lib/pageTransition";
 import { useKeyLayer } from "../lib/keys";
 import { useLight } from "./delight/Light";
 import Leaf from "./delight/Leaf";
@@ -295,10 +295,15 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${bare ? "b" : (title ?? "")}`;
   // The arrival sets its from-states in a layout effect, in the commit, so the browser never paints the page at rest
   // and then blanks it (as useGSAP does). The scroll and the atmosphere only listen, so they can wait for the paint.
+  // whether this arrival came by a view transition is read once per arrival key: StrictMode's re-run of the effect
+  // (development) must not read the flag again, find it spent, and slide the sheet in a second time
+  const via = useRef<{ key: string; took: boolean } | null>(null);
   useLayoutEffect(() => {
     const el = root.current;
     if (!el) return;
-    return arrive(el);
+    const key = `${location.pathname}|${ready}`;
+    if (via.current?.key !== key) via.current = { key, took: tookTransition() };
+    return arrive(el, { via: via.current.took });
   }, [location.pathname, ready]);
   useEffect(() => {
     const el = root.current;
