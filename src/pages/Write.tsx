@@ -39,6 +39,7 @@ import { ERAS, FAITH_CHAPTER, eraForAge } from "../app-core/data/eras.js";
 import { ageAt, parseYear } from "../app-core/lib/timeline.js";
 import { decadesForLife, formatDecade, suggestYearsForEra } from "../app-core/lib/memoryDateInput.js";
 import { todaysDeck, noteFor, type Prompt } from "../lib/today";
+import { aboutPrompt } from "../lib/aboutPrompt";
 import { isPaid } from "../lib/plan";
 import { dailyPromptsLeft, incrementDailyPrompts, weeklyPhotosLeft, incrementWeeklyPhotos, FREE_WEEKLY_PHOTOS } from "../lib/usage";
 import { usePhotoUrl } from "../lib/photoUrls";
@@ -484,7 +485,7 @@ export default function Write() {
   const [params] = useSearchParams();
   if (account === undefined) return <Shell compact><div className="page" aria-busy="true" /></Shell>;
   if (!story) return <Navigate to="/start" replace />;
-  return <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}`} story={story} />;
+  return <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}`} story={story} />;
 }
 
 type Help = "tidy" | "title" | "ask";
@@ -494,6 +495,8 @@ function Writer({ story }: { story: Story }) {
   const { saveMemory, family } = useAccount();
   const [params] = useSearchParams();
   const qid = params.get("q");
+  // a question about someone in the family, from their page: /write?with=<personId>&about=<promptId>
+  const aboutId = params.get("about");
   const editId = params.get("edit");
   const wantsPhoto = params.get("photo") === "1";
   const wantsDetails = params.get("details") === "1" || wantsPhoto;
@@ -502,22 +505,32 @@ function Writer({ story }: { story: Story }) {
   const email = user?.email || "";
 
   const editing = useMemo(() => (editId ? story.memories.find((m) => m.id === editId) || null : null), [story, editId]);
-  const question = useMemo<Prompt | null>(() => {
-    if (!qid) return null;
-    const deck = todaysDeck(story, { unlimited: true });
-    return deck.find((p) => p.id === qid) || null;
-  }, [story, qid]);
+  const withPerson = useMemo(() => (withId ? realPeople(family).find((p) => p.id === withId) || null : null), [family, withId]);
+  const withName = withPerson ? String(withPerson.givenName || "").trim() : "";
+  // the page's question: today's (?q=), else one about the person it is with (?about=), else none
+  const pageQ = useMemo<{ prompt: Prompt; about: boolean } | null>(() => {
+    if (qid) {
+      const found = todaysDeck(story, { unlimited: true }).find((p) => p.id === qid);
+      if (found) return { prompt: found, about: false };
+    }
+    const about = aboutId ? aboutPrompt(aboutId, withName) : null;
+    return about ? { prompt: about, about: true } : null;
+  }, [story, qid, aboutId, withName]);
+  const question = pageQ?.prompt ?? null;
+  const aboutQ = Boolean(pageQ?.about);
+  // a question about someone keeps its own draft, apart from the same question asked of the storyteller
+  const draftQid = question ? (aboutQ ? `${question.id}@${withId || "someone"}` : question.id) : null;
 
-  const key = draftKey(story.id, editId, question?.id);
+  const key = draftKey(story.id, editId, draftQid);
   const initial = useMemo<Draft>(() => {
     if (editing) {
       const saved = readDraft(key);
       return { title: editing.title, body: editing.body, era: editing.era, questionId: null, memoryId: editing.id, ...(saved && saved.memoryId === editing.id ? saved : {}) };
     }
-    const base: Draft = { title: "", body: "", era: question?.era || "", questionId: question?.id || null, memoryId: crypto.randomUUID() };
-    const saved = question ? questionDraft(story.id, question.id) : readDraft(key);
+    const base: Draft = { title: "", body: "", era: question?.era || "", questionId: draftQid, memoryId: crypto.randomUUID() };
+    const saved = draftQid ? questionDraft(story.id, draftQid) : readDraft(key);
     return saved ? { ...base, ...saved } : base;
-  }, [key, editing, question, story.id]);
+  }, [key, editing, question, draftQid, story.id]);
 
   const [d, setD] = useState<Draft>(initial);
   const [busy, setBusy] = useState<"" | "save" | Help>("");
@@ -722,13 +735,12 @@ function Writer({ story }: { story: Story }) {
   const starters = startersFor(own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
   const bookName = bookNameOf(story);
-  const withPerson = withId ? realPeople(family).find((p) => p.id === withId) || null : null;
   // Today's questions, the one on the page among them (a paid plan's walk is long; three is a page's worth).
   const deck = useMemo(() => {
     const all = todaysDeck(story, { unlimited });
     const three = all.slice(0, 3);
-    return question && !three.some((p) => p.id === question.id) ? [question, ...three.slice(0, 2)] : three;
-  }, [story, unlimited, question]);
+    return question && !aboutQ && !three.some((p) => p.id === question.id) ? [question, ...three.slice(0, 2)] : three;
+  }, [story, unlimited, question, aboutQ]);
   const drafted = useMemo(() => new Set(deck.filter((p) => p.id !== question?.id && questionDraft(story.id, p.id)?.body?.trim()).map((p) => p.id)), [deck, question, story.id]);
 
   const insertStarter = (s: string) => {
@@ -811,7 +823,7 @@ function Writer({ story }: { story: Story }) {
       try {
         localStorage.removeItem(key);
         // a draft for this question written before drafts were kept per question
-        if (question && readDraft(draftKey(story.id))?.questionId === question.id) localStorage.removeItem(draftKey(story.id));
+        if (draftQid && readDraft(draftKey(story.id))?.questionId === draftQid) localStorage.removeItem(draftKey(story.id));
       } catch {
         /* fine */
       }
@@ -903,7 +915,9 @@ function Writer({ story }: { story: Story }) {
   const hint = question ? noteFor(question) || question.hint : "";
   const kicker = editing
     ? "Editing"
-    : `${question ? (own ? "Today’s question" : `A question for ${story.name}`) : wantsPhoto ? "A photograph" : "In your own words"}${withPerson ? ` · with ${firstName(withPerson)}` : ""}`;
+    : aboutQ
+      ? `A question about ${withName || "this person"}`
+      : `${question ? (own ? "Today’s question" : `A question for ${story.name}`) : wantsPhoto ? "A photograph" : "In your own words"}${withPerson ? ` · with ${firstName(withPerson)}` : ""}`;
   const heading = question
     ? question.question
     : editing

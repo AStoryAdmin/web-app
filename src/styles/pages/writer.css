@@ -161,38 +161,6 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .spread .w-begin-inpage button:nth-child(n + 3) { display: none; }
 .spread .w-keep { margin-top: 16px; }
 .spread:not(.rail) .w-ribbon { height: 26px; }
-/* a laptop's short screen: the ornament goes and the list tightens, so the seal is in the first screen */
-@media (max-height: 740px) {
-  .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 72px; }
-  .w-desk .spread .w-dog { width: 84px; }
-  .spread .leaf-left .w-sub, .spread .leaf-left .w-pencil:not(.asked) { display: none; }
-  .spread .leaf-left, .spread .leaf-left-in, .sheet-page .spread .w-book .leaf-one { gap: 4px; padding-top: 16px; padding-bottom: 16px; } /* the folio's descenders clear the foil frame */
-  .spread .leaf-left-in { padding: 0; }
-  .spread .leaf-left .w-qhead { margin-top: 4px; }
-  .spread .w-book .leaf-one .wtitle { margin-top: 2px; }
-  .spread .w-book .leaf-one .dear { margin: 2px 0 -4px; }
-  .spread .w-book .leaf-one .signoff { margin-top: 0; }
-  .spread .w-book .leaf-one .folio { padding-top: 2px; }
-  .spread .w-keep { margin-top: 4px; }
-  .spread:not(.rail) .w-ribbon { display: none; } /* no room for a tail with its notch; better none than a nick */
-  .spread .leaf-left { padding-bottom: 16px; }
-  .w-desk .spread .leaf-left > .leaf-left-in { margin-top: 8px; } /* the running head stands apart from the kicker */
-  .w-desk .spread .leaf-left .w-qkick { margin-bottom: 6px; }
-  .w-desk .spread .leaf-left .w-qs { margin-top: 14px; }
-  .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 2px; }
-  .spread .w-book .leaf-one .wbody { min-height: var(--w-line); }
-}
-@media (max-height: 900px) {
-  .spread .leaf-left .w-qhead { margin-top: 0; }
-  .spread .leaf-left > .leaf-left-in { margin-top: 12px; } /* the running head stands apart from the kicker */
-  .sheet-page .w-desk .spread .leaf-left .w-qs { margin-top: 14px; }
-  .sheet-page .w-desk .spread .leaf-left .w-qkick { margin-bottom: 8px; }
-  .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 4px; }
-  .spread .leaf-left .w-pencil { margin-top: 8px; }
-  .spread .leaf-left .w-orn { display: none; }
-  .spread .leaf-left .w-q { padding: 6px 0; }
-  .spread .leaf-left .w-q.own { padding: 10px 0; }
-}
 .spread .w-pages { display: grid; grid-template-columns: minmax(0, 0.84fr) minmax(0, 1fr);
   box-shadow: -2px 2px 0 -1px var(--w-gilt-a), -2px 2px 0 0 var(--w-gilt-line-a), -4px 4px 0 -1px var(--w-gilt-b), -4px 4px 0 0 var(--w-gilt-line-b),
     2px 2px 0 -1px var(--w-gilt-a), 2px 2px 0 0 var(--w-gilt-line-a), 4px 4px 0 -1px var(--w-gilt-b), 4px 4px 0 0 var(--w-gilt-line-b); }
@@ -213,6 +181,43 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .w-orn i { font-style: normal; font-size: 13px; }
 .spread .w-ribbon { right: auto; left: calc(45.6% + 6px); }
 .spread .leaf-left .w-qs { margin-top: 18px; }
+
+/* a laptop's height (900px or less): the ornament goes and the list tightens, so the seal is in the first screen.
+   These two blocks come after the left page's base rules, so they win as written. */
+@media (max-height: 900px) {
+  .spread .leaf-left .w-qhead { margin-top: 0; }
+  .spread .leaf-left > .leaf-left-in { margin-top: 8px; } /* the running head stands apart from the kicker */
+  .sheet-page .w-desk .spread .leaf-left .w-qs { margin-top: 12px; }
+  .sheet-page .w-desk .spread .leaf-left .w-qkick { margin-bottom: 8px; }
+  .spread .w-keep { margin-top: 14px; }
+  .spread:not(.rail) .w-ribbon { height: 24px; }
+  /* a fourth row (a question about someone, with "in your own words") would push the seal out of the first screen */
+  .spread .leaf-left .w-qs ul:has(> li:nth-child(4)) > li:has(> .w-q.own) { display: none; }
+  .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 4px; }
+  .spread .leaf-left .w-pencil { margin-top: 8px; }
+  .spread .leaf-left .w-orn { display: none; }
+  .spread .leaf-left .w-q { padding: 6px 0; }
+  .spread .leaf-left .w-q.own { padding: 10px 0; }
+}
+/* a laptop with its browser bars (740px or less): tighter still */
+@media (max-height: 740px) {
+  .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 72px; }
+  .w-desk .spread .w-dog { width: 84px; }
+  .spread .leaf-left .w-sub, .spread .leaf-left .w-pencil:not(.asked) { display: none; }
+  .spread .leaf-left .w-qs li:has(> .w-q.own) { display: none; } /* "in your own words" stays in Add; the seal needs the line */
+  /* both pages: 16px at the foot, so the folio's descenders clear the foil frame */
+  .spread .leaf-left, .sheet-page .spread .w-book .leaf-one { gap: 4px; padding-top: 16px; padding-bottom: 16px; }
+  .spread .leaf-left > .leaf-left-in { gap: 4px; }
+  .sheet-page .w-desk .spread .leaf-left .w-qkick { margin-bottom: 6px; }
+  .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 2px; }
+  .spread .w-book .leaf-one .wtitle { margin-top: 2px; }
+  .spread .w-book .leaf-one .dear { margin: 2px 0 -4px; }
+  .spread .w-book .leaf-one .signoff { margin-top: 0; }
+  .spread .w-book .leaf-one .folio { padding-top: 2px; }
+  .spread .w-book .leaf-one .wbody { min-height: var(--w-line); }
+  .spread .w-keep { margin-top: 4px; }
+  .spread:not(.rail) .w-ribbon { display: none; } /* no room for a tail with its notch; better none than a nick */
+}
 
 /* today's other questions */
 .w-qs ul { display: grid; margin: 0; padding: 0; list-style: none; }
@@ -247,7 +252,7 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .w-keep .seal-button[aria-busy] { cursor: progress; }
 .w-keep .seal-button:disabled { opacity: 1; color: var(--ink-soft); cursor: not-allowed; }
 .w-keep-note { margin: -8px 0 0 68px; font: 400 13px/1.5 var(--font-ui); color: var(--ink-soft); }
-.w-keep-note a { display: inline-block; padding: 12px 2px; margin: -12px 0; color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.w-keep-note a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; margin: -12.25px 0; vertical-align: middle; color: var(--heading); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; } /* 44px to press, without growing the line */
 .w-keep-note a:hover { text-decoration-color: var(--heading); }
 /* a keep that failed says so beside the seal, with the way to try again */
 .w-keep-error { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0 4px 68px; font: 500 14px/1.45 var(--font-ui); color: var(--danger); max-width: 46ch; }
