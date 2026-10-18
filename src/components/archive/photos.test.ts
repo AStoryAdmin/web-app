@@ -30,3 +30,19 @@ describe("a long spoken paragraph", () => {
     for (const p of out) expect(p.length).toBeLessThan(560);
   });
 });
+
+describe("balance", () => {
+  it("splits into runs of about equal length", async () => {
+    const { balance } = await import("./photos");
+    const s = Array.from({ length: 8 }, (_, i) => `Sentence number ${i} is about this long here. `);
+    const out = balance(s, 2);
+    expect(out).toHaveLength(2);
+    expect(Math.abs(out[0].length - out[1].length)).toBeLessThan(60);
+  });
+  it("never starts a paragraph on a sentence that answers the one before it", async () => {
+    const { balance } = await import("./photos");
+    const s = ["I wanted to be a teacher all my life, more than anything. ", "But then the money ran out and the school closed. ", "I moved to Seattle that winter. ", "It rained every day."];
+    const out = balance(s, 2);
+    for (const p of out) expect(p).not.toMatch(/^But then/);
+  });
+});

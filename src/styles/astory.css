@@ -640,16 +640,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   background: var(--page);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 1px 2px rgba(0,0,0,0.25), 0 24px 48px -16px rgba(0,0,0,0.5), 0 60px 90px -40px rgba(0,0,0,0.4); }
 @keyframes settle { from { opacity: 0; transform: translateY(18px) scale(0.985); } }
-.auth .companion { position: absolute; left: 50%; bottom: calc(100% - 14px); width: 196px; margin-left: -98px; z-index: 0; pointer-events: none; }
-.auth .companion .head { position: relative; aspect-ratio: 629 / 422; transform-origin: 50% 100%; will-change: transform; }
-.auth .companion .state { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom; opacity: 0; transition: opacity 220ms var(--ease-out);
-  filter: drop-shadow(0 -1px 0 rgba(0,0,0,0.05)); }
-.auth .companion[data-mood="watch"] .watch, .auth .companion[data-mood="cover"] .cover, .auth .companion[data-mood="peek"] .peek { opacity: 1; }
-/* the blink: two paper ovals over the eyes, only while watching */
-.auth .companion .lid { position: absolute; width: 11%; height: 12%; border-radius: 50%; background: var(--page); top: 50.5%; transform: scaleY(0); transform-origin: 50% 10%; opacity: 0; }
-.auth .companion .lid.l { left: 32.5%; } .auth .companion .lid.r { left: 58.5%; }
-.auth .companion[data-mood="watch"] .lid { opacity: 1; } /* the blink itself is GSAP, in Companion.tsx */
-.auth .companion[data-mood="watch"] .lid.r { animation-delay: 40ms; }
+/* the companion (Bond) is drawn in styles/pages/signed-out.css §1 */
 
 /* the form on the paper */
 .auth .form { width: 100%; min-width: 0; }
@@ -687,10 +678,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   .auth .said .q { font-size: 22px; }
   .auth .sheet-wrap { max-width: none; margin-top: 84px; }
   .auth .paper { padding: var(--s-8) var(--s-5) var(--s-6); border-radius: 8px; }
-  .auth .companion { width: 168px; margin-left: -84px; }
   .auth .form h1 { font-size: 24px; }
 }
-@media (prefers-reduced-motion: reduce) { .auth .said, .auth .sheet-wrap { animation: none; } .auth .companion .lid { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .auth .said, .auth .sheet-wrap { animation: none; } }
 
 /* ───────────────────────── 18b. Light on the signed-out pages ───────────────────────── */
 /* The pointer as a lamp (components/delight/Light): a broad sheen on the cloth. */
@@ -2247,16 +2237,7 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 .auth.ritual .legal { margin-top: 8px; font-size: 13px; }
 .auth.ritual .forgot { margin: -6px 0 14px; }
 
-/* the dog on the plate's top edge: three states on one box, the paws over the border */
-.auth .companion { --cw: clamp(150px, 15cqw + 60px, 200px); position: absolute; left: 2%; bottom: calc(100% - 14px); width: var(--cw); height: calc(var(--cw) / 1.1797); z-index: 2; pointer-events: none; }
-.auth .companion .head { position: absolute; inset: 0; transform-origin: 50% 100%; will-change: transform; }
-.auth .companion .state { position: absolute; inset: auto; bottom: 0; left: 50%; height: 100%; width: auto; max-width: none; object-fit: fill; transform: translateX(-50%); opacity: 0; transition: opacity 220ms var(--ease-out); }
-.auth .companion[data-mood="watch"] .watch, .auth .companion[data-mood="cover"] .cover, .auth .companion[data-mood="peek"] .peek, .auth .companion[data-mood="curious"] .curious, .auth .companion[data-mood="sleep"] .sleep { opacity: 1; }
-.auth .companion .glints, .auth .companion .lids { position: absolute; inset: 0; transition: opacity 220ms var(--ease-out); }
-.auth .companion:not([data-awake]) .glints, .auth .companion:not([data-awake]) .lids { opacity: 0; }
-.auth .companion .glint { position: absolute; width: 7%; height: 8%; margin: -4% 0 0 -3.5%; border-radius: 50%;
-  background: radial-gradient(circle at 42% 38%, rgba(255, 253, 248, 0.85) 0, rgba(255, 253, 248, 0.45) 40%, rgba(255, 253, 248, 0.1) 72%, transparent 100%); }
-.auth .companion .lid { position: absolute; width: 11%; height: 12%; margin: -6% 0 0 -5.5%; border-radius: 50%; background: #F4EBDD; }
+/* the dog on the plate's top edge: Bond, drawn in styles/pages/signed-out.css §1 */
 
 @media (max-width: 1100px) { .auth .spread-wrap { padding-left: 10px; padding-right: 10px; } }
 @media (max-width: 760px) {
@@ -2269,7 +2250,6 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
   .auth .promise-line { font-size: 29px; max-width: none; }
   .auth .plate-wrap { margin-top: 118px; }
   .auth .plate { padding: 0; }
-  .auth .companion { --cw: 170px; left: 50%; margin-left: -85px; }
   .auth .print { --w: 44cqw !important; }
   .auth .print[data-n="1"] { --l: 6cqw !important; --t: 7cqw !important; }
   .auth .print[data-n="2"] { --l: 50cqw !important; --t: 31cqw !important; }
@@ -2279,12 +2259,10 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 }
 
 /* the board, closed over the right page, that swings open on the spine */
-.auth .board { position: absolute; top: 0; bottom: 0; left: 50%; width: 50%; z-index: 6; transform-origin: 0% 50%; transform-style: preserve-3d; will-change: transform; --breath: 0; border-radius: 0 3px 3px 0; }
+.auth .board { position: absolute; top: 0; bottom: 0; left: 50%; width: 50%; z-index: 6; transform-origin: 0% 50%; transform-style: preserve-3d; will-change: transform; border-radius: 0 3px 3px 0; }
 .auth .board-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
 .auth .board-front { display: grid; place-content: center; justify-items: center; border-radius: 0 3px 3px 0;
   background: url("/book/cloth-chocolate.webp") 0 0 / 512px 512px var(--chocolate); }
-.auth .board-front::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: var(--breath);
-  background: radial-gradient(520px circle at var(--lx, 50%) var(--ly, 45%), rgba(255, 244, 220, 0.18), transparent 62%); }
 .auth .board-front::after { content: ""; position: absolute; inset: 5.5%; pointer-events: none; border-radius: 4px;
   border: 1px solid rgba(243, 235, 221, 0.16); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24), inset 0 0 0 6px transparent, inset 0 0 0 7px rgba(243, 235, 221, 0.07); }
 .auth .board-back { transform: rotateY(180deg); background: var(--chocolate); border-radius: 3px 0 0 3px; }
@@ -2299,7 +2277,7 @@ h1, h2, h3, .story-title, .wq, .q { text-wrap: balance; }
 .auth[data-stage="closed"] .spread { box-shadow: none; }
 .auth .board { box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35), 0 40px 70px -30px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.25); }
 @media (max-width: 760px) { .auth .board { left: 0; width: 100%; aspect-ratio: 1; bottom: auto; } }
-@media (prefers-reduced-motion: reduce) { .auth .print-in { transition: none; } .auth .companion .state { transition-duration: 150ms; } }
+@media (prefers-reduced-motion: reduce) { .auth .print-in { transition: none; } }
 
 /* the back of a polaroid on the memory page's strip: turn it over and the caption is on the back (pointer only) */
 .rd-strip button { perspective: 700px; background: transparent; box-shadow: none; padding: 0; }
@@ -3442,16 +3420,14 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .home-board { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(300px, 1fr); gap: 32px; align-items: start; margin-top: var(--s-6); }
 .home-mem .sechead { margin-bottom: var(--s-4); }
 .home-mem .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.home-mem .print-card { padding: 6px 6px 8px; }
-.home-mem .print-card .frame, .home-mem .print-card.lead .frame { aspect-ratio: 1 / 1; }
-.home-mem .print-card .cap { padding: 12px; gap: 2px; }
-.home-mem .print-card .cap .title { font-size: 19px; line-height: 1.12; -webkit-line-clamp: 2; }
-.home-mem .print-card .cap .kicker { font-size: 10px; }
-.home-mem .print-card .cap .dateline { font-size: 11px; }
-.home-mem .print-card.typed .frame { --lh: 24px; --top: 34px; }
-.home-mem .print-card .typed-in .said { font-size: 16px; -webkit-line-clamp: 4; }
-.home-mem .print-card .typed-in .wm { display: none; }
-.home-mem .print-card .cues { left: 8px; top: 8px; }
+.home-mem .print-card:not(.invite) { padding: 6px 6px 8px; }
+.home-mem .print-card:not(.invite) .frame, .home-mem .print-card.lead:not(.invite) .frame { aspect-ratio: 1 / 1; }
+.home-mem .print-card:not(.invite) .cap { padding: 12px; gap: 2px; }
+.home-mem .print-card:not(.invite) .cap .title { font-size: 19px; line-height: 1.12; -webkit-line-clamp: 2; }
+.home-mem .print-card:not(.invite) .cap .kicker { font-size: 10px; }
+.home-mem .print-card:not(.invite) .cap .dateline { font-size: 11px; }
+.home-mem .print-card:not(.invite) .typed-in .wm { display: none; }
+.home-mem .print-card:not(.invite) .cues { left: 8px; top: 8px; }
 
 .home-side { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 96px; min-width: 0; }
 .home-quote .fromthebook { padding: 22px 22px 18px; gap: 12px; }
@@ -3478,7 +3454,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 @media (max-width: 760px) {
   .home-side { grid-template-columns: minmax(0, 1fr); }
   .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .home-mem .print-card .cap .title { font-size: 17px; }
+  .home-mem .print-card:not(.invite) .cap .title { font-size: 17px; }
 }
 
 /* ───────────────────────── 50. The bar follows; the sheet slides over the cloth (lead) ───────────────────────── */
@@ -3621,13 +3597,9 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
   .ribbon-track { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px); mask-image: linear-gradient(to right, transparent 0, #000 24px); }
 }
 @media (prefers-reduced-motion: reduce) { .ribbon-day .num, .ribbon-step { transition: none; } }
-/* Home prints never get so small that the words collide: as many columns as fit at 200px or more, and a typed
-   card keeps its words to three lines above the caption */
+/* Home prints never get so small that the words collide: as many columns as fit at 200px or more. A typed card's
+   words and their sizes live with the other prints, in pages/archive-reading.css */
 .home-mem .mosaic { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-.home-mem .print-card.typed .frame { --lh: 22px; --top: 26px; }
-.home-mem .print-card .typed-in { padding-left: 14px; padding-right: 14px; }
-.home-mem .print-card .typed-in .said { font-size: 15px; -webkit-line-clamp: 3; }
-.home-mem .print-card.typed .cap .kicker { display: none; }
 @media (max-width: 760px) { .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ───────────────────────── 55. Small print that can be read (lead) ───────────────────────── */
@@ -3801,4 +3773,12 @@ body.writing-focus .sheet-page > .headband { display: none; }
   /* centred on the title's first line (24px type, a 44px target) */
   .hero-in:has(> .back) > .back { grid-column: 1; grid-row: 1; margin: -10px 0 0; align-self: start; }
   .hero-in:has(> .back) > .back ~ * { grid-column: 2; margin-left: 0; min-width: 0; }
+}
+
+/* ── §63 Between the phone tab bar (≤760) and the full bar (>900) the main places must still be there: the pill nav
+   stays, and the storyteller button gives up its words for its seal ── */
+@media (min-width: 761px) and (max-width: 900px) {
+  .top-in { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .pillnav { display: flex; justify-self: center; }
+  .top .teller > span:not(.avatar) { display: none; }
 }

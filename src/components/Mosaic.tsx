@@ -98,8 +98,9 @@ export default function Mosaic({
 
 /**
  * The empty state: one large typed card inviting the first memory, and
- * nothing else: Bond asleep on the card's edge, one line of what to write,
- * and the time it takes.
+ * nothing else: Bond, curious, on a foil ledge above the words (never over
+ * them), one headline with the foil stop, one line of what to write, and the
+ * time it takes.
  */
 export function InvitePrint({ story }: { story: Story }) {
   const own = story.relationship === "Myself";
@@ -108,8 +109,12 @@ export function InvitePrint({ story }: { story: Story }) {
       <Link className="print-card lead typed invite" to="/write" data-rise>
         <span className="frame" aria-hidden="true">
           <span className="typed-in">
-            <img className="invite-dog" src="/dog/sleep-paper.webp" alt="" width={781} height={622} />
-            <span className="said">Nothing here yet.</span>
+            <span className="invite-ledge">
+              <img className="invite-dog" src="/dog/curious-paper.webp" alt="" width={753} height={630} />
+            </span>
+            <span className="said">
+              Nothing here yet<span className="invite-stop">.</span>
+            </span>
             <span className="line">{own ? "Answer the question above, or write about anything at all: a kitchen, a road, a song on the radio." : `Answer today’s question for ${story.name}, or write about anything at all: a kitchen, a road, a song on the radio.`}</span>
           </span>
           <span className="cap">

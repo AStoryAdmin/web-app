@@ -42,9 +42,12 @@ export function DateTask({ items }: { items: Memory[] }) {
     <Link className="arc-task" to={`/write?edit=${items[0].id}&details=1`}>
       Give {n === 1 ? "it" : `${num(n)} memories`} a year
       {" · "}
-      <span className="arc-task-t">about {minutes} {minutes === 1 ? "minute" : "minutes"}</span>
-      <span className="arc-task-arrow" aria-hidden="true">
-        →
+      {/* the time and the arrow are one piece that never breaks: "about 2 minutes →" moves to the next line whole */}
+      <span className="arc-task-t">
+        about {minutes} {minutes === 1 ? "minute" : "minutes"}
+        <span className="arc-task-arrow" aria-hidden="true">
+          →
+        </span>
       </span>
     </Link>
   );

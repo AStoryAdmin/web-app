@@ -87,7 +87,9 @@ function punctuateRunOn(s: string): string[] {
   const re = /\s(?=(?:and then|and so|so|but)\s)/gi;
   for (;;) {
     re.lastIndex = 50;
-    const m = re.exec(rest);
+    let m = re.exec(rest);
+    // "not only are you caring for them but then…" is one thought: its "but" is never a sentence break
+    while (m && /^\s*but\b/i.test(rest.slice(m.index)) && /\bnot only\b/i.test(rest.slice(0, m.index))) m = re.exec(rest);
     if (!m || rest.length - m.index < 40) break;
     out.push(`${rest.slice(0, m.index).replace(/[,;:]$/, "")}.`);
     rest = cap(rest.slice(m.index + 1));
@@ -123,6 +125,11 @@ function dropRestarts(s: string): string {
   return out.join(", ");
 }
 
+/** A word said twice on purpose: emphasis ("very, very"), grammar ("had had", "that that"), a refusal ("no, no"). */
+const MEANT_TWICE = /^(?:very|really|so|much|many|more|most|far|long|had|that|is|no|yes|bye|ha|again|over|round|on|now|go|come|well|never|ever|too)$/i;
+/** A start broken off by a filler and said again, on a little word only ("my so my mom", "the uh the house"). */
+const LITTLE_RESTART = /\b(my|the|a|an|I|we|our|his|her|their|he|she|they|it|to|in|on|at|of|for|with|this|that)\s+(?:so|uh|um)\s+\1\b/gi;
+
 /** "My dad so I started…" → "I started…": a start abandoned before "so I" / "so we". */
 const ABANDONED = /^(?:[\w'’]+\s+){1,3}so\s+(?=(?:I|we)\b)/i;
 
@@ -141,10 +148,12 @@ export function cleanSpeech(text: string): string {
         .replace(LEAD_FILLER, "")
         .replace(TRAIL_YEAH, "")
         .replace(FILLER, "$1")
-        // stutters and false starts: a word or a short phrase said twice ("I, I", "so I, so I")
-        .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, "$1")
-        // a false start across a joining word: "my so my mom" → "my mom"
-        .replace(/\b([\w'’]+)\s+(?:so|and|uh|um)\s+\1\b/gi, "$1")
+        // stutters and false starts: a word or a short phrase said twice ("I, I", "so I, so I"); a doubling that
+        // means something ("very, very", "had had", "that that", "no, no") is the speaker's and stays
+        .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, (m: string, x: string) => (MEANT_TWICE.test(x) ? m : x))
+        // a false start across a filler, on a little word only: "my so my mom" → "my mom"; never "X and X"
+        // ("faster and faster", "more and more", "over and over" say something)
+        .replace(LITTLE_RESTART, "$1")
         .replace(ABANDONED, "")
         .replace(/^[\s,;:]+/, ""),
     )
@@ -270,10 +279,13 @@ export function ownWords(text: string): string {
         .split("\n")
         .map((l) => l.trim())
         .filter(Boolean)
-        .join(" · "),
+        .join(JOIN),
     )
     .join(" ");
 }
+
+/** Typed lines run together as "city · It's": a no-break space before the dot, so the dot always ends its line. */
+export const JOIN = " · ";
 
 const OPENS_WEAK = /^["“‘]?(?:i mean|and then|and so|so|no|like|yeah|well|but|okay|ok|oh|um|uh|because|then|this|there|you)\b/i;
 /** "It's", "That's", "And" open a kept line only when the sentence carries a feeling or a judgement. */
@@ -302,7 +314,16 @@ function isFillerLike(s: string, at: number): boolean {
   return !verb && !compare;
 }
 
-const DANGLES =/\b(?:to|the|a|an|of|and|but|so|with|for|that|was|is|my|our|your|their|in|on|at|from|like)[.!…]["”’)]*$/i;
+const DANGLES = /\b(?:to|the|a|an|of|and|but|so|with|for|that|was|is|my|our|your|their|in|on|at|from|like)[.!…]["”’)]*$/i;
+/** A preposition that ends a sentence whole ("…every competition I've been in.", "…the town we lived in."). */
+const ENDS_WHOLE = /\b(?:been|be|live|lived|living|grew up|born|stayed|stay|believe|believed|interested|involved|worked|work|came from|come from)\s+(?:in|on|at|from|for|with|to)[.!…]["”’)]*$/i;
+/** A sentence that trails off ("…was trying to."), not one that ends on a preposition by grammar. */
+const dangles = (s: string) => DANGLES.test(s) && !ENDS_WHOLE.test(s);
+/** A general "you" ("You always have to look for every opportunity") is a takeaway when it carries a feeling. */
+const GENERAL_YOU = /^["“‘]?you\s+(?:always|never|have to|has to|can|can't|can’t|should|just|need to|learn|realize|realise)\b/i;
+const weakOpening = (s: string, feels: boolean) => OPENS_WEAK.test(s) && !(feels && GENERAL_YOU.test(s));
+/** A sentence that points back at something the reader of a card never sees ("That paid for…", "It's a job."). */
+const POINTS_BACK = /^["“‘]?(?:that|this|it|they|he|she|those|these|there)\b/i;
 
 /**
  * The kept line (Bao's Standard rule 32): one sentence of the person's own
@@ -333,11 +354,16 @@ export function keptLine(text: string, { max = 170, min = 50, needFeeling = true
     const feels = FEELING.test(s);
     // a takeaway carries a feeling or a judgement; a plain fact ("I've taken just under $300,000…") is not one
     if (needFeeling && !feels) return;
-    if (OPENS_WEAK.test(s) || (OPENS_SOFT.test(s) && !feels) || DANGLES.test(s) || fillerLike(s)) return;
+    // judged as it will be shown, without the joint ("So you always have to…" is shown "You always have to…")
+    const shown = s.replace(OUT_OF_CONTEXT, "");
+    if (weakOpening(shown, feels) || (OPENS_SOFT.test(shown) && !feels) || dangles(s) || fillerLike(s)) return;
     if (cleanSpeech(s) !== s) return;
     // a feeling or a judgement outweighs who is speaking; a plain fact scores low
     let score = 0;
-    if (feels) score += 5;
+    // "always" and "never" alone often state a fact ("We never gave away equity"); a real feeling or a lesson weighs more
+    if (feels) score += FEELING.test(s.replace(/\b(?:always|never)\b/gi, "")) ? 5 : 2;
+    if (GENERAL_YOU.test(shown)) score += 3;
+    if (i === sentences.length - 1) score += 1;
     if (/\b(I|we|my|our|me|us)\b/.test(s)) score += 2;
     if (/^(?:I|We|My|Our)\b/.test(s)) score += 1;
     if (len >= 60 && len <= 140) score += 1;
@@ -379,7 +405,7 @@ export function takeaway(text: string): string {
     const lines = t.split("\n").map((l) => l.trim()).filter(Boolean);
     let out = "";
     for (const l of lines) {
-      const next = out ? `${out} · ${l}` : l;
+      const next = out ? `${out}${JOIN}${l}` : l;
       if (out && next.length > 60) break;
       out = next;
     }
@@ -391,9 +417,16 @@ export function takeaway(text: string): string {
   let bestScore = -Infinity;
   sentences.forEach((x, i) => {
     const len = x.length;
-    if (len < 30 || len > 140 || /\?["”’)]*$/.test(x) || !/^[A-Z“"‘]/.test(x) || DANGLES.test(x) || fillerLike(x) || OPENS_WEAK.test(x)) return;
+    if (len < 30 || len > 140 || /\?["”’)]*$/.test(x) || !/^[A-Z“"‘]/.test(x) || dangles(x) || fillerLike(x)) return;
+    const feels = FEELING.test(x);
+    if (weakOpening(x, feels)) return;
+    // a line that points back ("That paid for an engineer…") needs what came before it; only a feeling carries it alone
+    if (POINTS_BACK.test(x) && !feels) return;
     let score = 0;
+    if (feels) score += 2;
     if (/\b(I|we|my|our|me|us)\b/.test(x)) score += 2;
+    // their own life, said in the first person, before a line about someone else
+    if (/^["“‘]?(?:I|We|My|Our)\b/.test(x)) score += 2;
     if (len >= 45 && len <= 110) score += 2;
     if (/\$|\d{3,}/.test(x)) score -= 1;
     score -= i * 0.1;
@@ -419,4 +452,15 @@ export function findTakeaway(paragraph: string, line: string): [number, number] 
     }
   }
   return null;
+}
+
+/**
+ * Whether the words open on the takeaway: it is their first sentence, or, for words typed line by line, their first
+ * lines. The page then neither marks it in place nor repeats it, since the reader has just read it.
+ */
+export function opensOn(words: string, line: string): boolean {
+  if (!line || !words) return false;
+  const first = words.match(/^[^.!?…]+[.!?…]+["”’)]*/)?.[0];
+  if (first && findTakeaway(first, line)) return true;
+  return norm(words).startsWith(norm(line));
 }

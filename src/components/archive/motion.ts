@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
-import { belowFold, onEnter, riseIn } from "../../lib/arrive";
+import { belowFold, onEnter } from "../../lib/arrive";
 import { OUT } from "../../lib/ease";
 
 const MOTION_OK = "(prefers-reduced-motion: no-preference)";
@@ -86,12 +86,16 @@ export function useRiseOnScroll(ref: RefObject<HTMLElement | null>, selector: st
     mm.add(MOTION_OK, () => {
       const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll(selector)).filter(belowFold);
       if (!items.length) return;
-      gsap.set(items, { y: 16, opacity: 0 });
-      const stop = onEnterSafe(items, riseIn);
+      // GSAP owns the card while it rises: its own CSS transition (the hover lift) is off until the rise ends, so the
+      // two never fight, and the resting card keeps a transition to settle back from a hover
+      gsap.set(items, { y: 16, opacity: 0, transition: "none" });
+      const stop = onEnterSafe(items, (batch) =>
+        gsap.fromTo(batch, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: OUT, stagger: 0.06, clearProps: "transform,opacity,transition", overwrite: "auto" }),
+      );
       // whatever never came into view is put back as it was when the page changes
       return () => {
         stop();
-        gsap.set(items, { clearProps: "transform,opacity" });
+        gsap.set(items, { clearProps: "transform,opacity,transition" });
       };
     });
     return () => mm.revert();

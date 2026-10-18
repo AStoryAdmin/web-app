@@ -28,7 +28,7 @@ export function minutesLabel(seconds: number): string {
 const ANSWERS_PREVIOUS = /^(?:but then|and then|but also|and also|but|and so)\b/i;
 
 /** Break `sentences` into `n` runs of about equal length, never before a sentence that answers the one before it. */
-function balance(sentences: string[], n: number): string[] {
+export function balance(sentences: string[], n: number): string[] {
   const total = sentences.reduce((a, x) => a + x.length, 0);
   const out: string[] = [];
   let run = "";

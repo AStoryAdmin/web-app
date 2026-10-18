@@ -58,7 +58,7 @@ describe("round three of the transcript rules", () => {
   });
   it("keeps typed line breaks apart in a card's words", async () => {
     const { ownWords } = await import("./transcript");
-    expect(ownWords("We live in a small city\nIt's in Vietnam")).toBe("We live in a small city · It's in Vietnam");
+    expect(ownWords("We live in a small city\nIt's in Vietnam")).toBe("We live in a small city · It's in Vietnam");
     expect(ownWords("You: How to end the chat AI: If you'd like to end the chat, you can simply stop replying, yeah, you know.")).toBe("How to end the chat.");
   });
   it("never keeps a weak line", async () => {
@@ -104,7 +104,7 @@ describe("round four of the transcript rules", () => {
 describe("a card's words", () => {
   it("are whole: the first typed lines, or a short kept sentence", async () => {
     const { takeaway: cardLine } = await import("./transcript");
-    expect(cardLine("We live in a small city\nIt's in Vietnam\nMom was a teacher, dad an engineer and I stay with grandmas")).toBe("We live in a small city · It's in Vietnam");
+    expect(cardLine("We live in a small city\nIt's in Vietnam\nMom was a teacher, dad an engineer and I stay with grandmas")).toBe("We live in a small city · It's in Vietnam");
     expect(cardLine("He was like a really good fan of the team and he cheered every single week.")).not.toContain("like a really");
   });
 });
@@ -136,5 +136,67 @@ describe("round five of the transcript rules", () => {
     const { takeaway } = await import("./transcript");
     expect(takeaway("I mean, that was awesome and we did all these cool things together that year.")).toBe("That was awesome and we did all these cool things together that year.");
     expect(takeaway("And that's always been the dream because I love teaching kids every single day.")).toMatch(/^That's always/);
+  });
+});
+
+describe("tidying never changes what was meant (rule 29)", () => {
+  it("keeps a doubling that says something", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech("More and more people came, again and again, over and over.")).toBe("More and more people came, again and again, over and over.");
+    expect(cleanSpeech("It was very, very hard and he had had enough.")).toBe("It was very, very hard and he had had enough.");
+  });
+  it("keeps 'faster and faster' in the real call", async () => {
+    const { cleanTranscript } = await import("./transcript");
+    const { FASTER } = await import("./__fixtures__/calls");
+    expect(cleanTranscript([FASTER]).join(" ")).toContain("faster and faster");
+  });
+  it("still drops a little word restarted across a filler", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech("And then my so my mom worked at the plant.")).toBe("And then my mom worked at the plant.");
+  });
+  it("never cuts a 'not only … but' thought into a fragment", async () => {
+    const { cleanTranscript } = await import("./transcript");
+    const { GRANDPARENTS } = await import("./__fixtures__/calls");
+    const out = cleanTranscript([GRANDPARENTS]).join(" ");
+    expect(out).toMatch(/not only are you caring for them,? but then you're also/);
+    expect(out).not.toMatch(/caring for them\. But/);
+  });
+});
+
+describe("the takeaway from the real calls", () => {
+  it("takes the line a reader should remember over a plain fact that points back", async () => {
+    const { takeaway } = await import("./transcript");
+    const { PITCH } = await import("./__fixtures__/calls");
+    expect(takeaway(PITCH)).toBe("You always have to just look for every opportunity.");
+  });
+  it("lets a sentence end on a preposition by grammar", async () => {
+    const { takeaway } = await import("./transcript");
+    expect(takeaway("The first time I won, I've won every pitch competition I've been in. So that paid for an engineer.")).toBe("The first time I won, I've won every pitch competition I've been in.");
+  });
+  it("never opens the fallback on a word that points back", async () => {
+    const { takeaway } = await import("./transcript");
+    expect(takeaway("So that paid for an engineer that got all of the licenses for our games. I went to New York City and spoke at the UN.")).toBe("I went to New York City and spoke at the UN.");
+  });
+  it("joins typed lines so the dot never starts a line", async () => {
+    const { takeaway, ownWords } = await import("./transcript");
+    expect(takeaway("We live in a small city\nIt's in Vietnam\nMom was a teacher")).toBe("We live in a small city · It's in Vietnam");
+    expect(ownWords("We live in a small city\nIt's in Vietnam")).toBe("We live in a small city · It's in Vietnam");
+  });
+});
+
+describe("finding the takeaway in the words", () => {
+  it("finds it ignoring case and punctuation, and marks from where it starts", async () => {
+    const { findTakeaway } = await import("./transcript");
+    const p = "I mean, that was awesome. So that paid for an engineer, that got the licenses. I went to New York City.";
+    const at = findTakeaway(p, "That paid for an engineer that got the licenses.");
+    expect(at).not.toBeNull();
+    expect(p.slice(at![0], at![1])).toBe("that paid for an engineer, that got the licenses.");
+    expect(findTakeaway(p, "Something never said.")).toBeNull();
+  });
+  it("knows when the words open on it", async () => {
+    const { opensOn } = await import("./transcript");
+    expect(opensOn("I just lost my grandparents this year. And I was very close to them.", "I just lost my grandparents this year.")).toBe(true);
+    expect(opensOn("We live in a small city\nIt’s in Vietnam\nMom was a teacher", "We live in a small city · It’s in Vietnam")).toBe(true);
+    expect(opensOn("I was close to them. I just lost my grandparents this year.", "I just lost my grandparents this year.")).toBe(false);
   });
 });

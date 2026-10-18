@@ -27,7 +27,7 @@ import LedgeNote from "../components/archive/LedgeNote";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
 import { isRunOfLines, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
-import { ASKED, cleanTranscript, findTakeaway, soundsSpoken, takeaway } from "../components/archive/transcript";
+import { ASKED, cleanTranscript, findTakeaway, opensOn, soundsSpoken, takeaway } from "../components/archive/transcript";
 import { useServerTidy } from "../components/archive/serverTidy";
 import { tellerParts, wasSpoken } from "../lib/memoryDisplay";
 import WhereNext from "../components/book/WhereNext";
@@ -205,10 +205,14 @@ export default function MemoryPage() {
   const tidied = spoken && tidyNow.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
   // the memory's one takeaway: the same line as its print, its List card and Home's quote
   const kept = smarten(takeaway(raw.join("\n")));
-  // when it stands in the last paragraph the words already end on it, so there is no coda to repeat it (said twice, not three times)
-  const coda = !!kept && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept);
-  // a memory that is only its takeaway ("How to end the chat.") is not set twice, under the title and as the words
-  const keptHead = body.length === 1 && body[0].length <= kept.length + 12 ? "" : kept;
+  // where the takeaway stands decides how often it is set (said twice at most, never twice in a row):
+  // - the words open on it: no mark in place; typed lines are not head-quoted at all, and a short memory has no coda
+  // - the words end on it: no coda
+  // - a memory that is only its takeaway ("How to end the chat.") is not set under the title as well
+  const opens = !!kept && opensOn(body.find((p) => !p.startsWith(ASKED)) || "", kept);
+  const keptHead = (body.length === 1 && body[0].length <= kept.length + 12) || (opens && !spoken) ? "" : kept;
+  const markIn = !!keptHead && !opens;
+  const coda = !!keptHead && body.length > 1 && !findTakeaway(body[body.length - 1] || "", kept) && !(opens && body.join(" ").length < 700);
   // one rule for who told it, shared with the cards and "From the book": "Told by Bao in conversation"
   const { verb: told, name: toldName, rest: toldRest } = tellerParts(memory, story);
 
@@ -303,7 +307,7 @@ export default function MemoryPage() {
               <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
-                    {keptHead ? withMark(line, keptHead) : withLang(line)}
+                    {markIn ? withMark(line, keptHead) : withLang(line)}
                     {j < arr.length - 1 && <br />}
                   </span>
                 ))}

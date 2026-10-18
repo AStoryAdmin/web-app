@@ -23,6 +23,7 @@ import WaxSeal from "./archive/WaxSeal";
 import { realChapter } from "./archive/photos";
 import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
+import { loadedRef, onLoaded } from "./archive/develop";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { smarten } from "../lib/typography";
@@ -108,7 +109,7 @@ export default function PrintCard({
       <span className={`frame${marks ? " has-marks" : ""}`} aria-hidden="true">
         {meta.photo ? (
           <>
-            <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" />
+            <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onLoaded} />
             <span className="veil" />
           </>
         ) : (

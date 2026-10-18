@@ -2,7 +2,7 @@
  * One memory as a card: compact and warm, in the printed book's language
  * (astoryapp.com/samples). The photograph as a white-bordered print on the
  * left; the chapter as a sage kicker (none for "Anything else", which is
- * not a chapter), a wax seal when it is treasured, and on the right "Live
+ * not a chapter), a wax seal over the card's corner when it is treasured, and on the right "Live
  * conversation · 16 min" or a lock; the title in the book's display face;
  * the date in terracotta when there is one (undated memories say nothing
  * here; the Archive asks once); the person's kept line, their own words,
@@ -21,6 +21,7 @@ import { LockIcon, MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
 import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
+import { loadedRef, onLoaded } from "./archive/develop";
 import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
 import { smarten } from "../lib/typography";
@@ -55,22 +56,17 @@ export default function MemoryCard({ memory, story, style, rise = true }: { memo
     .slice(0, 4);
   return (
     <Link className={`mem${meta.photo ? "" : " text"}${rise ? " rise" : ""}`} to={`/archive/${memory.id}`} style={style}>
+      {/* the seal over the card's corner, as on the prints: never a row of its own above the title */}
+      {isTreasured(memory) && <WaxSeal size={26} className="mem-seal" label="Treasured" />}
       {meta.photo && (
         <span className="print" aria-hidden="true">
-          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" />
+          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" ref={loadedRef} onLoad={onLoaded} />
           {meta.photoCount > 1 && <span className="n">+{meta.photoCount - 1}</span>}
-        </span>
-      )}
-      {/* a memory without a photograph sets its words where the photograph would be, so a four-across row keeps its titles on one line (shown by the Archive's widest List only; the excerpt below carries the words for everyone else) */}
-      {!meta.photo && words && (
-        <span className="print typed" aria-hidden="true">
-          <span className="typed-words">{words}</span>
         </span>
       )}
       <div className="body">
         <div className="chips">
           {realChapter(meta.chapter) && <span className="kicker">{meta.chapter}</span>}
-          {isTreasured(memory) && <WaxSeal size={22} className="mem-seal" label="Treasured" />}
           <span className="grow" />
           {voice && (
             <span className="kicker quiet">

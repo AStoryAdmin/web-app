@@ -364,7 +364,6 @@ export default function Archive() {
 
         {nothingAtAll ? (
           <LedgeNote
-            pose="sleep"
             level={2}
             className="arc-empty-note"
             title={own ? "Your archive starts with one memory" : `${story.name}’s archive starts with one memory`}
@@ -391,7 +390,7 @@ export default function Archive() {
                 >
                   <label className="input">
                     <span className="sr-only">Search {whose} memories</span>
-                    <input ref={searchRef} type="search" placeholder={narrow ? "Search memories" : `Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+                    <input ref={searchRef} type="search" placeholder={narrow ? "Search" : `Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
                     {query && (
                       <button type="button" className="clear" onClick={() => setQuery("")} aria-label="Clear the search">
                         <CloseIcon width={20} height={20} />

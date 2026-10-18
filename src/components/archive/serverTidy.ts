@@ -110,6 +110,7 @@ export function useServerTidy(memoryId: string | null, raw: string, local: strin
         .map((x) => x.replace(/\s*\n\s*/g, " ").trim())
         .filter(Boolean);
     };
+    const asked = performance.now();
     (async () => {
       const parts: string[] = [];
       for (const b of blocks) parts.push(...(await tidyBlock(b)));
@@ -118,10 +119,9 @@ export function useServerTidy(memoryId: string | null, raw: string, local: strin
       .then((p) => {
         if (!live) return;
         writeCache(memoryId, h, p);
-        // shown now only if the reader has not reached the words yet; otherwise next visit, from the cache (nothing reflows under the eye)
+        // shown now only before anyone can be reading; otherwise next visit, from the cache (nothing reflows under the eye)
         const words = document.querySelector(".mv-words");
-        const reading = words ? words.getBoundingClientRect().top < window.innerHeight * 0.85 && window.scrollY > 40 : false;
-        if (!reading) setResult({ for: `${memoryId}:${h}`, p });
+        if (mayApplyTidy(words ? words.getBoundingClientRect().top : Infinity, window.innerHeight, performance.now() - asked)) setResult({ for: `${memoryId}:${h}`, p });
       })
       .catch(() => {
         /* the local clean transcript stays */
@@ -133,4 +133,13 @@ export function useServerTidy(memoryId: string | null, raw: string, local: strin
 
   if (cached) return cached;
   return result && result.for === `${memoryId}:${h}` ? result.p : null;
+}
+
+/**
+ * Whether a tidied text that has just arrived may replace the words on screen: only when it lands within the first
+ * 600ms (before anyone has read a line), or while the words are still below the fold. Words in view count as being
+ * read, scrolled or not.
+ */
+export function mayApplyTidy(wordsTop: number, viewportHeight: number, elapsedMs: number): boolean {
+  return elapsedMs <= 600 || wordsTop >= viewportHeight * 0.85;
 }

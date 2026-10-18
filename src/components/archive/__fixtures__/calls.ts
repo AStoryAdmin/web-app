@@ -1,0 +1,16 @@
+/**
+ * Real transcripts from the founder's own story (A Story's test account), as stored, so the transcript tests check
+ * the house style against what people actually say, not against invented sentences.
+ */
+
+/** 59632e67, "Funding a startup through pitch competitions". */
+export const PITCH =
+  "The first time I won, I've won every pitch competition I've been in. So I won $150,000 and I had to split the money. So I took home $50,000 and that lasted us for a year. I mean, that was awesome. So that paid for an engineer that got all of the licenses for our games on the Cozy platform. I went to New York City. I spoke at the UN. So we did all these cool things. Yeah, gaming and mental health, right? It's a global thing. So that's how I paid. So winning pitch competition, non-dilutive funding. My dad wanted the tax. It's a job. Thank you, dad. Yeah, right? So you have to think so. That's why it's good that you're studying finance.\n\nAnd then he did it as a gift, so he paid taxes on it. So we never gave away equity and then non-delivered funding. And then I won the EMUVC challenge. You guys should probably do that. Do they open to non-students as well? Because our strategy right now is we're going to find a student in schools around this area to partner with them with the competition and get some money. For sure. Yeah, definitely. That's what my friend Zanna did that from basketball. They won everything. She took home like hundreds of thousands of dollars. That's the NDC. Wow, that's amazing. So I'm like that too. I think I've won. I've taken just under $300,000 in non-delivered funding. So that doesn't count what my parents did, but yeah. So every opportunity. And then my gaming laptop, that was a free gift from I won a pitch competition in Royal Oak in Detroit. That was crazy. So you always have to just look for every opportunity.";
+
+/** c21cf4d4, "Losing grandparents and preserving a grandfather's story". */
+export const GRANDPARENTS =
+  "No, I just lost my grandparents, both on my dad's side, my grandparents this year. And I was very close to them. I think something like this would have been really helpful because my dad was trying to. My grandfather was a police officer and he was a good man. Everyone's good. But he was trying to. He was like a really good fan. And he was just trying to like tell his story more and just make sure he had that documented like for my children and it's a lot of work because you're not only are you caring for them but then you're also not going to do this work and this is the work that you don't do when you're tired you know because you're busy taking care.";
+
+/** 0ced62a7, "Wanting to preserve grandparents' stories". */
+export const FASTER =
+  "And I think Daniel's story is a very good idea in terms of generation and legacy keeping as well. Because especially in Vietnam, as the pace is going faster and faster, some of the population, especially the eldest, is getting forgotten because the kids are getting so busy. When I heard that idea, I think at least for myself, it's also very memorable because I have very tight bondings with my grandparents back then. But overseas traveling in the midst of them. You never see them. I mean FaceTime helps or whatever. It is. And they are pushing 90s as well. So I really want to make this happen.";
