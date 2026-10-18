@@ -11,6 +11,7 @@
  * On return to the tab it re-runs the sign-in links (invites, claims) and
  * reloads only if one landed, as the app does on return to the foreground.
  */
+import { primeCodes } from "../components/family/useMyCodes";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./authContext";
 import { AccountContext, type SaveFailure } from "./accountContext";
@@ -38,6 +39,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     if (!userId) return;
     try {
+      primeCodes();
       const [loaded, tree] = await Promise.all([loadAccount(userId), loadFamily()]);
       setAccount(loaded);
       setFamily(tree);

@@ -10,9 +10,27 @@ import { listMyCodes, type MyCode } from "../../data/familyWrites";
 
 /** The last list this session: an in-app visit draws with it at once, so the tree never refits when the codes come back. */
 let last: MyCode[] | null = null;
+/** When `last` was fetched: a cached list counts its days left from here, never from 1970. */
+let lastAt: Date | null = null;
+/** Bumped on sign-out, so a fetch that was in flight never fills the next account's cache. */
+let gen = 0;
 /** Forget the list (sign-out), so the next account never starts from it. */
 export function clearCodesCache() {
   last = null;
+  lastAt = null;
+  gen++;
+}
+/** Fetched with the family at sign-in, so the first Family visit already knows who is invited. */
+export function primeCodes() {
+  const g = gen;
+  listMyCodes()
+    .then((list) => {
+      if (g === gen && last === null) {
+        last = list;
+        lastAt = new Date();
+      }
+    })
+    .catch(() => {});
 }
 
 export function useMyCodes(enabled = true) {
@@ -26,16 +44,18 @@ export function useMyCodes(enabled = true) {
   }, []);
   const [failed, setFailed] = useState(false);
   const [version, setVersion] = useState(0);
-  const [now, setNow] = useState(() => new Date(0));
+  const [now, setNow] = useState(() => lastAt ?? new Date(0));
   useEffect(() => {
     if (!enabled) return;
     let live = true;
+    const g = gen;
     listMyCodes()
       .then((list) => {
-        if (!live) return;
+        if (!live || g !== gen) return;
+        lastAt = new Date();
         setCodes(list);
         setFailed(false);
-        setNow(new Date());
+        setNow(lastAt);
       })
       .catch(() => {
         if (live) setFailed(true);

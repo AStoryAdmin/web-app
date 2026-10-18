@@ -245,6 +245,7 @@ export default function Person() {
       }
       track("invite_sent", { method: to ? "email" : "code", again: !!person.invitedAt });
       setSent({ code: r.code, emailed, email: to });
+      mine.reload();
       if (to) await reload();
     } catch (err) {
       setError(`That didn’t go (${(err as Error)?.message || "no connection"}).`);
