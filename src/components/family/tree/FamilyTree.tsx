@@ -88,7 +88,8 @@ function StateWords({ words }: { words: string }) {
  * held to it (--tp-row-w, centred). Elsewhere nothing is held.
  */
 function balance(el: HTMLElement) {
-  const band = window.matchMedia("(min-width: 761px) and (max-width: 1099px)").matches;
+  // the tablet band, or a wider window whose generations don't fit the plate's line even at the smallest faces
+  const band = window.matchMedia("(min-width: 761px) and (max-width: 1099.98px)").matches || el.dataset.stack === "1";
   for (const row of el.querySelectorAll<HTMLElement>(".tp-row")) {
     row.style.removeProperty("--tp-row-w");
     if (!band) continue;
@@ -369,6 +370,28 @@ function wraps(plate: HTMLElement): boolean {
   });
 }
 
+/**
+ * True when, at the smallest faces, a generation on the plate's grid needs more room than its line: a side wider
+ * than its track, or the three sides together wider than the row. The faces would run into each other, so the
+ * plate stacks instead (data-stack: the tablet's layout, generation by generation, without threads).
+ */
+function collides(plate: HTMLElement): boolean {
+  for (const row of plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) .tp-row")) {
+    if (getComputedStyle(row).display !== "grid") continue;
+    const zones = [...row.querySelectorAll<HTMLElement>(":scope > .tp-zone")];
+    let total = (parseFloat(getComputedStyle(row).columnGap) || 0) * Math.max(0, zones.length - 1);
+    for (const zone of zones) {
+      const kids = [...zone.children] as HTMLElement[];
+      const gap = parseFloat(getComputedStyle(zone).columnGap) || 0;
+      const need = kids.reduce((w, k) => w + k.offsetWidth, 0) + gap * Math.max(0, kids.length - 1);
+      if (need > zone.clientWidth + 1) return true;
+      total += need;
+    }
+    if (total > row.clientWidth + 1) return true;
+  }
+  return false;
+}
+
 /* ── The plate ─────────────────────────────────────────────────────────── */
 
 export default function FamilyTree({ family, story, meId, own, preview, onAdd, onPlace, canPlace, coded = null }: Props) {
@@ -407,7 +430,10 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     let i = start;
     el.dataset.size = SIZES[i];
     delete el.dataset.snug;
+    delete el.dataset.stack;
     while (i < SIZES.length - 1 && wraps(el)) el.dataset.size = SIZES[++i];
+    // still too wide at the smallest faces: stack the generations as a tablet does, rather than let faces collide
+    if (getComputedStyle(svg).display !== "none" && collides(el)) el.dataset.stack = "1";
     const docTop = (n: HTMLElement | null) => {
       let y = 0;
       for (; n; n = n.offsetParent as HTMLElement | null) y += n.offsetTop;
@@ -434,9 +460,16 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     }
     // without threads (a laptop, a tablet, a phone) a "+" left alone on the last row of its generation moves up
     // beside the generation's name as the small ring, as an empty generation's asks do
+    // a "+" that had the keyboard keeps it when it moves between the row and the heading (they are twins)
+    const active = document.activeElement as HTMLElement | null;
+    const had = active && el.contains(active) && active.matches(".tp-ghost, .tp-ask-alt") ? active : null;
     el.querySelectorAll<HTMLElement>(".tp-tier[data-ghost-up]").forEach((t) => delete t.dataset.ghostUp);
     balance(el);
     if (getComputedStyle(svg).display === "none" && liftLoneRings(el)) balance(el);
+    if (had && !had.getClientRects().length) {
+      const twin = had.closest(".tp-tier")?.querySelector<HTMLElement>(had.matches(".tp-ghost") ? ".tp-ask-alt" : ".tp-row .tp-ghost");
+      twin?.focus({ preventScroll: true });
+    }
     if (getComputedStyle(svg).display === "none") {
       setThreads((prev) => (prev.length ? [] : prev));
       return;
@@ -533,7 +566,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
               {tier.asks.map((g) => {
                 const anchor = g.anchorId ? byId.get(g.anchorId) || null : null;
                 return (
-                  <button key={g.key} type="button" className="tp-ask" onClick={() => onAdd(isReal(anchor) ? anchor : null, g.kind)}>
+                  <button key={g.key} type="button" className="tp-ask" aria-label={`Add ${g.label}`} onClick={() => onAdd(isReal(anchor) ? anchor : null, g.kind)}>
                     <Plus />
                     {g.label}
                   </button>
@@ -543,7 +576,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
               {(["left", "centre", "right"] as Zone[]).flatMap((z) => tier.zones[z].filter((x) => x.ghost)).map((x) => {
                 const anchor = x.ghost!.anchorId ? byId.get(x.ghost!.anchorId) || null : null;
                 return (
-                  <button key={`alt-${x.key}`} type="button" className="tp-ask tp-ask-alt" onClick={() => onAdd(isReal(anchor) ? anchor : null, x.ghost!.kind)}>
+                  <button key={`alt-${x.key}`} type="button" className="tp-ask tp-ask-alt" aria-label={`Add ${x.ghost!.label}`} onClick={() => onAdd(isReal(anchor) ? anchor : null, x.ghost!.kind)}>
                     <Plus />
                     {x.ghost!.label}
                   </button>

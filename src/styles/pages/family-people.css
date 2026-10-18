@@ -119,7 +119,7 @@
   .st.gilt:hover > .glint::before { transform: translateX(460%) skewX(-18deg); transition: transform 900ms var(--ease-in-out); }
 }
 /* below a large window the plate lies across, under the tree: the words left, the family's lines right */
-@media (min-width: 761px) and (max-width: 1499px) {
+@media (min-width: 761px) and (max-width: 1499.98px) {
   .st { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); column-gap: 48px; align-items: start; }
   .st > :is(.st-who, .st-acts) { grid-column: 1; }
   .st > .st-said { grid-column: 2; grid-row: 1 / span 2; margin-top: 4px; }
@@ -241,15 +241,17 @@
 .tp-menu.ft-menu button:focus-visible { background: var(--paper-tone); outline: 2px solid var(--kicker-terracotta); outline-offset: -2px; }
 
 /* a laptop or a tablet: the generation's name above its faces, no threads (the words under each face say whose) */
-@media (max-width: 1099px) {
+@media (max-width: 1099.98px) {
   .tp-threads { display: none; }
   .tp-tier { display: block; padding: 0 0 32px 30px; }
   .tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label { padding: 0; margin-bottom: 14px; }
   .tp-also { display: inline; margin: 0 0 0 8px; }
-  .tp-ask { margin-right: 14px; }
-  .tp-label h3 + .tp-ask, .tp-label .tp-ask + .tp-ask { margin-left: 12px; }
+  /* the label is a wrapping row: the gap spaces the heading and its asks, and an ask that wraps starts on the
+     heading's own edge */
+  .tp-label { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
+  .tp-label .tp-hint { flex-basis: 100%; }
   .tp-dot, .tp-tier.home .tp-dot, .tp-tier.rings .tp-dot { left: -30px; top: 3px; }
-  .tp-dec { display: inline-block; margin: 0 10px 0 0; }
+  .tp-dec { display: inline-block; margin: 0; }
   .sheet-page .tp-label h3 { display: inline; }
   .tp-rail { top: 10px; }
   .tp-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 16px 18px; }
@@ -324,7 +326,7 @@
 .page:is(.fp, .pp2) .where-next { margin-top: 88px; }
 
 /* ───────────── a phone ───────────── */
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   :is(.fp, .pp2, .pp-missing) { --fz-display: 40px; --fz-statement: 24px; --fz-section: 24px; --fz-words: 18px; }
   .fp-head { margin-bottom: 28px; padding-bottom: 18px; }
   .fp-head .btn { width: 100%; justify-content: center; }
@@ -483,7 +485,7 @@
 .pp2 .pp-note-words { font-size: var(--fz-words); }
 .pp2 .pp-note-for { font-size: var(--fz-small); }
 
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .pp-plate { padding: 26px 20px 20px; }
   .pp-por { --pz: 148px; margin-bottom: 18px; }
   .pp-por:not(.seal) { width: 160px; height: 200px; border-radius: 80px 80px 4px 4px; }
@@ -568,7 +570,7 @@
   .pp-main.bare .pp-extras > :first-child { margin-top: 0; }
   .pp-main.bare .pp-extras .pk-list { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .pp-words-plate { min-width: 0; }
   .pp-prompts { margin-top: 16px; }
   /* the dating row starts at the column's edge, the task on one line inside it, no hanging margins */
@@ -605,7 +607,7 @@
 /* ── round 7 ─────────────────────────────────────────────────────────── */
 /* the plate's body runs under the portrait (a column), except on a tablet, where it stands beside it */
 .pp-plate-body { display: contents; }
-@media (min-width: 761px) and (max-width: 1099px) {
+@media (min-width: 761px) and (max-width: 1099.98px) {
   .pp-plate { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: start; column-gap: 32px; text-align: left; padding: 26px 28px 24px; }
   .pp-plate > .pp-por { --pz: 148px; margin: 0; }
   .pp-plate > .pp-por:not(.seal) { width: 160px; height: 200px; border-radius: 80px 80px 4px 4px; }
@@ -616,7 +618,7 @@
 /* the containers the keyboard is handed to (after a swap or a send) take it without a ring for a pointer */
 :is(.fp-keep-review, .fp-invites, .keepers, .st-voices, .pp-plate, .review, .pp-invite):focus:not(:focus-visible) { outline: none; }
 /* on a laptop or a tablet each generation's "+" comes last, after its people */
-@media (min-width: 761px) and (max-width: 1099px) {
+@media (min-width: 761px) and (max-width: 1099.98px) {
   .tp-ghost { order: 2; }
   .tp-row { max-width: var(--tp-row-w, none); margin-inline: auto; }
 }
@@ -627,7 +629,7 @@
 .pk-list.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .pk-list.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .pk-list.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .pp2 .pk-list { grid-template-columns: minmax(0, 1fr); }
   /* two state lines side by side never run together */
   .tp-row { column-gap: 16px; }
@@ -638,7 +640,7 @@
 /* the keepers' held line reads as one sentence, like the codes' */
 .keeperlist li.held { flex-wrap: wrap; gap: 0 0.3em; }
 
-@media (min-width: 761px) and (max-width: 1099px) {
+@media (min-width: 761px) and (max-width: 1099.98px) {
   /* the tree leads with the storyteller, as on a phone: their unit alone on the axis, everyone else balanced under it */
   .tp-tier.home .tp-zone.centre > * { order: -4; flex-basis: 100%; display: flex; justify-content: center; }
   .tp-tier.home .tp-zone:not(.centre) :is(.tp-node, .tp-ghost), .tp-tier.home .tp-zone.centre > .tp-ghost { margin-top: 0; }
@@ -660,9 +662,28 @@
 .tp-ask-alt { display: none; }
 .tp-tier[data-ghost-up] .tp-ask-alt { display: inline-flex; }
 .tp-tier[data-ghost-up] .tp-row .tp-ghost { display: none; }
-@media (min-width: 761px) and (max-width: 1099px) {
+@media (min-width: 761px) and (max-width: 1099.98px) {
   /* every framed card in the band on the column's left edge: the slim plate no wider than its words, the kept
      line under it starting where it starts */
   .pp-plate.slim { min-width: 0; }
   .pp-words-plate { margin-inline: 0; }
 }
+
+/* ── round 10 ────────────────────────────────────────────────────────── */
+/* a wide window whose generations don't fit the plate's line even at the smallest faces (FamilyTree collides):
+   the tablet's layout, generation by generation, the storyteller first, without threads */
+.tp[data-stack] .tp-threads { display: none; }
+.tp[data-stack] .tp-tier { display: block; padding: 0 0 32px 30px; }
+.tp[data-stack] :is(.tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label) { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; padding: 0; margin-bottom: 14px; }
+.tp[data-stack] .tp-label .tp-hint { flex-basis: 100%; }
+.tp[data-stack] .tp-also { display: inline; margin: 0 0 0 8px; }
+.tp[data-stack] :is(.tp-dot, .tp-tier.home .tp-dot, .tp-tier.rings .tp-dot) { left: -30px; top: 3px; }
+.tp[data-stack] .tp-dec { display: inline-block; margin: 0; }
+.sheet-page .tp[data-stack] .tp-label h3 { display: inline; }
+.tp[data-stack] .tp-rail { top: 10px; }
+.tp[data-stack] .tp-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 16px 18px; max-width: var(--tp-row-w, none); margin-inline: auto; }
+.tp[data-stack] .tp-zone { display: contents; }
+.tp[data-stack] .tp-ghost { order: 2; }
+.tp[data-stack] .tp-tier.home .tp-zone.centre > * { order: -4; flex-basis: 100%; display: flex; justify-content: center; }
+.tp[data-stack] .tp-tier.home .tp-zone:not(.centre) :is(.tp-node, .tp-ghost), .tp[data-stack] .tp-tier.home .tp-zone.centre > .tp-ghost { margin-top: 0; }
+.tp[data-stack] .tp-tier.home .tp-zone:not(.centre) .tp-amp { margin-top: calc(var(--pz) / 2 - 18px); }
