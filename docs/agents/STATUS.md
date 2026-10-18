@@ -6,6 +6,6 @@ Each page group is done when both reviewers pass it in the same round: Bao's Sta
 |---|---|---|---|---|
 | Writer (`/write`, Afterwards, the about page) | 9 | PASS (writer-r9-baos.md) | APPLIED (writer-r9-skills.md) | 2026-10-18 |
 | Book, Plans, Account, Talk, Start, Wall | 14 | FAIL book-r13-baos | GAPS book-r13-skills | |
-| Archive, memory page, Home's prints | 15 | FAIL archive-r14-baos | GAPS archive-r14-skills | |
+| Archive, memory page, Home's prints | 16 | FAIL archive-r15-baos | GAPS archive-r15-skills | |
 | Family, Person | 17 | PASS (family-r15-baos.md) | APPLIED (family-r17-skills.md) | 2026-10-18 |
 | Signed-out pages and the front door | 8 | under review | under review | |
