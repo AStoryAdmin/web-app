@@ -163,7 +163,7 @@ export default function Wall() {
     return (
       <Bench>
         <main className="wall-none">
-          <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
+          <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
           <h1>
             This story isn’t shared
             <Stop />
@@ -222,7 +222,7 @@ export default function Wall() {
         <div className="page wall-page">
           {count === 0 && family === 0 ? (
             <section className="wall-empty">
-              <img className="wall-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
+              <img className="wall-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
               <h2>
                 Nothing is shared here yet
                 <Stop />

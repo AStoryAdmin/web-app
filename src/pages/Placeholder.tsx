@@ -16,7 +16,7 @@ export default function Placeholder({ name }: { name: string }) {
         </Link>
       </div>
       <main className="wall-none">
-        <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
+        <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
         <h1>
           {name.replace(/[.!?]$/, "")}
           <span className="stop">.</span>

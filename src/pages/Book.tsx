@@ -174,7 +174,7 @@ export default function Book() {
             <div className="bk-empty-desk">
               <BookObject book={book} className="bk-empty-object" />
               {/* the family dog, asleep against the closed book until there is something to read (D11) */}
-              <img className="bk-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={762} height={640} />
+              <img className="bk-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
             </div>
             <div className="bk-empty-words">
               <h2 id="bk-empty-h">
