@@ -10,6 +10,7 @@ import { archiveStats } from "../app-core/lib/timeline.js";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
 import BookCard from "../components/archive/BookCard";
+import OpenLeaf from "../components/delight/OpenLeaf";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
 import { InProgressGroup, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useInkIn, useRiseOnScroll } from "../components/archive/motion";
@@ -418,6 +419,7 @@ export default function Archive() {
             </section>
           </div>
         )}
+        {!nothingAtAll && <OpenLeaf story={story} />}
       </div>
     </Shell>
   );

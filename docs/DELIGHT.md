@@ -113,3 +113,17 @@ leaf on the cloth, nothing on the paper.
 
 Items 2 and 4 of §4 are covered above; the cold load re-runs the
 arrival when a page swaps its busy placeholder for its content (`Shell`).
+
+## 6. Atmosphere on the sheet (17 Oct, agent)
+
+The founder found the cream plain while scrolling and named their own journal as the bar. Research and rulings in `docs/research/atmosphere-2026.md`; the build, all on the paper and none on a control:
+
+| Moment | Effect | File |
+| --- | --- | --- |
+| Every sheet | The running head is held at the top of the page and names the section in view; a foil hairline under it once the page moves | `components/Shell.tsx`, `lib/atmosphere.ts`, CSS §46 |
+| Every sheet (1280px and up) | A short ribbon in the cloth's colour hangs from the running head in the outer margin, 72px at the top, 200px at the end | same |
+| Every sheet | The ✦ rules draw themselves from the centre as they come up (CSS scroll timelines) | CSS §46 |
+| Foot of the Archive (Home placed by the lead) | The open leaf: today's question, "Dear family,", ruled lines, a nib, a pencilled "A few lines is plenty.", "Write it", the sign-off; the dog asleep on its edge wakes at the end of the page | `components/delight/OpenLeaf.tsx`, `public/dog/*-paper.webp` |
+| The writer | "Dear family," above the words, a ribbon tail between the leaves that swings once, a turned-down corner, the folio in small caps | `pages/Write.tsx` |
+
+`public/dog/sleep-paper.webp` and `curious-paper.webp` are the watercolour states with the transparent fur inside the outline filled with the plate's paper white, so the cream does not show through as grey patches.

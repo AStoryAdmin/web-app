@@ -18,10 +18,12 @@ import { storySubtitle } from "../app-core/lib/social.js";
 import { storyLine } from "../lib/storyLine";
 import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
+import { scrollShell } from "../lib/scrollShell";
 import { useLight } from "./delight/Light";
 import Leaf from "./delight/Leaf";
 import { usePillThumb } from "../lib/pillThumb";
 import LoadingMark from "./delight/LoadingMark";
+import { atmosphere } from "../lib/atmosphere";
 
 const NAV = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
@@ -207,40 +209,50 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
   useEffect(() => {
     const el = root.current;
     if (!el) return;
-    return arrive(el);
+    const settle = arrive(el);
+    // the bar follows, the sheet slides up over the cloth (lib/scrollShell, CSS section 50)
+    const scroll = scrollShell(el);
+    // the sheet answers the scroll: the ribbon, the running head's section, the prints (lib/atmosphere, CSS §46)
+    const air = atmosphere(el);
+    return () => {
+      air();
+      scroll();
+      settle();
+    };
   }, [location.pathname, ready]);
 
   return (
     <div className="shell" ref={root} key={location.pathname}>
+      {/* the bar sits above the whole page, outside the cloth's layer, so the sheet never covers it */}
+      <header className={`top on-dark${tone ? ` ${tone}` : ""}`}>
+        <div className="top-in">
+          <NavLink className="brand" to="/" aria-label="Home" viewTransition>
+            <Lockup height={28} />
+          </NavLink>
+          <nav className="pillnav" aria-label="Main" ref={pills}>
+            <span className="pill-thumb" aria-hidden="true" />
+            {NAV.map(({ to, label, Icon, end }) => (
+              <NavLink key={to} to={to} end={end} viewTransition>
+                <Icon />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="top-right">
+            <TellerButton onClick={() => setTeller(true)} />
+            <button type="button" className="btn add" onClick={() => setAdd(true)} aria-label="Add a memory">
+              <PlusIcon />
+              <span>Add</span>
+            </button>
+            <NavLink className="me" to="/account" aria-label="Account and settings" viewTransition>
+              <Avatar src={user?.avatarUrl} name={name} size={32} />
+            </NavLink>
+          </div>
+        </div>
+      </header>
       <div className={`cloth on-dark${compact ? " compact" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
         <span className="lamp" aria-hidden="true" />
         <Leaf page />
-        <header className="top">
-          <div className="top-in">
-            <NavLink className="brand" to="/" aria-label="Home" viewTransition>
-              <Lockup height={28} />
-            </NavLink>
-            <nav className="pillnav" aria-label="Main" ref={pills}>
-              <span className="pill-thumb" aria-hidden="true" />
-              {NAV.map(({ to, label, Icon, end }) => (
-                <NavLink key={to} to={to} end={end} viewTransition>
-                  <Icon />
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
-            <div className="top-right">
-              <TellerButton onClick={() => setTeller(true)} />
-              <button type="button" className="btn add" onClick={() => setAdd(true)} aria-label="Add a memory">
-                <PlusIcon />
-                <span>Add</span>
-              </button>
-              <NavLink className="me" to="/account" aria-label="Account and settings" viewTransition>
-                <Avatar src={user?.avatarUrl} name={name} size={32} />
-              </NavLink>
-            </div>
-          </div>
-        </header>
         <div className="hero">
           <div className="hero-in">
             {back && (
@@ -257,7 +269,14 @@ export default function Shell({ children, hero, title, back, compact, tone }: Sh
         {runningHead && (
           <p className="running-head-sheet" aria-hidden="true">
             <span>{bookName}</span>
-            <span>{pageName}</span>
+            <span className="rh-right">
+              <span className="rh-page">{pageName}</span>
+              <span className="rh-sec" />
+            </span>
+            {/* the ribbon bookmark, in the cloth's colour, hanging in the outer margin; it lengthens a little as the page is read */}
+            <span className="rh-ribbon">
+              <i />
+            </span>
           </p>
         )}
         {children}

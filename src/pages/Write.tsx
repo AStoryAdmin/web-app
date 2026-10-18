@@ -412,7 +412,9 @@ function Writer({ story }: { story: Story }) {
         .timeline({ delay: 0.25 })
         .fromTo(el, { y: 18, rotation: -0.4, opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.7, ease: "power3.out", clearProps: "transform,opacity" })
         .fromTo(el.querySelectorAll(".running-head"), blank, { ...inked, duration: 0.7 }, "-=0.3")
-        .fromTo(el.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.8 }, "-=0.35");
+        .fromTo(el.querySelectorAll(".signoff span"), blank, { ...inked, duration: 0.8 }, "-=0.35")
+        // the ribbon's tail swings once and hangs still, as it does when a book is laid open
+        .fromTo(el.querySelectorAll(".leaf-ribbon"), { rotation: 7 }, { rotation: 0, duration: 1.4, ease: "elastic.out(1, 0.35)", clearProps: "transform" }, 0.2);
     });
     return () => mm.revert();
   }, [kept]);
@@ -601,6 +603,9 @@ function Writer({ story }: { story: Story }) {
               } else onKey(e);
             }}
           />
+          <p className="dear" aria-hidden="true">
+            Dear family,
+          </p>
           <textarea
             ref={bodyRef}
             className="wbody"
@@ -638,6 +643,9 @@ function Writer({ story }: { story: Story }) {
             <span>{draftState === "saved" ? "Draft kept in this browser" : draftState === "saving" ? "Keeping the draft…" : "Nothing written yet"}</span>
           </p>
           <span className="page-frame" aria-hidden="true" />
+          {/* the journal's own things: a ribbon between the pages, its tail below the leaf, and a turned-down corner */}
+          <span className="leaf-ribbon" aria-hidden="true" />
+          <span className="leaf-ear" aria-hidden="true" />
         </article>
 
         <div className="keeprow">

@@ -86,10 +86,8 @@ export default function Home() {
   const byCreated = [...story.memories].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const kept = byCreated.filter((m) => m.status !== "in_progress");
   const latestPhoto = kept.find(hasPhoto) ?? null;
-  // the day's quote takes the large frame when the newest memory has no photograph; the quoted memory is never also a print
   const quoted = resurface(story);
   const recent = kept.filter((m) => m.id !== quoted?.memory.id);
-  const quoteLeads = Boolean(quoted) && !(recent[0] && hasPhoto(recent[0]));
   const quote = quoted ? { node: <FromTheBook story={story} />, memoryId: quoted.memory.id } : null;
   const fromFamily = byCreated.filter((m) => m.contributor).slice(0, 3);
   const progress = bookProgress(story) as { count: number; remaining: number; ratio: number; headline: string; chaptersCovered: number };
@@ -188,74 +186,80 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <Link className="iconbtn desk-only" to="/archive?focus=search" aria-label="Search memories">
-            <SearchIcon />
+          <Link className="home-find" to="/archive?focus=search">
+            <span>Search {story.memories.length > 1 ? `all ${story.memories.length} memories` : "your memories"}</span>
+            <SearchIcon aria-hidden="true" />
           </Link>
         </div>
 
-        <div className="trio">
-          <div className="card" data-rise>
-            <h3>{own ? "Your book" : `${story.name}'s book`}</h3>
-            <div className="bookmini">
-              <img src="/book/keepsake-closed.webp" alt="" width={56} />
-              <div>
-                <p className="n">
-                  {progress.count}
-                  <small>{progress.headline}</small>
-                </p>
-              </div>
+        <div className="home-board">
+          <section className="home-mem" aria-labelledby="recent-h">
+            <div className="sechead" style={{ marginTop: 0 }} data-rise>
+              <h2 id="recent-h">Recent memories</h2>
+              {story.memories.length > 0 && (
+                <Link className="more" to="/archive">
+                  All {story.memories.length}
+                </Link>
+              )}
             </div>
-            <div className="progress" style={{ ["--pct" as string]: `${Math.round(progress.ratio * 100)}%`, marginTop: "var(--s-5)" }} role="img" aria-label={`${Math.round(progress.ratio * 100)}% of the way to a first edition`}>
-              <div className="bar" />
-              <div className="end">First edition</div>
-            </div>
-            <Link className="more" to="/book">
-              Open the book
-            </Link>
-          </div>
+            {recent.length ? <Mosaic memories={recent} story={story} lead={false} limit={8} /> : quote ? null : <InvitePrint story={story} />}
+          </section>
 
-          <div className="card" data-rise>
-            <h3>From the family</h3>
-            {fromFamily.length ? (
-              <div className="news">
-                {fromFamily.map((m) => (
-                  <Link key={m.id} className="item" to={`/archive/${m.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                    <Avatar name={m.contributor.split(",")[0]} size={32} />
-                    <span>
-                      <b>{m.contributor.split(",")[0]}</b> added <b>{m.title || "a memory"}</b>.
-                    </span>
+          <aside className="home-side" aria-label="At a glance">
+            {quote && <div className="home-quote" data-rise>{quote.node}</div>}
+
+            <div className="card glance" data-rise>
+              <div className="glance-row">
+                <img className="glance-book" src="/book/keepsake-closed.webp" alt="" width={52} />
+                <div className="glance-body">
+                  <h3>{own ? "Your book" : `${story.name}'s book`}</h3>
+                  <p className="meta">
+                    {progress.count} {progress.count === 1 ? "memory" : "memories"} · {progress.headline}
+                  </p>
+                  <div className="progress" style={{ ["--pct" as string]: `${Math.round(progress.ratio * 100)}%` }} role="img" aria-label={`${Math.round(progress.ratio * 100)}% of the way to a first edition`}>
+                    <div className="bar" />
+                    <div className="end">First edition</div>
+                  </div>
+                  <Link className="more" to="/book">
+                    Open the book
                   </Link>
-                ))}
+                </div>
               </div>
-            ) : (
-              <p className="meta">Nobody else is in {own ? "your" : `${story.name}'s`} story yet.</p>
-            )}
-            <Link className="more" to="/family">
-              {fromFamily.length ? "See the family" : "Invite someone"}
-            </Link>
-          </div>
 
-          <div className="card teal" data-rise>
-            <h3>Calls</h3>
-            <p className="meta">
-              A Story calls on the phone at the hour you choose. <span className="hl">Talking here in the browser is coming.</span>
-            </p>
-            <Link className="more" to="/talk">
-              How calls work
-            </Link>
-          </div>
-        </div>
+              <div className="glance-row">
+                <div className="glance-body">
+                  <h3>From the family</h3>
+                  {fromFamily.length ? (
+                    <div className="news">
+                      {fromFamily.slice(0, 2).map((m) => (
+                        <Link key={m.id} className="item" to={`/archive/${m.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                          <Avatar name={m.contributor.split(",")[0]} size={28} />
+                          <span>
+                            <b>{m.contributor.split(",")[0]}</b> added <b>{m.title || "a memory"}</b>.
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="meta">Nobody else is in {own ? "your" : `${story.name}'s`} story yet.</p>
+                  )}
+                  <Link className="more" to="/family">
+                    {fromFamily.length ? "See the family" : "Invite someone"}
+                  </Link>
+                </div>
+              </div>
 
-        <div>
-          <div className="sechead" style={{ marginTop: 0 }} data-rise>
-            <h2>Recent memories</h2>
-            {story.memories.length > 0 && (
-              <Link className="more" to="/archive">
-                All {story.memories.length}
-              </Link>
-            )}
-          </div>
-          {recent.length || quote ? <Mosaic memories={recent} story={story} quote={quote} limit={quoteLeads ? 4 : 5} /> : <InvitePrint story={story} />}
+              <div className="glance-row">
+                <div className="glance-body">
+                  <h3>Calls</h3>
+                  <p className="meta">A Story calls on the phone at the hour you choose. Talking here in the browser is coming.</p>
+                  <Link className="more" to="/talk">
+                    How calls work
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
     </Shell>
