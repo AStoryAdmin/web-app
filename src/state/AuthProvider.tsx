@@ -36,6 +36,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = sb.auth.onAuthStateChange((event, session) => {
       if (!live) return;
       if (!session) {
+        // signed out here or in another tab: no signed photograph survives into the next person's session
+        clearPhotoCache();
         effectsFor.current = null;
         setEffects(null);
         setUser(null);

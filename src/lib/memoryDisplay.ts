@@ -1,6 +1,7 @@
 /** How a memory presents itself: the paper it sits on and who told it. */
 import type { Memory, Story } from "../data/stories";
-import { soundsSpoken } from "../components/archive/transcript";
+import { soundsSpoken, takeaway } from "../components/archive/transcript";
+import { smarten } from "./typography";
 
 const PAPER_BY_CHAPTER: Record<string, string> = {
   Childhood: "sage",
@@ -56,4 +57,15 @@ export function tellerParts(memory: Memory, story: Story): { verb: string; name:
 export function toldBy(memory: Memory, story: Story): string {
   const { verb, name, rest } = tellerParts(memory, story);
   return `${verb} ${name}${rest}`;
+}
+
+/**
+ * The person's own words for a print or a List card: the memory's one takeaway, whole (the page sets the same line);
+ * failing that, the first sentence of the excerpt, never the server's third-person summary ("The speaker…").
+ */
+export function cardWords(memory: Memory): string {
+  const line = takeaway(memory.body || "");
+  if (line) return smarten(line);
+  const ex = (memory.excerpt || "").trim();
+  return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : smarten(ex.split(/(?<=[.!?])\s/)[0] || "");
 }

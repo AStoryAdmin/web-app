@@ -15,8 +15,8 @@ const FILLER = /(^|[\s,;(—–])(?:u+m+|u+h+|uhm|erm|er|e+h|hmm+|mm+)(?=[\s,.;:
 const BACKCHANNEL_WORD = "(?:yeah|yes|yep|yup|right|okay|ok|oh|ah|wait|mm-?hmm|uh-?huh|for sure|sure|exactly|totally|definitely|absolutely|of course|really|true|i see|got it|nice|wow|cool)";
 const REACTION = "(?:that'?s|that’s|so) (?:amazing|awesome|great|cool|so cool|incredible|wild|interesting|fun|nice)";
 const BACKCHANNEL = new RegExp(`^(?:${BACKCHANNEL_WORD}|${REACTION})(?:[,\\s]+(?:${BACKCHANNEL_WORD}|${REACTION}))*[.!?…]*$`, "i");
-/** A paragraph's throat-clearing: "Yeah well so", "Okay, so", "Um, like". A lone "So" is left alone. */
-const LEAD_FILLER = /^(?:(?:(?:yeah|yes|well|okay|ok|oh|um+|uh+|like|so|you know)[,.]?\s+){2,}|(?:yeah|well|okay|ok|oh|um+|uh+)[,.]?\s+)/i;
+/** A paragraph's throat-clearing: "Yeah well so", "Okay, so", "Um, like". A lone "So", and an "Oh," that opens the teller's own question, are left alone. */
+const LEAD_FILLER = /^(?:(?:(?:yeah|yes|well|okay|ok|um+|uh+|like|so|you know)[,.]?\s+){2,}|(?:yeah|well|okay|ok|um+|uh+)[,.]?\s+)/i;
 /** A trailing "but yeah", "so yeah", "and yeah" at the end of a sentence. */
 const TRAIL_YEAH = /,?\s+(?:but|so|and)\s+yeah(?=[.!?…]|$)/gi;
 /** A short question that reads as the other person's ("Wait, were you?", "Do they open to non-students as well?"), not a tag ("…, right?"). */
@@ -102,11 +102,13 @@ function punctuateRunOn(s: string): string[] {
 }
 
 /**
- * A clause said and then restarted, dropped only when that is certain (the founder's ruling on rule 29):
- * - it is a true prefix of the next clause ("we went to, we went to the market" → "we went to the market");
- * - it is short (six words or fewer) and breaks off on a little word ("So we did a, we built…" → "we built…").
- * A clause is never dropped because it opens on the same word as the next: "We laughed, we cried, we sang",
- * "We had nothing, we had each other" and "I felt like, I was alone" are all said, and all stay.
+ * A clause said and then restarted, dropped only when that is certain (rule 17a):
+ * - it is a true prefix of the next clause, of two words or more ("we went to, we went to the market");
+ * - it breaks off on an article or a possessive and the speaker restarts it in their own next words, reopening on the
+ *   same subject ("So we did like a, we built an app" → "we built an app").
+ * Never otherwise: a clause that ends on "to" is whole by ellipsis ("I wanted to, but I couldn't"); one that opens like
+ * the next is said ("We laughed, we cried"); a single word is emphasis ("Never, never again"); and a next clause that
+ * opens on "but", "and" or "so" goes on from it rather than restarting it.
  */
 function dropRestarts(s: string): string {
   const parts = s.split(/,\s+/);
@@ -118,17 +120,18 @@ function dropRestarts(s: string): string {
     if (b) {
       const na = norm(a);
       const nb = norm(b);
-      const prefix = !!na && nb.length > na.length && nb.startsWith(`${na} `);
-      const brokeOff = a.trim().split(/\s+/).length <= 6 && BREAKS_OFF.test(a.trim());
-      if (prefix || brokeOff) continue;
+      const prefix = na.includes(" ") && nb.length > na.length && nb.startsWith(`${na} `);
+      const subject = (x: string) => x.replace(/^(?:so|and|but|then)\s+/, "").split(" ")[0];
+      const restart = a.trim().split(/\s+/).length <= 6 && BREAKS_OFF.test(a.trim()) && !/^(?:but|and|so)\b/.test(nb) && !!subject(na) && subject(na) === subject(nb);
+      if (prefix || restart) continue;
     }
     out.push(a);
   }
   return out.join(", ");
 }
 
-/** A clause that stops on a word that cannot end one: an article, "to", "of", a possessive ("we did a,"). */
-const BREAKS_OFF = /\b(?:a|an|the|to|of|my|our|their|your)$/i;
+/** A clause that stops where no clause can end: on an article or a possessive ("we did a,"). Never "to" or "of". */
+const BREAKS_OFF = /\b(?:a|an|the|my|our|their|your)$/i;
 
 /** A word said twice on purpose: emphasis ("very, very"), grammar ("had had", "that that"), a refusal ("no, no"). */
 const MEANT_TWICE = /^(?:very|really|so|much|many|more|most|far|long|had|that|is|no|yes|bye|ha|again|over|round|on|now|go|come|well|never|ever|too)$/i;
@@ -141,8 +144,22 @@ const CONJ_START = /^(?:and|or|but|so|then|after|by|because)\b/i;
  * "and then and then", "he was, he was"): collapsed to one.
  */
 const STUTTER = /\b((?:[\w'’]+\s+){0,2}[\w'’]+)(?:,?\s+\1\b)+/gi;
-/** Kept whole, at its full length: a doubling that means something ("very, very", "no, no, no"), or "X and X and". */
-const meantTwice = (x: string) => MEANT_TWICE.test(x) || (/\s/.test(x) && JOINED.test(x) && !CONJ_START.test(x));
+/** The words that, doubled, are a slip and not emphasis: pronouns, articles, conjunctions ("I, I", "the the", "and, and"). */
+const SLIP_WORD = /^(?:i|you|he|she|we|they|it|me|him|her|us|them|my|our|your|his|their|its|a|an|the|and|or|but|so|then|because|if|to|of|in|on|at)$/i;
+/**
+ * Kept whole, at its full length: a doubling that means something ("very, very", "no, no, no"); any other word doubled
+ * with a comma, which is emphasis ("a big, big house", "Run, run, run!"); or "X and X and".
+ */
+const meantTwice = (m: string, x: string) => MEANT_TWICE.test(x) || (/,/.test(m) && !/\s/.test(x) && !SLIP_WORD.test(x)) || (/\s/.test(x) && JOINED.test(x) && !CONJ_START.test(x));
+/** Throat-clearing at the start, but never a doubled word said for emphasis ("So, so good", "Yes, yes I remember"). */
+const leadFiller = (m: string) => {
+  const twice = m.match(/^([\w'’]+)[,.]?\s+\1[,.]?\s+$/i);
+  return twice && MEANT_TWICE.test(twice[1]) ? m : "";
+};
+/** Whether a sentence is the other person's back-channel ("Yeah, right?", "Wow, that's amazing"). */
+const isBackchannel = (s: string) => BACKCHANNEL.test(s.replace(/["“”]/g, "").trim());
+/** A question (not a tag, "…, right?"): what follows it, however short, is the answer. */
+const isQuestion = (s: string) => /\?["”’)]*$/.test(s.trim()) && !TAG.test(s.trim());
 
 
 const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
@@ -150,40 +167,53 @@ const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").rep
 /** One paragraph of speech, tidied. */
 export function cleanSpeech(text: string, { answer = false }: { answer?: boolean } = {}): string {
   const turns = tellerTurns(String(text || ""));
+  // a short reply straight after a question ("Yes.", "Yeah, of course.", "For sure. Yeah, definitely.") is the answer
+  // and stays whole, as said, whether the question was lifted to a "We asked" line (`answer`) or left in the words;
+  // only back-channel that answers nothing goes
+  const pieces: { s: string; whole: boolean }[] = [];
+  let answering = answer;
+  for (const raw of sentencesOf(turns)) {
+    const s = raw.trim();
+    if (!s) continue;
+    const back = isBackchannel(s);
+    if (back && answering) {
+      pieces.push({ s, whole: true });
+      continue;
+    }
+    answering = isQuestion(s);
+    if (!back) pieces.push({ s, whole: false });
+  }
   const kept: string[] = [];
-  const all = sentencesOf(turns).map((s) => s.trim());
-  // straight after a "We asked" line, the teller's short reply ("For sure. Yeah, definitely.") is the answer: it stays
-  // whole, as said, so the page never shows a question with no answer
-  let lead = 0;
-  if (answer) while (lead < all.length && BACKCHANNEL.test(all[lead].replace(/["“”]/g, "").trim())) lead++;
-  const reply = all.slice(0, lead).join(" ");
-  for (const s0 of all
-    .slice(lead)
-    // back-channel sentences go whole
-    .filter((s) => s && !BACKCHANNEL.test(s.replace(/["“”]/g, "").trim()))
-    .map((s) =>
+  const tidy = (s: string): string[] =>
+    [
       s
-        .replace(LEAD_FILLER, "")
+        .replace(LEAD_FILLER, leadFiller)
         .replace(TRAIL_YEAH, "")
         .replace(FILLER, "$1")
-        // stutters and false starts: a word or a short phrase said twice ("I, I", "so I, so I"); a doubling that
-        // means something ("very, very", "had had", "that that", "no, no") is the speaker's and stays
-        .replace(STUTTER, (m: string, x: string) => (meantTwice(x) ? m : x))
+        // stutters: a word or a short phrase said twice or more ("I, I", "we we we", "he was, he was") → once; a
+        // doubling that means something ("very, very", "a big, big house", "no, no, no") is the speaker's and stays
+        .replace(STUTTER, (m: string, x: string) => (meantTwice(m, x) ? m : x))
         // (a false start across a filler sound, "my uh my mom", is a stutter once the "uh" has gone; across a word such
         // as "so" or "and" nothing is dropped: "faster and faster" and "my dad so I started" are both said)
         .replace(/^[\s,;:]+/, ""),
-    )
-    .map(dropFillerLike)
-    .map(dropRestarts)
-    .flatMap(punctuateRunOn)
-    .filter((s) => /[\p{L}\p{N}]/u.test(s) && !BACKCHANNEL.test(s.trim()))) {
-    // a sentence said twice ("I was working a corporate job, the eSports job. I was working a corporate job.") is kept once
-    const n = norm(s0);
-    const prev = kept.length ? norm(kept[kept.length - 1]) : "";
-    if (n && (n === prev || (prev && prev.startsWith(n)) || kept.some((k) => norm(k) === n))) continue;
-    kept.push(cap(s0));
+    ]
+      .map(dropFillerLike)
+      .map(dropRestarts)
+      .flatMap(punctuateRunOn)
+      .filter((x) => /[\p{L}\p{N}]/u.test(x) && !isBackchannel(x));
+  for (const piece of pieces) {
+    for (const s0 of piece.whole ? [piece.s] : tidy(piece.s)) {
+      // a sentence repeated straight away, exactly, or as the whole first clause of the one before ("I was working a
+      // corporate job, the eSports job. I was working a corporate job.") is kept once; a refrain said later, or a
+      // sentence that only starts like the one before ("I loved her more than anything. I loved her."), stays
+      const n = norm(s0);
+      const prev = kept.length ? kept[kept.length - 1] : "";
+      const prevClause = norm(prev.split(/,\s+/)[0] || "");
+      if (n && prev && !piece.whole && (n === norm(prev) || (prev.includes(",") && n === prevClause))) continue;
+      kept.push(piece.whole ? s0 : cap(s0));
+    }
   }
-  return [reply, ...kept]
+  return kept
     .filter(Boolean)
     .join(" ")
     .replace(/\s+([,.;:!?])/g, "$1")
@@ -203,9 +233,12 @@ function liftQuestions(paragraph: string): string[] {
   for (const raw of sentencesOf(paragraph)) {
     const s = raw.trim();
     if (!s) continue;
-    if (s.endsWith("?") && REACTION_Q.test(s) && !TAG.test(s)) continue; // the other person reacting: dropped
-    // lifted only when it is a real question (five words or more); a short one stays in the teller's words
-    if (ASK.test(s) && !TAG.test(s) && s.split(/\s+/).length >= 5) {
+    // the other person reacting ("Really?", "Wait, were you?"): three words or fewer, dropped; a longer one may be the
+    // teller's own ("Oh, how could I ever forget that day?") and stays
+    if (s.endsWith("?") && REACTION_Q.test(s) && !TAG.test(s) && s.split(/\s+/).length <= 3) continue;
+    // lifted only when it is a real question (five words or more) and not the teller asking themselves: a question
+    // holding "I", "my", "me" or "we" is theirs ("Why did I leave Vietnam that year?") and stays in their words
+    if (ASK.test(s) && !TAG.test(s) && s.split(/\s+/).length >= 5 && !/\b(?:I|my|me|we)\b/i.test(s)) {
       if (run.trim()) out.push(run.trim());
       out.push(ASKED + s);
       asking = true;
@@ -326,7 +359,7 @@ function fillerLike(s: string): boolean {
  * "like a thousand", "like 300", "like nothing"), or a negation ("is like not non-existent"). Without the "like" a
  * guess reads as a fact, or the meaning flips, so it stays. When in doubt the word is kept.
  */
-const HEDGES_AMOUNT = /^,?\s*(?:[$£€]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|billions?|dozens?|half|nothing|none|every|everything|everyone|all|almost|about|maybe|most|some|several|not|no|never|barely|hardly|only)\b|(?:a|an)\s+(?:few|couple|lot|hundred|thousand|million|billion|dozen|half|bunch|ton|year|month|week|day|hour|minute|mile)s?\b)/i;
+const HEDGES_AMOUNT = /^,?\s*(?:[$£€]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|billions?|dozens?|half|nothing|none|every|everything|everyone|all|almost|about|around|over|under|more|less|nearly|close|once|twice|halfway|double|maybe|most|some|several|not|no|never|barely|hardly|only)\b|(?:a|an)\s+(?:few|couple|lot|hundred|thousand|million|billion|dozen|half|bunch|ton|year|month|week|day|hour|minute|mile)s?\b)/i;
 
 /**
  * The words after which "like" quotes or feels, and stays: "she was like, you have to go", "he's like, why",
@@ -346,10 +379,9 @@ function isFillerLike(s: string, at: number): boolean {
   const before = s.slice(0, at).trim().split(/\s+/).pop()?.toLowerCase() || "";
   const after = s.slice(at + 4).trim().split(/[\s,.!?]+/)[0]?.toLowerCase() || "";
   const verb = /^(i|we|they|you|he|she|would|'d|i'd|we'd|really|to|did|didn't|don't|do|not|feel|felt|looks?|looked|sounds?|liked?)$/.test(before);
-  // "like a teacher" compares; "like a really good fan" hedges
-  const second = s.slice(at + 4).trim().split(/[\s,.!?]+/)[1]?.toLowerCase() || "";
-  const hedge = /^(really|very|so|kind|sort|little|bit|whole|lot)$/.test(second);
-  const compare = /^(a|an|the|this|that|it|my|his|her|our|their|your|me|him|us|them|home|family)$/.test(after) && !hedge && !/,$/.test(s.slice(0, at).trim()) && !/^,/.test(s.slice(at + 4));
+  // "like a teacher", "like a really good fan", "like a little sister" compare, whatever follows the article (17a)
+  const article = /^(a|an|the)$/.test(after) && !/^,/.test(s.slice(at + 4));
+  const compare = article || (/^(this|that|it|my|his|her|our|their|your|me|him|us|them|home|family)$/.test(after) && !/,$/.test(s.slice(0, at).trim()) && !/^,/.test(s.slice(at + 4)));
   return !verb && !compare;
 }
 

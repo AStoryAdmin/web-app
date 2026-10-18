@@ -27,7 +27,10 @@ function cached(key: string): string | null {
   return hit && hit.expiresAt - REFRESH_MARGIN_MS > Date.now() ? hit.url : null;
 }
 
-async function flush(batch: Map<string, Map<string, Resolver[]>>) {
+/** Bumped by clearPhotoCache(): a signing started before it never writes into the cache after it, nor answers. */
+let generation = 0;
+
+async function flush(batch: Map<string, Map<string, Resolver[]>>, gen: number) {
   const sb = getSupabase();
   for (const [bucket, waiting] of batch) {
     const paths = [...waiting.keys()];
@@ -44,7 +47,7 @@ async function flush(batch: Map<string, Map<string, Resolver[]>>) {
     const byPath = new Map<string | null, string>();
     for (const r of results) if (r && !r.error && r.signedUrl) byPath.set(r.path, r.signedUrl);
     for (const [path, resolvers] of waiting) {
-      const url = byPath.get(path) || null;
+      const url = gen === generation ? byPath.get(path) || null : null;
       if (url) cache.set(`${bucket}/${path}`, { url, expiresAt });
       resolvers.forEach((resolve) => resolve(url));
     }
@@ -56,9 +59,10 @@ function requestSigned(bucket: string, path: string): Promise<string | null> {
     if (!pending) {
       pending = new Map();
       const batch = pending;
+      const gen = generation;
       setTimeout(() => {
-        pending = null;
-        void flush(batch);
+        if (pending === batch) pending = null;
+        void flush(batch, gen);
       }, 0);
     }
     if (!pending.has(bucket)) pending.set(bucket, new Map());
@@ -104,12 +108,14 @@ function requestRendition(bucket: string, path: string, width: number): Promise<
   if (hit) return Promise.resolve(hit);
   const running = inflight.get(key);
   if (running) return running;
+  const gen = generation;
   const job = slot(async () => {
     const sb = getSupabase();
     try {
       if (!sb) throw new Error("not connected");
-      const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, SIGN_TTL_SECONDS, { transform: { width, resize: "contain" } });
+      const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, SIGN_TTL_SECONDS, { transform: renditionTransform(width) });
       if (error || !data?.signedUrl) throw error || new Error("no url");
+      if (gen !== generation) return null;
       cache.set(key, { url: data.signedUrl, expiresAt: Date.now() + SIGN_TTL_SECONDS * 1000 });
       return data.signedUrl;
     } catch (err) {
@@ -122,9 +128,22 @@ function requestRendition(bucket: string, path: string, width: number): Promise<
   return job;
 }
 
-/** The rendition step for a frame `cssWidth` wide: 400 or 600 device pixels, or undefined for the original. */
-export function renditionWidth(cssWidth: number, zoom = 1, density = 1): number | undefined {
-  const device = cssWidth * zoom * density;
+/**
+ * The transform asked for: a width only, with "contain", so the photograph keeps its own ratio (never re-cropped, and
+ * never stretched); the frame's `object-fit: cover` does the only crop, as it does for the original.
+ */
+export function renditionTransform(width: number): { width: number; resize: "contain" } {
+  return { width, resize: "contain" };
+}
+
+/**
+ * The rendition step for a frame `cssWidth` × `cssHeight`: 400 or 600 device pixels wide, or undefined for the
+ * original. The frame shows the photograph with `object-fit: cover`, so a landscape (up to 3:2) has to fill the
+ * frame's height: the width it needs is the larger of the frame's width and its height × 1.5 (a 3:2 photograph in a
+ * square or 3:4 print is never upscaled).
+ */
+export function renditionWidth(cssWidth: number, zoom = 1, density = 1, cssHeight = 0): number | undefined {
+  const device = Math.max(cssWidth, cssHeight * 1.5) * zoom * density;
   if (!device) return undefined;
   if (device <= 400) return 400;
   if (device <= 600) return 600;
@@ -139,8 +158,10 @@ export async function originalAfterError(url: string | null | undefined): Promis
 
 /** Forget every signed URL (on sign-out, so the next person in this tab never reaches the last one's photographs). */
 export function clearPhotoCache(): void {
+  generation++;
   cache.clear();
   inflight.clear();
+  pending = null;
   transformsOff = false;
 }
 

@@ -15,3 +15,6 @@ dist
 test-results/
 playwright-report/
 docs/mockups/shots/*.png
+
+# Review screenshots stay local (large)
+docs/agents/reviews/shots/

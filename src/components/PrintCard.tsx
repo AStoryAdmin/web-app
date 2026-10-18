@@ -20,25 +20,18 @@ import { Mark } from "./Brand";
 import { MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
 import { realChapter } from "./archive/photos";
-import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
 import { loadedRef, onLoaded, usePrintPhoto } from "./archive/develop";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { smarten } from "../lib/typography";
+import { cardWords } from "../lib/memoryDisplay";
 import { markSeen, newFromLine, seenCount } from "../lib/seenSides";
 import type { Contribution } from "../data/contributions";
 import type { Memory, Story } from "../data/stories";
 
 export type PrintSize = "lead" | "tall";
 
-/** The person's own words for the typed card: the memory's one takeaway, whole (the page shows the same line); never the server's summary. */
-function words(memory: Memory): string {
-  const line = takeaway(memory.body || "");
-  if (line) return smarten(line);
-  const ex = (memory.excerpt || "").trim();
-  return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : smarten(ex.split(/(?<=[.!?])\s/)[0] || "");
-}
 
 const yearsAgo = (n: number) => (n === 1 ? "a year ago today" : n === 2 ? "two years ago today" : n === 3 ? "three years ago today" : `${n} years ago today`);
 
@@ -74,7 +67,7 @@ export default function PrintCard({
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
   const { src: photo, frameRef, onError: onPhotoError } = usePrintPhoto(meta.photo);
   const dated = meta.date !== "No date yet";
-  const said = meta.photo ? "" : words(memory);
+  const said = meta.photo ? "" : cardWords(memory);
   const people = (memory.personIds || [])
     .map((id) => family?.people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);

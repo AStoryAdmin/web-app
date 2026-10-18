@@ -20,27 +20,19 @@ import { useAccount } from "../state/accountContext";
 import { Avatar } from "./ui";
 import { LockIcon, MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
-import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
 import { loadedRef, onLoaded, usePrintPhoto } from "./archive/develop";
 import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
 import { smarten } from "../lib/typography";
 import type { Memory, Story } from "../data/stories";
-import { toldBy } from "../lib/memoryDisplay";
+import { cardWords, toldBy } from "../lib/memoryDisplay";
 
 const minutes = (memory: Memory) => {
   const s = (memory.audio || []).reduce((a, c) => a + (c.duration || 0), 0);
   return s >= 60 ? `${Math.round(s / 60)} min` : s > 0 ? `${Math.round(s)} sec` : "";
 };
 
-/** The person's own words for the card: the memory's one takeaway, whole (the page shows the same line); never the summary. */
-function cardWords(memory: Memory): string {
-  const line = takeaway(memory.body || "");
-  if (line) return smarten(line);
-  const ex = (memory.excerpt || "").trim();
-  return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : smarten(ex.split(/(?<=[.!?])\s/)[0] || "");
-}
 
 export default function MemoryCard({ memory, story, style, rise = true }: { memory: Memory; story: Story; style?: CSSProperties; /** Its own CSS arrival; off where the page’s scroll hook owns the entrance. */ rise?: boolean }) {
   const { family } = useAccount();
@@ -61,7 +53,7 @@ export default function MemoryCard({ memory, story, style, rise = true }: { memo
       {isTreasured(memory) && <WaxSeal size={26} className="mem-seal" label="Treasured" />}
       {meta.photo && (
         <span className="print" aria-hidden="true" ref={frameRef}>
-          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" ref={loadedRef} onLoad={onLoaded} onError={onPhotoError} />
+          <img className="pic" src={photo ?? undefined} alt="" loading="lazy" decoding="async" ref={loadedRef} onLoad={onLoaded} onError={onPhotoError} />
           {meta.photoCount > 1 && <span className="n">+{meta.photoCount - 1}</span>}
         </span>
       )}

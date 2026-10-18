@@ -103,7 +103,9 @@ describe("a card's words", () => {
   it("are whole: the first typed lines, or a short kept sentence", async () => {
     const { takeaway: cardLine } = await import("./transcript");
     expect(cardLine("We live in a small city\nIt's in Vietnam\nMom was a teacher, dad an engineer and I stay with grandmas")).toBe("We live in a small city · It's in Vietnam");
-    expect(cardLine("He was like a really good fan of the team and he cheered every single week.")).not.toContain("like a really");
+    // the comparing "like a …" is the speaker's (17a): a card that quotes this line keeps it
+    const line = cardLine("He was like a really good fan of the team and he cheered every single week.");
+    if (line.includes("good fan")) expect(line).toContain("like a really");
   });
 });
 
@@ -312,5 +314,75 @@ describe("round 8: the takeaway", () => {
   it("opens the words when it is in their first two sentences (4592's opening)", async () => {
     const { opensOn } = await import("./transcript");
     expect(opensOn("I specifically PhD of finance. And that's always been the dream because I love teaching. I love to become a professor one day.", "That's always been the dream because I love teaching.")).toBe(true);
+  });
+});
+
+/**
+ * Round 9: rule 17a as reworded. A broken-off clause goes only when the speaker restarts it in their own next words;
+ * never a clause that ends on a little word, a refrain, a question the teller asks themselves, a word doubled for
+ * emphasis, a comparing "like", a hedge before an amount, or an answer. Every example from the round-8 reviews.
+ */
+export const RULE_17A_SPEECH: [string, string][] = [
+  // baos 1: the comparing "like a …" stays, whatever follows the article
+  ["He was like a really good fan", "He was like a really good fan."],
+  ["Our neighbor was like a very close aunt to me", "Our neighbor was like a very close aunt to me."],
+  ["She was like a little sister to me", "She was like a little sister to me."],
+  ["He was like a really big brother to us", "He was like a really big brother to us."],
+  ["She was like a really good mother to me", "She was like a really good mother to me."],
+  ["He was like a kind of father to me", "He was like a kind of father to me."],
+  // baos 2: a clause that ends on "to" is whole by ellipsis
+  ["I wanted to, but I couldn't", "I wanted to, but I couldn't."],
+  ["She never got to, she died before the war ended", "She never got to, she died before the war ended."],
+  ["We had nowhere to go to, no family, no money", "We had nowhere to go to, no family, no money."],
+  ["I tried to, I really did", "I tried to, I really did."],
+  ["I always wanted to, and then I finally did", "I always wanted to, and then I finally did."],
+  ["We wanted to, we just couldn't", "We wanted to, we just couldn't."],
+  // baos 4: a hedge before an amount
+  ["It took like around fifty days", "It took like around fifty days."],
+  ["It was like over a hundred people", "It was like over a hundred people."],
+  ["We went like once a week", "We went like once a week."],
+  ["We were like halfway there", "We were like halfway there."],
+  // baos 5: a doubling at the start of a clause is emphasis
+  ["Never, never again", "Never, never again."],
+  ["Very, very hard times", "Very, very hard times."],
+  ["Long, long ago there was a village", "Long, long ago there was a village."],
+  ["No, no you can't", "No, no you can't."],
+  ["So, so good", "So, so good."],
+  ["Yes, yes I remember", "Yes, yes I remember."],
+  // skills 2: a clause ending on a little word, a refrain, emphasis on any word
+  ["We gave the flowers to, the old lady next door.", "We gave the flowers to, the old lady next door."],
+  ["We were happy. We had a garden and a dog. We were happy.", "We were happy. We had a garden and a dog. We were happy."],
+  ["I loved her more than anything in the world. I loved her.", "I loved her more than anything in the world. I loved her."],
+  ["We had a big, big house", "We had a big, big house."],
+  ["Run, run, run!", "Run, run, run!"],
+  ["Very, very, very good.", "Very, very, very good."],
+  ["a long, long, long road", "A long, long, long road."],
+  // still tidied: the true restart, the slip, the exact repeat
+  ["So we did like a, we built an app", "We built an app."],
+  ["I, I went home", "I went home."],
+  ["I was working a corporate job, the eSports job. I was working a corporate job. So I left.", "I was working a corporate job, the eSports job. So I left."],
+];
+
+/** Round 9: answers and the teller's own questions, through the whole transcript. */
+export const RULE_17A_TRANSCRIPT: [string, string][] = [
+  // baos 3: an answer to a short question stays
+  ["Were you happy there? Yes. We were.", "Were you happy there? Yes. We were."],
+  ["Did she cry? Yeah. A lot.", "Did she cry? Yeah. A lot."],
+  ["Did you love him? Yeah, of course. He was my whole life.", "Did you love him? Yeah, of course. He was my whole life."],
+  ["Were you scared? Yes. Very scared, we had nothing.", "Were you scared? Yes. Very scared, we had nothing."],
+  // skills 2: the teller's own question, a long "Oh" question, an answer after "?"
+  ["Why did I leave Vietnam that year? Because my father was sick.", "Why did I leave Vietnam that year? Because my father was sick."],
+  ["Oh, how could I ever forget that day? It was the day my son was born.", "Oh, how could I ever forget that day? It was the day my son was born."],
+  ["Was it hard? Yes. It was very hard.", "Was it hard? Yes. It was very hard."],
+];
+
+describe("round 9: rule 17a, every reviewer example", () => {
+  it.each(RULE_17A_SPEECH)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+  it.each(RULE_17A_TRANSCRIPT)("%s", async (said, shown) => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript([said]).join(" ")).toBe(shown);
   });
 });

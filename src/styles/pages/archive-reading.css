@@ -479,7 +479,6 @@
 .seal .seal-a { position: absolute; left: 30%; top: 29%; width: 40%; height: 42%; background: var(--wax-shade); -webkit-mask: var(--sheet-mark) center / contain no-repeat; mask: var(--sheet-mark) center / contain no-repeat; }
 .seal.small .seal-a { left: 26%; top: 24%; width: 48%; height: 52%; }
 .print-card > .print-seal { position: absolute; z-index: 3; top: -10px; right: -10px; }
-.print-card.treasured .marks { right: 30px; }
 .print-card.gilt { box-shadow: inset 0 0 0 1.5px var(--foil); }
 .print-card > .glint { position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1.5px; overflow: hidden; pointer-events: none;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
@@ -581,7 +580,6 @@
   .arc-prints .print-card.typed .cap { min-height: 0; }
   .arc-prints .print-card.typed:has(.cap .kicker, .cap .dateline.dated) .typed-in .said, .home-mem .print-card.typed:not(.invite):has(.cap .dateline.dated) .typed-in .said { -webkit-line-clamp: 2; }
 }
-/* the page turn: titles balanced, three lines on a phone */
 
 /* the tidy note: the separator is drawn before the link; on a phone the link takes its own line and the dot goes */
 .mv-tidy-act::before { content: "· "; color: var(--mv-soft); }
@@ -640,3 +638,6 @@
   .home-side > .home-quote { display: grid; }
   .home-side > .home-quote .fromthebook { height: 100%; box-sizing: border-box; align-content: center; }
 }
+
+/* a long memory title on a phone steps down a size, so every title holds two lines (DESIGN.md craft rules) */
+@media (max-width: 599px) { .sheet-page .page.mv h1.mv-title[data-long] { font-size: 27px; line-height: 1.12; } }
