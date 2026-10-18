@@ -68,6 +68,10 @@ Prompt texts are in the founder's chat message of 2026-10-17 and below.
 - If the framing drifts, reply: "Match the framing, scale and ledge height of the watch image exactly."
 - Download each as PNG at full size.
 
+## Status (2026-10-17)
+
+The founder's art arrived as one sheet of eight poses plus a separate peek. It is cut, scaled to one shared scale (watch is 640 tall), and in `public/dog/` as .png and .webp: watch 802x640, cover 738x710, peek 689x734, curious 765x949, sleep 781x622, plus book, envelope and sit (a spare, sitting and smiling). The `-paper` variants are the same art cut flat under the chest. Eye centres: watch L 0.449/0.484, R 0.686/0.380; curious L 0.468/0.272, R 0.642/0.408. Lids are his fur colour (about #A06640).
+
 ## After the images arrive (lead)
 
 1. Key out the cream ground by flood fill, trim, align every ledge pose on the same ledge height, export at 640px tall.
