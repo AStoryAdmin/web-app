@@ -36,7 +36,7 @@
 .mv-body { grid-area: body; min-width: 0; }
 .mv-plate:not(.inline) { grid-area: plate; min-width: 0; }
 .mv-margin { grid-area: margin; min-width: 0; }
-@media (min-width: 600px) and (max-width: 1279px) {
+@media (min-width: 600px) and (max-width: 1279.98px) {
   .mv-grid, .mv-crumbs { max-width: calc(var(--mv-col) + 8px); margin-left: auto; margin-right: auto; }
 }
 @media (min-width: 1280px) {
@@ -103,7 +103,7 @@
 .sheet-page .page.mv h1.mv-title { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 44px; line-height: 1.08; letter-spacing: -0.01em; color: var(--mv-ink); text-wrap: balance; overflow-wrap: break-word; min-width: 0; }
 @media (min-width: 1680px) { .sheet-page .page.mv h1.mv-title { font-size: 50px; } }
 .mv-title .seal { display: inline-block; vertical-align: -0.12em; margin-left: 4px; }
-@media (max-width: 599px) { .mv-title .seal { width: 32px !important; height: 32px !important; } .mv-title .seal svg { width: 100%; height: 100%; } }
+@media (max-width: 599.98px) { .mv-title .seal { width: 32px !important; height: 32px !important; } .mv-title .seal svg { width: 100%; height: 100%; } }
 .mv-date { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin: 10px 0 0; font: 500 14px/1.3 var(--font-ui); color: var(--mv-soft); }
 .mv-date > * + *::before { content: "·"; margin: 0 10px; color: var(--foil); }
 .mv-date .dated { font-weight: 600; letter-spacing: 0.02em; color: var(--mv-terra); }
@@ -147,7 +147,7 @@
 }
 .sheet-page .mv .rd-story .quiet { font-style: italic; color: var(--mv-soft); }
 .sheet-page .mv .rd-story p.reading::before { left: -20px; }
-@media (max-width: 599px) {
+@media (max-width: 599.98px) {
   .sheet-page .mv .rd-story { hyphens: auto; hyphenate-limit-chars: 7 3 3; }
   @supports (initial-letter: 2) { .sheet-page .mv .rd-story p.drop::first-letter { initial-letter: 2; } }
   .sheet-page .mv .rd-story p.reading::before { left: -12px; }
@@ -281,10 +281,10 @@
 .mv-turn-link:active { transform: scale(0.99); }
 .mv-turn-link:focus-visible { outline: 2px solid var(--mv-terra); outline-offset: 1px; }
 .mv .where-next { margin-top: 72px; }
-@media (min-width: 600px) and (max-width: 1279px) { .mv .where-next { max-width: calc(var(--mv-col) + 8px); margin-left: auto; margin-right: auto; } }
+@media (min-width: 600px) and (max-width: 1279.98px) { .mv .where-next { max-width: calc(var(--mv-col) + 8px); margin-left: auto; margin-right: auto; } }
 
 /* the phone */
-@media (max-width: 599px) {
+@media (max-width: 599.98px) {
   .sheet-page .page.mv { padding-top: 8px; }
   .sheet-page .page.mv h1.mv-title { font-size: 32px; line-height: 1.1; }
   .mv-plate { --maxh: calc(70vh / var(--zoom, 1)); }
@@ -324,7 +324,7 @@
   .arc-hs-link:hover img { transform: translateY(-3px) rotate(-2deg); }
   .arc-hs-link:hover .arc-hs-txt > span { color: var(--on-chocolate); }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .hero .arc-stats-hero { gap: var(--s-4) var(--s-6); }
   .hero .arc-hs-book { flex-basis: 100%; padding-left: 0; border-left: 0; padding-top: var(--s-4); border-top: 1px solid var(--cloth-rule); }
   /* three figures on one row, the book's share as one quiet line, less padding */
@@ -363,7 +363,7 @@
 .sheet-page .arc-tools .arc-view { padding: 0 4px; }
 .sheet-page .arc-tools .chiprow.scroll.arc-chips { margin-bottom: 0; }
 /* the phone: Prints/List at the end of the search row; the chapters (two or more) wrap under it, none off the edge */
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .arc-tools { gap: 4px 12px; }
   .arc-tools .arc-search { flex: 1 1 0; min-width: 0; max-width: none; }
   .arc-tools .arc-view { order: 1; margin-left: 0; }
@@ -381,7 +381,7 @@
 .arc-prints .print-card .cap { padding: 12px; gap: 3px; }
 .arc-prints .print-card .typed-in .wm { display: none; }
 .arc-prints .print-card .cues { left: 8px; top: 8px; }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .arc-prints .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 }
 
@@ -404,7 +404,7 @@
 .arc-page .mem .date.dated { color: var(--terracotta-ink); font-size: 13px; }
 .mem > .mem-seal { position: absolute; z-index: 2; top: -9px; right: -9px; margin: 0; }
 .mem .foot-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
-@media (max-width: 599px) { .mem .foot-meta .kicker.quiet { display: none; } }
+@media (max-width: 599.98px) { .mem .foot-meta .kicker.quiet { display: none; } }
 /* no shadow at rest (a step of tone); one hover signal for a pointer (2px), its lift and return both easing (160ms);
    every card answers a press. While a card rises GSAP sets its transition to none and clears it after
    (archive/motion.ts useRiseOnScroll), so the two never fight */
@@ -420,7 +420,7 @@
 .arc-tools ~ .arc-prints { margin-top: var(--s-8); }
 .arc-tools ~ section > .arc-prints { margin-top: var(--s-6); }
 /* on a phone the storyteller's switcher already says whose archive this is */
-@media (max-width: 760px) { .hero .arc-hero-name { display: none; } }
+@media (max-width: 760.98px) { .hero .arc-hero-name { display: none; } }
 
 
 /* the wall line on the cloth: what it means, and one 44px action */
@@ -456,7 +456,7 @@
 @media (hover: hover) and (pointer: fine) { .arc-task:hover .arc-task-arrow { transform: translateX(3px); } }
 .arc-task:active { transform: scale(0.98); }
 .arc-task:focus-visible { outline: 2px solid var(--terracotta-ink); outline-offset: 2px; }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .sheet-page .arc-page .arc-year h2 { font-size: 30px; }
   .sheet-page .arc-page .arc-year.undated h2 { font-size: 26px; }
   .arc-yrow-note, .arc-task { flex-basis: 100%; order: 4; }
@@ -489,7 +489,7 @@
   .print-card.gilt:hover > .glint::before { transform: translateX(460%) skewX(-18deg); }
 }
 @media (hover: hover) and (pointer: fine) { .print-card.gilt:hover { box-shadow: inset 0 0 0 1.5px var(--foil), var(--shadow-print-lift); } }
-@media (max-width: 760px) { .print-card > .print-seal { width: 28px !important; height: 28px !important; top: -8px; right: -8px; } }
+@media (max-width: 760.98px) { .print-card > .print-seal { width: 28px !important; height: 28px !important; top: -8px; right: -8px; } }
 
 /* the print's white edge by era (decoration D7): a scalloped snapshot before 1975; bare from 2000 */
 .print-card[data-era="archival"] { --sc: 2.5px; border-radius: 0;
@@ -518,14 +518,14 @@
 
 /* ═════════════════════════ The memory page at its edges: the kept line's sizes, the tidy note, the phone's tools, loading ═════════════════════════ */
 @media (min-width: 1680px) { .mv-kept { font-size: 26px; } }
-@media (max-width: 599px) { .mv-kept { font-size: 21px; margin-top: 12px; } }
+@media (max-width: 599.98px) { .mv-kept { font-size: 21px; margin-top: 12px; } }
 
 /* the tidy note keeps its separator with the link it introduces */
 .mv-tidy-act { white-space: nowrap; }
 
 /* the tools: one row on a phone, short words, one shared inset */
 .mv-tools .sm { display: none; }
-@media (max-width: 599px) {
+@media (max-width: 599.98px) {
   .mv-tools { flex-wrap: nowrap; gap: 0; }
   .mv-tools .lg { display: none; }
   .mv-tools .sm { display: inline; }
@@ -569,7 +569,7 @@
   .home-mem .print-card.typed:not(.invite) .frame { --lh: 29px; --top: 32px; }
   .home-mem .print-card:not(.invite) .typed-in .said { font-size: 20px; -webkit-line-clamp: 4; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .arc-prints .print-card .frame, .arc-prints .print-card.lead .frame, .home-mem .print-card:not(.invite) .frame { aspect-ratio: 3 / 4; }
   .arc-prints .print-card .cap .title { font-size: 17px; }
   .arc-prints .print-card .cap .title.long, .home-mem .print-card:not(.invite) .cap .title.long { font-size: 16px; line-height: 1.12; }
@@ -582,7 +582,7 @@
 
 /* the tidy note: the separator is drawn before the link; on a phone the link takes its own line and the dot goes */
 .mv-tidy-act::before { content: "· "; color: var(--mv-soft); }
-@media (max-width: 599px) { .mv-tidy-act { display: block; } .mv-tidy-act::before { content: none; } }
+@media (max-width: 599.98px) { .mv-tidy-act { display: block; } .mv-tidy-act::before { content: none; } }
 
 /* Bond on a ledge: not here, a failed load, an empty archive. Centred on the sheet; the art fades out at his foot onto the
    foil hairline where he sits; one headline with the foil full stop, one line, one action */
@@ -598,7 +598,7 @@
 .mv-missing-page { display: grid; align-content: center; min-height: calc(100vh / var(--zoom, 1) - 260px); padding-top: 40px; padding-bottom: 64px; box-sizing: border-box; }
 .mv-missing-page .ledge-note { margin-top: 0; }
 .arc-empty-note { margin-top: 40px; }
-@media (max-width: 599px) {
+@media (max-width: 599.98px) {
   .ledge-dog { width: 150px; }
   .sheet-page .ledge-title { font-size: 28px; }
   .ledge-text { font-size: 17px; }
@@ -618,7 +618,7 @@
 .print-card.invite .cap { position: static; justify-items: center; gap: 6px; padding: 22px 28px 32px; text-align: center; }
 .print-card.invite .cap .title { display: inline-flex; font: 600 16px/1.2 var(--font-ui); color: var(--terracotta-ink); }
 .print-card.invite .cap .dateline { font: 500 14px/1.4 var(--font-ui); letter-spacing: 0; color: var(--ink-soft); }
-@media (max-width: 599px) {
+@media (max-width: 599.98px) {
   .print-card.invite .typed-in { padding: 26px 18px 0; }
   .print-card.invite .invite-dog { width: 120px; }
   .print-card.invite .typed-in .said { font-size: 30px; margin-top: 18px; }
@@ -631,7 +631,7 @@
 
 /* the tablet (761–1100px): the memory's tools take their own row under the teller, left-aligned (one row would need
    544px of a 541px column); Home's "From the book" stands the full height of the card beside it, its words centred */
-@media (min-width: 761px) and (max-width: 1100px) {
+@media (min-width: 761px) and (max-width: 1100.98px) {
   .mv-state { flex-basis: 100%; margin-left: -12px; margin-right: 0; }
   .home-side { align-items: stretch; }
   .home-side > .home-quote { display: grid; }
@@ -640,4 +640,4 @@
 
 /* a memory title on a phone holds two lines: MemoryLead fits it by measurement, 32px down to 22px; the treasured
    seal after it scales with the type, so it never takes a line of its own */
-@media (max-width: 599px) { .mv-title .mv-seal { width: 1.15em !important; height: 1.15em !important; vertical-align: -0.12em; } }
+@media (max-width: 599.98px) { .mv-title .mv-seal { width: 1.15em !important; height: 1.15em !important; vertical-align: -0.12em; } }

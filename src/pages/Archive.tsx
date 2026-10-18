@@ -40,11 +40,11 @@ function storedView(): ArchiveView {
   } catch {
     /* no storage: the default below */
   }
-  return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "list" : "prints";
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 760.98px)").matches ? "list" : "prints";
 }
 
 /** A phone's search shares its row with Prints/List, so its placeholder is the short one (the label keeps the full sentence). */
-const NARROW = "(max-width: 760px)";
+const NARROW = "(max-width: 760.98px)";
 function useNarrow(): boolean {
   return useSyncExternalStore(
     (cb) => {

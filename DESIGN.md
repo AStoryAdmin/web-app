@@ -126,7 +126,7 @@ Where a skill's house style contradicts the brand (its ban on cream-and-terracot
 - Ask how often it is seen: a hundred times a day, no animation; tens of times, barely; occasional, standard; first-time, delight.
 - Easings: entering and feedback use a strong ease-out `cubic-bezier(0.23, 1, 0.32, 1)`; on-screen movement `cubic-bezier(0.77, 0, 0.175, 1)`; never ease-in on UI. UI animation under 300 ms; arrival under 1.2 s.
 - Nothing appears from nothing: scale from 0.95 with opacity, never from 0.
-- Transform and opacity only. Reduced motion collapses to a 150 ms crossfade.
+- Transform and opacity only. Under reduced motion the signed-in pages change with no animation at all; the signed-out book pages keep the book still and cross their words in 150 ms, and the cloth never goes.
 
 **Honesty and the floor**
 - No invented numbers, quotes, logos or reviews. Sample content is labelled as sample.

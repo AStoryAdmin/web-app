@@ -79,7 +79,7 @@ function noteOf(view: View, i: number, last: number): [string, string] {
  */
 export default function BookSpread({ book, sweepFrom, rail }: { book: Book; sweepFrom?: RefObject<number | null>; rail?: ReactNode }) {
   // one page at a time on a phone, and on a window taller than it is wide (the samples' own rule)
-  const single = useMedia("(max-width: 760px), (max-aspect-ratio: 9/10)");
+  const single = useMedia("(max-width: 760.98px), (max-aspect-ratio: 9/10)");
   const reduced = useMedia("(prefers-reduced-motion: reduce)");
   const [index, setIndex] = useState(0);
   const [turn, setTurn] = useState<Turn | null>(null);

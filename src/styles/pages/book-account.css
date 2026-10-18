@@ -71,11 +71,11 @@
 }
 .where-next a:active .wn-arrow { transform: scale(0.94); }
 .where-next a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
-@media (max-width: 900px) { .where-next ul { grid-template-columns: minmax(0, 1fr); } .where-next li + li { border-top: 0; } }
+@media (max-width: 900.98px) { .where-next ul { grid-template-columns: minmax(0, 1fr); } .where-next li + li { border-top: 0; } }
 
 /* the three compact pages (Book, Plans, Talk) share one H1 on the cloth: bold Montserrat, 44px (32px on a phone) */
 .shell:has(:is(.plans-page, .talk-page)) .cloth.compact .hero h1.hero-title { font-family: var(--font-ui); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; }
-@media (max-width: 760px) { .shell:has(:is(.plans-page, .talk-page)) .cloth.compact .hero h1.hero-title { font-size: 32px; } }
+@media (max-width: 760.98px) { .shell:has(:is(.plans-page, .talk-page)) .cloth.compact .hero h1.hero-title { font-size: 32px; } }
 
 /* the wide pages' cloth and sheet share one gutter */
 .shell:has(:is(.book-page, .plans-page, .talk-page)) .hero-in { max-width: none; padding-left: var(--bka-gutter); padding-right: var(--bka-gutter); }
@@ -144,7 +144,7 @@
 .bk-under.bk-row > .bk-dots { margin-top: var(--s-2); }
 .bk-dots-quiet { pointer-events: none; }
 .bk-reader.samples .bk-chapters .chip.big { min-height: 44px; }
-@media (max-width: 1599px) { .bk-under.bk-row .bk-caption span { display: none; } }
+@media (max-width: 1599.98px) { .bk-under.bk-row .bk-caption span { display: none; } }
 /* the samples' controls: chip-light pills, 44px, the position in plain words between them */
 .bk-reader.samples .bk-controls .btn { min-height: 44px; padding: 0 20px; background: var(--card); border: 1px solid var(--line-strong); color: var(--chocolate); font-size: 14px; font-weight: 600; }
 @media (hover: hover) and (pointer: fine) { .bk-reader.samples .bk-controls .btn:not([disabled]):hover { border-color: var(--chocolate); } }
@@ -213,7 +213,7 @@
 .ed-act { display: flex; justify-content: flex-end; }
 .ed-act .btn { min-height: 44px; }
 
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   .bkh { grid-template-columns: minmax(0, 1fr) minmax(200px, 280px); gap: var(--s-6); }
   .bk-desk { display: flex; flex-direction: column; gap: var(--s-8); }
   .bk-main { order: 1; width: 100%; }
@@ -225,7 +225,7 @@
 }
 /* a tablet: the three-across row under the book has no room for both pill groups, so the note and "Read this page"
    share the first row and the buttons take the next, as on a phone (the dashes stay under them) */
-@media (max-width: 900px) {
+@media (max-width: 900.98px) {
   .bk-under.bk-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cap read" "ctrl ctrl" "dots dots"; row-gap: var(--s-1); }
   .bk-under.bk-row > .bk-caption { justify-self: start; }
   .bk-under.bk-row > .bk-controls { margin-top: var(--s-2); }
@@ -234,7 +234,7 @@
 }
 /* the default title wraps to two lines here, and the page starts 46px lower */
 @media (max-width: 870px) { .book-page { --bk-chrome: 422px; } }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   /* a phone: a shorter cloth, the note above the buttons, both buttons on one row, the page number for the dashes */
   .book-page { --bk-chrome: 250px; padding-top: var(--s-3); }
   .bkh { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
@@ -377,13 +377,13 @@
   .acct-pair > .acct-sec .acct-sec-body { max-width: none; }
   .acct-pair > .acct-sec .acct-lead { max-width: 52ch; }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   .acct-page { grid-template-columns: 220px minmax(0, 1fr); gap: var(--s-10); }
   .acct-sec { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
   .acct-sec-body { max-width: none; }
   .acct-exlibris { max-width: 260px; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   /* a phone: the index folds into one control at the top of the page */
   .acct-page { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: var(--s-4); }
   .acct-index { display: none; }
@@ -460,7 +460,7 @@
 .pl-flourish { position: absolute; width: 40px; height: 40px; pointer-events: none; background: var(--foil); -webkit-mask: var(--bka-flourish) center / contain no-repeat; mask: var(--bka-flourish) center / contain no-repeat; }
 .pl-flourish.tl { left: 3px; top: 3px; }
 .pl-flourish.br { right: 3px; bottom: 3px; transform: rotate(180deg); }
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   /* the desktop table's seven rows go: the cards make their own rows, and no empty row adds a gap */
   .pl-table { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: none; }
   .pl-labels { display: none; }
@@ -469,7 +469,7 @@
   .pl-cell-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: block; font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
   .pl-price b { font-size: 30px; }
 }
-@media (max-width: 900px) {
+@media (max-width: 900.98px) {
   .pl-table { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
   .pl-table > .pl-col:last-child { grid-column: 1 / -1; }
   /* five cards told apart by tone, not by borders */
@@ -479,14 +479,14 @@
 }
 /* a tablet: the fifth plan alone on its row is set like the wall's lone leaf, its head on the left and its rows in two
    columns on the right, never one narrow column in a wide card */
-@media (min-width: 761px) and (max-width: 900px) {
+@media (min-width: 761px) and (max-width: 900.98px) {
   .pl-table > .pl-col:last-child { display: grid; grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; column-gap: var(--s-6); align-content: start; padding-bottom: var(--s-3); }
   .pl-table > .pl-col:last-child > .pl-head { grid-column: 1; grid-row: 1 / span 4; align-self: start; }
   .pl-table > .pl-col:last-child > .pl-cell { grid-column: auto; }
   .pl-table > .pl-col:last-child > .pl-act { grid-column: 2 / -1; }
   .pl-table > .pl-col:last-child > .pl-act:empty { display: none; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .pl-table { grid-template-columns: minmax(0, 1fr); }
   .pl-col.mine::before { display: none; }
   .pl-cell { flex-direction: row; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) 0; }
@@ -530,7 +530,7 @@
 /* the same two tracks as the pair above, so Where to next shares its edges exactly */
 .sheet-page.wide .talk-next { max-width: none; display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); }
 .talk-next .where-next { grid-column: 1 / -1; min-width: 0; }
-@media (max-width: 1100px) { .sheet-page.wide .talk-next { display: block; } }
+@media (max-width: 1100.98px) { .sheet-page.wide .talk-next { display: block; } }
 .talk-next .where-next { margin-top: 0; }
 @media (min-width: 1600px) {
   .talk-q { --qs: 52px; --pitch: 60px; }
@@ -538,14 +538,14 @@
   .talk-q[data-len="long"] { --qs: 34px; --pitch: 42px; }
   .sheet-page .page .talk-words h2 { font-size: 44px; }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   .talk-page { grid-template-columns: minmax(0, 1fr); gap: var(--s-10); justify-content: stretch; }
   .talk-card { max-width: 760px; }
   .talk-q { --qs: 36px; --pitch: 44px; }
   .talk-q[data-len="mid"] { --qs: 32px; --pitch: 40px; }
   .talk-q[data-len="long"] { --qs: 28px; --pitch: 36px; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   /* a phone: the question first, then how a call works */
   .talk-page { padding-top: var(--s-6); gap: var(--s-8); }
   .talk-card { order: -1; padding: var(--s-8) var(--s-5) var(--s-6); transform: none; }
@@ -662,14 +662,14 @@
   .start-spec { justify-self: start; place-items: end start; }
   .start-way-act { align-self: end; }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   .start-sheet { padding: var(--s-10) var(--s-8); }
   .start-head { padding: 0 var(--s-8); }
   .start-top { grid-template-columns: minmax(0, 1fr); }
   .start .start-top h1 { font-size: 48px; }
   .start-step { gap: var(--s-10); }
 }
-@media (max-width: 860px) {
+@media (max-width: 860.98px) {
   .start-step { grid-template-columns: minmax(0, 1fr); }
   .start-way { grid-template-columns: 92px minmax(0, 1fr); gap: var(--s-4); padding: var(--s-5); }
   .start-spec { width: 92px; height: 92px; }
@@ -679,7 +679,7 @@
   .obj-code-value { font-size: 14px; }
   .start-way-act { grid-column: 2; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .start { padding: var(--s-4) var(--s-2) var(--s-8); }
   .start-sheet { padding: var(--s-8) var(--s-4) var(--s-6); }
   .start-head { padding: 0 var(--s-4); }
@@ -783,7 +783,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
 }
 /* where two leaves share a narrow row (a tablet, and a laptop once the contents column returns), the title steps down as
    on a phone, so it sets in two lines */
-@media (min-width: 761px) and (max-width: 900px), (min-width: 1101px) and (max-width: 1240px) {
+@media (min-width: 761px) and (max-width: 900.98px), (min-width: 1101px) and (max-width: 1240px) {
   .sheet-page .wall-leaf h3 { font-size: 24px; }
 }
 /* the narrowest of those (a leaf about 330px wide) takes one more step, so a 56-character title still sets in two */
@@ -838,12 +838,12 @@ html:has(.wall) { scrollbar-gutter: stable; }
 }
 @keyframes wall-rise { from { transform: translateY(22px); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .wall-more::after { transition: none; } }
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   .wall-page.page { grid-template-columns: minmax(0, 1fr); gap: var(--s-10); }
   .wall-contents { position: static; }
   .wall-contents ol { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: var(--s-6); border-top: 0; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .wall .wall-hero { padding-top: var(--s-6); }
   .wall .wall-hero-in { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
   .wall-portrait { width: 96px; height: 96px; }
@@ -896,7 +896,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .acct-skel-index .bka-sk-label { margin-bottom: 2px; }
 .acct-skel .acct-exlibris.bka-sk-block { border-radius: 6px; }
 .acct-skel-jump { display: none; }
-@media (max-width: 1100px) {
+@media (max-width: 1100.98px) {
   /* the book, the row under it (12px down, 56px), then the rail 32px further, as the desk stacks */
   .bk-skel { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
   .bk-skel > .bka-sk-col { order: 2; margin-top: var(--s-8); }
@@ -904,14 +904,14 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .talk-skel { grid-template-columns: minmax(0, 1fr); row-gap: var(--s-10); }
 }
 /* one page at a time (a phone, or a window taller than it is wide): the block is one square page, as the reader shows */
-@media (max-width: 760px), (max-aspect-ratio: 9/10) {
+@media (max-width: 760.98px), (max-aspect-ratio: 9/10) {
   .bk-skel .bka-sk-block { aspect-ratio: 1; max-width: min(100%, calc(100vh / var(--zoom, 1) - var(--bk-chrome, 316px)), 640px); }
 }
-@media (max-width: 900px) {
+@media (max-width: 900.98px) {
   /* the row under the book stacks: the note and "Read this page", the buttons, the dashes */
   .bk-skel-under { height: 116px; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .bk-skel-under { height: 98px; margin-top: var(--s-1); }
   .talk-skel .bka-sk-block { order: -1; min-height: 245px; margin-top: 0; }
   .acct-skel .acct-skel-index { display: none; }
@@ -939,9 +939,9 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .wall-sk-leaf .loading-mark { min-height: 0; }
 @media (min-width: 1600px) { .wall-sk-leaf:nth-child(3) { display: block; } }
 /* below 1100px the contents sit above the leaves, their rows side by side: one row of lines on a tablet, two on a phone */
-@media (max-width: 1100px) { .wall-sk-row:nth-of-type(n + 3) { display: none; } .wall-sk-head.tall { height: 40px; } }
-@media (max-width: 760px) { .wall-sk-row:nth-of-type(3) { display: block; } }
-@media (max-width: 760px) {
+@media (max-width: 1100.98px) { .wall-sk-row:nth-of-type(n + 3) { display: none; } .wall-sk-head.tall { height: 40px; } }
+@media (max-width: 760.98px) { .wall-sk-row:nth-of-type(3) { display: block; } }
+@media (max-width: 760.98px) {
   .wall-sk-leaf:nth-child(n + 2) { display: none; }
   .wall-sk-leaf { min-height: 360px; }
   /* a phone sets the chapter's title at 28px: its line box is 32px */

@@ -45,7 +45,7 @@ function useTwoLineTitle(ref: { current: HTMLElement | null }, title: string) {
     if (!el) return;
     const fit = () => {
       el.style.fontSize = "";
-      if (!window.matchMedia("(max-width: 599px)").matches) return;
+      if (!window.matchMedia("(max-width: 599.98px)").matches) return;
       let size = Math.min(32, parseFloat(getComputedStyle(el).fontSize) || 32);
       el.style.fontSize = `${size}px`;
       while (linesOf(el) > 2 && size > FLOOR) {

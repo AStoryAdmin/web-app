@@ -516,7 +516,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 .door-picks { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 20px; flex-wrap: nowrap; }
 .door-picks > .bk-swatches { align-self: flex-end; }
 /* on a laptop the floors make the controls larger in the bench's own pixels: the families keep their names only */
-@media (min-width: 1181px) and (max-width: 1599px) and (min-aspect-ratio: 5/4) { .door .sb-books button small { display: none; } .door .sb-books button { min-height: var(--tap); } }
+@media (min-width: 1181px) and (max-width: 1599.98px) and (min-aspect-ratio: 5/4) { .door .sb-books button small { display: none; } .door .sb-books button { min-height: var(--tap); } }
 .door .sb-books { gap: 4px; flex-wrap: nowrap; }
 .door .sb-books button { color: var(--on-chocolate); border: 1px solid transparent; min-height: max(52px, var(--tap)); padding: 6px 12px 6px 10px; text-align: left; }
 .door .sb-books button i { display: block; width: 14px; height: 20px; border-radius: 1px 3px 3px 1px; box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.4); /* taste-skill-ignore: book material */ flex: none; }
@@ -613,7 +613,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 /* A phone, a portrait tablet, or a window too narrow or short for the book to stay comfortable (bookFit STACKED): the
    pages stack, the title page first, at their own size, centred in a column no wider than a page; the page scrolls.
    astory.css §33 holds the phone's share of this below 760px; the rules here cover the whole stacked range. */
-@media (max-width: 1180px), (max-aspect-ratio: 5/4) {
+@media (max-width: 1180.98px), (max-aspect-ratio: 5/4) {
   html:has(.auth.ritual), body:has(.auth.ritual) { overflow-x: clip; overflow-y: visible; height: auto; }
   .auth.ritual { height: auto; min-height: calc(100vh / var(--zoom)); overflow-x: clip; }
   .auth .spread-wrap { height: auto !important; min-height: 0; overflow: visible; display: block; padding: 84px 16px 64px; }
@@ -686,7 +686,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .door-wrap { padding-top: 58px; padding-bottom: 12px; }
 }
 /* phones: the title page's own proportions, the album as a tall page */
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .auth .spread-wrap { padding: 72px 10px 32px; }
   .auth .titlepg { padding: 9% 3.5% 8%; }
   .auth .promise-line { font-size: 30px; }

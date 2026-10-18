@@ -31,8 +31,8 @@
   --w-size: 22px;                           /* the words: EB Garamond 22/36 on a laptop, 23 on a large window, 20/32 on a phone */
 }
 @media (min-width: 1680px) { .w-desk { --w-size: 23px; } }
-@media (max-width: 1023px) { .w-desk { --w-size: 21px; } }
-@media (max-width: 599px) { .w-desk { --w-size: 20px; --w-line: 32px; } }
+@media (max-width: 1023.98px) { .w-desk { --w-size: 21px; } }
+@media (max-width: 599.98px) { .w-desk { --w-size: 20px; --w-line: 32px; } }
 
 /* ── The desk ── */
 .sheet-page .page.w-desk { max-width: none; padding-top: 56px; padding-bottom: 96px; }
@@ -452,10 +452,10 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
 .w-after .where-next { margin-top: 0; }
 
 /* ── A tablet and a phone ── */
-@media (max-width: 1279px) {
+@media (max-width: 1279.98px) {
   .sheet-page .page.w-desk { padding-top: 40px; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760.98px) {
   .sheet-page .page.w-desk { padding-top: 28px; padding-bottom: 132px; }
   .sheet-page .page.w-desk.after-step { padding-top: 28px; }
   .w-grid { gap: 40px; }
