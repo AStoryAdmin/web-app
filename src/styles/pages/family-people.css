@@ -678,12 +678,11 @@
    the tablet's layout, generation by generation, the storyteller first, without threads */
 .tp[data-stack] .tp-threads { display: none; }
 .tp[data-stack] .tp-tier { display: block; padding: 0 0 32px 30px; }
-.tp[data-stack] :is(.tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label) { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; padding: 0; margin-bottom: 14px; }
+.tp[data-stack] :is(.tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label) { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; padding: 0; margin-bottom: 14px; }
 .tp[data-stack] .tp-label .tp-hint { flex-basis: 100%; }
 .tp[data-stack] .tp-also { display: inline-block; max-width: 100%; margin: 0; }
 .tp[data-stack] :is(.tp-dot, .tp-tier.home .tp-dot, .tp-tier.rings .tp-dot) { left: -30px; top: 3px; }
 .tp[data-stack] .tp-label .tp-ask { min-height: 0; margin-top: 0; position: relative; }
-.tp[data-stack] .tp-label { align-items: center; }
 .tp[data-stack] .tp-label .tp-ask::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 .tp[data-stack] .tp-dec { display: inline-block; margin: 0; }
 .sheet-page .tp[data-stack] .tp-label h3 { display: inline; }
