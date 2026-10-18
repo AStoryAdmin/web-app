@@ -2923,14 +2923,11 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
 @keyframes dot-breathe { 0% { transform: scale(0.95); opacity: 0; } 55% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); } }
 
 /* 6. Phone: the frame inset drops to 8px, kickers 10.5px, h2 28px, the week strip stays one row */
-@media (max-width: 1100px) {
-  .sheet-page::after { width: 160px; height: 176px; }
-}
 @media (max-width: 760px) {
   :root { --frame-inset: 8px; }
   .sheet-page { padding-top: 18px; }
   .sheet-page::before { border-radius: 16px 16px 0 0; background-size: 20px 20px, 20px 20px, 20px 20px, 20px 20px; }
-  .sheet-page::after { width: 120px; height: 132px; right: var(--gutter); bottom: 112px; }
+  .sheet-page::after { bottom: 96px; } /* the foot band beside the folio, above the tab bar */
   .running-head-sheet { font-size: 10px; letter-spacing: 0.18em; }
   .folio-sheet { bottom: 100px; font-size: 10px; }
   :where(.sheet-page .page) h2:where(:not(.bk-reader *, .leaf-one *, .mem *, .print-card *)), .sheet-page .sechead h2 { font-size: 28px; }
