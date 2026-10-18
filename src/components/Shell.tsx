@@ -259,8 +259,12 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   const cloth = useRef<HTMLDivElement>(null);
   const pills = useRef<HTMLElement>(null);
   const name = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || user?.email || "";
-  // A page still on its way passes an empty placeholder marked aria-busy; the heart draws itself over it.
-  const busy = isValidElement<{ "aria-busy"?: boolean | string }>(children) && !!children.props["aria-busy"];
+  // A page still on its way passes a placeholder marked aria-busy, and the heart draws itself over it. A placeholder
+  // marked data-busy instead is the page's own hairline skeleton with the heart already inside its first block (and its
+  // status line outside any busy region), so the Shell draws no second one.
+  const waiting = isValidElement<{ "aria-busy"?: boolean | string; "data-busy"?: boolean | string }>(children) ? children.props : null;
+  const ownMark = !!waiting?.["data-busy"];
+  const busy = !!waiting?.["aria-busy"] || ownMark;
   // The sheet is a page of the printed book (CSS §39): a running head (the story's name, the page's name) and a
   // folio. The writer's leaf carries its own, so /write goes without.
   const { activeStory: headStory } = useAccount();
@@ -301,6 +305,20 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
       settle();
     };
   }, [location.pathname, ready]);
+  // A cold load: the skeleton arrived under the same frame (same ready key), so the sheet has already risen. When the
+  // page's own content replaces it, only what is inside rises (the hero's words, the [data-rise] rows); the sheet never
+  // dips a second time. A changed key re-runs the whole arrival above instead.
+  const wasBusy = useRef(busy);
+  const busyReady = useRef(ready);
+  useEffect(() => {
+    const was = wasBusy.current;
+    wasBusy.current = busy;
+    const sameFrame = busyReady.current === ready;
+    busyReady.current = ready;
+    const el = root.current;
+    if (!was || busy || !sameFrame || !el) return;
+    return arrive(el, { inside: true });
+  }, [busy, ready]);
 
   return (
     <div className="shell" ref={root} key={location.pathname}>
@@ -372,13 +390,14 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
           </p>
         )}
         {children}
-        {busy && <LoadingMark />}
-        {runningHead && (
+        {busy && !ownMark && <LoadingMark />}
+        {/* the folio and the hint belong to the page's foot, which isn't there while it loads; the running head stays */}
+        {runningHead && !busy && (
           <p className="folio-sheet" aria-hidden="true">
             {pageName}
           </p>
         )}
-        {runningHead && (
+        {runningHead && !busy && (
           <button type="button" className="keys-hint" onClick={() => setKeysOpen(true)}>
             Press <kbd>?</kbd> for shortcuts
           </button>

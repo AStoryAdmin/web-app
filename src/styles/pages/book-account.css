@@ -62,7 +62,7 @@
 .where-next a { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: center; gap: var(--s-4); min-height: 76px; padding: var(--s-4) 0; text-decoration: none; color: inherit; }
 .wn-words { display: grid; gap: 3px; min-width: 0; }
 .wn-words b { font: 600 var(--fz-name, 21px)/1.15 var(--book-display); color: var(--sheet-ink); }
-.wn-words span { font: 400 var(--fz-small, 14px)/1.4 var(--font-ui); color: var(--ink-soft); }
+.wn-words span { font: 400 var(--fz-small, 14px)/1.4 var(--font-ui); color: var(--ink-soft); text-wrap: balance; }
 .wn-arrow { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line-strong); color: var(--accent); font: 400 16px/1 var(--font-ui);
   transition: transform 200ms var(--ease-out), background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), color 200ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) {
@@ -229,7 +229,11 @@
   .bk-under.bk-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cap read" "ctrl ctrl" "dots dots"; row-gap: var(--s-1); }
   .bk-under.bk-row > .bk-caption { justify-self: start; }
   .bk-under.bk-row > .bk-controls { margin-top: var(--s-2); }
+  /* the stacked row is 60px taller; Book.tsx measures the real chrome once the page is here, this holds it before */
+  .book-page { --bk-chrome: 376px; }
 }
+/* the default title wraps to two lines here, and the page starts 46px lower */
+@media (max-width: 870px) { .book-page { --bk-chrome: 422px; } }
 @media (max-width: 760px) {
   /* a phone: a shorter cloth, the note above the buttons, both buttons on one row, the page number for the dashes */
   .book-page { --bk-chrome: 250px; padding-top: var(--s-3); }
@@ -457,7 +461,8 @@
 .pl-flourish.tl { left: 3px; top: 3px; }
 .pl-flourish.br { right: 3px; bottom: 3px; transform: rotate(180deg); }
 @media (max-width: 1100px) {
-  .pl-table { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  /* the desktop table's seven rows go: the cards make their own rows, and no empty row adds a gap */
+  .pl-table { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: none; }
   .pl-labels { display: none; }
   .pl-col { grid-row: auto; display: block; padding: 0 var(--s-3); }
   .pl-cell { flex-direction: column; gap: 2px; }
@@ -776,6 +781,15 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .wall-chapter.one .wall-leaves { grid-template-columns: minmax(0, 1fr); }
   .wall-chapter.one .wall-words { max-width: 70ch; }
 }
+/* where two leaves share a narrow row (a tablet, and a laptop once the contents column returns), the title steps down as
+   on a phone, so it sets in two lines */
+@media (min-width: 761px) and (max-width: 900px), (min-width: 1101px) and (max-width: 1240px) {
+  .sheet-page .wall-leaf h3 { font-size: 24px; }
+}
+/* the narrowest of those (a leaf about 330px wide) takes one more step, so a 56-character title still sets in two */
+@media (min-width: 761px) and (max-width: 820px), (min-width: 1101px) and (max-width: 1160px) {
+  .sheet-page .wall-leaf h3 { font-size: 22px; }
+}
 @media (min-width: 1600px) {
   .wall-leaves { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -861,8 +875,10 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .bka-sk-line.w40 { width: 40%; } .bka-sk-line.w50 { width: 50%; } .bka-sk-line.w70 { width: 70%; } .bka-sk-line.w85 { width: 85%; }
 /* a label's place: one 13px line in the paper's tone, no rule */
 .bka-sk-label { display: block; width: 72px; height: 18px; border-radius: 2px; background: var(--paper-tone); }
-.bka-sk-block { display: block; min-width: 0; border: 1px solid var(--sheet-rule); border-radius: 4px; }
-/* the Book: the hero's words held invisible at their own size; the rail's rows on its own 44px pitch */
+.bka-sk-block { display: grid; place-items: center; min-width: 0; border: 1px solid var(--sheet-rule); border-radius: 4px; }
+/* the heart draws inside the skeleton's first block, centred on clear paper, never on a hairline */
+.bka-sk-block .loading-mark { min-height: 0; }
+/* the Book: the hero's words held invisible at their own size; the rail's rows on their own 45px pitch (44 + the rule) */
 .bkh-skel :is(.bkh-title, .bkh-line, .bkh-headline, .bkh-end, .teller-pick) { visibility: hidden; }
 .bk-skel { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s-12); align-items: start; }
 .bk-skel-rail { gap: 0; }
@@ -871,7 +887,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .bk-skel .bka-sk-block { width: 100%; aspect-ratio: 2 / 1; max-width: min(100%, calc((100vh / var(--zoom, 1) - var(--bk-chrome, 316px)) * 2), 1480px); justify-self: center; }
 .bk-skel-under { display: none; }
 .talk-skel { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); }
-.talk-skel .bka-sk-block { min-height: 320px; }
+.talk-skel .bka-sk-block { min-height: 306px; margin-top: -2.5px; }
 /* Account: the index's group labels over 44px rows, and the real sections' grid with the bookplate first */
 .acct-skel-index { gap: 0; }
 .acct-skel-index .bka-sk-line.nav { height: 44px; border-bottom: 0; position: relative; }
@@ -897,16 +913,17 @@ html:has(.wall) { scrollbar-gutter: stable; }
 }
 @media (max-width: 760px) {
   .bk-skel-under { height: 98px; margin-top: var(--s-1); }
-  .talk-skel .bka-sk-block { order: -1; min-height: 300px; }
+  .talk-skel .bka-sk-block { order: -1; min-height: 245px; margin-top: 0; }
   .acct-skel .acct-skel-index { display: none; }
   .acct-skel-jump { display: block; height: 48px; margin-bottom: var(--s-4); }
 }
 /* Start: the sheet's frame exactly as it arrives (its words held invisible), the mark over it */
-.start-skel .start-sheet > section :is(.start-top, .start-sample), .start-skel .start-way > * { visibility: hidden; }
+.start-skel .start-sheet > section :is(.start-top, .start-sample), .start-skel .start-way > :not(.start-spec) { visibility: hidden; }
 .start-skel .start-way { cursor: default; }
 .start-skel .start-close { visibility: hidden; }
-.start-sk-mark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
-.start-sk-mark .loading-mark { min-height: 0; }
+/* the heart in the first way's specimen slot, where "Their story" will be drawn, on clear paper */
+.start-skel .way-other .start-spec { place-items: center; }
+.start-skel .start-spec .loading-mark { min-height: 0; }
 /* the wall: the portrait ring and two lines on the cloth, the contents column and leaf outlines on the sheet */
 .wall-sk-ring { display: block; background: none; box-shadow: 0 0 0 1px color-mix(in srgb, var(--on-chocolate) 30%, transparent); }
 .wall-sk-hl { display: block; height: 32px; max-width: 52ch; border-bottom: 1px solid color-mix(in srgb, var(--on-chocolate) 28%, transparent); }
@@ -929,6 +946,8 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .wall-sk-leaf { min-height: 360px; }
   /* a phone sets the chapter's title at 28px: its line box is 32px */
   .wall-sk-head.tall { height: 32px; }
+  /* a phone: the heart sits near the top of the first outline, so it is in the first screen */
+  .wall-sk-leaf:first-child { place-items: start center; padding-top: var(--s-16); }
   /* a phone sets the name smaller and the line about them over more lines; the contents sit above the leaves */
   .wall-sk-hl, .wall-sk-hl.third { height: 39px; }
   .wall-sk-hl.tall { height: 44px; }

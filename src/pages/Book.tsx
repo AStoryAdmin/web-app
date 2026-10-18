@@ -7,10 +7,11 @@
  * book is a web object (docs/PRODUCT-DECISIONS.md §8): nothing here is
  * "12 more".
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Navigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import BookObject from "../components/BookObject";
+import LoadingMark from "../components/delight/LoadingMark";
 import { Button, ButtonLink, Problem } from "../components/ui";
 import { PenIcon, PrintIcon } from "../components/icons";
 import BookSpread from "../components/book/BookSpread";
@@ -30,6 +31,46 @@ import { track } from "../lib/analytics";
 
 type Progress = { count: number; ratio: number; headline: string; chaptersCovered: number; chaptersTotal: number; state: string };
 type Design = { cover: { color: string }; listenKey: string };
+
+/** An element's top in the page, in CSS px, ignoring transforms (the sheet rises into place as the page arrives). */
+function pageTop(n: HTMLElement): number {
+  let y = 0;
+  for (let c: HTMLElement | null = n; c; c = c.offsetParent as HTMLElement | null) y += c.offsetTop;
+  return y;
+}
+
+/**
+ * The book fits the window (Bao's Standard rule 11): the page or spread is as tall as the window allows once everything
+ * above it (the cloth, its title on one line or two, the running head) and the row under it (one row, or stacked on a
+ * tablet) are counted. Those are measured, not guessed, and written to --bk-chrome on the page; the stylesheet's
+ * values hold until then (and for the loading skeleton). Measured again when the cloth, the row or the page resize.
+ */
+function useBookChrome(page: RefObject<HTMLDivElement | null>, on: boolean) {
+  useLayoutEffect(() => {
+    const el = page.current;
+    if (!el || !on) return;
+    const measure = () => {
+      const stage = el.querySelector<HTMLElement>(".bk-stage");
+      const under = el.querySelector<HTMLElement>(".bk-under");
+      if (!stage || !under || !stage.offsetHeight) return;
+      const top = pageTop(stage);
+      const below = pageTop(under) + under.offsetHeight - (top + stage.offsetHeight);
+      // 13px of paper under the last control, as on a laptop (235 + 68 + 13 = the 316 the stylesheet starts from)
+      el.style.setProperty("--bk-chrome", `${Math.ceil(top + below + 13)}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    const under = el.querySelector(".bk-under");
+    if (under) ro.observe(under);
+    const hero = document.querySelector(".hero");
+    if (hero) ro.observe(hero);
+    return () => {
+      ro.disconnect();
+      el.style.removeProperty("--bk-chrome");
+    };
+  }, [page, on]);
+}
 
 export default function Book() {
   const { user } = useAuth();
@@ -75,6 +116,8 @@ export default function Book() {
 
   const recordedBy = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const book = useMemo(() => (story ? buildBook(story, { contributions, recordedBy, asked }) : null), [story, contributions, recordedBy, asked]);
+  const pageRef = useRef<HTMLDivElement>(null);
+  useBookChrome(pageRef, !!book && book.memories > 0);
 
   if (account === undefined)
     return (
@@ -106,7 +149,7 @@ export default function Book() {
         }
       >
         {/* the desk's hairlines while the story arrives: the contents label and its ruled rows beside the open spread */}
-        <div className="page book-page bka-skel bk-skel" aria-busy="true">
+        <div className="page book-page bka-skel bk-skel" data-busy="true">
           <span className="bka-sk-col bk-skel-rail" aria-hidden="true">
             <i className="bka-sk-label" />
             <i className="bka-sk-line" />
@@ -115,7 +158,10 @@ export default function Book() {
             <i className="bka-sk-line" />
             <i className="bka-sk-line" />
           </span>
-          <span className="bka-sk-block" aria-hidden="true" />
+          {/* the heart draws inside the spread's outline, where the book will open; its status line is read */}
+          <span className="bka-sk-block">
+            <LoadingMark />
+          </span>
           {/* below 1100px the rail sits under the book, after the row of buttons: its place, without a rule */}
           <i className="bk-skel-under" aria-hidden="true" />
         </div>
@@ -205,7 +251,7 @@ export default function Book() {
         </div>
       }
     >
-      <div className="page book-page">
+      <div className="page book-page" ref={pageRef}>
         {problem && <Problem message={problem} onDismiss={() => setProblem(null)} />}
 
         {empty ? (

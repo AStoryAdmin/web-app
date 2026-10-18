@@ -14,6 +14,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type Rea
 import { Link, useNavigate } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Avatar, Button, ButtonLink, CodeInput, Field, Problem } from "../components/ui";
+import LoadingMark from "../components/delight/LoadingMark";
 import { LinkIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -795,7 +796,7 @@ export default function Account() {
     return (
       <Shell bare wide title="Account">
         {/* the index column, the bookplate beside its lines, and three ruled sections, in hairlines, while the account arrives */}
-        <div className="page acct-page bka-skel acct-skel" aria-busy="true">
+        <div className="page acct-page bka-skel acct-skel" data-busy="true">
           <div className="bka-sk-col acct-skel-index" aria-hidden="true">
             <i className="bka-sk-label" />
             <i className="bka-sk-line nav w70" />
@@ -804,10 +805,13 @@ export default function Account() {
             <i className="bka-sk-line nav w70" />
             <i className="bka-sk-line nav w50" />
           </div>
-          <div className="acct-body" aria-hidden="true">
+          <div className="acct-body">
             <i className="bka-sk-line acct-skel-jump" />
             <div className="acct-sec acct-sec-profile">
-              <div className="acct-exlibris bka-sk-block" />
+              {/* the heart draws inside the bookplate's outline; the hairlines around it are empty, so only its status is read */}
+              <div className="acct-exlibris bka-sk-block">
+                <LoadingMark />
+              </div>
               <div className="acct-sec-body bka-sk-col">
                 <i className="bka-sk-line tall w50" />
                 <i className="bka-sk-line w85" />

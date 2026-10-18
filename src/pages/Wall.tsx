@@ -259,7 +259,7 @@ function WallWait() {
   const ground = useRef<HTMLDivElement>(null);
   useLight(ground);
   return (
-    <div className="wall wall-skel" aria-busy="true">
+    <div className="wall wall-skel">
       <div className="wall-cloth cloth on-dark" ref={ground}>
         <span className="lamp" aria-hidden="true" />
         <div className="wall-top">

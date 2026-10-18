@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { ButtonLink, Problem } from "../components/ui";
+import LoadingMark from "../components/delight/LoadingMark";
 import { PenIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
@@ -46,7 +47,7 @@ export default function Talk() {
         }
       >
         {/* the words and their three steps on the left, the question's card on the right, in hairlines */}
-        <div className="page talk-page bka-skel talk-skel" aria-busy="true">
+        <div className="page talk-page bka-skel talk-skel" data-busy="true">
           <span className="bka-sk-col" aria-hidden="true">
             <i className="bka-sk-line tall w70" />
             <i className="bka-sk-line" />
@@ -55,7 +56,10 @@ export default function Talk() {
             <i className="bka-sk-line" />
             <i className="bka-sk-line w70" />
           </span>
-          <span className="bka-sk-block" aria-hidden="true" />
+          {/* the heart draws inside the card's outline, where today's question will be set */}
+          <span className="bka-sk-block">
+            <LoadingMark />
+          </span>
         </div>
       </Shell>
     );

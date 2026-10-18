@@ -181,8 +181,9 @@ export default function Start() {
 
   if (account === undefined)
     return (
-      // the bench and its sheet at their arrived size, the three ways as frames only, the mark drawing over them
-      <div className="start start-skel" aria-busy="true">
+      // the bench and its sheet at their arrived size, the three ways as frames only; the heart draws in the first
+      // specimen's place, and its status line is the one thing read (the held words are hidden, nothing is marked busy)
+      <div className="start start-skel">
         <header className="start-head">
           <Lockup height={32} />
           {another && (
@@ -191,9 +192,9 @@ export default function Start() {
             </span>
           )}
         </header>
-        <main className="start-sheet" aria-hidden="true">
+        <main className="start-sheet">
           <section>
-            <div className="start-top">
+            <div className="start-top" aria-hidden="true">
               <p className="start-step-line">Step 1 of 2</p>
               <h1>
                 Whose story is this<span className="stop">?</span>
@@ -201,23 +202,24 @@ export default function Start() {
               <p className="start-sub">There are three ways to be in a story, and nobody ever signs as somebody else. You can keep more than one; start with one person.</p>
             </div>
             <div className="start-ways">
-              {WAYS.map((w) => (
+              {WAYS.map((w, i) => (
                 <div key={w.key} className={`start-way way-${w.key}`}>
-                  <span className="start-spec" />
-                  <span className="start-way-text">
+                  <span className="start-spec">{i === 0 && <LoadingMark />}</span>
+                  <span className="start-way-text" aria-hidden="true">
                     <span className="start-way-writes">{w.writes}</span>
                     <span className="start-way-title">{w.title}</span>
                     <span className="start-way-body">{w.body}</span>
                   </span>
-                  <span className="start-way-act">{w.act}</span>
+                  <span className="start-way-act" aria-hidden="true">
+                    {w.act}
+                  </span>
                 </div>
               ))}
             </div>
-            <p className="start-sample">See a sample book first</p>
+            <p className="start-sample" aria-hidden="true">
+              See a sample book first
+            </p>
           </section>
-          <div className="start-sk-mark">
-            <LoadingMark />
-          </div>
         </main>
       </div>
     );

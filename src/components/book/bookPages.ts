@@ -198,7 +198,7 @@ export function sidesFor(contributions: Contribution[], memoryId: string): Side[
   return contributions
     .filter((c) => c.memoryId === memoryId && c.status === "approved" && (c.kind || "testimonial") === "testimonial" && c.body.trim())
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map((c) => ({ who: [c.contributorName, c.relationship].filter(Boolean).join(", "), body: c.body.trim() }));
+    .map((c) => ({ who: [c.contributorName, c.relationship].filter(Boolean).join(", "), body: smarten(c.body.trim()) }));
 }
 
 function stripFor(story: Story, memory: Memory): Strip | null {
@@ -343,7 +343,9 @@ export function buildBook(
 ): Book {
   const s = bookStructure(story, { now }) as unknown as Structure;
   const design = normaliseDesign(story.bookDesign) as Structure["design"];
-  const w = keepsakeWords(design, s, story) as Words;
+  // the words a person typed for the book (its title, the motto, the back) are set like everything else they wrote
+  const raw = keepsakeWords(design, s, story) as Words;
+  const w: Words = { ...raw, title: smarten(raw.title), tagline: smarten(raw.tagline), backMessage: smarten(raw.backMessage) };
   const her = pronounFor(story, design) as string;
   const possessive = her === "he" ? "his" : her === "she" ? "her" : "their";
   const cover = coverColour(design.cover.color);
@@ -354,7 +356,7 @@ export function buildBook(
     { kind: "colophon", key: "colophon", title: w.title, lines: colophonLines(story, s, design, possessive, recordedBy, allMemories) },
     { kind: "title", key: "title", t1: w.title, t2: `The life of ${s.fullName}`, t3: titleLine(s, design, possessive), t4: story.birthYear ? `born ${story.birthYear}` : s.coverSpan },
   ];
-  if (design.dedication) front.push({ kind: "dedication", key: "dedication", text: design.dedication, sig: "" });
+  if (design.dedication) front.push({ kind: "dedication", key: "dedication", text: smarten(design.dedication), sig: "" });
 
   const body: Page[] = [];
   const contents: ContentsEntry[] = [];
@@ -371,7 +373,7 @@ export function buildBook(
         dateline: datelineOf(story, m),
         source: sourceOf(story, m),
         summary: "",
-        asked: asked[m.id] || null,
+        asked: asked[m.id] ? { ...asked[m.id], q: smarten(asked[m.id].q) } : null,
         photos: Array.isArray(m.photos) ? m.photos.filter(Boolean) : [],
       };
       body.push(...memoryPages(m.id, head, paragraphsOf(printedBody(design, m) as string).map(smarten), (attributionFor(m) as string | null) || "", sidesFor(contributions, m.id), stripFor(story, m)));

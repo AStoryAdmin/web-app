@@ -9,6 +9,7 @@
  * open a window), shows a line while the book is being made, then becomes
  * the book and asks to print. "Save as PDF" is the same dialog.
  */
+import { smarten } from "../../lib/typography";
 import { buildLegacyHtml } from "../../app-core/lib/legacyBook.js";
 import { photoUrl } from "../../lib/photoUrls";
 import type { Story } from "../../data/stories";
@@ -53,9 +54,31 @@ export async function signStoryPhotos(story: Story): Promise<Story> {
   };
 }
 
-/** The printable book as HTML, photographs signed. */
+/**
+ * The typesetter's pass over what people typed, before app-core sets the printed book: each memory's title and words,
+ * and the book's own title, motto and dedication, with curly quotes, dashes and ellipses, as the screen sets them.
+ * The kept rows are untouched (lib/typography).
+ */
+function typeset(story: Story): Story {
+  const set = (v: unknown) => (typeof v === "string" ? smarten(v) : v);
+  const design = story.bookDesign as (Record<string, unknown> & { cover?: Record<string, unknown> }) | null;
+  const cover = design?.cover;
+  return {
+    ...story,
+    bookDesign: design
+      ? {
+          ...design,
+          dedication: set(design.dedication),
+          cover: cover ? { ...cover, title: set(cover.title), tagline: set(cover.tagline), backMessage: set(cover.backMessage) } : cover,
+        }
+      : story.bookDesign,
+    memories: story.memories.map((m) => ({ ...m, title: set(m.title) as string, body: set(m.body) as string })),
+  };
+}
+
+/** The printable book as HTML, photographs signed, its words typeset. */
 export async function printableHtml(story: Story, recordedBy: string): Promise<string> {
-  const signed = await signStoryPhotos(story);
+  const signed = typeset(await signStoryPhotos(story));
   return buildLegacyHtml(signed, { recordedBy, now: new Date(), listenBase: listenBase() }) as string;
 }
 

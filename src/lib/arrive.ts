@@ -133,9 +133,13 @@ function developPhotographs(root: HTMLElement): () => void {
   };
 }
 
-export function arrive(root: HTMLElement): () => void {
+/**
+ * The page's arrival. `inside`: the sheet is already in place (a page that replaced its own loading skeleton), so only
+ * what is inside rises, as after a view transition, and the headband, already sewn, is left alone.
+ */
+export function arrive(root: HTMLElement, { inside = false }: { inside?: boolean } = {}): () => void {
   // after a view transition the sheet is already in place (lib/pageTransition): only what is inside it rises
-  const viaTransition = tookTransition();
+  const viaTransition = inside || tookTransition();
   const mm = gsap.matchMedia();
   mm.add(MOTION_OK, () => {
     const hero = root.querySelector<HTMLElement>(".hero");
@@ -152,7 +156,9 @@ export function arrive(root: HTMLElement): () => void {
     if (hero) {
       const title = hero.querySelector<HTMLElement>("h1");
       const rest = gsap.utils.toArray<HTMLElement>(hero.querySelectorAll("[data-rise]"));
-      if (title) {
+      // a title that already rose over the page's loading skeleton (the same node, kept) doesn't rise a second time
+      if (title && !(inside && title.dataset.risen)) {
+        title.dataset.risen = "1";
         const split = SplitText.create(title, { type: "lines", mask: "lines", linesClass: "line" });
         // once the lines have risen, the title goes back to plain text, so it rewraps when the window or the zoom changes
         tl.fromTo(split.lines, { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.09, onComplete: () => split.revert() }, 0.05);
@@ -168,7 +174,7 @@ export function arrive(root: HTMLElement): () => void {
       if (!viaTransition) tl.fromTo(sheet, { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: OUT, clearProps: "transform" }, 0.3);
       // the headband is sewn on as the sheet settles (decoration D3)
       const band = sheet.querySelector<HTMLElement>(":scope > .headband");
-      if (band) tl.fromTo(band, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: OUT, clearProps: "clipPath" }, viaTransition ? 0.15 : 0.5);
+      if (band && !inside) tl.fromTo(band, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: OUT, clearProps: "clipPath" }, viaTransition ? 0.15 : 0.5);
       if (now.length) tl.fromTo(now, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, clearProps: "transform" }, 0.55);
       if (later.length) {
         gsap.set(later, { y: 14, opacity: 0 });
