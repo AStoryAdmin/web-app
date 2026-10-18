@@ -691,3 +691,8 @@
 @media (min-width: 1600px) { .start-sheet, .start-head { max-width: 1480px; } }
 .wall-none .stop { color: var(--kicker-terracotta, var(--accent)); }
 .wall-bench .wall-top { width: 100%; }
+/* a large window: the row's controls take more of the width instead of leaving a field of paper on the right */
+@media (min-width: 1600px) {
+  .acct-sec { grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); }
+  .acct-sec-body { max-width: 940px; }
+}

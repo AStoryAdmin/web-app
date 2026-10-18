@@ -454,7 +454,8 @@ body:has(.door) { background: var(--chocolate) url(/book/cloth-chocolate.webp) 0
   .auth .plate-wrap { --pw: min(93cqw, 520px); width: var(--pw); margin: 112px 0 0; }
   .auth .plate .paper { padding-bottom: 18px; }
   .auth .companion { --cw: 150px; left: 50%; margin-left: -75px; }
-  .auth.ritual .form h1 { font-size: 28px; }
+  .auth.ritual .form h1, .auth.ritual .form .plate-head { font-size: 26px; padding: 0 7%; }
+  .auth .plate:not(.lettered) .paper { margin-top: 0; }
   .auth .leaf-l { aspect-ratio: 1 / 2; }
   .auth .print[data-n="1"] { --l: 6% !important; --t: 2.5% !important; --w: 68cqmin !important; }
   .auth .print[data-n="2"] { --l: 45% !important; --t: 31% !important; --w: 48cqmin !important; }
