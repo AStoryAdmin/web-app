@@ -380,10 +380,15 @@ export default function Archive() {
               </>
             ) : (
               <>
-                Only the family can read this.{" "}
-                <Link className="arc-wall-act" to="/account#wall">
-                  Share it by link
-                </Link>
+                Only the family can read this.
+                {!story.readOnly && (
+                  <>
+                    {" "}
+                    <Link className="arc-wall-act" to="/account#wall">
+                      Share it by link
+                    </Link>
+                  </>
+                )}
               </>
             )}
           </p>

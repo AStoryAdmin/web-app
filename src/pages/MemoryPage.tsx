@@ -225,6 +225,10 @@ export default function MemoryPage() {
 
   const viewerName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || (user?.email || "").split("@")[0] || "Someone";
   const isOwner = !!user && story.ownerId === user.id;
+  // read as family (family_readers.sql): the words, the photographs and the family's sides, and a box for their own;
+  // nothing that changes the story (when, privacy, treasure, share, photographs, words, remove)
+  const reader = !!story.readOnly;
+  const myRow = family?.people.find((p) => !!user && p.userId === user.id && p.householdId === story.householdId) || null;
   const title = smarten(memory.title?.trim() || "Untitled");
   const isPrivate = memory.privacy === "private";
   const byKept = [...story.memories].filter((m) => m.status !== "in_progress").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -276,7 +280,7 @@ export default function MemoryPage() {
   const thePlate = current ? <Plate photos={photos} current={current} onPick={setShown} when={when} alt={`${story.name}’s photograph for “${title}”`} /> : null;
 
   const family_ = (
-    <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
+    <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} reader={reader} myPersonId={myRow?.id ?? null} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
   );
 
   const headTools = (
@@ -367,14 +371,14 @@ export default function MemoryPage() {
             chapter={memory.era}
             date={date}
             dated={dated}
-            editTo={editDetails}
+            editTo={reader ? undefined : editDetails}
             told={told}
             toldName={toldName}
             toldRest={toldRest}
             toldPhoto={memory.contributor ? null : tellerPhoto}
             people={people}
             stillWriting={memory.status === "in_progress"}
-            actions={headTools}
+            actions={reader ? undefined : headTools}
             kept={keptHead}
             treasured={isTreasured(memory)}
           />
@@ -438,6 +442,17 @@ export default function MemoryPage() {
                   </Button>
                 </div>
               </div>
+            ) : reader ? (
+              !hasVoice &&
+              body.length > 0 &&
+              canSpeak() && (
+                <div className="mv-tools" role="group" aria-label="This memory">
+                  <button type="button" className="mv-tool" onClick={() => setListen((v) => !v)} aria-pressed={listen}>
+                    <PlayIcon aria-hidden="true" />
+                    <span>{listen ? "Stop listening" : "Listen"}</span>
+                  </button>
+                </div>
+              )
             ) : (
               <div className="mv-tools" role="group" aria-label="This memory">
                 <Link className="mv-tool" to={`/write?edit=${memory.id}&photo=1`} aria-label={photos.length ? "Add a photograph" : "Add the first photograph"}>
@@ -479,7 +494,9 @@ export default function MemoryPage() {
         <WhereNext
           rows={[
             { to: "/family", title: "Ask the family", line: "Invite someone to add what they remember of it." },
-            { to: "/write", title: own ? "Write the next memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
+            reader
+              ? { to: "/archive", title: `More of ${story.name}’s story`, line: "Every memory they share with the family." }
+              : { to: "/write", title: own ? "Write the next memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
             { to: "/book", title: "Open the book", line: "See this memory set on the printed page." },
           ]}
         />
