@@ -701,11 +701,6 @@ ul { margin: 0; padding: 0; list-style: none; }
 @media (prefers-reduced-motion: reduce) { .lamp { display: none; } .auth .stamp { animation: none; opacity: 0.5; } }
 
 /* ───────────────────────── 19. Whose story (first run) ───────────────────────── */
-.start { min-height: 100vh; display: flex; flex-direction: column; }
-.start-head { padding: 0 var(--s-12); }
-.start h1 { font-size: var(--t-display); margin-bottom: var(--s-3); }
-.start .sub { color: var(--ink-soft); margin-bottom: var(--s-8); font-size: var(--t-lead); }
-@media (max-width: 760px) { .start h1 { font-size: 34px; } }
 .mem .pic.nopic { display: grid; place-items: center; background: var(--support-soft); color: var(--heading); }
 .mem .pic.nopic .story-q { font-size: 56px; }
 .week .d.has::after { opacity: var(--dot, 1); }
@@ -3785,3 +3780,10 @@ body.writing-focus .sheet-page > .headband { display: none; }
   .top .teller > span:not(.avatar) { display: inline; }
   .top .teller strong { max-width: 9ch; }
 }
+
+/* ── §64 Full 44px targets where the drawn control is smaller: the bar's places, the week ribbon's arrows, the phone's
+   storyteller picker. The hit area grows; the drawing does not. ── */
+.pillnav a::after { content: ""; position: absolute; left: 0; right: 0; top: -4px; bottom: -4px; }
+.ribbon-step { position: relative; }
+.ribbon-step::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
+.teller-pick::before { inset: -12px -6px; }
