@@ -1,6 +1,6 @@
 /**
  * The house transcript style (docs/research/reading-2026.md §3.5) and the
- * closed list of rule 17a (as worded after 4d9630c and 6c18b87, round 15).
+ * closed list of rule 17a (as worded at 6d0cb51 and a085c29, round 17).
  * Words that came from a call or a conversation are set as a clean
  * transcript at display time. The local tidy removes only what the list
  * names, and every cut it makes is recorded with the rule that allowed it
@@ -18,17 +18,18 @@
  *     be, go, say or think (alone or with all, just, kind of or sort of
  *     between) and wherever the words after it run to a ? or ! in the same
  *     sentence, where it quotes; after feel, look, seem or sound, where it
- *     compares; and before an amount, where it hedges (a number, a teen, an
- *     ordinal, zero, nothing or none, a or an with a unit, several, once,
- *     twice, a few, a couple, or about / around / almost / nearly / maybe /
- *     over / under / at least before a number);
+ *     compares; and wherever it may hedge, decided by the next word alone
+ *     (a number, a teen, an ordinal, or a word from 17a's closed list: a,
+ *     an, the, this, last, every, some, about, at, in, for, today…);
  * (c) "I", "the", "and" or "that's" said twice in a row with a comma
  *     between, when the first copy opens the sentence or follows a comma;
  * (e) whole sentences from a fixed set of the other person's reactions
  *     ("Wow." "Wow, that's amazing." "That's amazing." "That's awesome."
  *     "Wait, were you?" "Yeah, right?"), and a "Yeah." straight after one;
- *     never inside quotation marks of any kind (“ ” " ‘ ’ ' « »), a
- *     quotation running across a paragraph break too.
+ *     only in a paragraph with no quotation mark in it at all (“ ” "
+ *     ‘ ’ « », or a straight ' that opens or closes; never an apostrophe
+ *     in a word or an inch mark), nor after a paragraph that leaves its
+ *     marks open, until one that closes them.
  * Everything else stays, word for word, stutters and broken-off clauses
  * included. "We asked" is set when the transcript names the speaker (a label
  * at the start, after a line break or a sentence's end), or for a yes-or-no
@@ -57,18 +58,15 @@ const COMMA_LIKE = /,\s*like,/g;
  * dream") and stays.
  */
 const LIKE_QUOTES_AFTER = /\b(?:(?:am|is|are|was|were|be|been|being|['’]s|['’]m|['’]re|go|goes|went|going|gone|say|says|said|saying|think|thinks|thought|thinking)(?:,?\s+(?:all|just|kind of|sort of))?|feel|feels|felt|feeling|look|looks|looked|looking|seem|seems|seemed|sound|sounds|sounded)\s*$/i;
-/** A number, in figures or in words (a teen and a ten included). */
-const NUMBER = String.raw`(?:[$£€¥]?\d|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|a hundred|a thousand|hundreds?|thousands?|millions?|dozens?|half)\b)`;
 /**
- * (b) An amount after ", like,": the "like" hedges ("We paid, like, two hundred dollars") and stays. A number, a teen, an
- * ordinal ("in, like, fourth grade"), zero, nothing or none, a or an with any unit of time, length, area, weight, volume or
- * a container (an hour, an acre, a ton, a sack), a time or span (midnight, noon, three o'clock, the whole summer), several,
- * once, twice, a few, a couple, or about, around, almost, nearly, maybe, over, under or at least before a number.
+ * (b) Where a ", like," may hedge, decided by the next word alone (lead ruling, round 16: a closed list of next words): a
+ * number, a teen or an ordinal; a, an, the, this, that, these, those, last, next, every, each, all, some, any, half,
+ * whole, few, couple, several, most, nothing, none, zero, once, twice, forever, always; about, around, almost, nearly,
+ * maybe, over, under, at, in, on, for, since, until, till, from, by, during; tonight, today, yesterday, tomorrow, midnight, noon, midday, dawn, sunrise, sunset.
+ * ("We paid, like, two hundred dollars" stays.)
  */
-const LIKE_AMOUNT_NEXT = new RegExp(
-  String.raw`^\s*(?:${NUMBER}|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|nothing|none|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|night|week|weekend|month|year|decade|century|centurie|semester|term|season|summer|winter|lifetime|generation|mile|kilometre|kilometer|metre|meter|centimetre|centimeter|millimetre|millimeter|inch|inche|foot|feet|yard|acre|hectare|square (?:mile|metre|meter|foot|feet|yard|kilometre|kilometer)|pound|kilo|kilogram|gram|ounce|ton|tonne|stone|litre|liter|gallon|pint|quart|quarter|third|half|dollar|bowl|cup|bag|sack|bucket|box|boxe|basket|plate|pot|bottle|can|glass|glasse|spoon|spoonful|handful|truckload|boatload|jar|crate|barrel)s?\b|(?:midnight|noon|midday|(?:the|a) whole (?:summer|winter|spring|fall|autumn|year|day|night|week|month|morning|afternoon|evening|time|semester|term|season)|all (?:day|night|week|summer|winter|year|morning|afternoon|evening))\b|(?:about|around|almost|nearly|maybe|over|under|at least)\s+${NUMBER})`,
-  "i",
-);
+const LIKE_HEDGES_NEXT =
+  /^\s*(?:[$£€¥]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|a|an|the|this|that|these|those|last|next|every|each|all|some|any|half|whole|few|couple|several|most|nothing|none|zero|once|twice|forever|always|about|around|almost|nearly|maybe|over|under|at|in|on|for|since|until|till|from|by|during|tonight|today|yesterday|tomorrow|midnight|noon|midday|dawn|sunrise|sunset)(?![\p{L}'’-]))/iu;
 /** (b) A thought being quoted: the words after ", like," run to a ? or ! in the same sentence ("standing there, like, what is going on?"). */
 const LIKE_QUOTES_THOUGHT = /^[^.!?…]*[?!]/;
 /** (c) "I", "the", "and" or "that's" said twice in a row with a comma between. */
@@ -79,47 +77,64 @@ const SLIP_FORM = /^(?:I|[Tt]he|[Aa]nd|[Tt]hat['’]s)$/u;
 const SLIP_STARTS = /(?:^["“‘(]?|,\s*)$/;
 /** (e) The other person's reactions, the fixed set, as whole sentences. */
 const REACTION = /^(?:wow|wow, that['’]s amazing|that['’]s amazing|that['’]s awesome|wait, were you\?|yeah, right\?)[.!]*$/i;
-/** The quotations open at a point of the text: “ ” ‘ ’ « » by depth, the straight " and ' each open or not; `closed`: a mark closed one. */
-type Quotes = { curly: number; double: boolean; single: boolean; closed?: boolean };
-const NO_QUOTES: Quotes = { curly: 0, double: false, single: false };
 /**
- * (e) The quotations still open after `text` (from `from`, the state where the text begins: a quotation can run across a
- * paragraph break). A straight " after a digit is an inch mark (5'6", 32" wide) and never counts. A straight ' opens only
- * after a space, a comma, a colon or the start, and closes only after . ! ? or a comma, so an apostrophe ("That's",
- * "dads'") never counts. A ’ closes after . ! ? or a comma, or after a letter only before punctuation or the end, so "the
- * boys’ room", "Our parents’ house" and "Rock ’n’ roll" never close one.
+ * (e) The quotation marks of a paragraph (lead ruling, round 16: a simple test replaces counting marks; when in doubt the
+ * words stay): “ ” " ‘ ’ « », and a straight ' that opens or closes. An apostrophe inside a word ("That’s", "it's") and
+ * an inch mark after a digit (5'6", 32" wide) are not quotation marks. `any`: the paragraph holds one; `opens` and
+ * `closes`: how many open and close a quotation, so a paragraph that leaves its marks open is known.
  */
-function quotesAfter(text: string, from: Quotes = NO_QUOTES): Quotes {
-  let { curly, double, single } = from;
-  let closed = false;
+function quoteMarks(text: string): { any: boolean; opens: number; closes: number } {
+  let any = false;
+  let opens = 0;
+  let closes = 0;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     const prev = i > 0 ? text[i - 1] : "";
     const next = text[i + 1] ?? "";
-    if (c === "“" || c === "«") curly++;
-    else if (c === "‘" && !/\p{L}/u.test(prev)) curly++;
-    else if (c === "”" || c === "»") {
-      if (curly > 0) closed = true;
-      curly = Math.max(0, curly - 1);
-    } else if (c === "’" && curly > 0 && (/[.!?,]/.test(prev) || (/\p{L}/u.test(prev) && /^(?:[,.;:!?…)”»"—–]|\s*$)/u.test(text.slice(i + 1))))) {
-      curly--;
-      closed = true;
-    } else if (c === '"' && !/\d/.test(prev)) {
-      if (double) closed = true;
-      double = !double;
+    const atStart = prev === "" || /[\s([{“‘«—–-]/.test(prev);
+    if (c === "“" || c === "«") {
+      any = true;
+      opens++;
+    } else if (c === "”" || c === "»") {
+      any = true;
+      closes++;
+    } else if (c === "‘" || c === "’") {
+      // inside a word it is an apostrophe ("That’s", "rock’n’roll")
+      if (/\p{L}/u.test(prev) && /\p{L}/u.test(next)) continue;
+      any = true;
+      if (c === "‘") opens++;
+      else if (!atStart) closes++;
+    } else if (c === '"') {
+      // after a digit it is an inch mark
+      if (/\d/.test(prev)) continue;
+      any = true;
+      if (atStart && next && !/\s/.test(next)) opens++;
+      else closes++;
     } else if (c === "'") {
-      if (single && /[.!?,]/.test(prev)) {
-        single = false;
-        closed = true;
-      } else if (!single && (prev === "" || /[\s,:]/.test(prev)) && next && !/\s/.test(next)) single = true;
+      // only a straight ' that opens or closes is a quotation mark
+      if ((prev === "" || /[\s,:]/.test(prev)) && next && !/\s/.test(next)) {
+        any = true;
+        opens++;
+      } else if (/[.!?,]/.test(prev)) {
+        any = true;
+        closes++;
+      }
     }
   }
-  return { curly, double, single, closed };
+  return { any, opens, closes };
 }
-const isOpen = (q: Quotes) => q.curly > 0 || q.double || q.single;
-/** (e) Whether position `at` of a paragraph is inside a quotation: every sentence there is someone in the story speaking. */
-function insideQuote(text: string, at: number, from: Quotes = NO_QUOTES): boolean {
-  return isOpen(quotesAfter(text.slice(0, at), from));
+/**
+ * (e) For each paragraph, whether reactions may be removed from it: never in a paragraph with a quotation mark in it, nor
+ * in any paragraph after one whose marks are left open, until a paragraph that closes them.
+ */
+function reactionsAllowed(paragraphs: string[]): boolean[] {
+  let open = 0;
+  return paragraphs.map((p) => {
+    const m = quoteMarks(p);
+    const allowed = open === 0 && !m.any;
+    open = Math.max(0, open + m.opens - m.closes);
+    return allowed;
+  });
 }
 /** (e) A "Yeah." straight after a reaction. */
 const YEAH_ALONE = /^yeah[.!]*$/i;
@@ -224,7 +239,7 @@ function likeCuts(s: string): TidyCut[] {
   for (const m of s.matchAll(COMMA_LIKE)) {
     const at = m.index ?? 0;
     const after = s.slice(at + m[0].length);
-    if (LIKE_QUOTES_AFTER.test(s.slice(0, at)) || LIKE_AMOUNT_NEXT.test(after) || LIKE_QUOTES_THOUGHT.test(after)) continue;
+    if (LIKE_QUOTES_AFTER.test(s.slice(0, at)) || LIKE_HEDGES_NEXT.test(after) || LIKE_QUOTES_THOUGHT.test(after)) continue;
     out.push([at, at + m[0].length, "b-like"]);
   }
   return out;
@@ -265,7 +280,7 @@ function applyCuts(text: string, cuts: TidyCut[]): string {
  */
 function tidyParagraph(
   text: string,
-  { answer = false, opening = false, named = false, quotes = NO_QUOTES }: { answer?: boolean; opening?: boolean; named?: boolean; quotes?: Quotes },
+  { answer = false, opening = false, named = false, quoted = false }: { answer?: boolean; opening?: boolean; named?: boolean; quoted?: boolean },
 ): { cuts: TidyCut[]; out: string } {
   const cuts: TidyCut[] = [];
   const shown: string[] = [];
@@ -275,7 +290,7 @@ function tidyParagraph(
     const bare = s.trim();
     // (e) the other person's reaction, and a "Yeah." straight after one; tested on the sentence as written, so one in
     // quotation marks (someone in the story speaking) never matches
-    if (!named && !insideQuote(text, at, quotes) && (REACTION.test(bare) || (afterReaction && YEAH_ALONE.test(bare)))) {
+    if (!named && !quoted && (REACTION.test(bare) || (afterReaction && YEAH_ALONE.test(bare)))) {
       cuts.push([at, at + s.length, "e-reaction"]);
       afterReaction = REACTION.test(bare);
       // a reaction that asks ("Wait, were you?") is still a question: the "Yeah," after it answers it
@@ -321,7 +336,7 @@ export function cleanSpeech(text: string, opts?: { answer?: boolean; opening?: b
 export function cleanSpeech(text: string, opts: { answer?: boolean; opening?: boolean; explain: true }): { said: string; out: string; cuts: TidyCut[] };
 export function cleanSpeech(text: string, { answer = false, opening = false, explain = false }: { answer?: boolean; opening?: boolean; explain?: boolean } = {}) {
   const said = tellerTurns(String(text || ""));
-  const { cuts, out } = tidyParagraph(said, { answer, opening });
+  const { cuts, out } = tidyParagraph(said, { answer, opening, quoted: quoteMarks(said).any });
   return explain ? { said, out, cuts } : out;
 }
 
@@ -383,34 +398,32 @@ function namedTurns(paragraph: string): Piece[] | null {
 }
 
 /** The pieces of a transcript, each with what the tidy cut from it and what it shows (the "We asked" lines too). */
-export function explainTranscript(paragraphs: string[]): { asked: boolean; said: string; out: string; cuts: TidyCut[] }[] {
-  const pieces = paragraphs.flatMap((p) => namedTurns(p.trim()) ?? liftQuestions(p.replace(/\s*\n\s*/g, " ")));
-  const out: { asked: boolean; said: string; out: string; cuts: TidyCut[] }[] = [];
+export function explainTranscript(paragraphs: string[]): { asked: boolean; said: string; out: string; cuts: TidyCut[]; para: number }[] {
+  // (e) reactions go only from a paragraph with no quotation mark, and none after a quotation left open
+  const allowed = reactionsAllowed(paragraphs);
+  const pieces = paragraphs.flatMap((p, para) => (namedTurns(p.trim()) ?? liftQuestions(p.replace(/\s*\n\s*/g, " "))).map((piece) => ({ ...piece, para })));
+  const out: { asked: boolean; said: string; out: string; cuts: TidyCut[]; para: number }[] = [];
   let first = true;
   let afterQuestion = false;
-  let quotes = NO_QUOTES;
   for (const piece of pieces) {
-    // a quotation still open at a paragraph's end carries into the next only when that one holds a closing mark: a stray
-    // mark never switches (e) off for the rest of the text
-    const from = isOpen(quotes) && quotesAfter(piece.said, quotes).closed ? quotes : NO_QUOTES;
-    quotes = quotesAfter(`${piece.said} `, from);
+    const quoted = !allowed[piece.para];
     if (piece.asked) {
       // the other person's line: only their reactions from the set go (e)
       const cuts: TidyCut[] = [];
       const kept: string[] = [];
       for (const { at, s } of sentencesAt(piece.said)) {
-        if (REACTION.test(s.trim()) && !insideQuote(piece.said, at, from)) cuts.push([at, at + s.length, "e-reaction"]);
+        if (REACTION.test(s.trim()) && !quoted) cuts.push([at, at + s.length, "e-reaction"]);
         else kept.push(s);
       }
-      if (kept.length) out.push({ asked: true, said: piece.said, out: kept.join(" "), cuts });
+      if (kept.length) out.push({ asked: true, said: piece.said, out: kept.join(" "), cuts, para: piece.para });
       first = false;
       afterQuestion = true;
       continue;
     }
-    const { cuts, out: shown } = tidyParagraph(piece.said, { answer: piece.answer || afterQuestion, opening: first, named: piece.named, quotes: from });
+    const { cuts, out: shown } = tidyParagraph(piece.said, { answer: piece.answer || afterQuestion, opening: first, named: piece.named, quoted });
     first = false;
     afterQuestion = isQuestion(sentencesAt(piece.said).pop()?.s || "");
-    if (shown.trim()) out.push({ asked: false, said: piece.said, out: shown, cuts });
+    if (shown.trim()) out.push({ asked: false, said: piece.said, out: shown, cuts, para: piece.para });
   }
   return out;
 }

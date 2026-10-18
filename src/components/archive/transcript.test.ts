@@ -827,51 +827,44 @@ function sentenceSpans(said: string): [number, number][] {
 
 /** Why a cut breaks the list's own words for its rule, or "" when it keeps to them. Written from 17a, not from the code. */
 /**
- * Whether a quotation is still open at the end of `text`, by 17a (e): “ ” ‘ ’ " ' « »; a straight ' opens only after a
- * space, a comma, a colon or the start, and closes only after . ! ? or a comma, so an apostrophe never counts.
+ * 17a (e), written from its text: the quotation marks in a paragraph. “ ” " ‘ ’ « », and a straight ' that opens (after a
+ * space, a comma, a colon or the start) or closes (after . ! ? or a comma); never an apostrophe inside a word, never an
+ * inch mark after a digit. Returns the marks with whether each opens.
  */
-function quoteOpenAfter(text: string): boolean {
-  return quoteState(text).open;
-}
-/** The same scan, with whether a mark closed a quotation at or after `from` (17a: a paragraph carries one on only then). */
-function quoteState(text: string, from = 0): { open: boolean; closed: boolean } {
-  let curly = 0;
-  let dbl = 0;
-  let single = false;
-  let closed = false;
-  const close = (i: number) => {
-    if (i >= from) closed = true;
-  };
-  [...text].forEach((c, i, all) => {
-    const prev = all[i - 1] ?? "";
-    const next = all[i + 1] ?? "";
-    const rest = all.slice(i + 1).join("");
-    if ("“«".includes(c)) curly += 1;
-    else if (c === "‘" && !/\p{L}/u.test(prev)) curly += 1;
-    else if ("”»".includes(c)) {
-      if (curly > 0) close(i);
-      curly = Math.max(0, curly - 1);
-    }
-    // a curly ’ after a letter closes only before punctuation or the end ("the boys’ room" never does)
-    else if (c === "’" && curly > 0 && (/[.!?,]/.test(prev) || (/\p{L}/u.test(prev) && (/^[,.;:!?…)”»"—–]/.test(next) || /^\s*$/.test(rest))))) {
-      close(i);
-      curly -= 1;
-    }
-    // a straight " after a digit is an inch mark (5'6", 32" wide)
-    else if (c === '"' && !/\d/.test(prev)) {
-      if (dbl % 2 === 1) close(i);
-      dbl += 1;
-    } else if (c === "'") {
-      if (single && /[.!?,]/.test(prev)) {
-        close(i);
-        single = false;
-      } else if (!single && (prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) single = true;
+function marksIn(paragraph: string): boolean[] {
+  const out: boolean[] = [];
+  const chars = [...paragraph];
+  chars.forEach((c, i) => {
+    const prev = chars[i - 1] ?? "";
+    const next = chars[i + 1] ?? "";
+    const word = /\p{L}/u.test(prev) && /\p{L}/u.test(next);
+    const opensHere = prev === "" || /[\s([{“‘«—–-]/.test(prev);
+    if ("“«".includes(c)) out.push(true);
+    else if ("”»".includes(c)) out.push(false);
+    else if (c === "‘" && !word) out.push(true);
+    else if (c === "’" && !word) {
+      if (!opensHere) out.push(false);
+      else out.push(true);
+    } else if (c === '"' && !/\d/.test(prev)) out.push(opensHere && next !== "" && !/\s/.test(next));
+    else if (c === "'") {
+      if ((prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) out.push(true);
+      else if (/[.!?,]/.test(prev)) out.push(false);
     }
   });
-  return { open: curly > 0 || dbl % 2 === 1 || single, closed };
+  return out;
+}
+/** 17a (e): the reactions may go from a paragraph only when it holds no mark and no earlier paragraph left one open. */
+function reactionsMayGo(paragraph: string, before: string[]): string {
+  if (marksIn(paragraph).length) return "a paragraph with a quotation mark";
+  let open = 0;
+  for (const p of before) {
+    const marks = marksIn(p);
+    open = Math.max(0, open + marks.filter(Boolean).length - marks.filter((m) => !m).length);
+  }
+  return open > 0 ? "after a paragraph that leaves a quotation open" : "";
 }
 
-function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; answer: boolean; named: boolean; cuts: Cut[]; prior?: string }): string {
+function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; answer: boolean; named: boolean; cuts: Cut[]; paragraph?: string; prior?: string | string[] }): string {
   const text = said.slice(a, b);
   const before = said.slice(0, a);
   const after = said.slice(b);
@@ -919,10 +912,12 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       if (/\b(?:feel|feels|felt|feeling|look|looks|looked|looking|seem|seems|seemed|sound|sounds|sounded)\s*$/i.test(before)) return "after feel / look / seem / sound: it feels";
       // a thought being quoted: the words after it run to a ? or ! in the same sentence
       if (/^[^.!?…]*[?!]/.test(after)) return "before a quoted thought";
-      // an amount: a number, a teen, an ordinal, zero, nothing or none, a or an with a unit, several, once, twice, a few,
-      // a couple, or about / around / almost / nearly / maybe / over / under / at least before a number
-      const num = String.raw`(?:[$£€¥]?\d|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|a hundred|a thousand|hundreds?|thousands?|millions?|dozens?|half)\b)`;
-      if (new RegExp(String.raw`^\s*(?:${num}|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|nothing|none|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|night|week|weekend|month|year|decade|century|centurie|semester|term|season|summer|winter|lifetime|generation|mile|kilometre|kilometer|metre|meter|centimetre|centimeter|millimetre|millimeter|inch|inche|foot|feet|yard|acre|hectare|square (?:mile|metre|meter|foot|feet|yard|kilometre|kilometer)|pound|kilo|kilogram|gram|ounce|ton|tonne|stone|litre|liter|gallon|pint|quart|quarter|third|half|dollar|bowl|cup|bag|sack|bucket|box|boxe|basket|plate|pot|bottle|can|glass|glasse|spoon|spoonful|handful|truckload|boatload|jar|crate|barrel)s?\b|(?:midnight|noon|midday|(?:the|a) whole (?:summer|winter|spring|fall|autumn|year|day|night|week|month|morning|afternoon|evening|time|semester|term|season)|all (?:day|night|week|summer|winter|year|morning|afternoon|evening))\b|(?:about|around|almost|nearly|maybe|over|under|at least)\s+${num})`, "i").test(after)) return "before an amount: it hedges";
+      // where it may hedge, decided by the next word alone: a number, a teen, an ordinal, or 17a's closed list
+      const nextWord = (after.match(/^\s*([^\s,.;:!?…"“”‘’']+)/u)?.[1] ?? "").toLowerCase();
+      const numberWords = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands million millions dozen dozens".split(" ");
+      const ordinals = "first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth hundredth thousandth".split(" ");
+      const closedList = "a an the this that these those last next every each all some any half whole few couple several most nothing none zero once twice forever always about around almost nearly maybe over under at in on for since until till from by during tonight today yesterday tomorrow midnight noon midday dawn sunrise sunset".split(" ");
+      if (/^[$£€¥]?\d/.test(nextWord) || numberWords.includes(nextWord) || ordinals.includes(nextWord) || /(?:teenth|tieth)$/.test(nextWord) || closedList.includes(nextWord)) return "before a word where it may hedge";
       return "";
     }
     case "c-slip": {
@@ -938,15 +933,11 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       // a whole sentence from the fixed set, or a "Yeah." straight after one; never in the teller's own named turn
       if (ctx.named) return "the teller's own turn";
       if (a !== start || b !== end) return "not a whole sentence";
-      // the sentence as written: one in quotation marks is someone in the story speaking, never the listener
+      // only in a paragraph with no quotation mark at all, and none after a paragraph that leaves its marks open
       const bare = text.trim();
-      if (/["“”‘’']/.test(bare.replace(/(?<=\p{L})['’](?=\p{L})/gu, ""))) return "inside quotation marks";
-      // a sentence in the middle of a quotation carries no mark of its own: count the quotes before it, from the
-      // paragraphs before too
-      // a quotation open at the end of the paragraphs before carries in only when this paragraph holds a closing mark
-      const prior = ctx.prior ?? "";
-      const carried = !!prior && quoteOpenAfter(prior) && quoteState(`${prior}${said}`, prior.length).closed;
-      if (quoteOpenAfter(carried ? `${prior}${before}` : before)) return "inside a quotation";
+      const prior = typeof ctx.prior === "string" ? [ctx.prior] : (ctx.prior ?? []);
+      const why = reactionsMayGo(ctx.paragraph ?? said, prior);
+      if (why) return why;
       if (REACTION_SET.test(bare)) return "";
       const prevSpan = spans[si - 1];
       const prevIsReaction = !!prevSpan && ctx.cuts.some((c) => c[2] === "e-reaction" && c[0] === prevSpan[0] && c[1] === prevSpan[1] && REACTION_SET.test(said.slice(c[0], c[1]).trim()));
@@ -1044,10 +1035,9 @@ describe("round 12: the contract, every cut checked against its rule", () => {
     for (const call of [PITCH, GRANDPARENTS, FASTER]) {
       let first = true;
       let afterQuestion = false;
-      let prior = "";
-      for (const piece of explainTranscript(call.split(/\n\s*\n/))) {
-        const priorHere = prior;
-        prior += `${piece.said} `;
+      const paragraphs = call.split(/\n\s*\n/);
+      for (const piece of explainTranscript(paragraphs)) {
+        const here = { paragraph: paragraphs[piece.para], prior: paragraphs.slice(0, piece.para) };
         if (piece.asked) {
           if (!/^Do they open to non-students as well\? Because our strategy/.test(piece.said)) failures.push(`lifted outside the 5963 shape: ${piece.said}`);
           afterQuestion = true;
@@ -1055,7 +1045,7 @@ describe("round 12: the contract, every cut checked against its rule", () => {
           continue;
         }
         for (const cut of piece.cuts) {
-          const why = breaksRule(piece.said, cut as Cut, { opening: first, answer: afterQuestion, named: false, cuts: piece.cuts as Cut[], prior: priorHere });
+          const why = breaksRule(piece.said, cut as Cut, { opening: first, answer: afterQuestion, named: false, cuts: piece.cuts as Cut[], ...here });
           if (why) failures.push(`${cut[2]} "${piece.said.slice(cut[0], cut[1])}" :: ${why}`);
         }
         if (!onlyCutsRemoved(piece.said, piece.out, piece.cuts as Cut[])) failures.push(`words changed outside the cuts in: ${piece.said.slice(0, 60)}`);
@@ -1501,7 +1491,8 @@ export const R15_CUT: [string, string][] = [
   ["There's, um, a river.", "There's a river."],
   ["I'd, um, gone home.", "I'd gone home."],
   // still cut: a reaction outside the quotation, a plain ", like,"
-  ["She said it, 'Wow.' Wow. We moved.", "She said it, 'Wow.' We moved."],
+  // a paragraph with a quotation mark keeps every reaction (round 16 ruling)
+  ["She said it, 'Wow.' Wow. We moved.", "She said it, 'Wow.' Wow. We moved."],
   ["It was dad's. Wow. We moved.", "It was dad's. We moved."],
   ["And then, like, we left.", "And then we left."],
 ];
@@ -1565,15 +1556,14 @@ describe("round 15: 17a after 4d9630c and 6c18b87, every reviewer string", () =>
       }
     }
     for (const [paragraphs] of R15_TRANSCRIPT) {
-      let prior = "";
+
       for (const piece of explainTranscript(paragraphs)) {
         if (!piece.asked) {
           for (const cut of piece.cuts as Cut[]) {
-            const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], prior });
+            const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], paragraph: paragraphs[piece.para], prior: paragraphs.slice(0, piece.para) });
             if (why) failures.push(`${piece.said} :: ${cut[2]} :: ${why}`);
           }
         }
-        prior += `${piece.said} `;
       }
     }
     const at = (said: string, piece: string, rule: string): Cut => {
@@ -1630,9 +1620,7 @@ export const R16_KEEP: string[] = [
   'He is 5\'6" tall. She said, "Okay. Wow. Nice."',
   // Bao 2: a or an with any unit of time, length, area, weight, volume or a container
   ...R16_UNITS.map((u) => `We had, like, ${u}.`),
-  // a time or a span
-  "At, like, midnight we left.",
-  "We met at, like, noon.",
+  // a time or a span, where the next word is on 17a's closed list
   "We left at, like, three o'clock.",
   "We were there, like, the whole summer.",
   "We worked, like, all day.",
@@ -1646,7 +1634,11 @@ export const R16_KEEP: string[] = [
 export const R16_CUT: [string, string][] = [
   // an inch mark opens nothing: the reaction after it is the listener's
   ['The table was 32" wide. Wow. We moved.', 'The table was 32" wide. We moved.'],
-  ["The boys’ room was full. Wow. We moved.", "The boys’ room was full. We moved."],
+  // the next word alone decides (round 16 ruling); a time of day is on the closed list
+  ["At, like, midnight we left.", "At, like, midnight we left."],
+  ["We met at, like, noon.", "We met at, like, noon."],
+  // a ’ that is not inside a word is a quotation mark: the paragraph keeps its reactions
+  ["The boys’ room was full. Wow. We moved.", "The boys’ room was full. Wow. We moved."],
   // X7: "maybe" is not "be"; X10: "being" is not on the be list
   ["It was maybe, um, Lan, Mai and Hoa.", "It was maybe, Lan, Mai and Hoa."],
   ["Being, um, poor, hungry, we left.", "Being, poor, hungry, we left."],
@@ -1657,9 +1649,12 @@ export const R16_TRANSCRIPT: [string[], string[]][] = [
   [["Interviewer: He said, “Okay.", "Interviewer: Wow. That's amazing.” Did he?"], ["⁣He said, “Okay.", "⁣Wow. That's amazing.” Did he?"]],
   // the carry happens only into a paragraph that holds a closing mark
   [["He said, “We went.", "Wow. That's amazing.” Then we left."], ["He said, “We went.", "Wow. That's amazing.” Then we left."]],
-  [["He said, “We went.", "Wow. We moved."], ["He said, “We went.", "We moved."]],
+  // a paragraph after one that leaves its marks open keeps its reactions, until one closes them
+  [["He said, “We went.", "Wow. We moved."], ["He said, “We went.", "Wow. We moved."]],
   [["She was 5'6\" tall.", "Wow. We moved."], ["She was 5'6\" tall.", "We moved."]],
-  [["It was the ’90s, “a hard time.", "Wow. We moved.", "Then he said, “Okay. Wow. Nice.”"], ["It was the ’90s, “a hard time.", "We moved.", "Then he said, “Okay. Wow. Nice.”"]],
+  [["It was the ’90s, “a hard time.", "Wow. We moved.", "Then he said, “Okay. Wow. Nice.”"], ["It was the ’90s, “a hard time.", "Wow. We moved.", "Then he said, “Okay. Wow. Nice.”"]],
+  // after the paragraph that closes the quotation, a plain paragraph loses its reaction again
+  [["He said, “We went.", "We came back.” Then we ate.", "Wow. We moved."], ["He said, “We went.", "We came back.” Then we ate.", "We moved."]],
   // U20: a tag question closing a straight single quotation is never lifted
   [["She said, 'It was hard. Was it good, right?' Because our school was small. Yes."], ["She said, 'It was hard. Was it good, right?' Because our school was small. Yes."]],
 ];
@@ -1696,15 +1691,14 @@ describe("round 16: 17a at ec7c671 and after, every reviewer string and the r15 
       }
     }
     for (const [paragraphs] of R16_TRANSCRIPT) {
-      let prior = "";
+
       for (const piece of explainTranscript(paragraphs)) {
         if (!piece.asked) {
           for (const cut of piece.cuts as Cut[]) {
-            const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], prior });
+            const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], paragraph: paragraphs[piece.para], prior: paragraphs.slice(0, piece.para) });
             if (why) failures.push(`${piece.said} :: ${cut[2]} :: ${why}`);
           }
         }
-        prior += `${piece.said} `;
       }
     }
     const at = (said: string, piece: string, rule: string): Cut => {
@@ -1719,22 +1713,127 @@ describe("round 16: 17a at ec7c671 and after, every reviewer string and the r15 
       ['He bought a 12" knife. Later Mom said, "Okay. Wow. Nice."', at('He bought a 12" knife. Later Mom said, "Okay. Wow. Nice."', "Wow.", "e-reaction")],
       ["Wow. That's amazing.” Then we left.", at("Wow. That's amazing.” Then we left.", "Wow.", "e-reaction"), "He said, “We went. "],
       ...R16_UNITS.slice(0, 6).map((u): [string, Cut] => [`We had, like, ${u}.`, at(`We had, like, ${u}.`, ", like,", "b-like")]),
-      ["At, like, midnight we left.", at("At, like, midnight we left.", ", like,", "b-like")],
       ["We were there, like, the whole summer.", at("We were there, like, the whole summer.", ", like,", "b-like")],
       ["We left at, like, three o'clock.", at("We left at, like, three o'clock.", ", like,", "b-like")],
     ];
     for (const [said, cut, prior] of forbidden) {
       if (!breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior })) failures.push(`the checker accepts a forbidden cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
     }
-    const allowed: [string, Cut, string?][] = [
+    forbidden.push(
       ["The boys’ room was full. Wow. We moved.", at("The boys’ room was full. Wow. We moved.", "Wow.", "e-reaction")],
-      ['The table was 32" wide. Wow. We moved.', at('The table was 32" wide. Wow. We moved.', "Wow.", "e-reaction")],
-      // an open quotation does not carry into a paragraph with no closing mark
+      // a paragraph after one that leaves a quotation open
       ["Wow. We moved.", at("Wow. We moved.", "Wow.", "e-reaction"), "He said, “We went. "],
+    );
+    for (const [said, cut, prior] of forbidden.slice(-2)) {
+      if (!breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior })) failures.push(`the checker accepts a forbidden cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
+    }
+    const allowed: [string, Cut, string?][] = [
+      ['The table was 32" wide. Wow. We moved.', at('The table was 32" wide. Wow. We moved.', "Wow.", "e-reaction")],
+      ["It’s late. Wow. We moved.", at("It’s late. Wow. We moved.", "Wow.", "e-reaction")],
+      ["We ate, like, really fast.", at("We ate, like, really fast.", ", like,", "b-like")],
+      // a quotation closed in the paragraph before: the reactions go again
+      ["Wow. We moved.", at("Wow. We moved.", "Wow.", "e-reaction"), "He said, “We went.”"],
     ];
     for (const [said, cut, prior] of allowed) {
       const why = breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior });
       if (why) failures.push(`the checker refuses an allowed cut: ${said} :: ${cut[2]} :: ${why}`);
+    }
+    expect(failures).toEqual([]);
+  });
+});
+
+/* ───────── Round 17: 17a (b) and (e) as the closed tests of 6d0cb51 and a085c29, every r16 reviewer string ───────── */
+
+export const R17_KEEP: string[] = [
+  // Bao r16 1: a plural possessive inside a “ ” quotation
+  "Mom said, “We stayed at the Nguyens’. Wow. It was big.”",
+  "“We visited the Vos’! Wow. Nice.”",
+  "“That was my parents’. Wow. Really.” He smiled.",
+  "“Mom said ‘no’. Wow. Okay.”",
+  // Skills r16, not counted: a possessive before punctuation in a ‘ ’ quotation
+  "‘We cleaned the boys’, the girls’ rooms. Wow. That’s amazing.’",
+  "‘It was the Nguyens’. Wow. That’s amazing.’",
+  // Bao r16 2: a hedge before a time or a span, decided by the next word
+  "We left, like, last summer.",
+  "We arrived, like, at sunrise.",
+  "We ate, like, at night.",
+  "We came back, like, tonight.",
+  "We left, like, in the morning.",
+  "We moved, like, the next year.",
+  "We left, like, that winter.",
+  "We stayed, like, a while.",
+  "We walked, like, the whole way.",
+  // Skills r16 P20
+  "We had, like, a half bowl of rice.",
+  // the rest of the closed list
+  "We waited, like, forever.",
+  "We stayed, like, until dawn.",
+  "We cooked, like, every day.",
+  "We went, like, yesterday.",
+];
+
+export const R17_CUT: [string, string][] = [
+  // a plain paragraph still loses its reactions, an apostrophe inside a word or an inch mark included
+  ["Wow. We moved.", "We moved."],
+  ["It’s late. Wow. We moved.", "It’s late. We moved."],
+  ["We didn't know. That's amazing. We stayed.", "We didn't know. We stayed."],
+  ['The table was 32" wide. Wow. That’s awesome. We moved.', 'The table was 32" wide. We moved.'],
+  // a ", like," before a word off the closed list goes
+  ["We drove, like, home.", "We drove home."],
+  // the next word must be the listed word itself, not a word that starts like one ("an" in "anywhere")
+  ["We drove, like, anywhere.", "We drove anywhere."],
+  ["It was hard, and, like, really hard.", "It was hard, and really hard."],
+];
+
+export const R17_TRANSCRIPT: [string[], string[]][] = [
+  // Skills r16 1: a stray straight " in one paragraph, a quotation opened in the next
+  [["He said \"hi and left.", "\"Okay. Wow. That's amazing.\" Then we left."], ["He said \"hi and left.", "\"Okay. Wow. That's amazing.\" Then we left."]],
+  [["He said “hi and left.", "“Okay. Wow. That's amazing.” Then we left."], ["He said “hi and left.", "“Okay. Wow. That's amazing.” Then we left."]],
+  // P9 / P10: a quotation closing at the end of the next paragraph
+  [["He said, \"We went.", "Wow. That's amazing. Then we left.\""], ["He said, \"We went.", "Wow. That's amazing. Then we left.\""]],
+  [["She said, ‘We went.", "Wow. That’s amazing. Then we left.’"], ["She said, ‘We went.", "Wow. That’s amazing. Then we left.’"]],
+  // Skills r16, not counted: a middle paragraph of a quotation that runs on
+  [["She said, “We went home.", "We ate. Wow. That's amazing.", "Then we slept.” Wow."], ["She said, “We went home.", "We ate. Wow. That's amazing.", "Then we slept.” Wow."]],
+  // and a plain paragraph after the quotation has closed loses its reaction
+  [["She said, “We went home.", "Then we slept.”", "Wow. We moved."], ["She said, “We went home.", "Then we slept.”", "We moved."]],
+  // a plain transcript still loses its reactions, on the asker's line too
+  [["Interviewer: Wow. Tell me more.", "Me: We went home. Wow."], ["⁣Tell me more.", "We went home. Wow."]],
+];
+
+describe("round 17: (b) and (e) as closed tests, every r16 reviewer string", () => {
+  it.each(R17_KEEP)("keeps %s", async (said) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(said);
+  });
+  it.each(R17_CUT)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+  it.each(R17_TRANSCRIPT)("%s", async (said, shown) => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(said)).toEqual(shown);
+  });
+  it("the contract holds on every round-17 string, paragraph by paragraph", async () => {
+    const { cleanSpeech, explainTranscript } = await import("./transcript");
+    const failures: string[] = [];
+    for (const said of [...R17_KEEP, ...R17_CUT.map(([x]) => x)]) {
+      for (const opening of [false, true]) {
+        const { said: base, out, cuts } = cleanSpeech(said, { opening, explain: true });
+        for (const cut of cuts) {
+          const why = breaksRule(base, cut, { opening, answer: false, named: false, cuts });
+          if (why) failures.push(`${said} (opening ${opening}) :: ${cut[2]} "${base.slice(cut[0], cut[1])}" :: ${why}`);
+        }
+        if (!onlyCutsRemoved(base, out, cuts)) failures.push(`${said} :: words changed outside the cuts: "${out}"`);
+      }
+    }
+    for (const [paragraphs] of R17_TRANSCRIPT) {
+      for (const piece of explainTranscript(paragraphs)) {
+        if (piece.asked) continue;
+        for (const cut of piece.cuts as Cut[]) {
+          const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], paragraph: paragraphs[piece.para], prior: paragraphs.slice(0, piece.para) });
+          if (why) failures.push(`${piece.said} :: ${cut[2]} :: ${why}`);
+        }
+      }
     }
     expect(failures).toEqual([]);
   });
