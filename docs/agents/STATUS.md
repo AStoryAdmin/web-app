@@ -5,7 +5,7 @@ Each page group is done when both reviewers pass it in the same round: Bao's Sta
 | Pages | Builder round | Bao's Standard | Skills Steward | Done |
 |---|---|---|---|---|
 | Writer (`/write`, Afterwards, the about page) | 9 | PASS (writer-r9-baos.md) | APPLIED (writer-r9-skills.md) | 2026-10-18 |
-| Book, Plans, Account, Talk, Start, Wall | 15 | PASS book-r14-baos | GAPS book-r14-skills | |
+| Book, Plans, Account, Talk, Start, Wall | 17 | PASS (book-r17-baos.md) | APPLIED (book-r17-skills.md) | 2026-10-18 |
 | Archive, memory page, Home's prints | 16 | FAIL archive-r15-baos | GAPS archive-r15-skills | |
 | Family, Person | 17 | PASS (family-r15-baos.md) | APPLIED (family-r17-skills.md) | 2026-10-18 |
 | Signed-out pages and the front door | 8 | under review | under review | |
