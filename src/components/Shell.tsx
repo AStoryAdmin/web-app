@@ -48,7 +48,8 @@ function TellerButton({ onClick, compact = false }: { onClick: () => void; compa
       aria-label={`Storyteller: ${storyLine(activeStory)}${many ? ". Change storyteller" : ""}`}
       style={many ? undefined : { cursor: "default" }}
     >
-      {!compact && <Avatar src={photo} name={`${activeStory.name} ${activeStory.lastName || ""}`.trim()} size={32} />}
+      {/* your own story: the account's seal beside it already shows who; someone else's: their seal */}
+      {!compact && activeStory.relationship !== "Myself" && <Avatar src={photo} name={`${activeStory.name} ${activeStory.lastName || ""}`.trim()} size={32} />}
       <span>
         {!compact && <small>Storyteller</small>}
         <strong>{compact ? storyLine(activeStory) : `${activeStory.name} ${activeStory.lastName}`.trim()}</strong>
