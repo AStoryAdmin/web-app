@@ -3901,3 +3901,11 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .keys-list dd { margin: 0; font: 400 17px/1.4 var(--book-body); color: var(--sheet-ink); }
 .keys-note { margin: var(--s-4) 0 0; font: 400 13px/1.4 var(--font-ui); color: var(--ink-soft); }
 @media (prefers-reduced-motion: reduce) { .keys-hint { transition: none; } .keys-hint:active { transform: none; } }
+
+/* ── §62 On a phone the back chevron sits inline before the title, never alone on a row (rule 10) ── */
+@media (max-width: 760px) {
+  .hero-in:has(> .back) { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; align-items: start; }
+  /* centred on the title's first line (24px type, a 44px target) */
+  .hero-in:has(> .back) > .back { grid-column: 1; grid-row: 1; margin: -10px 0 0; align-self: start; }
+  .hero-in:has(> .back) > .back ~ * { grid-column: 2; margin-left: 0; min-width: 0; }
+}
