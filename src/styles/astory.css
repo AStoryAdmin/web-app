@@ -3449,16 +3449,14 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .shell > .top { position: fixed; top: 0; left: 0; right: 0; z-index: 60; transition: height 200ms var(--ease-out), background-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
 .cloth { padding-top: var(--top-h); }
 .top.stuck { height: calc(var(--top-h) - 8px); background: var(--chocolate) url(/book/cloth-chocolate.webp) 0 0 / 360px 360px; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28), 0 10px 24px -18px rgba(0, 0, 0, 0.6); }
-.top.stuck .pillnav { transform: scale(0.96); }
-.top .pillnav { transition: transform 200ms var(--ease-out); transform-origin: 50% 50%; }
+/* the condensed bar keeps the place links at their full 44px; only the bar's own height condenses */
 body.writing-focus .shell > .top { display: none; }
 /* anchors and the sticky columns clear the bar */
 html { scroll-padding-top: calc(var(--top-h) + 16px); }
 .home-side, .mpd-side { top: calc(var(--top-h) + 24px); }
 .hero-in { will-change: transform, opacity; }
 @media (prefers-reduced-motion: reduce) {
-  .shell > .top, .top .pillnav { transition: none; }
-  .top.stuck .pillnav { transform: none; }
+  .shell > .top { transition: none; }
 }
 
 /* ───────────────────────── 51. Where the cloth meets the paper (lead) ───────────────────────── */
@@ -3715,7 +3713,6 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .auth.ritual .btn:disabled, .auth.ritual .input:has(input:disabled), .atile:disabled, .ribbon-step:disabled { opacity: 0.6; }
 /* the top bar's places are full touch targets */
 .pillnav a { min-height: 44px; }
-.top.stuck .pillnav a { min-height: 40px; }
 /* the two inks for small text, named as the builders and the reading spec use them */
 :root { --terracotta-ink: #9A4320; --sage-ink: #3F5B44; --sage-ink-bg: #E4E8DC; --w-pencil: #6F665D; --w-gilt-b: #E6C77E; }
 
