@@ -400,7 +400,11 @@ export default function Wall() {
               <p className="wall-counts" data-rise>
                 {memories(count)}
                 {chapters.length > 1 ? ` · ${chapters.length} chapters` : ""}
-                {family ? ` · ${family} from the family` : ""} · shared by the family, for anyone with the link
+                {family ? ` · ${family} from the family` : ""}
+                {/* on a narrow phone the tail takes its own line, so the line count never depends on the counts */}
+                <span className="wall-counts-tail">
+                  <span className="wall-counts-dot"> · </span>shared by the family<span className="wall-counts-more">, for anyone with the link</span>
+                </span>
               </p>
               )}
             </div>

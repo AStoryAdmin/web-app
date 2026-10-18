@@ -757,6 +757,14 @@ html:has(.wall-bench, .start) { background-color: var(--chocolate); scrollbar-co
 .wall .hero .wall-hero-words h1 { font-family: var(--font-ui); font-weight: 700; font-size: 56px; line-height: 1.04; letter-spacing: -0.025em; color: var(--on-chocolate); text-wrap: balance; }
 .wall-intro { margin-top: var(--s-3); font: italic 400 22px/1.45 var(--book-body); color: var(--on-chocolate); max-width: 52ch; }
 .wall-counts { margin-top: var(--s-4); font: 400 14px/1.4 var(--font-ui); color: var(--on-chocolate-soft); }
+/* below 375px the "shared by the family" tail is its own line and the counts hold three lines; the waiting cloth holds
+   the same (Wall.tsx WallWait, the third hairline) */
+@media (max-width: 374.98px) {
+  .wall-counts { min-height: 3lh; }
+  .wall-counts-tail { display: block; }
+  .wall-counts-dot, .wall-counts-more { display: none; }
+  .wall-skel .wall-sk-hl.third { height: 59px; }
+}
 
 .wall-sheet.sheet-page { margin-top: -28px; }
 .wall-page.page { max-width: none; padding: var(--s-10) var(--bka-gutter) var(--s-16); display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--s-16); align-items: start; }
