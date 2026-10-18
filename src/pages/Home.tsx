@@ -112,7 +112,7 @@ export default function Home() {
           </span>
         </p>
         <h1>
-          {greeting("")}, <span className="hl">{user?.firstName || "friend"}</span>.
+          <span className="nw">{greeting("")},</span> <span className="hl nw">{user?.firstName || "friend"}.</span>
         </h1>
         <span className="foil" />
         <div className="ask">

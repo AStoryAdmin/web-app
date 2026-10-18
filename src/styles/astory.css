@@ -3628,3 +3628,13 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
   .home-sheet .weekrow { margin-bottom: var(--s-6); }
   .home-find { flex: 1 1 100%; }
 }
+
+/* ───────────────────────── 52. Phone fixes for the shell and Home (lead) ───────────────────────── */
+/* a word and its comma never part ("Good evening, / Bao."), the question sits close under the greeting, and on a
+   phone Add lives once, in the tab bar, not also in the top bar */
+.nw { white-space: nowrap; }
+.hero .ask { padding-top: var(--s-6); }
+@media (max-width: 760px) {
+  .hero .ask { padding-top: var(--s-3); padding-bottom: var(--s-5); }
+  .shell > .top .add { display: none; }
+}
