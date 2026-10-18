@@ -1,58 +1,68 @@
 ---
 name: A Story web app
-description: The bookbinder's bench, in the deck's language. The top of every page is the book's cloth; the work happens on a sheet of cream paper that rises over it.
+description: The family book on a bookbinder's bench. The top of every page is the book's cloth (chocolate; teal on the Book page), set in the deck's bold Montserrat; the work happens on an ivory sheet set like the printed book (astoryapp.com/samples). The founder's full rulings are in docs/BAOS-STANDARD.md, which wins over this file.
 colors:
   chocolate: "#4A3327"
   cloth-teal: "#0F4A58"
-  cream: "#F3EBDD"
-  card: "#FBF7EE"
-  tint: "#EAE0CF"
-  ink: "#2A2320"
+  paper: "#F3EBDD"
+  paper-print: "#FFFDF8"
+  paper-tone: "#EDE3D2"
+  sheet-ink: "#2B2B2B"
   ink-soft: "#6B625B"
   ink-faint: "#9A8F85"
   terracotta: "#B85126"
+  terracotta-ink: "#9A4320"
+  sage-ink: "#3F5B44"
+  foil: "#C9A15A"
+  foil-deep: "#8A6A33"
+  foil-light: "#EFDCAB"
+  wax: "#9A4220"
   ochre: "#BF7F1A"
-  gold: "#E0A03F"
   brass: "#EFC75E"
-  pill-gold: "#F2D27A"
-  teal-slate: "#2E566A"
   on-chocolate: "#F6F0E6"
   on-chocolate-soft: "#D9CFC2"
 typography:
-  display:
+  cloth-title:
     fontFamily: "Montserrat"
     fontSize: "56px"
     fontWeight: 700
     letterSpacing: "-0.025em"
     lineHeight: 1.05
-  headline:
-    fontFamily: "Montserrat"
-    fontSize: "40px"
-    fontWeight: 700
-    letterSpacing: "-0.02em"
-  title:
-    fontFamily: "Montserrat"
+  sheet-display:
+    fontFamily: "Cormorant Garamond"
+    fontSize: "44px"
+    fontWeight: 600
+    lineHeight: 1.08
+  sheet-heading:
+    fontFamily: "Cormorant Garamond"
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: 1.12
+  words:
+    fontFamily: "EB Garamond"
     fontSize: "22px"
-    fontWeight: 700
-  body:
-    fontFamily: "Montserrat"
-    fontSize: "17px"
-    fontWeight: 400
-    lineHeight: 1.55
-  label:
-    fontFamily: "Montserrat"
-    fontSize: "13px"
-    fontWeight: 700
-  said:
-    fontFamily: "Source Serif 4"
-    fontSize: "20px"
     fontWeight: 400
     lineHeight: 1.6
+  body:
+    fontFamily: "EB Garamond"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: 1.55
+  ui:
+    fontFamily: "Montserrat"
+    fontSize: "14px"
+    fontWeight: 500
+  small-caps:
+    fontFamily: "Montserrat"
+    fontSize: "12px"
+    fontWeight: 600
+    letterSpacing: "0.14em"
 rounded:
   pill: "999px"
-  card: "22px"
-  sheet: "28px"
-  field: "14px"
+  plate: "6px"
+  print: "2px"
+  sheet: "22px"
+  field: "0px (a ruled line)"
 ---
 
 # A Story, on the web
