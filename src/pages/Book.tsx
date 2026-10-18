@@ -82,18 +82,19 @@ export default function Book() {
         compact
         wide
         tone="teal"
-        title="The Book"
         hero={
+          /* no title prop and no h1 here: the Shell keys its arrival on both, so the cloth and the sheet arrive once, when
+             the skeleton shows, and the page's own words take their place without the sheet dipping a second time */
           /* the cloth at its arrived height, its words held but not yet shown, so the sheet doesn't move when they come */
           <div className="bkh bkh-skel" aria-hidden="true">
             <div className="bkh-words">
               <p className="label mobile-only">
                 <span className="teller-pick">&nbsp;</span>
               </p>
-              <h1 className="bkh-title">
+              <p className="bkh-title">
                 {KEEPSAKE_TITLE}
                 <Stop />
-              </h1>
+              </p>
               <p className="bkh-line">&nbsp;</p>
             </div>
             <div className="bkh-edition">
@@ -115,6 +116,8 @@ export default function Book() {
             <i className="bka-sk-line" />
           </span>
           <span className="bka-sk-block" aria-hidden="true" />
+          {/* below 1100px the rail sits under the book, after the row of buttons: its place, without a rule */}
+          <i className="bk-skel-under" aria-hidden="true" />
         </div>
       </Shell>
     );
@@ -122,7 +125,7 @@ export default function Book() {
     return (
       <Shell compact tone="teal" title="The Book">
         <div className="page">
-          <Problem message={`We couldn’t reach your stories. ${loadError}`} onRetry={reload} />
+          <Problem message={loadError} onRetry={reload} />
         </div>
       </Shell>
     );

@@ -25,6 +25,7 @@ import { memoryDate, ageLabel } from "../../app-core/lib/timeline.js";
 import { FAMILY_CHAPTER } from "../../app-core/data/eras.js";
 import { coverColour, type CoverColour } from "./coverColours";
 import { archiveLink, listenLink, sampleLink } from "../../lib/qrLinks";
+import { smarten } from "../../lib/typography";
 import type { Memory, Story } from "../../data/stories";
 import type { Contribution } from "../../data/contributions";
 import type { SampleBook, SampleMemory } from "../../data/sampleBooks";
@@ -359,21 +360,21 @@ export function buildBook(
   const contents: ContentsEntry[] = [];
   s.chapters.forEach((c, i) => {
     const chapter = printedChapterName(c.era) as string;
-    const titles = c.items.map((m) => (m.title || "").trim()).filter(Boolean);
+    const titles = c.items.map((m) => smarten((m.title || "").trim())).filter(Boolean);
     const line = titles.length ? titles.slice(0, 3).join(" · ") + (titles.length > 3 ? ` and ${titles.length - 3} more` : "") : `${c.items.length} ${c.items.length === 1 ? "memory" : "memories"}`;
     contents.push({ num: two(i + 1), name: chapter, sub: c.years, page: body.length + 1 });
     body.push({ kind: "opener", key: `c-${c.era}`, kicker: c.era === FAMILY_CHAPTER ? "In their own words" : chapterWord(i + 1), chapter, num: two(i + 1), qlabel: "In this chapter", line, folio: 0 });
     for (const m of c.items) {
       const head: MemoryHead = {
         chapter,
-        title: (m.title || "").trim(),
+        title: smarten((m.title || "").trim()),
         dateline: datelineOf(story, m),
         source: sourceOf(story, m),
         summary: "",
         asked: asked[m.id] || null,
         photos: Array.isArray(m.photos) ? m.photos.filter(Boolean) : [],
       };
-      body.push(...memoryPages(m.id, head, paragraphsOf(printedBody(design, m) as string), (attributionFor(m) as string | null) || "", sidesFor(contributions, m.id), stripFor(story, m)));
+      body.push(...memoryPages(m.id, head, paragraphsOf(printedBody(design, m) as string).map(smarten), (attributionFor(m) as string | null) || "", sidesFor(contributions, m.id), stripFor(story, m)));
     }
   });
 

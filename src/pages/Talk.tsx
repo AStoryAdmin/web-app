@@ -63,7 +63,7 @@ export default function Talk() {
     return (
       <Shell compact title="Talk" back="/">
         <div className="page">
-          <Problem message={`We couldn’t reach your stories. ${loadError}`} onRetry={reload} />
+          <Problem message={loadError} onRetry={reload} />
         </div>
       </Shell>
     );

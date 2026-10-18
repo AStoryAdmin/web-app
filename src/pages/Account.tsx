@@ -115,10 +115,11 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
         <img className="acct-plate" src="/book/bookplate.webp" alt="" aria-hidden="true" width={1130} height={1400} />
         <div className="acct-plate-words">
           <Avatar src={user.avatarUrl} name={name} size={56} className="acct-seal" />
-          <h1 id="profile-h" data-running="Your name">
+          {/* the name written on the plate (the page’s one h1 is the hidden “Account” above the sections) */}
+          <p className="acct-plate-name" id="profile-h" data-running="Your name">
             {name}
             <Stop />
-          </h1>
+          </p>
           {bookName && <p className="acct-plate-book">{bookName}</p>}
         </div>
       </div>
@@ -872,7 +873,9 @@ export default function Account() {
         </aside>
 
         <div className="acct-body">
-          {loadError && <Problem message={`We couldn’t reach your stories. ${loadError}`} onRetry={reload} />}
+          {/* a bare Shell shows no hero, so the page names itself here, for a screen reader */}
+          <h1 className="sr-only">Account</h1>
+          {loadError && <Problem message={loadError} onRetry={reload} />}
           {/* on a phone the index folds into one control at the top of the page */}
           <label className="acct-jump">
             <span>Go to</span>

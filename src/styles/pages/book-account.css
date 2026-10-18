@@ -38,7 +38,7 @@
 .stop { color: var(--kicker-terracotta); }
 /* running text never ends a paragraph on one word (rule 1): a default with no weight, so a rule that balances wins;
    the printed book's own pages keep the samples' setting */
-:where(.book-page, .acct-page, .plans-page, .talk-page, .start, .wall) :where(p, li, small, span, b, label, blockquote):where(:not(.bk-reader *)) { text-wrap: pretty; }
+:where(.book-page, .acct-page, .plans-page, .talk-page, .start, .wall) :where(p, li, small, span, b, strong, a, dt, dd, h2, h3, label, blockquote):where(:not(.bk-reader *)) { text-wrap: pretty; }
 .cloth .stop, .on-dark .stop { color: var(--brass); }
 .wall-none .stop { color: var(--kicker-terracotta); }
 .acct-why { font: 400 13px/1.35 var(--font-ui); color: var(--ink-soft); }
@@ -88,7 +88,7 @@
 .bkh { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: var(--s-10); align-items: end; }
 .bkh-words { min-width: 0; }
 .hero .bkh .label { font: 500 13px/1.3 var(--font-ui); letter-spacing: 0.01em; color: var(--on-chocolate-soft); margin-bottom: var(--s-2); }
-.cloth.compact .hero h1.bkh-title { font-family: var(--font-ui); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; color: var(--on-chocolate); text-wrap: balance; }
+.cloth.compact .hero :is(h1, p).bkh-title { font-family: var(--font-ui); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; color: var(--on-chocolate); text-wrap: balance; }
 .bkh-line { margin-top: var(--s-2); font: 400 14px/1.4 var(--font-ui); color: var(--on-chocolate-soft); font-variant-numeric: lining-nums; }
 .bkh-edition { display: grid; gap: 10px; padding-bottom: 4px; }
 .bkh-headline { font: italic 400 20px/1.25 var(--book-body); color: var(--on-chocolate); }
@@ -223,11 +223,18 @@
   .ed-ledger { grid-template-columns: minmax(0, 1fr); }
   .bk-empty { grid-template-columns: minmax(200px, 320px) minmax(0, 1fr); gap: var(--s-10); }
 }
+/* a tablet: the three-across row under the book has no room for both pill groups, so the note and "Read this page"
+   share the first row and the buttons take the next, as on a phone (the dashes stay under them) */
+@media (max-width: 900px) {
+  .bk-under.bk-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cap read" "ctrl ctrl" "dots dots"; row-gap: var(--s-1); }
+  .bk-under.bk-row > .bk-caption { justify-self: start; }
+  .bk-under.bk-row > .bk-controls { margin-top: var(--s-2); }
+}
 @media (max-width: 760px) {
   /* a phone: a shorter cloth, the note above the buttons, both buttons on one row, the page number for the dashes */
   .book-page { --bk-chrome: 250px; padding-top: var(--s-3); }
   .bkh { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
-  .cloth.compact .hero h1.bkh-title { font-size: 32px; }
+  .cloth.compact .hero :is(h1, p).bkh-title { font-size: 32px; }
   .bkh-edition { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--s-3); }
   .bkh-rule { grid-column: 2; }
   .bkh-headline { font-size: 18px; grid-row: 1; }
@@ -292,7 +299,7 @@
 .acct-exlibris { position: relative; width: 100%; max-width: 300px; aspect-ratio: 1130 / 1400; }
 .acct-plate { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .acct-plate-words { position: absolute; left: 14%; right: 14%; top: 25%; bottom: 18%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-3); text-align: center; }
-.sheet-page .acct-plate-words h1 { font: 600 32px/1.05 var(--book-display); color: var(--sheet-ink); overflow-wrap: break-word; text-wrap: balance; }
+.sheet-page .acct-plate-words .acct-plate-name { font: 600 32px/1.05 var(--book-display); color: var(--sheet-ink); overflow-wrap: break-word; text-wrap: balance; }
 .acct-plate-book { font: 600 12px/1.3 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--foil-deep); }
 .sheet-page .acct-sub { font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.1; color: var(--sheet-ink); }
 .acct-sec-profile .acct-lead { margin-bottom: var(--s-5); }
@@ -384,7 +391,7 @@
   .acct-people li { grid-template-columns: 44px minmax(0, 1fr); }
   .acct-people li > :last-child { grid-column: 2; justify-self: start; }
   .acct-exlibris { max-width: 280px; margin: 0 auto; }
-  .sheet-page .acct-plate-words h1 { font-size: 26px; }
+  .sheet-page .acct-plate-words .acct-plate-name { font-size: 26px; }
 }
 
 /* ═════════════════════════ 3. Plans: one table, every plan side by side ═════════════════════════ */
@@ -463,6 +470,16 @@
   /* five cards told apart by tone, not by borders */
   .pl-col { padding: var(--s-2) var(--s-5) 0; background: var(--paper-tone); border-radius: 6px; }
   .pl-col.mine { background: var(--paper-print); }
+  .pl-cell.none { display: none; }
+}
+/* a tablet: the fifth plan alone on its row is set like the wall's lone leaf, its head on the left and its rows in two
+   columns on the right, never one narrow column in a wide card */
+@media (min-width: 761px) and (max-width: 900px) {
+  .pl-table > .pl-col:last-child { display: grid; grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; column-gap: var(--s-6); align-content: start; padding-bottom: var(--s-3); }
+  .pl-table > .pl-col:last-child > .pl-head { grid-column: 1; grid-row: 1 / span 4; align-self: start; }
+  .pl-table > .pl-col:last-child > .pl-cell { grid-column: auto; }
+  .pl-table > .pl-col:last-child > .pl-act { grid-column: 2 / -1; }
+  .pl-table > .pl-col:last-child > .pl-act:empty { display: none; }
 }
 @media (max-width: 760px) {
   .pl-table { grid-template-columns: minmax(0, 1fr); }
@@ -852,6 +869,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .bk-skel-rail .bka-sk-label { margin-bottom: var(--s-3); }
 .bk-skel-rail .bka-sk-line { height: 45px; }
 .bk-skel .bka-sk-block { width: 100%; aspect-ratio: 2 / 1; max-width: min(100%, calc((100vh / var(--zoom, 1) - var(--bk-chrome, 316px)) * 2), 1480px); justify-self: center; }
+.bk-skel-under { display: none; }
 .talk-skel { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); }
 .talk-skel .bka-sk-block { min-height: 320px; }
 /* Account: the index's group labels over 44px rows, and the real sections' grid with the bookplate first */
@@ -863,12 +881,22 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .acct-skel .acct-exlibris.bka-sk-block { border-radius: 6px; }
 .acct-skel-jump { display: none; }
 @media (max-width: 1100px) {
-  .bk-skel { grid-template-columns: minmax(0, 1fr); }
-  .bk-skel > .bka-sk-col { order: 2; }
+  /* the book, the row under it (12px down, 56px), then the rail 32px further, as the desk stacks */
+  .bk-skel { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .bk-skel > .bka-sk-col { order: 2; margin-top: var(--s-8); }
+  .bk-skel-under { display: block; order: 1; height: 56px; margin-top: var(--s-3); }
   .talk-skel { grid-template-columns: minmax(0, 1fr); row-gap: var(--s-10); }
 }
+/* one page at a time (a phone, or a window taller than it is wide): the block is one square page, as the reader shows */
+@media (max-width: 760px), (max-aspect-ratio: 9/10) {
+  .bk-skel .bka-sk-block { aspect-ratio: 1; max-width: min(100%, calc(100vh / var(--zoom, 1) - var(--bk-chrome, 316px)), 640px); }
+}
+@media (max-width: 900px) {
+  /* the row under the book stacks: the note and "Read this page", the buttons, the dashes */
+  .bk-skel-under { height: 116px; }
+}
 @media (max-width: 760px) {
-  .bk-skel .bka-sk-block { aspect-ratio: 1; max-width: 100%; }
+  .bk-skel-under { height: 98px; margin-top: var(--s-1); }
   .talk-skel .bka-sk-block { order: -1; min-height: 300px; }
   .acct-skel .acct-skel-index { display: none; }
   .acct-skel-jump { display: block; height: 48px; margin-bottom: var(--s-4); }
@@ -890,13 +918,18 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .wall-sk-leaf { display: block; min-height: 420px; border: 1px solid var(--sheet-rule); border-radius: 4px; }
 .wall-sk-leaf:nth-child(3) { display: none; }
 .wall-skel .wall-page { position: relative; }
-.wall-sk-mark { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
+.wall-sk-leaf:first-child { display: grid; place-items: center; }
+.wall-sk-leaf .loading-mark { min-height: 0; }
 @media (min-width: 1600px) { .wall-sk-leaf:nth-child(3) { display: block; } }
+/* below 1100px the contents sit above the leaves, their rows side by side: one row of lines on a tablet, two on a phone */
+@media (max-width: 1100px) { .wall-sk-row:nth-of-type(n + 3) { display: none; } .wall-sk-head.tall { height: 40px; } }
+@media (max-width: 760px) { .wall-sk-row:nth-of-type(3) { display: block; } }
 @media (max-width: 760px) {
   .wall-sk-leaf:nth-child(n + 2) { display: none; }
   .wall-sk-leaf { min-height: 360px; }
+  /* a phone sets the chapter's title at 28px: its line box is 32px */
+  .wall-sk-head.tall { height: 32px; }
   /* a phone sets the name smaller and the line about them over more lines; the contents sit above the leaves */
   .wall-sk-hl, .wall-sk-hl.third { height: 39px; }
   .wall-sk-hl.tall { height: 44px; }
-  .wall-sk-row:nth-of-type(n + 4) { display: none; }
 }

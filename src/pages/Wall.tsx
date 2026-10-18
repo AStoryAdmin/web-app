@@ -22,6 +22,7 @@ import { usePhotoUrl } from "../lib/photoUrls";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { arrive } from "../lib/arrive";
+import { smarten } from "../lib/typography";
 import WhereNext, { Stop } from "../components/book/WhereNext";
 import { bookStructure } from "../app-core/lib/legacyBook.js";
 import { printedChapterName } from "../app-core/lib/bookDesign.js";
@@ -32,7 +33,7 @@ type WallStory = { name: string; last_name: string; photo_url: string | null; in
 type Chapter = { name: string; items: WallMemory[] };
 
 const paragraphs = (t: string) =>
-  String(t || "")
+  smarten(String(t || ""))
     .split(/\n{2,}|\n/)
     .map((p) => p.trim())
     .filter(Boolean);
@@ -213,11 +214,11 @@ function Leaf({ m }: { m: WallMemory }) {
     <article ref={leaf} className={`wall-leaf${photo ? " has-photo" : ""}`} aria-labelledby={`${id}-t`}>
       {photo && (
         <span className="wall-print">
-          <img src={photo} alt={m.title ? `A photograph for “${m.title}”` : "A photograph from the story"} loading="lazy" />
+          <img src={photo} alt={m.title ? `A photograph for “${smarten(m.title)}”` : "A photograph from the story"} loading="lazy" />
         </span>
       )}
       {m.period && <p className="wall-date">{m.period}</p>}
-      <h3 id={`${id}-t`}>{m.title || "Untitled"}</h3>
+      <h3 id={`${id}-t`}>{m.title ? smarten(m.title) : "Untitled"}</h3>
       {/* a drop cap needs a long first line to wrap around; words kept line by line start plain */}
       <div ref={words} id={`${id}-w`} className={`wall-words${open ? "" : " closed"}${(paras[0] || "").length > 140 ? " drop" : ""}`}>
         {paras.map((p, i) => (
@@ -286,18 +287,19 @@ function WallWait() {
             <i className="bka-sk-line wall-sk-row" />
             <i className="bka-sk-line wall-sk-row" />
           </div>
-          <div className="wall-main" aria-hidden="true">
+          {/* the outlines are empty, so nothing here is read but the mark's own status line */}
+          <div className="wall-main">
             <div className="wall-chapter">
               <i className="bka-sk-line tall w40 wall-sk-head" />
               <div className="wall-leaves">
-                <span className="wall-sk-leaf" />
+                {/* the heart draws inside the first outline, where the first words will land, on clear paper */}
+                <span className="wall-sk-leaf">
+                  <LoadingMark />
+                </span>
                 <span className="wall-sk-leaf" />
                 <span className="wall-sk-leaf" />
               </div>
             </div>
-          </div>
-          <div className="wall-sk-mark">
-            <LoadingMark />
           </div>
         </div>
       </main>
@@ -383,7 +385,7 @@ export default function Wall() {
                 <Stop />
               </h1>
               <p className="wall-intro" data-rise>
-                {story.intro || `A life, in ${story.name}’s own words.`}
+                {story.intro ? smarten(story.intro) : `A life, in ${story.name}’s own words.`}
               </p>
               {(count > 0 || family > 0) && (
               <p className="wall-counts" data-rise>
@@ -470,7 +472,7 @@ export default function Wall() {
                     <div className="wall-notes">
                       {story.testimonials.map((t) => (
                         <blockquote key={t.id} className="wall-note">
-                          <p>{t.body}</p>
+                          <p>{smarten(t.body)}</p>
                           <footer>{[t.contributor_name, t.relationship].filter(Boolean).join(", ")}</footer>
                         </blockquote>
                       ))}
