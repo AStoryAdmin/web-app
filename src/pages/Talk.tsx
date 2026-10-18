@@ -102,7 +102,7 @@ export default function Talk() {
               Write it instead
             </ButtonLink>
           </div>
-          {/* the pen lying ready on the card (the same nib as the open leaf's) */}
+          {/* the pen lying ready on the card */}
           <svg className="talk-nib" viewBox="0 0 40 96" width="40" height="96" aria-hidden="true">
             <path className="body" d="M20 94 L7 50 C5 41 7 27 11 15 L29 15 C33 27 35 41 33 50 Z" />
             <path className="slit" d="M20 92 V52" />

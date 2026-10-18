@@ -306,7 +306,7 @@
    The founder (17 Oct): the book card filled a screen to say "8" again, the search, the chapters and the
    Prints/List switch took three rows, the list ran 1500px wide a line at a time. Now the book's progress is the
    fourth figure on the cloth; one row holds the search, the chapters and the switch; the prints are square and
-   six or so across; the list is two columns on a wide screen; the open leaf still waits at the end. */
+   six or so across; the list is two columns on a wide screen. */
 
 /* the fourth figure on the cloth: the keepsake, how far toward the first edition as a share (not the count again), a hairline */
 .hero .arc-stats-hero { align-items: flex-end; row-gap: var(--s-5); }

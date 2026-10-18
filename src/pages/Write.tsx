@@ -847,7 +847,7 @@ function Writer({ story }: { story: Story }) {
         ),
       );
     } catch (err) {
-      setError(`${plainCause(err)} Your words are still here; try again.`);
+      setError(`${plainCause(err)} Your words are still here.`);
       setBusy("");
     }
   };
@@ -962,11 +962,13 @@ function Writer({ story }: { story: Story }) {
       )}
     </>
   );
-  const pencil = (
+  // the pencilled note: the question chosen from the help; else, for a new page, a word that fits how far it has come
+  const note = asked || (editing ? "" : words >= 50 ? "Take all the time you need." : "A few lines is plenty.");
+  const pencil = note ? (
     <p className={`w-pencil${asked ? " asked" : ""}`} aria-live="polite">
-      <span>{asked ? asked : "A few lines is plenty."}</span>
+      <span>{note}</span>
     </p>
-  );
+  ) : null;
   const tools = (
     <section className={`w-help${empty ? " off" : ""}`}>
       <h2 className="w-kick">If you’d like a hand</h2>
@@ -1111,12 +1113,16 @@ function Writer({ story }: { story: Story }) {
                       <span>{bookName}</span>
                       <span>Memory No. {number}</span>
                     </p>
-                    {questionHead}
-                    <p className="w-orn" aria-hidden="true">
-                      <i>✦</i>
-                    </p>
-                    {context}
-                    {pencil}
+                    {/* the question, today's others and the note travel down with the writing, so a long page never leaves
+                        the left-hand page a screen of blank paper */}
+                    <div className="leaf-left-in">
+                      {questionHead}
+                      <p className="w-orn" aria-hidden="true">
+                        <i>✦</i>
+                      </p>
+                      {context}
+                      {pencil}
+                    </div>
                   </section>
                 )}
                 <article className="leaf-one" aria-label="The page">

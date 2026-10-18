@@ -74,7 +74,8 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .sheet-page .page.w-desk .w-grid.spread .w-question[data-len="xlong"] { font-size: 23px; } /* only an edited title runs this long */
 .w-sub { margin: 8px 0 0; max-width: 34em; font-family: var(--book-body); font-style: italic; font-size: 18px; line-height: 1.45; color: var(--ink-soft); text-wrap: pretty; }
 /* one page: the question sits on the paper above the book, the dog's head between them */
-.w-grid.single .w-qhead { margin: 0 0 100px; }
+.w-grid.single .w-qhead { margin: 0 0 112px; }
+.w-grid.single .w-begin-inpage button:nth-child(n + 4) { display: none; }
 .sheet-page .page.w-desk .w-grid.single .w-question:not([data-len]) { max-width: 24ch; }
 
 /* ── The book: a cloth board, a stitched edge, gold corners, gilt page edges ── */
@@ -100,12 +101,12 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .w-dog { position: absolute; z-index: 3; right: 56px; bottom: calc(100% - 13px); width: 128px; aspect-ratio: 781 / 640; pointer-events: none; }
 /* every pose on one scale: the box is 781 drawing-px wide and 640 tall; each pose is drawn at its own height of 640 */
 .w-dog img { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; object-fit: contain; object-position: 50% 100%; }
-.w-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out); }
+.w-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out) 100ms; } /* returning: after the cover has gone */
 /* awake, he hides his eyes from behind the book: the drawing is cut at the board's top edge */
 .w-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 13px 0);
-  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
-.w-dog[data-awake] .sleep { opacity: 0; }
-.w-dog[data-awake] .awake { opacity: 1; transform: none; transition-delay: 60ms; }
+  transition: opacity 100ms var(--ease-out), transform 100ms var(--ease-out); } /* leaving: quickly, before sleep returns */
+.w-dog[data-awake] .sleep { opacity: 0; transition-delay: 0ms; }
+.w-dog[data-awake] .awake { opacity: 1; transform: none; transition: opacity 200ms var(--ease-out) 60ms, transform 200ms var(--ease-out) 60ms; }
 
 /* ── The right-hand page (or the only one) ── */
 .sheet-page .w-book .leaf-one { gap: 14px; padding: 46px clamp(28px, calc(4.2vw / var(--zoom, 1)), 64px) 34px; border-radius: 2px; box-shadow: none; color: var(--w-ink); }
@@ -160,23 +161,24 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .spread:not(.rail) .w-ribbon { height: 26px; }
 /* a laptop's short screen: the ornament goes and the list tightens, so the seal is in the first screen */
 @media (max-height: 740px) {
-  .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 64px; }
+  .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 72px; }
   .w-desk .spread .w-dog { width: 84px; }
   .spread .leaf-left .w-sub, .spread .leaf-left .w-pencil:not(.asked) { display: none; }
-  .spread .leaf-left, .sheet-page .spread .w-book .leaf-one { gap: 6px; padding-top: 20px; padding-bottom: 14px; }
+  .spread .leaf-left, .spread .leaf-left-in, .sheet-page .spread .w-book .leaf-one { gap: 6px; padding-top: 18px; padding-bottom: 8px; }
+  .spread .leaf-left-in { padding: 0; }
   .spread .leaf-left .w-qhead { margin-top: 4px; }
   .spread .w-book .leaf-one .wtitle { margin-top: 2px; }
   .spread .w-book .leaf-one .dear { margin: 2px 0 -4px; }
   .spread .w-book .leaf-one .signoff { margin-top: 0; }
   .spread .w-book .leaf-one .folio { padding-top: 2px; }
-  .spread .w-keep { margin-top: 8px; }
-  .spread:not(.rail) .w-ribbon { height: 18px; }
+  .spread .w-keep { margin-top: 4px; }
+  .spread:not(.rail) .w-ribbon { display: none; } /* no room for a tail with its notch; better none than a nick */
   .spread .leaf-left { padding-bottom: 8px; }
   .spread .w-book .leaf-one .wbody { min-height: var(--w-line); }
 }
 @media (max-height: 900px) {
   .spread .leaf-left .w-qhead { margin-top: 0; }
-  .spread .leaf-left .w-pencil { padding-top: 4px; }
+  .spread .leaf-left .w-pencil { margin-top: 8px; }
   .spread .leaf-left .w-orn { display: none; }
   .spread .leaf-left .w-q { padding: 6px 0; }
   .spread .leaf-left .w-q.own { padding: 10px 0; }
@@ -193,6 +195,8 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .leaf-left .running-head.verso { display: flex; justify-content: space-between; gap: 12px; margin: 0; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); }
 .leaf-left .running-head.verso span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .leaf-left .w-qhead { margin-top: 10px; }
+/* the question, today's others and the note stay in view beside a long page (sticky inside the left-hand page) */
+.leaf-left > .leaf-left-in { position: sticky; z-index: 1; top: calc(var(--top-h) + 16px); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .spread .w-dog { width: 96px; }
 .w-orn { display: flex; align-items: center; gap: 14px; margin: 0; color: var(--foil); }
 .w-orn::before, .w-orn::after { content: ""; flex: 1; height: 1px; background: var(--foil-soft); }
@@ -215,7 +219,7 @@ a.w-q:focus-visible { outline: 2px solid var(--wax-light); outline-offset: 2px; 
 .w-pencil { position: relative; display: block; margin: 0; padding: 0 0 0 4px; font: italic 400 19px/1.25 var(--book-body); color: var(--w-pencil); }
 .w-pencil svg { display: block; margin: 6px 0 0 auto; width: 70px; height: 34px; overflow: visible; }
 .w-pencil path { fill: none; stroke: var(--w-pencil); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-.leaf-left .w-pencil { margin-top: auto; padding-top: 12px; align-self: flex-end; text-align: right; }
+.leaf-left .w-pencil { margin-top: 14px; padding-top: 0; align-self: flex-end; text-align: right; }
 .w-pencil.asked span::before { content: "✎ "; font-style: normal; color: var(--wax-light); }
 .leaf-left .w-pencil.asked { max-width: 24em; }
 .leaf-left .w-pencil.asked svg { display: none; }
@@ -456,7 +460,8 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   .w-book .leaf-one > .w-focus { display: none; }
   .w-book .leaf-one .running-head { padding: 0; letter-spacing: 0.1em; }
   .w-keep-error { margin-left: 0; }
-  .w-grid:not(.rail) .w-keep-seal .w-keep-error { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; margin: 2px 0 4px; max-width: none; }
+  .w-grid:not(.rail) .w-keep-seal .w-keep-error { display: block; grid-column: 1 / -1; grid-row: 2; justify-self: stretch; margin: 2px 0 4px; max-width: none; }
+  .w-keep-seal .w-keep-error .w-retry { min-height: 0; margin: -15px 0 -15px 10px; padding: 15px 2px; vertical-align: baseline; } /* inline after the words, still 44px to press */
   /* the question stays the largest line on the screen */
   .w-book .leaf-one .wtitle { font-size: 21px; margin-top: 10px; }
   .w-book .leaf-one .signoff span { font-size: 24px; }
@@ -485,9 +490,10 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
 
 /* a narrow phone: one way to begin, so a pill never sits alone with empty paper beside it */
 @media (max-width: 380px) { .w-begin-inpage button:nth-child(n + 2) { display: none; } }
+@media (max-width: 340px) { .w-book .leaf-one .wtitle { font-size: 19px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .w-dog img, .w-dog .awake, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
+  .w-dog .sleep, .w-dog .awake, .w-dog[data-awake] .sleep, .w-dog[data-awake] .awake, .w-tool, .w-focus, .w-attach, .w-person, .w-keep .seal-button, .w-keep .seal-button .seal, .w-keep .seal-button .wax, .w-keep .seal-button .ring, .w-keep .seal-button .mark { transition: none; }
   .w-tool.speak.listening > svg { animation: none; }
 }
 
@@ -497,10 +503,3 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px;
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px; }
 .ink-stamp i { display: none; }
-
-/* ── The open leaf at the foot of Home and the Archive (components/delight/OpenLeaf): the same book as the
-   writer's, so its pages show gilt edges; its small print at the house floor; its note in the book's italic ── */
-.open-leaf .ol-page { box-shadow: var(--edge-stack); }
-.open-leaf .ol-head { font-size: 12px; letter-spacing: 0.16em; }
-.open-leaf .ol-note { font: italic 400 20px/1.2 var(--book-body); color: var(--ink-soft); }
-@media (max-width: 760px) { .open-leaf .ol-head { letter-spacing: 0.12em; } .open-leaf .ol-note { font-size: 19px; } }
