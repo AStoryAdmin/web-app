@@ -64,6 +64,16 @@ const matches = (m: Memory, q: string) => {
   return q.split(/\s+/).filter(Boolean).every((w) => hay.includes(w));
 };
 
+/** The wall line the viewer last saw on this page, held while the account loads. */
+const WALL_SEEN = "astory-archive-wall";
+function lastWall(): string | null {
+  try {
+    return localStorage.getItem(WALL_SEEN);
+  } catch {
+    return null;
+  }
+}
+
 export default function Archive() {
   const { account, activeStory: story, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
   const [params, setParams] = useSearchParams();
@@ -82,6 +92,17 @@ export default function Archive() {
 
   const storyId = story?.id ?? null;
   const memories = useMemo(() => story?.memories ?? [], [story]);
+
+  // Which wall line this viewer last saw, so the next cold load holds the same one (a per-viewer convenience)
+  const shared = Boolean(story?.isPublic && story?.publicSlug);
+  useEffect(() => {
+    if (!storyId) return;
+    try {
+      localStorage.setItem(WALL_SEEN, shared ? "public" : "private");
+    } catch {
+      /* storage refused: the next load holds the private line */
+    }
+  }, [storyId, shared]);
 
   // The family's contributions waiting for a keeper (the banner).
   useEffect(() => {
@@ -256,9 +277,17 @@ export default function Archive() {
               The Archive
               <Stop />
             </h1>
-            {/* the longer of the two wall lines (a shared wall), so a phone holds its two lines; a private one is shorter */}
+            {/* the wall line this viewer saw last time (a first visit: the private one, as every story starts) */}
             <p className="meta arc-wall hold-words">
-              Anyone with the link can read the public memories. <span className="arc-wall-act">Copy link</span>
+              {lastWall() === "public" ? (
+                <>
+                  Anyone with the link can read the public memories. <span className="arc-wall-act">Copy link</span>
+                </>
+              ) : (
+                <>
+                  Only the family can read this. <span className="arc-wall-act">Share it by link</span>
+                </>
+              )}
             </p>
             <dl className="hero-stats arc-stats-hero hold-words">
               <div>

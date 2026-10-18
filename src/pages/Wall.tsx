@@ -326,7 +326,8 @@ export default function Wall() {
 
   // One authored arrival: the name rises line by line, the sheet settles (lib/arrive). The leaves below are never
   // held back for it: they move on the scroll's own timeline (CSS), so nothing waits on an observer.
-  useEffect(() => {
+  // (a layout effect, so the from-state is set before the first paint)
+  useLayoutEffect(() => {
     if (!story || !root.current) return;
     return arrive(root.current);
   }, [story]);

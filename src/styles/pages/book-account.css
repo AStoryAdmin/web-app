@@ -900,7 +900,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
 .bk-skel-under { display: none; }
 .talk-skel { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; column-gap: var(--s-20); }
 /* the card's outline takes the card's own half-degree tilt, so its corners land where the card's do */
-.talk-skel .bka-sk-block { min-height: 306px; transform: rotate(-0.5deg); }
+.talk-skel .bka-sk-block { min-height: 301px; transform: rotate(-0.5deg); }
 /* Account: the index's group labels over 44px rows, and the real sections' grid with the bookplate first */
 .acct-skel-index { gap: 0; }
 .acct-skel-index .bka-sk-line.nav { height: 44px; border-bottom: 0; position: relative; }
@@ -917,7 +917,7 @@ html:has(.wall) { scrollbar-gutter: stable; }
   .talk-skel { grid-template-columns: minmax(0, 1fr); row-gap: var(--s-10); }
   /* stacked: the words' place at their arrived height, the card's outline where the card lands, across the column */
   .talk-skel > .bka-sk-col { min-height: 405px; }
-  .talk-skel .bka-sk-block { min-height: 261px; margin-top: 0; }
+  .talk-skel .bka-sk-block { min-height: 253px; margin-top: 0; }
 }
 /* one page at a time (a phone, or a window taller than it is wide): the block is one square page, as the reader shows */
 @media (max-width: 760.98px), (max-aspect-ratio: 9/10) {

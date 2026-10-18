@@ -742,7 +742,8 @@ function Writer({ story }: { story: Story }) {
   }, [focus]);
 
   // The book is laid on the desk, the running head and the sign-off are inked in, the ribbon settles, the margins follow.
-  useEffect(() => {
+  // (a layout effect, so the book never paints at rest before it is laid down)
+  useLayoutEffect(() => {
     const book = bookRef.current;
     const desk = deskRef.current;
     if (!book || !desk) return;

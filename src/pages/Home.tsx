@@ -76,6 +76,8 @@ export default function Home() {
                 </span>
                 <span className="btn quiet sm">Ask me another</span>
               </div>
+              {/* the plan is known from sign-in: a free account's note under the acts is held too */}
+              {!unlimited && <p className="meta note">3 of today’s three waiting.</p>}
             </div>
           </div>
         }
