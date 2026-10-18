@@ -70,7 +70,7 @@ export default function Home() {
     <div className="hero-grid home-hero">
       <div className="greet">
         <p className="label" data-rise>
-          {longDate()} · {own ? "Your story" : `${story.name}'s story`}
+          {longDate()} · {own ? "Your story" : `${story.name}’s story`}
           <span className="mobile-only">
             {" "}
             <TellerPick />
@@ -163,7 +163,7 @@ export default function Home() {
               <div className="glance-row">
                 <img className="glance-book" src="/book/keepsake-closed.webp" alt="" width={52} />
                 <div className="glance-body">
-                  <h3>{own ? "Your book" : `${story.name}'s book`}</h3>
+                  <h3>{own ? "Your book" : `${story.name}’s book`}</h3>
                   <p className="meta">{progress.headline}</p>
                   <div className="progress" style={{ ["--pct" as string]: `${Math.round(progress.ratio * 100)}%` }} role="img" aria-label={`${Math.round(progress.ratio * 100)}% of the way to a first edition`}>
                     <div className="bar" />
@@ -190,7 +190,7 @@ export default function Home() {
                       ))}
                     </div>
                   ) : (
-                    <p className="meta">Nobody else is in {own ? "your" : `${story.name}'s`} story yet.</p>
+                    <p className="meta">Nobody else is in {own ? "your" : `${story.name}’s`} story yet.</p>
                   )}
                   <Link className="more" to="/family">
                     {fromFamily.length ? "See the family" : "Invite someone"}
