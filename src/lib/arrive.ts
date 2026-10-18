@@ -70,12 +70,15 @@ export function onEnter(items: HTMLElement[], play: (batch: HTMLElement[]) => vo
   window.addEventListener("scroll", soon, { passive: true });
   window.addEventListener("resize", soon);
   const first = window.setTimeout(check, 700);
+  // and a slow heartbeat, for a view whose scroll events never arrive (a background tab, an embedded pane)
+  const beat = window.setInterval(check, 1000);
   function stop() {
     io.disconnect();
     window.removeEventListener("scroll", soon);
     window.removeEventListener("resize", soon);
     window.clearTimeout(timer);
     window.clearTimeout(first);
+    window.clearInterval(beat);
   }
   return stop;
 }
