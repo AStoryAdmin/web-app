@@ -395,6 +395,7 @@ function collides(plate: HTMLElement): boolean {
 /* ── The plate ─────────────────────────────────────────────────────────── */
 
 export default function FamilyTree({ family, story, meId, own, preview, onAdd, onPlace, canPlace, coded = null }: Props) {
+  const codedKey = coded === "unknown" ? "?" : coded ? [...coded].sort().join(",") : "";
   const plateRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
@@ -476,7 +477,9 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     }
     setSize({ w: el.offsetWidth, h: el.offsetHeight });
     setThreads(measure(el, plate.links));
-  }, [plate.links, start, drawn]);
+    // the faces' state lines arrive with the codes and change the tiers' heights, so the fit and threads follow them
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plate.links, start, drawn, codedKey]);
 
   useLayoutEffect(() => {
     draw();
