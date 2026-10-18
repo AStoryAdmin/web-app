@@ -559,13 +559,13 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
             <header className="tp-label">
               <span className="tp-dot" aria-hidden="true" />
               {/* the decade and the generation's name flow together as one item; the asks wrap after them */}
-              <span className="tp-name">
+              <div className="tp-name">
                 {tier.decade && <span className="tp-dec">{tier.decade}</span>}
                 <h3>
                   {tier.title}
                   {tier.also && <span className="tp-also">{tier.also}</span>}
                 </h3>
-              </span>
+              </div>
               {tier.asks.map((g) => {
                 const anchor = g.anchorId ? byId.get(g.anchorId) || null : null;
                 return (

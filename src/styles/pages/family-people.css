@@ -693,7 +693,7 @@
 .tp[data-stack] .tp-tier:last-child { padding-bottom: 0; }
 /* the decade and the generation's name: a block on the plate's grid, one line of text where the label wraps, so a
    narrow phone never leaves "1960s" alone above its name */
-.tp-name { display: block; min-width: 0; }
+.tp-name { display: block; min-width: 0; line-height: 1.15; }
 @media (max-width: 1099.98px) {
   .tp-label .tp-dec { margin-right: 10px; }
 }
