@@ -687,3 +687,14 @@
 .tp[data-stack] .tp-tier.home .tp-zone.centre > * { order: -4; flex-basis: 100%; display: flex; justify-content: center; }
 .tp[data-stack] .tp-tier.home .tp-zone:not(.centre) :is(.tp-node, .tp-ghost), .tp[data-stack] .tp-tier.home .tp-zone.centre > .tp-ghost { margin-top: 0; }
 .tp[data-stack] .tp-tier.home .tp-zone:not(.centre) .tp-amp { margin-top: calc(var(--pz) / 2 - 18px); }
+
+/* ── round 11 ────────────────────────────────────────────────────────── */
+/* the last generation of a stacked plate ends without the gap between generations */
+.tp[data-stack] .tp-tier:last-child { padding-bottom: 0; }
+/* the decade and the generation's name: a block on the plate's grid, one line of text where the label wraps, so a
+   narrow phone never leaves "1960s" alone above its name */
+.tp-name { display: block; min-width: 0; }
+@media (max-width: 1099.98px) {
+  .tp-label .tp-dec { margin-right: 10px; }
+}
+.tp[data-stack] .tp-label .tp-dec { margin-right: 10px; }
