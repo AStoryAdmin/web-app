@@ -103,7 +103,7 @@
 .sheet-page .page.mv h1.mv-title { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 44px; line-height: 1.08; letter-spacing: -0.01em; color: var(--mv-ink); text-wrap: balance; overflow-wrap: break-word; min-width: 0; }
 @media (min-width: 1680px) { .sheet-page .page.mv h1.mv-title { font-size: 50px; } }
 .mv-title .seal { display: inline-block; vertical-align: -0.12em; margin-left: 4px; }
-@media (max-width: 599.98px) { .mv-title .seal { width: 32px !important; height: 32px !important; } .mv-title .seal svg { width: 100%; height: 100%; } }
+@media (max-width: 599.98px) { .mv-title .seal svg { width: 100%; height: 100%; } }
 .mv-date { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin: 10px 0 0; font: 500 14px/1.3 var(--font-ui); color: var(--mv-soft); }
 .mv-date > * + *::before { content: "·"; margin: 0 10px; color: var(--foil); }
 .mv-date .dated { font-weight: 600; letter-spacing: 0.02em; color: var(--mv-terra); }
@@ -641,3 +641,10 @@
 /* a memory title on a phone holds two lines: MemoryLead fits it by measurement, 32px down to 22px; the treasured
    seal after it scales with the type, so it never takes a line of its own */
 @media (max-width: 599.98px) { .mv-title .mv-seal { width: 1.15em !important; height: 1.15em !important; vertical-align: -0.12em; } }
+
+/* the smallest phones (320px): the head's three tools keep one row ("Share" never wraps alone), with a step less
+   padding and the first icon still on the text's edge */
+@media (max-width: 359.98px) {
+  .mv-state { flex-wrap: nowrap; margin-left: -8px; }
+  .sheet-page .mv .mv-state .mv-tool { padding: 0 8px; gap: 6px; }
+}

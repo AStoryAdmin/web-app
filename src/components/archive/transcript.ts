@@ -1,54 +1,74 @@
 /**
  * The house transcript style (docs/research/reading-2026.md §3.5) and the
- * closed list of rule 17a (lead ruling, 2026-10-18, round 10). Words that
- * came from a call or a conversation are set as a clean transcript at
- * display time, and the local tidy removes only:
- * (a) filler sounds (um, uh, er, hmm), and an opening "yeah / well / okay /
- *     so" before the teller's first words;
- * (b) a "like" set off by commas on both sides, or one directly before an
- *     intensifier or adverb (really, so, very, just, kind of, sort of, -ly)
- *     or before a verb after its subject ("and like worked");
- * (c) a slip word said twice in a row (I, I / the the / and, and /
- *     that's, that's);
- * (d) a broken-off clause the speaker restarts in their own next words
- *     ("So we did like a, we built an app");
- * (e) the other person's back-channel lines ("Wow, that's amazing.",
- *     "Wait, were you?"), never a reply that answers a question.
- * Everything else stays, word for word. The other person's question is set
- * as "We asked" only when the transcript names the speaker, or when the
- * asker plainly goes on and the teller answers with a back-channel ("For
- * sure."). The stored text is never touched, and the page always offers
- * the exact words beside the tidied ones.
+ * closed list of rule 17a (lead ruling, 2026-10-18, narrowed in round 11).
+ * Words that came from a call or a conversation are set as a clean
+ * transcript at display time. The local tidy removes only what the list
+ * names, and every cut it makes is recorded with the rule that allowed it
+ * (`explain`), so the tests check each cut against its rule:
+ * (a) the filler sounds um, uh, er, erm, hmm, mm, in lower case as words of
+ *     their own (never "ER", "UM", "8 mm"); yeah / well / okay / so as the
+ *     teller's very first word when a comma, a pronoun, "the" or a filler
+ *     follows; "yeah," or "so yeah," opening a later sentence that does not
+ *     answer a question; ", but yeah" / ", yeah" closing a statement;
+ * (b) "like" with a comma on both sides, or directly before really / so /
+ *     very / just / literally / actually / basically when the word before it
+ *     is and / but / so or a comma; the verb "like" never;
+ * (c) an article said twice; a pronoun, and / but / so or a short contraction
+ *     said twice when its first copy opens the clause;
+ * (d) a broken-off clause the speaker restarts in their own next words;
+ * (e) whole reaction sentences from a fixed set ("Wow." "Really?" "Wait,
+ *     were you?"…), and a "Yeah." straight after one of them.
+ * Everything else stays, word for word. "We asked" is set only when the
+ * transcript names the speaker, or in the 5963 shape. The stored text is
+ * never touched, and the page always offers the exact words.
  */
 
-const FILLER = /(^|[\s,;(—–])(?:u+m+|u+h+|uhm|erm|er|e+h|hmm+|mm+)(?=[\s,.;:!?)—–]|$)[,]?/gi;
-const BACKCHANNEL_WORD = "(?:yeah|yes|yep|yup|right|okay|ok|oh|ah|wait|mm-?hmm|uh-?huh|for sure|sure|exactly|totally|definitely|absolutely|of course|really|true|i see|got it|nice|wow|cool)";
-const REACTION = "(?:that'?s|that’s|so) (?:amazing|awesome|great|cool|so cool|incredible|wild|interesting|fun|nice)";
-const BACKCHANNEL = new RegExp(`^(?:${BACKCHANNEL_WORD}|${REACTION})(?:[,\\s]+(?:${BACKCHANNEL_WORD}|${REACTION}))*[.!?…]*$`, "i");
-/**
- * (a) An opening "yeah / well / okay / so" (with any filler sound) before the teller's first words: "Yeah well so I
- * started…" → "I started…". Only at the start of the teller's words, never inside them.
- */
-const OPENING_FILLER = /^(?:(?:yeah|well|okay|ok|so|um+|uh+)[,.]?\s+)+/i;
-/** (a) A "yeah," or "so yeah," that opens a later sentence: "Yeah, gaming and mental health, right?" → "Gaming…". */
-const LATER_YEAH = /^(?:so\s+)?yeah,\s+(?=\S)/i;
-/** (a) A closing ", but yeah" or ", yeah" at the end of a sentence: "…what my parents did, but yeah." → "…did." */
-const CLOSING_YEAH = /,\s*(?:but\s+)?yeah(?=[.!?…]*["”’)]*$)/i;
-/** A short question that reads as the other person's ("Wait, were you?", "Do they open to non-students as well?"), not a tag ("…, right?"). */
-const ASK = /^(?:and\s+|so\s+)?(?:do|did|does|is|are|was|were|how|what|why|when|where|who|which|can|could|would|will|have|has)\b[^?]{0,80}\?["”’]*$/i;
-/** A reaction, not a question to answer ("Wait, were you?", "Really?"): it is the other person's, and dropped. */
-const REACTION_Q = /^(?:wait|really|seriously|oh|huh)\b/i;
+/** The rule behind a cut, as the list names it. */
+export type TidyRule = "a-filler" | "a-opening" | "a-later" | "a-closing" | "b-like" | "c-slip" | "d-restart" | "e-reaction";
+/** One cut: its start and end in the text the tidy was given, and the rule that allowed it. */
+export type TidyCut = [number, number, TidyRule];
+
+/** (a) A filler sound, lower case, a word of its own (not inside "mm-hmm" or "her"), with a comma before or after it. */
+const FILLER_SOUND = /(,\s*)?(?<![\p{L}\p{N}'’-])(um|uh|er|erm|hmm|mm)(?![\p{L}\p{N}'’-])(,)?/gu;
+/** (a) The teller's very first word, when a comma, a pronoun, "the" or a filler sound follows it. */
+const OPENING_WORD = /^(yeah|well|okay|so)(?=,|\s+(?:i|you|he|she|we|they|it|my|our|your|his|her|their|the|um|uh|er|erm|hmm|mm)\b)/i;
+/** (a) "yeah," or "so yeah," opening a later sentence. */
+const LATER_YEAH = /^(?:so\s+)?yeah,\s*/i;
+/** (a) ", but yeah" or ", yeah" closing a statement (never before "?"). */
+const CLOSING_YEAH = /,\s*(?:but\s+)?yeah(?=[.!…]*["”’)]*$)/i;
+/** (b) The words a filler "like" stands before. */
+const LIKE_INTENSIFIER = /^\s*(?:really|so|very|just|literally|actually|basically)\b/i;
+/** (b) What may stand before such a "like": and / but / so, or a comma. */
+const LIKE_AFTER = /(?:\b(?:and|but|so)\s+|,\s*)$/i;
+/** (c) An article, said twice anywhere. */
+const ARTICLE_TWICE = /\b(a|an|the)(?:,?\s+(?:(?:um|uh|er|erm|hmm|mm),?\s+)?\1\b)+/gi;
+/** (c) A pronoun, and / but / so, or a short contraction: said twice only when the first copy opens the clause. */
+const OPENER = "i|you|he|she|we|they|it|me|him|her|us|them|my|our|your|his|their|and|but|so|that['’]s|it['’]s|i['’]m|we['’]re|they['’]re|he['’]s|she['’]s|there['’]s|i['’]ve|we['’]ve|i['’]d|you['’]re|i['’]ll|we['’]ll";
+const OPENER_TWICE = new RegExp(`(?<![\\p{L}'’])(${OPENER})(?:,?\\s+(?:(?:um|uh|er|erm|hmm|mm),?\\s+)?\\1)+(?![\\p{L}'’])`, "giu");
+/** "So, so" is a stammer only when a pronoun or "the" follows ("So, so I went"); "So, so good" is the teller's emphasis. */
+const SO_STAMMER_NEXT = /^,?\s*(?:i|you|he|she|we|they|it|my|our|the|then|that)\b/i;
+/** (c) Where a clause opens: the start, after a comma, or after and / but / so / then / because. */
+const OPENS_CLAUSE = /(?:^["“‘(]?|[,;:]\s*|\b(?:and|but|so|then|because)\s+)$/i;
+/** (d) A clause that stops where no clause can end: on a lower-case article or possessive ("we did a,"; never "an A,"). */
+const BREAKS_OFF = /\b(?:a|an|the|my|our|their|your)$/;
+/** (e) The other person's reactions, the fixed set. */
+const REACTION = /^(?:wow|wow, that['’]s amazing|that['’]s (?:amazing|awesome|great|cool)|wait, were you\?|really\?|yeah, right\?)[.!]*$/i;
+/** (e) A "Yeah." straight after a reaction. */
+const YEAH_ALONE = /^yeah[.!]*$/i;
+
+/** A question (not a tag, "…, right?"): what follows it is the answer. */
 const TAG = /\b(?:right|you know|isn't it|wasn't it|okay|yeah|huh)\?["”’]*$/i;
-/**
- * The asker plainly going on after their question, about themselves ("Because our strategy right now is…", "We're
- * going to…"): it counts only when the teller then answers with a back-channel ("For sure."), as in 5963. "Because the
- * soldiers came…" or "We were rice farmers" with nothing after is the teller's answer.
- */
+const isQuestion = (s: string) => /\?["”’)]*$/.test(s.trim()) && !TAG.test(s.trim());
+/** A question the other person might ask, in an unlabelled transcript. */
+const ASK = /^(?:and\s+|so\s+)?(?:do|did|does|is|are|was|were|how|what|why|when|where|who|which|can|could|would|will|have|has)\b[^?]{0,80}\?["”’]*$/i;
+/** Never lifted: a question holding the first person is the teller's own. */
+const FIRST_PERSON = /\b(?:i|me|my|mine|we|us|our|ours|myself|ourselves)\b/i;
+/** The asker plainly going on about themselves ("Because our strategy right now is…"). */
 const ASKER_GOES_ON = /^(?:(?:because|and|so)\s+)?(?:our|we're|we’re|we are|we'll|we’ll|we will|we want)\b/i;
+/** The teller's answer that completes the 5963 shape. */
+const TELLER_ANSWERS = /^(?:for sure|yes)\b/i;
 /** The mark that begins a paragraph holding the other person's question, set as the book's "We asked" line. */
 export const ASKED = "⁣";
-/** Marks, inside the cleaner only, the teller's words straight after a lifted question: they open on the answer. */
-const ANSWER = "\u2064";
 /** Labels a chat or call transcript puts in front of each turn. */
 const TURN = /(?:^|\s)(You|Me|AI|Assistant|A Story|Interviewer|Narrator|Q|A):\s+/g;
 const OTHER = /^(AI|Assistant|A Story|Interviewer|Q)$/i;
@@ -86,20 +106,265 @@ export function tellerTurns(text: string): string {
 
 const cap = (s: string) => s.replace(/^(["“‘(]?)([a-z])/, (_, q: string, c: string) => q + c.toUpperCase());
 const sentencesOf = (s: string) => s.match(/[^.!?…]+(?:[.!?…]+["”’)]*|$)\s*/g) || [s];
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+
+/** The sentences of a text with where each starts, trimmed. */
+function sentencesAt(text: string): { at: number; s: string }[] {
+  const out: { at: number; s: string }[] = [];
+  let pos = 0;
+  for (const raw of sentencesOf(text)) {
+    const at = text.indexOf(raw, pos);
+    if (at < 0) continue;
+    pos = at + raw.length;
+    const lead = raw.length - raw.trimStart().length;
+    const s = raw.trim();
+    if (s) out.push({ at: at + lead, s });
+  }
+  return out;
+}
+
+/** (a) The filler sounds in a sentence; never "mm" after a number ("8 mm"). */
+function fillerCuts(s: string): TidyCut[] {
+  const out: TidyCut[] = [];
+  for (const m of s.matchAll(FILLER_SOUND)) {
+    const at = m.index ?? 0;
+    const word = m[2];
+    const wordAt = at + (m[1]?.length ?? 0);
+    if (word === "mm" && /\d\s*$/.test(s.slice(0, wordAt))) continue;
+    out.push([at, at + m[0].length, "a-filler"]);
+  }
+  return out;
+}
+
+/** (b) The "like"s the list names: ", like," and "like" before an intensifier after and / but / so or a comma. */
+function likeCuts(s: string): TidyCut[] {
+  const out: TidyCut[] = [];
+  for (const m of s.matchAll(/,\s*like,/gi)) out.push([m.index ?? 0, (m.index ?? 0) + m[0].length, "b-like"]);
+  for (const m of s.matchAll(/\blike\b\s*/gi)) {
+    const at = m.index ?? 0;
+    const before = s.slice(0, at);
+    if (/,\s*$/.test(before) && /^\s*,/.test(s.slice(at + 4))) continue; // taken by ", like," above
+    if (LIKE_AFTER.test(before) && LIKE_INTENSIFIER.test(s.slice(at + 4))) out.push([at, at + m[0].length, "b-like"]);
+  }
+  return out;
+}
+
+/** (c) Slip words said twice: an article anywhere; a pronoun, and / but / so or a contraction when it opens the clause. */
+function slipCuts(s: string): TidyCut[] {
+  const out: TidyCut[] = [];
+  const keepLast = (m: RegExpMatchArray) => {
+    const at = m.index ?? 0;
+    const last = m[0].length - m[0].match(/[\p{L}'’]+$/u)![0].length;
+    return [at, at + last] as const;
+  };
+  for (const m of s.matchAll(ARTICLE_TWICE)) {
+    const [a, b] = keepLast(m);
+    out.push([a, b, "c-slip"]);
+  }
+  for (const m of s.matchAll(OPENER_TWICE)) {
+    if (!OPENS_CLAUSE.test(s.slice(0, m.index ?? 0))) continue;
+    if (/^so$/i.test(m[1]) && !SO_STAMMER_NEXT.test(s.slice((m.index ?? 0) + m[0].length))) continue;
+    const [a, b] = keepLast(m);
+    out.push([a, b, "c-slip"]);
+  }
+  return out;
+}
 
 /**
- * (b) The "like" the closed list removes, and no other:
- * - set off by commas on both sides ("It was, like, the hardest thing" → "It was the hardest thing");
- * - directly before an intensifier or adverb ("like really good", "like kind of", "like totally");
- * - before a verb after its subject or "and" ("and like worked a corporate job").
- * Every other "like" stays: it compares ("like brothers"), hedges ("like for a year", "like ten"), quotes ("I'm like,
- * why"), or is the verb.
+ * (d) A clause said and then restarted, dropped only when that is certain:
+ * - it is a true prefix of the next clause, of two words or more, that breaks off where no clause ends ("we went to,
+ *   we went to the market");
+ * - it is six words or fewer, breaks off on a lower-case article or possessive, and the next clause reopens on the
+ *   same subject ("So we did like a, we built an app" → "we built an app").
+ * Never when the next clause opens on "but", "and" or "so", and never a whole clause said twice for emphasis.
  */
-function dropFillerLike(s: string): string {
-  return s
-    .replace(/,\s*like,\s*/gi, " ")
-    .replace(/\blike\b\s*/gi, (m: string, at: number, all: string) => (isFillerLike(all, at) ? "" : m))
-    .replace(/\s{2,}/g, " ");
+function restartCuts(s: string): TidyCut[] {
+  const out: TidyCut[] = [];
+  const parts: { at: number; text: string }[] = [];
+  let pos = 0;
+  for (const piece of s.split(/(,\s+)/)) {
+    if (!/^,\s+$/.test(piece)) parts.push({ at: pos, text: piece });
+    pos += piece.length;
+  }
+  for (let i = 0; i + 1 < parts.length; i++) {
+    const a = parts[i].text;
+    const na = norm(a);
+    const nb = norm(parts[i + 1].text);
+    const prefix = na.includes(" ") && nb.length > na.length && nb.startsWith(`${na} `) && /\b(?:a|an|the|my|our|their|your|his|her|to|of|in|at|on|for|with|from|and|but|or|so|that|is|was|were)$/.test(a.trim());
+    const subject = (x: string) => x.replace(/^(?:so|and|but|then)\s+/, "").split(" ")[0];
+    const restart = a.trim().split(/\s+/).length <= 6 && BREAKS_OFF.test(a.trim()) && !/^(?:but|and|so)\b/.test(nb) && !!subject(na) && subject(na) === subject(nb);
+    if (prefix || restart) out.push([parts[i].at, parts[i + 1].at, "d-restart"]);
+  }
+  return out;
+}
+
+/** The text with its cuts taken out (each cut leaves one space), as tidied speech. */
+function applyCuts(text: string, cuts: TidyCut[]): string {
+  const sorted = [...cuts].sort((x, y) => x[0] - y[0]);
+  let out = "";
+  let pos = 0;
+  for (const [a, b] of sorted) {
+    if (b <= pos) continue;
+    out += text.slice(pos, Math.max(pos, a)) + " ";
+    pos = Math.max(pos, b);
+  }
+  return out + text.slice(pos);
+}
+
+/** The tidy of one paragraph: the cuts (in `text`'s own positions) and the shown words. */
+function tidyParagraph(text: string, { answer = false, opening = false }: { answer?: boolean; opening?: boolean }): { cuts: TidyCut[]; out: string } {
+  const cuts: TidyCut[] = [];
+  const shown: string[] = [];
+  let answering = answer;
+  let afterReaction = false;
+  sentencesAt(text).forEach(({ at, s }, i) => {
+    const bare = s.replace(/["“”]/g, "").trim();
+    // (e) the other person's reaction, and a "Yeah." straight after one
+    if (REACTION.test(bare) || (afterReaction && YEAH_ALONE.test(bare))) {
+      cuts.push([at, at + s.length, "e-reaction"]);
+      afterReaction = REACTION.test(bare);
+      answering = false;
+      return;
+    }
+    afterReaction = false;
+    const local: TidyCut[] = [];
+    // (a) the teller's very first word; a later "yeah," that answers nothing; a closing ", (but) yeah"
+    const first = opening && i === 0 ? s.match(OPENING_WORD) : null;
+    if (first && !new RegExp(`^${first[1]},?\\s+${first[1]}\\b`, "i").test(s)) {
+      const end = first[0].length + (s.slice(first[0].length).match(/^,?\s*/)?.[0].length ?? 0);
+      local.push([0, end, "a-opening"]);
+    } else if (!answering && !(opening && i === 0)) {
+      const later = s.match(LATER_YEAH);
+      if (later) local.push([0, later[0].length, "a-later"]);
+    }
+    const closing = answering ? null : s.match(CLOSING_YEAH);
+    if (closing) local.push([closing.index ?? 0, (closing.index ?? 0) + closing[0].length, "a-closing"]);
+    local.push(...fillerCuts(s), ...likeCuts(s), ...slipCuts(s), ...restartCuts(s));
+    for (const [a, b, rule] of local) cuts.push([at + a, at + b, rule]);
+    const kept = applyCuts(s, local)
+      .replace(/\s+([,.;:!?])/g, "$1")
+      .replace(/([,;:])\s*([,.;:!?])/g, "$2")
+      .replace(/^[\s,;:]+/, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    if (/[\p{L}\p{N}]/u.test(kept)) for (const piece of punctuateRunOn(kept)) shown.push(cap(piece));
+    // the answer runs on through short replies ("For sure. Yeah, definitely."): the next sentence still answers
+    answering = isQuestion(s) || (answering && bare.split(/\s+/).length <= 3);
+  });
+  const out = shown
+    .join(" ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    // speech ends a thought with a full stop the transcript forgot
+    .replace(/([\p{L}\p{N}])$/u, "$1.");
+  return { cuts, out };
+}
+
+/**
+ * One paragraph of speech, tidied by the closed list and nothing else. `answer`: it opens on the reply to a question.
+ * `opening`: these are the teller's first words. `explain` (tests): the cuts, each with its rule, in the given text's
+ * positions, with the text they refer to.
+ */
+export function cleanSpeech(text: string, opts?: { answer?: boolean; opening?: boolean }): string;
+export function cleanSpeech(text: string, opts: { answer?: boolean; opening?: boolean; explain: true }): { said: string; out: string; cuts: TidyCut[] };
+export function cleanSpeech(text: string, { answer = false, opening = false, explain = false }: { answer?: boolean; opening?: boolean; explain?: boolean } = {}) {
+  const said = tellerTurns(String(text || ""));
+  const { cuts, out } = tidyParagraph(said, { answer, opening });
+  return explain ? { said, out, cuts } : out;
+}
+
+/** One piece of a transcript: the teller's words, or a line set as "We asked". */
+type Piece = { asked: boolean; said: string; answer: boolean };
+
+/**
+ * The other person's question in an unlabelled transcript, set as "We asked" only in the 5963 shape: the question (no
+ * first person in it), the asker plainly going on ("Because our strategy right now is…"), then the teller answering
+ * "For sure." or "Yes.". Every other question stays in the teller's words, and so does the sentence after it.
+ */
+function liftQuestions(paragraph: string): Piece[] {
+  const out: Piece[] = [];
+  const all = sentencesAt(paragraph);
+  let run = "";
+  let answer = false;
+  for (let i = 0; i < all.length; i++) {
+    const s = all[i].s;
+    const goesOn = all[i + 1]?.s;
+    const reply = all[i + 2]?.s;
+    if (ASK.test(s) && !TAG.test(s) && !FIRST_PERSON.test(s) && goesOn && ASKER_GOES_ON.test(goesOn) && reply && TELLER_ANSWERS.test(reply)) {
+      if (run.trim()) out.push({ asked: false, said: run.trim(), answer });
+      out.push({ asked: true, said: `${s} ${goesOn}`, answer: false });
+      run = "";
+      answer = true;
+      i++;
+      continue;
+    }
+    run += `${s} `;
+  }
+  if (run.trim()) out.push({ asked: false, said: run.trim(), answer });
+  return out;
+}
+
+/**
+ * A paragraph with named speakers: the teller's turns are their words; the other person's turn is set as "We asked",
+ * a question, a prompt ("Tell me about your mother.") or a remark alike; only their reaction lines from the set go.
+ */
+function namedTurns(paragraph: string): Piece[] | null {
+  TURN.lastIndex = 0;
+  if (!TURN.test(paragraph)) return null;
+  const parts = paragraph.split(TURN);
+  const out: Piece[] = [];
+  let run = parts[0].trim() ? `${parts[0].trim()} ` : "";
+  let answer = false;
+  for (let i = 1; i < parts.length; i += 2) {
+    const words = (parts[i + 1] || "").trim();
+    if (!words) continue;
+    if (OTHER.test(parts[i])) {
+      if (run.trim()) out.push({ asked: false, said: run.trim(), answer });
+      out.push({ asked: true, said: words, answer: false });
+      run = "";
+      answer = true;
+      continue;
+    }
+    run += `${words} `;
+  }
+  if (run.trim()) out.push({ asked: false, said: run.trim(), answer });
+  return out;
+}
+
+/** The pieces of a transcript, each with what the tidy cut from it and what it shows (the "We asked" lines too). */
+export function explainTranscript(paragraphs: string[]): { asked: boolean; said: string; out: string; cuts: TidyCut[] }[] {
+  const pieces = paragraphs.flatMap((p) => {
+    const one = p.replace(/\s*\n\s*/g, " ");
+    return namedTurns(one) ?? liftQuestions(one);
+  });
+  const out: { asked: boolean; said: string; out: string; cuts: TidyCut[] }[] = [];
+  let first = true;
+  let afterQuestion = false;
+  for (const piece of pieces) {
+    if (piece.asked) {
+      // the other person's line: only their reactions from the set go (e)
+      const cuts: TidyCut[] = [];
+      const kept: string[] = [];
+      for (const { at, s } of sentencesAt(piece.said)) {
+        if (REACTION.test(s.replace(/["“”]/g, "").trim())) cuts.push([at, at + s.length, "e-reaction"]);
+        else kept.push(s);
+      }
+      if (kept.length) out.push({ asked: true, said: piece.said, out: kept.join(" "), cuts });
+      first = false;
+      afterQuestion = true;
+      continue;
+    }
+    const { cuts, out: shown } = tidyParagraph(piece.said, { answer: piece.answer || afterQuestion, opening: first });
+    first = false;
+    afterQuestion = isQuestion(sentencesAt(piece.said).pop()?.s || "");
+    if (shown.trim()) out.push({ asked: false, said: piece.said, out: shown, cuts });
+  }
+  return out;
+}
+
+/** Every paragraph tidied by the closed list; "We asked" stands apart; an answer stays, across a paragraph break too. */
+export function cleanTranscript(paragraphs: string[]): string[] {
+  return explainTranscript(paragraphs).map((p) => (p.asked ? `${ASKED}${p.out}` : p.out));
 }
 
 /**
@@ -126,202 +391,6 @@ function punctuateRunOn(s: string): string[] {
     rest = cap(rest.slice(m.index + 1));
   }
   out.push(rest);
-  return out;
-}
-
-/**
- * A clause said and then restarted, dropped only when that is certain (rule 17a):
- * - it is a true prefix of the next clause, of two words or more ("we went to, we went to the market");
- * - it breaks off on an article or a possessive and the speaker restarts it in their own next words, reopening on the
- *   same subject ("So we did like a, we built an app" → "we built an app").
- * Never otherwise: a clause that ends on "to" is whole by ellipsis ("I wanted to, but I couldn't"); one that opens like
- * the next is said ("We laughed, we cried"); a single word is emphasis ("Never, never again"); and a next clause that
- * opens on "but", "and" or "so" goes on from it rather than restarting it.
- */
-function dropRestarts(s: string): string {
-  const parts = s.split(/,\s+/);
-  if (parts.length < 2) return s;
-  const out: string[] = [];
-  for (let i = 0; i < parts.length; i++) {
-    const a = parts[i];
-    const b = parts[i + 1];
-    if (b) {
-      const na = norm(a);
-      const nb = norm(b);
-      // a true prefix that breaks off where no clause ends ("we went to, we went to the market"); one that is whole
-      // ("Every day, every day she called") is emphasis and stays
-      const prefix = na.includes(" ") && nb.length > na.length && nb.startsWith(`${na} `) && /\b(?:a|an|the|my|our|their|your|his|her|to|of|in|at|on|for|with|from|and|but|or|so|that|is|was|were)$/i.test(a.trim());
-      const subject = (x: string) => x.replace(/^(?:so|and|but|then)\s+/, "").split(" ")[0];
-      const restart = a.trim().split(/\s+/).length <= 6 && BREAKS_OFF.test(a.trim()) && !/^(?:but|and|so)\b/.test(nb) && !!subject(na) && subject(na) === subject(nb);
-      if (prefix || restart) continue;
-    }
-    out.push(a);
-  }
-  return out.join(", ");
-}
-
-/** A clause that stops where no clause can end: on an article or a possessive ("we did a,"). Never "to" or "of". */
-const BREAKS_OFF = /\b(?:a|an|the|my|our|their|your)$/i;
-
-/**
- * (c) A slip word said twice or more in a row, collapsed to one: a pronoun, an article, a conjunction, or one of the
- * short contractions ("I, I went", "the the house", "and, and", "that's, that's", "we we we"). Any other word or
- * phrase said twice stays: it is emphasis or a refrain ("a big big house", "never, never again", "thank you, thank
- * you", "and then and then").
- */
-const SLIP = "i|you|he|she|we|they|it|me|him|her|us|them|my|our|your|his|their|its|a|an|the|and|or|but|then|because|if|that['’]s|it['’]s|i['’]m|we['’]re|they['’]re|he['’]s|she['’]s|there['’]s|i['’]ve|we['’]ve|i['’]d|you['’]re|i['’]ll|we['’]ll|was|is";
-const SLIP_TWICE = new RegExp(`\\b(${SLIP})(?:,?\\s+\\1)+\\b`, "gi");
-/** Whether a sentence is the other person's back-channel ("Yeah, right?", "Wow, that's amazing"). */
-const isBackchannel = (s: string) => {
-  const t = s.replace(/["“”]/g, "").trim();
-  // a reaction asked back ("Really?", "Wait, were you?"), three words or fewer, is back-channel too; a longer one may be
-  // the teller's own ("Oh, how could I ever forget that day?") and stays
-  return BACKCHANNEL.test(t) || (/\?$/.test(t) && REACTION_Q.test(t) && t.split(/\s+/).length <= 3);
-};
-/** A question (not a tag, "…, right?"): what follows it, however short, is the answer. */
-const isQuestion = (s: string) => /\?["”’)]*$/.test(s.trim()) && !TAG.test(s.trim());
-
-
-const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
-
-/**
- * One paragraph of speech, tidied by the closed list and nothing else. `answer`: the paragraph opens on the reply to a
- * question (lifted to "We asked", or ending the paragraph before), so its first short lines stay. `opening`: these
- * are the teller's first words, so an opening "yeah / well / okay / so" goes (a).
- */
-export function cleanSpeech(text: string, { answer = false, opening = false }: { answer?: boolean; opening?: boolean } = {}): string {
-  let turns = tellerTurns(String(text || ""));
-  if (opening) {
-    // (a) the opening throat-clearing; never a word doubled for emphasis ("So, so good", "Okay, okay, I'll go")
-    const m = turns.match(OPENING_FILLER);
-    const run = m ? m[0].toLowerCase().match(/[a-z]+/g) || [] : [];
-    if (m && !(run.length > 1 && run.every((w) => w === run[0]))) turns = turns.slice(m[0].length);
-  }
-  const kept: string[] = [];
-  // (e) the other person's back-channel goes; a reply straight after a question ("Yes.", "Yeah, of course.") is the
-  // answer and stays whole, as said
-  let answering = answer;
-  for (const raw of sentencesOf(turns)) {
-    const s = raw.trim();
-    if (!s) continue;
-    const back = isBackchannel(s);
-    if (back && answering) {
-      kept.push(s);
-      continue;
-    }
-    if (back) {
-      // a back-channel line that goes ("Wait, were you?") leaves nothing to answer
-      answering = false;
-      continue;
-    }
-    // (a) a "yeah," or "so yeah," opening a later sentence, and a closing ", but yeah" / ", yeah": throat-clearing,
-    // except in an answer ("Did you go? Yeah, I went." keeps its "Yeah")
-    const plain = answering ? s : s.replace(LATER_YEAH, "").replace(CLOSING_YEAH, "");
-    answering = isQuestion(s);
-    const tidied = [
-      plain
-        .replace(FILLER, "$1") // (a)
-        .replace(SLIP_TWICE, "$1") // (c)
-        .replace(/^[\s,;:]+/, ""),
-    ]
-      .map(dropFillerLike) // (b)
-      .map(dropRestarts) // (d)
-      .flatMap(punctuateRunOn) // punctuation by sense: the words never change
-      .filter((x) => /[\p{L}\p{N}]/u.test(x));
-    for (const x of tidied) kept.push(cap(x));
-  }
-  return kept
-    .join(" ")
-    .replace(/\s+([,.;:!?])/g, "$1")
-    .replace(/([,;:])\s*([,.;:!?])/g, "$2")
-    .replace(/^[\s,;:]+/, "")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    // speech ends a thought with a full stop the transcript forgot
-    .replace(/([\p{L}\p{N}])$/u, "$1.");
-}
-
-/**
- * The other person's question in an unlabelled transcript, set as "We asked" only in the shape that leaves no doubt:
- * the question, the asker plainly going on ("Because our strategy right now is…"), then the teller answering with a
- * back-channel ("For sure."). Every other question stays in the teller's words, and so does the sentence after it.
- */
-function liftQuestions(paragraph: string): string[] {
-  const out: string[] = [];
-  const all = sentencesOf(paragraph).map((x) => x.trim()).filter(Boolean);
-  let run = "";
-  for (let i = 0; i < all.length; i++) {
-    const s = all[i];
-    const goesOn = all[i + 1];
-    const reply = all[i + 2];
-    if (ASK.test(s) && !TAG.test(s) && goesOn && ASKER_GOES_ON.test(goesOn) && reply && isBackchannel(reply)) {
-      if (run.trim()) out.push(run.trim());
-      out.push(`${ASKED}${s} ${goesOn}`);
-      run = ANSWER;
-      i++;
-      continue;
-    }
-    run += `${s} `;
-  }
-  if (run.replace(ANSWER, "").trim()) out.push(run.trim());
-  return out;
-}
-
-/**
- * A paragraph with named speakers: the teller's turns are their words; the other person's question is set as "We
- * asked" (the transcript names the speaker); the other person's other lines are theirs, not the teller's memory.
- */
-function namedTurns(paragraph: string): string[] | null {
-  TURN.lastIndex = 0;
-  if (!TURN.test(paragraph)) return null;
-  const parts = paragraph.split(TURN);
-  const out: string[] = [];
-  let run = parts[0].trim() ? `${parts[0].trim()} ` : "";
-  for (let i = 1; i < parts.length; i += 2) {
-    const words = (parts[i + 1] || "").trim();
-    if (!words) continue;
-    if (OTHER.test(parts[i])) {
-      const asked = sentencesOf(words).map((x) => x.trim()).filter((x) => isQuestion(x));
-      if (asked.length) {
-        if (run.replace(ANSWER, "").trim()) out.push(run.trim());
-        out.push(`${ASKED}${asked.join(" ")}`);
-        run = ANSWER;
-      }
-      continue;
-    }
-    run += `${words} `;
-  }
-  if (run.replace(ANSWER, "").trim()) out.push(run.trim());
-  return out;
-}
-
-/**
- * Every paragraph tidied by the closed list; a paragraph that was only back-channel disappears; "We asked" stands
- * apart. A paragraph that follows a question (a "We asked" line, or a paragraph ending on one) opens on its answer,
- * which stays whole, across the paragraph break too.
- */
-export function cleanTranscript(paragraphs: string[]): string[] {
-  const pieces = paragraphs.flatMap((p) => {
-    const one = p.replace(/\s*\n\s*/g, " ");
-    return namedTurns(one) ?? liftQuestions(one);
-  });
-  const out: string[] = [];
-  let first = true;
-  let afterQuestion = false;
-  for (const p of pieces) {
-    if (p.startsWith(ASKED)) {
-      out.push(p);
-      afterQuestion = true;
-      continue;
-    }
-    const answers = p.startsWith(ANSWER) || afterQuestion;
-    const words = p.startsWith(ANSWER) ? p.slice(ANSWER.length) : p;
-    const tidied = cleanSpeech(words, { answer: answers, opening: first });
-    first = false;
-    const last = sentencesOf(words).map((x) => x.trim()).filter(Boolean).pop() || "";
-    afterQuestion = isQuestion(last);
-    if (tidied.trim()) out.push(tidied);
-  }
   return out;
 }
 
@@ -398,31 +467,14 @@ const OPENS_SOFT = /^["“‘]?(?:and(?! then| so)|that'?s|that’s|it'?s|it’s
 /** The words that make a sentence worth remembering: a feeling, a judgement, a turn of a life. */
 const FEELING = /\b(always|never|love|loved|loving|miss|missed|remember|remembered|never forget|forget|dream|dreams|wish|wished|proud|happy|happiest|sad|hard|hardest|challenging|struggle|scared|afraid|grateful|thankful|lucky|blessed|beautiful|worth|best|favou?rite|special|important|mattered|meant|learned|opportunity|heart|hope|grief|joy|fear|courage|kindness|memorable|bond|bonds|bonding|bondings)\b/i;
 
-/** Whether a sentence holds a "like" the closed list would remove (b): a kept line is never one that tidying changes. */
-function fillerLike(s: string): boolean {
-  if (/,\s*like,/i.test(s)) return true;
-  for (const m of s.matchAll(/\blike\b/gi)) if (isFillerLike(s, m.index ?? 0)) return true;
-  return false;
-}
-
-/** The intensifiers and adverbs a filler "like" stands before (b); "-ly" words count, except the common nouns and adjectives that end so. */
-const INTENSIFIER = /^(?:really|so|very|just|kind of|sort of|kinda|sorta|super|totally|pretty|literally|actually|basically|honestly|seriously|definitely|absolutely)\b/i;
-const NOT_ADVERB = /^(?:early|only|family|daily|weekly|monthly|yearly|holy|ally|italy|july|lily|emily|billy|sally|molly|kelly|belly|jelly|lovely|lonely|ugly|silly|friendly|elderly|likely|ugly|curly|chilly|bully|reply|supply|apply|rely|fly|july)$/i;
-/** A verb after its subject, where "like" fills ("and like worked", "we like went"): a past form, regular or common. */
-const PAST_VERB = /^(?:[a-z]+ed|went|got|had|did|said|told|took|made|came|saw|knew|thought|gave|ran|sat|stood|left|found|felt|kept|brought|bought|began|grew|wrote|spoke|lost|won|paid|met|heard|built|sent|spent|taught|caught|fought|sold|put|set|let|cut|quit|drove|flew|ate|fell|sang|swam|woke)$/i;
-const SUBJECT = /^(?:and|then|i|we|they|he|she|you)$/i;
-
-/** Whether the "like" at `at` in `s` is one the closed list removes (b), and only that. */
-function isFillerLike(s: string, at: number): boolean {
-  const before = s.slice(0, at);
-  const after = s.slice(at + 4);
-  if (/^,/.test(after.trim()) && /,\s*$/.test(before)) return true; // set off by commas on both sides
-  if (/^\s*,/.test(after) || /,\s*$/.test(before)) return false; // a comma on one side only: a quote ("I'm like, why")
-  const next = after.trim().split(/\s+/)[0]?.toLowerCase().replace(/[^\p{L}'’]/gu, "") || "";
-  const prev = before.trim().split(/\s+/).pop()?.toLowerCase().replace(/[^\p{L}'’]/gu, "") || "";
-  if (INTENSIFIER.test(after.trim()) || (/ly$/.test(next) && next.length > 3 && !NOT_ADVERB.test(next))) return true;
-  return SUBJECT.test(prev) && PAST_VERB.test(next);
-}
+/** Whether a sentence holds a "like" the closed list removes (b): a kept line is never one that tidying changes. */
+const fillerLike = (s: string) => likeCuts(s).length > 0;
+/** A sentence with the list's "like"s taken out (b). */
+const dropFillerLike = (s: string) =>
+  applyCuts(s, likeCuts(s))
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
 const DANGLES = /\b(?:to|the|a|an|of|and|but|so|with|for|that|was|is|my|our|your|their|in|on|at|from|like)[.!…]["”’)]*$/i;
 /** A preposition that ends a sentence whole ("…every competition I've been in.", "…the town we lived in."). */
@@ -494,8 +546,8 @@ export function keptLine(text: string, { max = 170, min = 50, needFeeling = true
   return best;
 }
 
-/** A line shown out of its context loses its throat-clearing: "I mean, that was awesome." → "That was awesome." */
-const OUT_OF_CONTEXT = /^(?:i mean|so|and so|and|well|yeah|okay|ok|you know|like)[,]?\s+/i;
+/** A line lifted under a title may drop one opening joint word, and nothing else (17a): "So", "And", "But", "I mean". */
+const OUT_OF_CONTEXT = /^(?:so|and|but|i mean),?\s+/i;
 
 /**
  * The memory's takeaway (Bao's Standard rule 32), one function for every
