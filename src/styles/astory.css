@@ -3872,3 +3872,12 @@ body.writing-focus .sheet-page > .headband { display: none; }
 .top.stuck .pillnav a { min-height: 40px; }
 /* the two inks for small text, named as the builders and the reading spec use them */
 :root { --terracotta-ink: #9A4320; --sage-ink: #3F5B44; --sage-ink-bg: #E4E8DC; }
+
+/* ───────────────────────── 60. Links that act are read as words (lead) ───────────────────────── */
+/* "All 8 →", "Open the book →", "Invite someone →" are controls: sentence case, 14px, a 44px target, never broken
+   over two lines. Small caps stay for the running head, the folio and the chapter kickers only. Home shows six
+   memories, which fill whole rows at three columns and at two. */
+.sheet-page .more { text-transform: none; letter-spacing: 0; font: 600 14px/1.2 var(--font-ui); min-height: 44px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.sheet-page .more::after { font-size: 15px; }
+.home-mem .mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .home-mem .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

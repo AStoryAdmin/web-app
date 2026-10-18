@@ -153,7 +153,7 @@ export default function Home() {
                 </Link>
               )}
             </div>
-            {recent.length ? <Mosaic memories={recent} story={story} lead={false} limit={8} /> : quote ? null : <InvitePrint story={story} />}
+            {recent.length ? <Mosaic memories={recent} story={story} lead={false} limit={6} /> : quote ? null : <InvitePrint story={story} />}
           </section>
 
           <aside className="home-side" aria-label="At a glance">
