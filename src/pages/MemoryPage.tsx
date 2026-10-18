@@ -16,7 +16,7 @@ import { useEffect, useState, useSyncExternalStore, type ReactElement } from "re
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Button, ButtonLink, Problem } from "../components/ui";
-import { ChevronLeft, LinkIcon, LockIcon, PenIcon, PeopleIcon, PhotoIcon, TrashIcon, CalendarIcon, PlayIcon } from "../components/icons";
+import { CheckIcon, ChevronLeft, LinkIcon, LockIcon, PenIcon, PeopleIcon, PhotoIcon, TrashIcon, CalendarIcon, PlayIcon } from "../components/icons";
 import AudioPlayer from "../components/archive/AudioPlayer";
 import ReadAloud from "../components/archive/ReadAloud";
 import Treasure from "../components/archive/Treasure";
@@ -142,7 +142,9 @@ export default function MemoryPage() {
   const [confirm, setConfirm] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [flipping, setFlipping] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
+  // the Share button's result: on success the icon turns to a check and one short word shows ("Copied"), so the button
+  // keeps its width; on failure "Copy the address bar" shows and the head's row may wrap while it does (archive-reading.css)
+  const [copied, setCopied] = useState<"ok" | "fail" | null>(null);
   const [reading, setReading] = useState<number | null>(null);
   const [compose, setCompose] = useState(false);
   const [asked, setAsked] = useState<Asked | null>(null);
@@ -242,9 +244,9 @@ export default function MemoryPage() {
         return;
       }
       await navigator.clipboard.writeText(url);
-      setCopied("Link copied");
+      setCopied("ok");
     } catch {
-      setCopied("Copy the address bar");
+      setCopied("fail");
     }
     window.setTimeout(() => setCopied(null), 3000);
   };
@@ -292,9 +294,12 @@ export default function MemoryPage() {
           { key: "private", label: "Private", hint: "Only you and the story’s keepers", checked: isPrivate, onSelect: () => void setPrivacy(true) },
         ]}
       />
-      <button type="button" className="mv-tool" onClick={share}>
-        <LinkIcon aria-hidden="true" />
-        <span role="status">{copied ?? "Share"}</span>
+      <button type="button" className="mv-tool mv-share" onClick={share} aria-label="Share this memory" data-result={copied ?? undefined}>
+        {copied === "ok" ? <CheckIcon aria-hidden="true" /> : <LinkIcon aria-hidden="true" />}
+        <span aria-hidden="true">{copied === "ok" ? "Copied" : copied === "fail" ? "Copy the address bar" : "Share"}</span>
+        <span className="sr-only" role="status">
+          {copied === "ok" ? "Link copied" : copied === "fail" ? "Copy the address from the address bar" : ""}
+        </span>
       </button>
     </>
   );

@@ -648,3 +648,7 @@
   .mv-state { flex-wrap: nowrap; margin-left: -8px; }
   .sheet-page .mv .mv-state .mv-tool { padding: 0 8px; gap: 6px; }
 }
+/* the Share button holds one width for "Share" and "Copied", so the row never moves; while a longer word shows ("Copy the
+   address bar" when the clipboard refused, "Saving…" on the privacy tool) the row may wrap, so nothing runs past the edge */
+.sheet-page .mv .mv-tool.mv-share { min-width: 6.6em; justify-content: flex-start; }
+.mv-state:has(.mv-share[data-result="fail"]), .mv-state:has([aria-busy="true"]) { flex-wrap: wrap; }
