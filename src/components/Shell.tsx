@@ -206,6 +206,14 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   const pageName = title ?? (path.startsWith("/account") ? "Account" : path.startsWith("/plans") ? "Plans" : path.startsWith("/talk") ? "Talk" : place ?? "");
   const bookName = headStory ? (headStory.lastName ? `The ${headStory.lastName} book` : `${headStory.name}'s book`) : "A Story";
   const runningHead = !busy && !path.startsWith("/write") && pageName !== "";
+  // Each page has its own paper (docs/research/decoration-2026.md D13): laid for the day's pages, linen for the family,
+  // a smooth plate for reading and the book, bond for the account and the writer.
+  const paper = path === "/" || path === "/archive" ? "laid" : path.startsWith("/family") ? "linen" : path.startsWith("/archive/") || path.startsWith("/book") ? "plate" : "bond";
+  // The light on the cloth is the light of the hour (D14): morning from the left, evening from the right, night only the lamp.
+  const [hour] = useState(() => {
+    const h = new Date().getHours();
+    return h >= 5 && h <= 10 ? "morning" : h <= 16 && h > 10 ? "day" : h <= 20 && h > 16 ? "evening" : "night";
+  });
 
   useLight(cloth);
   usePillThumb(pills, location.pathname);
@@ -256,8 +264,16 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
           </div>
         </div>
       </header>
-      <div className={`cloth on-dark${compact ? " compact" : ""}${bare ? " bare" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth}>
+      <div className={`cloth on-dark${compact ? " compact" : ""}${bare ? " bare" : ""}${tone ? ` ${tone}` : ""}`} ref={cloth} data-hour={hour}>
+        <span className="window" aria-hidden="true" />
         <span className="lamp" aria-hidden="true" />
+        {/* the cover is tooled: a pressed double fillet, and on a full hero the mark blind-debossed (D6) */}
+        <span className="tool" aria-hidden="true" />
+        {!compact && !bare && (
+          <span className="deboss" aria-hidden="true">
+            <i />
+          </span>
+        )}
         <Leaf page />
         <div className="hero">
           <div className="hero-in">
@@ -271,7 +287,9 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
         </div>
       </div>
 
-      <main className={`sheet-page${wide ? " wide" : ""}`} id="main">
+      <main className={`sheet-page${wide ? " wide" : ""}`} id="main" data-paper={paper}>
+        {/* the book block's silk headband, where the sheet meets the cloth (D3) */}
+        <span className="headband" aria-hidden="true" />
         {runningHead && (
           <p className="running-head-sheet" aria-hidden="true">
             <span>{bookName}</span>

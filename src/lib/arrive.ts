@@ -159,6 +159,9 @@ export function arrive(root: HTMLElement): () => void {
     }
     if (sheet) {
       if (!viaTransition) tl.fromTo(sheet, { y: 56, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power4.out", clearProps: "transform" }, 0.3);
+      // the headband is sewn on as the sheet settles (decoration D3)
+      const band = sheet.querySelector<HTMLElement>(":scope > .headband");
+      if (band) tl.fromTo(band, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: "power3.out", clearProps: "clipPath" }, viaTransition ? 0.15 : 0.5);
       if (now.length) tl.fromTo(now, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, clearProps: "transform" }, 0.55);
       if (later.length) {
         gsap.set(later, { y: 14, opacity: 0 });

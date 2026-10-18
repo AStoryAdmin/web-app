@@ -3742,3 +3742,77 @@ html { scroll-padding-top: calc(var(--top-h) + 16px); }
    4.18:1, sage pill 4.19:1). The tokens that carry small text are darkened: terracotta 5.55:1, sage 6.05:1. The
    brighter terracotta stays for dots, discs and fills (--accent); ochre, foil and the faint grey carry no text. */
 :root { --kicker-terracotta: #9A4320; --kicker-sage: #3F5B44; --book-sage: #3F5B44; }
+
+/* ───────────────────────── 56. The book's materials on every page (lead) ───────────────────────── */
+/* docs/research/decoration-2026.md, steps 1–2 of its build order: the tokens, a paper per page (D13), the silk
+   headband where the sheet meets the cloth (D3), the cover's tooling and blind-debossed mark (D6), and the light
+   of the hour on the cloth (D14). Materials and one jewel: no page gains more than the budget in §4.1. */
+:root {
+  --foil-deep: #8A6A33;
+  --foil-light: #EFDCAB;
+  --wax: #9A4220;
+  --wax-light: #B85126;
+  --wax-shade: #6E2E16;
+  --ink-stamp: #B85126;
+  --headband-core: #3B291D;
+  --edge-stack: 0 1px 0 #F7F0E2, 0 2px 0 #EADFCB, 0 3px 0 #DDCFB4, 0 4px 0 var(--foil), 0 5px 0 var(--foil-deep);
+  --contact: 0 1px 1px rgba(42, 35, 32, 0.28);
+}
+
+/* D13 papers: patterns under the existing grain; the hard stops make them patterns, not gradients */
+.sheet-page[data-paper="laid"] { background-image:
+    repeating-linear-gradient(90deg, rgba(74, 51, 39, 0.035) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(0deg, rgba(74, 51, 39, 0.016) 0 1px, transparent 1px 3px),
+    radial-gradient(80% 70% at 50% 40%, rgba(74, 51, 39, 0) 60%, rgba(74, 51, 39, 0.043) 100%); }
+.sheet-page[data-paper="linen"] { background-image:
+    repeating-linear-gradient(0deg, rgba(74, 51, 39, 0.022) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(74, 51, 39, 0.022) 0 1px, transparent 1px 3px),
+    radial-gradient(80% 70% at 50% 40%, rgba(74, 51, 39, 0) 60%, rgba(74, 51, 39, 0.043) 100%); }
+.sheet-page[data-paper="plate"] { background-image: none; }
+.sheet-page[data-paper="bond"] { background-image: radial-gradient(80% 70% at 50% 40%, rgba(74, 51, 39, 0) 60%, rgba(74, 51, 39, 0.03) 100%); }
+
+/* D3 the headband: foil and terracotta silk beads on a dark core, half over the seam */
+.sheet-page > .headband { position: absolute; left: 24px; right: 24px; top: -2px; height: 5px; z-index: 6; pointer-events: none; border-radius: 2px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><rect width='8' height='5' fill='%233B291D'/><rect x='1.1' y='.4' width='2.6' height='4.2' rx='1.3' transform='skewX(-16)' fill='%23C9A15A'/><rect x='5.1' y='.4' width='2.6' height='4.2' rx='1.3' transform='skewX(-16)' fill='%23B85126'/></svg>") 0 0 / 8px 5px repeat-x;
+  box-shadow: 0 1px 0 rgba(42, 35, 32, 0.25); }
+.shell:has(.cloth.teal) .sheet-page > .headband { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><rect width='8' height='5' fill='%233B291D'/><rect x='1.1' y='.4' width='2.6' height='4.2' rx='1.3' transform='skewX(-16)' fill='%23C9A15A'/><rect x='5.1' y='.4' width='2.6' height='4.2' rx='1.3' transform='skewX(-16)' fill='%23F3EBDD'/></svg>"); }
+body.writing-focus .sheet-page > .headband { display: none; }
+
+/* D6 the cover's tooling: a pressed double fillet, and the mark blind-debossed into the cloth on a full hero */
+.cloth > .tool { position: absolute; inset: 12px 12px 0 12px; z-index: 0; pointer-events: none; border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.30), inset 0 -1px 0 rgba(255, 236, 200, 0.07), inset 0 0 0 4px transparent; }
+.cloth > .tool::after { content: ""; position: absolute; inset: 4px; border-radius: 7px; box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.22), inset 0 -1px 0 rgba(255, 236, 200, 0.05), inset 1px 0 0 rgba(0, 0, 0, 0.12), inset -1px 0 0 rgba(255, 236, 200, 0.04); }
+.cloth > .deboss { position: absolute; right: 6%; bottom: -90px; width: 260px; height: 286px; z-index: 0; pointer-events: none;
+  filter: drop-shadow(0 1px 0 rgba(255, 236, 200, 0.10)) drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.30)); }
+.cloth > .deboss i { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.16);
+  -webkit-mask: var(--sheet-mark) center / contain no-repeat; mask: var(--sheet-mark) center / contain no-repeat; }
+
+/* D14 the light of the hour, beneath the lamp */
+.cloth { --wx: 18%; --wy: -10%; --wt: rgba(255, 236, 200, 0.10); }
+.cloth[data-hour="day"] { --wx: 50%; --wy: -30%; --wt: rgba(255, 244, 228, 0.08); }
+.cloth[data-hour="evening"] { --wx: 86%; --wy: 0%; --wt: rgba(255, 196, 120, 0.12); }
+.cloth[data-hour="night"] { --wt: transparent; }
+.cloth > .window { position: absolute; inset: 0; z-index: 0; pointer-events: none; mix-blend-mode: soft-light;
+  background: radial-gradient(ellipse 70% 120% at var(--wx) var(--wy), var(--wt), transparent 70%); }
+
+@media (max-width: 760px) {
+  .cloth > .tool { inset: 8px 8px 0 8px; }
+  .cloth > .tool::after { inset: 3px; }
+  .cloth > .deboss { width: 150px; height: 165px; bottom: -50px; }
+  .sheet-page > .headband { left: 18px; right: 18px; }
+}
+
+/* ───────────────────────── 57. Home's greeting in one row (lead) ───────────────────────── */
+/* The audit measured the cloth taking 550px at 1366, so no memory showed in the first screen. The greeting and the
+   question now share one row (the greeting left, the question and its actions right), the hero print that repeated
+   the first memory is gone, and talking is a quiet link (the browser cannot call yet). */
+.hero-grid.home-hero { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: end; }
+.home-hero .greet .label { margin-bottom: 10px; }
+.home-hero .greet .foil { margin-bottom: 4px; }
+.home-hero .ask { padding: 0; border: 0; }
+.home-hero .ask .story-q.q { font-size: clamp(26px, 2.1vw, 32px); line-height: 1.22; margin: 12px 0 18px; max-width: 26ch; }
+.home-hero .ask .acts { gap: 10px; align-items: center; }
+.home-hero .ask .note { margin-top: 10px; }
+@media (max-width: 1100px) {
+  .hero-grid.home-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
