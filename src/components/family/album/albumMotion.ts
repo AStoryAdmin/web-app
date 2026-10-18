@@ -16,9 +16,9 @@ export function useAlbumMotion(ref: RefObject<HTMLElement | null>, key: unknown)
     if (!root) return;
     const mm = gsap.matchMedia();
     mm.add(MOTION_OK, () => {
-      const line = root.querySelector<HTMLElement>(".fa-line");
+      const line = root.querySelector<HTMLElement>(".fr-line");
       const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll("[data-fa-rise]"));
-      const dots = gsap.utils.toArray<HTMLElement>(root.querySelectorAll(".fa-dot"));
+      const dots = gsap.utils.toArray<HTMLElement>(root.querySelectorAll(".fr-dot"));
       if (line) gsap.fromTo(line, { scaleY: 0, transformOrigin: "50% 0%" }, { scaleY: 1, duration: 1.1, ease: "power3.inOut", delay: 0.3, clearProps: "transform" });
       const stops: (() => void)[] = [];
       // Nothing is hidden ahead of time: a card is only ever moved by a tween that states both ends, so a tab in

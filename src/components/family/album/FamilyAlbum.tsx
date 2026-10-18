@@ -1,12 +1,13 @@
 /**
- * The family album (docs/mockups/tree/B-album.html, direction B): no chart.
- * A terracotta rail with a dot per generation; the storyteller's layer
- * first (their photograph, their years, their memories, one line of their
- * own words, the family's voices, two tiles), then one row of photo cards
- * per generation relative to them, couples side by side under a gold
- * hairline, a ghost "+" where a relation is missing, and at the bottom the
- * people nobody has placed yet, each with "Add as Rose's …". One tap on a
- * card opens the person. The words for a person's state are the product's
+ * The family register: no chart, no giant cards. The storyteller first as
+ * a frontispiece (portrait or monogram seal, their years and memories, one
+ * line of their own words, the family's lines beside it, two quiet
+ * actions); then one row per generation relative to them on a terracotta
+ * rail, each person a portrait card (a round print, or their initials
+ * engraved on a seal when there is no photograph), couples joined by an
+ * ampersand, a dashed ring where a relation is missing, and at the bottom
+ * the people nobody has placed yet, each with "Add as Rose's …". One tap on
+ * a card opens the person. The words for a person's state are the product's
  * three (docs/PRD.md §3.3a), and nobody is ever written as somebody else.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +22,6 @@ import { smarten } from "../../../lib/typography";
 import { usePhotoUrl } from "../../../lib/photoUrls";
 import { Avatar, Button } from "../../ui";
 import { PenIcon, PhotoIcon } from "../../icons";
-import { Tile } from "../../archive/ActionTiles";
 import { firstName, linkState, memoriesBy, memoriesWith, personName, realPeople, relationTo, stateWords, type Index } from "../familyView";
 import { PLACE_KINDS, placeWord, treePeople, yearsOf, type GhostKind } from "../tree/treeModel";
 import { buildAlbum, decadeOf, generationsLine, loneGhosts, peopleLine, spousesLabel, type Ghost } from "./albumModel";
@@ -60,61 +60,61 @@ type CardProps = {
   compact?: boolean;
 };
 
+/** Their initials, the way a monogram is engraved: given and family name, one letter each. */
+function initials(p: Person): string {
+  const g = String(p.givenName || "").trim();
+  const f = String(p.familyName || "").trim();
+  const a = g ? Array.from(g)[0] : "";
+  const b = f ? Array.from(f)[0] : "";
+  return (a + b).toUpperCase() || "?";
+}
+
+/** The portrait: their photograph as a round print, or their initials on a seal. */
+function Portrait({ person, photo, size }: { person: Person; photo: string | null | undefined; size: "sm" | "md" | "lg" }) {
+  return (
+    <span className={`fr-portrait ${size}${photo ? "" : " seal"}`} aria-hidden="true">
+      {photo ? <img src={photo} alt="" loading="lazy" /> : <span className="fr-mono">{initials(person)}</span>}
+    </span>
+  );
+}
+
+const DOT: Record<string, string> = { you: "on", joined: "on", invited: "waiting", remembered: "off", listed: "off" };
+
 function Card({ person, story, meId, sub, compact }: CardProps) {
   const photo = usePhotoUrl(person.photo);
   const state = stateOf(person, meId);
   const gone = !!person.deathYear;
   const stateLine = gone ? "" : state === "you" ? "you" : stateWords(state);
   const by = memoriesBy(person, story).length;
-  const within = gone ? memoriesWith(person, story).length : 0;
+  const within = memoriesWith(person, story).length;
   const years = yearsOf(person);
   const to = href(person);
   const name = personName(person);
-  const first = firstName(person);
+  const meta = [years, sub].filter(Boolean).join(" · ");
+  const note = by > 0 ? `remembers ${by}` : within > 0 ? `in ${n(within, "memory", "memories")}` : "";
   const body = (
     <>
-      {photo ? (
-        <span className="fa-ph">
-          <img src={photo} alt="" loading="lazy" />
-        </span>
-      ) : (
-        <span className="fa-nophoto" aria-hidden="true">
-          <span className="fa-script">{first}</span>
+      <Portrait person={person} photo={photo} size={compact ? "sm" : "md"} />
+      <span className="fr-nm">{name}</span>
+      {meta && <span className="fr-meta">{meta}</span>}
+      {stateLine && (
+        <span className={`fr-state ${DOT[state] || "off"}`}>
+          <i aria-hidden="true" />
+          {stateLine}
         </span>
       )}
-      <span className="fa-words">
-        <span className="fa-nm">{name}</span>
-        {(years || sub) && (
-          <span className="fa-yr">
-            {years}
-            {years && sub ? " · " : ""}
-            {sub}
-          </span>
-        )}
-        {stateLine && <span className="fa-st">{stateLine}</span>}
-        {by > 0 && (
-          <span className="fa-rem">
-            What they remember: <b>{by}</b>
-          </span>
-        )}
-        {within > 0 && !by && <span className="fa-rem">In {n(within, "memory", "memories")}</span>}
-      </span>
+      {note && <span className="fr-note">{note}</span>}
     </>
   );
-  const cls = `fa-card ${state}${gone ? " gone" : ""}${compact ? " compact" : ""}`;
+  const cls = `fr-card ${state}${gone ? " gone" : ""}${compact ? " compact" : ""}`;
   return (
-    <div className="fa-item" data-fa-rise>
+    <div className="fr-item" data-fa-rise>
       {to ? (
         <Link className={cls} to={to} aria-label={`${name}${stateLine ? `, ${stateLine}` : ""}`}>
           {body}
         </Link>
       ) : (
         <span className={cls}>{body}</span>
-      )}
-      {!photo && to && !compact && (
-        <Link className="fa-addphoto" to={`/write?photo=1&with=${person.id}`} aria-label={`Add a photo of ${first}`}>
-          <span>Add a photo</span>
-        </Link>
       )}
     </div>
   );
@@ -123,9 +123,9 @@ function Card({ person, story, meId, sub, compact }: CardProps) {
 /** A ghost: the "+" for a relation that is missing. */
 function Ask({ ghost, anchor, onAdd }: { ghost: Ghost; anchor: Person | null; onAdd: Props["onAdd"] }) {
   return (
-    <button type="button" className="fa-ask" data-fa-rise onClick={() => onAdd(anchor, ghost.kind)} aria-label={`Add ${ghost.label}`}>
-      <b aria-hidden="true">+</b>
-      <span>{ghost.label}</span>
+    <button type="button" className="fr-ask" data-fa-rise onClick={() => onAdd(anchor, ghost.kind)} aria-label={`Add ${ghost.label}`}>
+      <span className="fr-ring" aria-hidden="true">+</span>
+      <span className="fr-nm">{ghost.label}</span>
     </button>
   );
 }
@@ -134,7 +134,7 @@ function Ask({ ghost, anchor, onAdd }: { ghost: Ghost; anchor: Person | null; on
 
 function VoiceFace({ person, name }: { person: Person | null; name: string }) {
   const photo = usePhotoUrl(person?.photo);
-  return <Avatar src={photo} name={name} size={44} className="fa-face" />;
+  return <Avatar src={photo} name={name} size={44} className="fr-face" />;
 }
 
 function Teller({ teller, story, own, meId, voices, index }: { teller: Person; story: Story; own: boolean; meId: string | null | undefined; voices: Voice[]; index: Index }) {
@@ -159,79 +159,68 @@ function Teller({ teller, story, own, meId, voices, index }: { teller: Person; s
   const saidFrom = latest?.title?.trim() ? `From “${smarten(latest.title.trim())}”` : "";
 
   const pronoun = teller.sex === "F" ? "her" : teller.sex === "M" ? "his" : "their";
-  const body = (
-    <>
-      <span className={photo ? "fa-ph wide" : "fa-nophoto wide"}>
-        {photo ? <img src={photo} alt="" /> : <span className="fa-script" aria-hidden="true">{first}</span>}
-        <span className="fa-ribbon">Storyteller</span>
-      </span>
-      <span className="fa-words">
-        <span className="fa-nm">{name}</span>
-        <span className="fa-yr">
-          {years}
-          {years && stateLine ? " · " : ""}
-          {stateLine && <span className={`fa-st ${state}`}>{stateLine}</span>}
-        </span>
-        <span className="fa-rem">{countLine}</span>
-        {said && (
-          <span className="fa-said">
-            {said.startsWith("“") ? said : `“${said}”`}
-            {saidFrom && <small>{saidFrom}</small>}
-          </span>
-        )}
-      </span>
-    </>
-  );
+  const them = pronoun === "their" ? "them" : pronoun === "her" ? "her" : "him";
+  const portrait = <Portrait person={teller} photo={photo} size="lg" />;
 
   return (
-    <>
-      <div className="fa-item" data-fa-rise>
+    <div className="fr-front" data-fa-rise>
+      <div className="fr-who">
         {to ? (
-          <Link className={`fa-card fa-big ${state}`} to={to}>
-            {body}
+          <Link className="fr-front-portrait" to={to} aria-label={name}>
+            {portrait}
           </Link>
         ) : (
-          <span className={`fa-card fa-big ${state}`}>{body}</span>
+          <span className="fr-front-portrait">{portrait}</span>
         )}
-      </div>
-      <div className="fa-voices" data-fa-rise>
-        {voices.length > 0 && (
-          <>
-            <h4>
-              From <span className="hl">family</span>
-            </h4>
-            {voices.map((v) => {
-              const person = v.personId ? ((index.people.get(v.personId) as Person | undefined) ?? null) : null;
-              const who = person ? firstName(person) : v.name.split(",")[0].trim() || "Someone in the family";
-              const you = !!meId && person?.userId === meId;
-              const rel = (v.relationship || (person && isReal(teller) ? relationTo(index, person.id, teller.id) : "")).toLowerCase();
-              return (
-                <div className="fa-voice" key={v.id}>
-                  <VoiceFace person={person} name={who} />
-                  <div>
-                    <q>{smarten(quoteFor(opening(v.text), 140) as string)}</q>
-                    <p className="by">
-                      <b>{you ? "You" : who}</b>
-                      {rel ? ` · ${pronoun} ${rel}` : ""}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </>
-        )}
-        <div className="fa-tiles">
-          <Tile icon={<PhotoIcon />} to={isReal(teller) ? `/write?photo=1&with=${teller.id}` : "/write?photo=1"} className="teal">
-            <b>Add a photo</b>
-            <small>{own ? "of you, or of a day you remember" : `of ${first}, or of a day with ${pronoun === "their" ? "them" : pronoun === "her" ? "her" : "him"}`}</small>
-          </Tile>
-          <Tile icon={<PenIcon />} to="/write" className="gold">
-            <b>Add a memory</b>
-            <small>{own ? "something you remember" : `something ${first} told you`}</small>
-          </Tile>
+        <div className="fr-front-words">
+          <p className="fr-kicker">The storyteller</p>
+          <h3 className="fr-front-name">{to ? <Link to={to}>{name}</Link> : name}</h3>
+          <p className="fr-meta">{[years, stateLine, countLine].filter(Boolean).join(" · ")}</p>
+          {said ? (
+            <blockquote className="fr-said">
+              <p>{said.replace(/^“|”$/g, "")}</p>
+              {saidFrom && <cite>{saidFrom}</cite>}
+            </blockquote>
+          ) : (
+            <p className="fr-said empty">{own ? "Your first memory will be quoted here." : `${first}'s first memory will be quoted here.`}</p>
+          )}
+          <div className="fr-acts">
+            <Link className="fr-act" to="/write">
+              <PenIcon aria-hidden="true" /> {own ? "Add a memory" : `Add something ${first} told you`}
+            </Link>
+            <Link className="fr-act" to={isReal(teller) ? `/write?photo=1&with=${teller.id}` : "/write?photo=1"}>
+              <PhotoIcon aria-hidden="true" /> {own ? "Add a photograph of you" : `Add a photograph of ${them}`}
+            </Link>
+          </div>
         </div>
       </div>
-    </>
+
+      <aside className="fr-voices" aria-label="From the family">
+        <p className="fr-kicker">From the family</p>
+        {voices.length > 0 ? (
+          voices.map((v) => {
+            const person = v.personId ? ((index.people.get(v.personId) as Person | undefined) ?? null) : null;
+            const who = person ? firstName(person) : v.name.split(",")[0].trim() || "Someone in the family";
+            const you = !!meId && person?.userId === meId;
+            const rel = (v.relationship || (person && isReal(teller) ? relationTo(index, person.id, teller.id) : "")).toLowerCase();
+            return (
+              <figure className="fr-voice" key={v.id}>
+                <VoiceFace person={person} name={who} />
+                <div>
+                  <q>{smarten(quoteFor(opening(v.text), 140) as string)}</q>
+                  <figcaption>
+                    <b>{you ? "You" : who}</b>
+                    {rel ? ` · ${pronoun} ${rel}` : ""}
+                  </figcaption>
+                </div>
+              </figure>
+            );
+          })
+        ) : (
+          <p className="fr-empty">When someone in the family adds what they remember, their words appear here, under their own name.</p>
+        )}
+      </aside>
+    </div>
   );
 }
 
@@ -255,10 +244,10 @@ function ShelfItem({ person, anchor, canPlace, onPlace, ...card }: { person: Per
     };
   }, [open]);
   return (
-    <div ref={box} className="fa-shelfitem">
+    <div ref={box} className="fr-shelfitem">
       <Card person={person} {...card} />
       {canPlace && anchor && (
-        <Button variant="quiet" small className="fa-place" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <Button variant="quiet" small className="fr-place" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           Add as {firstName(anchor)}'s … →
         </Button>
       )}
@@ -336,15 +325,14 @@ export default function FamilyAlbum({ family, story, meId, own, preview, onAdd, 
   const meta = album.lone ? "" : peopleLine(total, album.unplaced.length);
   const tellerBirth = teller?.birthYear || parseInt(String(story.birthYear || ""), 10) || 0;
   const tellerDecade = tellerBirth ? decadeOf([{ birthYear: tellerBirth }]) : "";
-  const withLine = album.spouses.length ? `· with ${album.spouses.map(firstName).join(", and ")}` : "";
   const cardProps = { story, meId };
 
   return (
-    <section className="fa" aria-label="Family album">
-      <div className="fa-head">
+    <section className="fr" aria-label="The family">
+      <div className="fr-head">
         <h2>{title}</h2>
         {(meta || preview) && (
-          <p className="fa-meta">
+          <p className="fr-headmeta">
             {preview ? "A sample family, for looking" : ""}
             {preview && meta ? " · " : ""}
             {meta}
@@ -352,44 +340,38 @@ export default function FamilyAlbum({ family, story, meId, own, preview, onAdd, 
         )}
       </div>
 
-      <div className="fa-rail" ref={rail}>
-        <span className="fa-line" aria-hidden="true" />
+      {teller && <Teller teller={teller} story={story} own={own} meId={meId} voices={voices} index={index} />}
 
-        {teller && (
-          <section className="fa-stop first" aria-label="The storyteller">
-            <span className="fa-dot" aria-hidden="true" />
-            {tellerDecade && <span className="fa-dec">{tellerDecade}</span>}
-            <h3>
-              <b>{own ? "You" : firstName(teller)}</b>, the storyteller {withLine && <span className="n">{withLine}</span>}
-            </h3>
-            <div className={`fa-teller${album.spouses.length ? " with-spouses" : ""}`}>
-              <Teller teller={teller} story={story} own={own} meId={meId} voices={voices} index={index} />
-              {album.spouses.length > 0 && realTeller && (
-                <div className="fa-spouses" data-fa-rise>
-                  <span className="lab">{spousesLabel(index, album.spouses, realTeller.id, whose)}</span>
-                  {album.spouses.map((s) => (
-                    <Card key={s.id} person={s} {...cardProps} compact />
-                  ))}
-                </div>
-              )}
+      <div className="fr-rail" ref={rail}>
+        <span className="fr-line" aria-hidden="true" />
+
+        {album.spouses.length > 0 && realTeller && (
+          <section className="fr-stop" aria-label={spousesLabel(index, album.spouses, realTeller.id, whose)}>
+            <span className="fr-dot" aria-hidden="true" />
+            {tellerDecade && <span className="fr-dec">{tellerDecade}</span>}
+            <h3>{spousesLabel(index, album.spouses, realTeller.id, whose)}</h3>
+            <div className="fr-cards">
+              {album.spouses.map((sp) => (
+                <Card key={sp.id} person={sp} {...cardProps} />
+              ))}
             </div>
           </section>
         )}
 
         {album.rows.map((row) => (
-          <section className="fa-stop" key={row.level} aria-label={row.title}>
-            <span className="fa-dot" aria-hidden="true" />
-            {row.decade && <span className="fa-dec">{row.decade}</span>}
+          <section className="fr-stop" key={row.level} aria-label={row.title}>
+            <span className="fr-dot" aria-hidden="true" />
+            {row.decade && <span className="fr-dec">{row.decade}</span>}
             <h3>
-              <b>{row.title}</b> {row.note && <span className="n">{row.note}</span>}
+              {row.title} {row.note && <span className="n">{row.note}</span>}
             </h3>
-            <div className="fa-cards">
+            <div className="fr-cards">
               {row.units.map((u) =>
                 u.people.length === 2 ? (
-                  <div className="fa-group" key={u.people[0].id} data-label={u.caption}>
-                    {u.people.map((p) => (
-                      <Card key={p.id} person={p} {...cardProps} sub={row.sub.get(p.id)} />
-                    ))}
+                  <div className="fr-couple" key={u.people[0].id} aria-label={u.caption}>
+                    <Card person={u.people[0]} {...cardProps} sub={row.sub.get(u.people[0].id)} />
+                    <span className="fr-amp" aria-hidden="true">&amp;</span>
+                    <Card person={u.people[1]} {...cardProps} sub={row.sub.get(u.people[1].id)} />
                   </div>
                 ) : (
                   <Card key={u.people[0].id} person={u.people[0]} {...cardProps} sub={row.sub.get(u.people[0].id)} />
@@ -404,12 +386,12 @@ export default function FamilyAlbum({ family, story, meId, own, preview, onAdd, 
         ))}
 
         {album.lone && teller && (
-          <section className="fa-stop" aria-label="Who else was there">
-            <span className="fa-dot" aria-hidden="true" />
+          <section className="fr-stop" aria-label="Who else was there">
+            <span className="fr-dot" aria-hidden="true" />
             <h3>
-              <b>Who else was there?</b> <span className="n">· each one becomes a card here</span>
+              Who else was there? <span className="n">Each one becomes a portrait here.</span>
             </h3>
-            <div className="fa-cards">
+            <div className="fr-cards">
               {loneGhosts(realTeller?.id || null).map((g) => (
                 <Ask key={g.key} ghost={g} anchor={realTeller} onAdd={onAdd} />
               ))}
@@ -418,12 +400,12 @@ export default function FamilyAlbum({ family, story, meId, own, preview, onAdd, 
         )}
 
         {album.unplaced.length > 0 && (
-          <section className="fa-stop fa-shelf" aria-label="Not placed yet">
-            <span className="fa-dot" aria-hidden="true" />
+          <section className="fr-stop fr-shelf" aria-label="Not placed yet">
+            <span className="fr-dot" aria-hidden="true" />
             <h3>
-              <b>Not placed yet</b> <span className="n">· say who they are to {own ? "you" : firstName(teller) || story.name}</span>
+              Not placed yet <span className="n">Say who they are to {own ? "you" : firstName(teller) || story.name}.</span>
             </h3>
-            <div className="fa-cards">
+            <div className="fr-cards">
               {album.unplaced.map((p) => (
                 <ShelfItem key={p.id} person={p} {...cardProps} anchor={realTeller} canPlace={!preview && canPlace(p)} onPlace={(kind) => realTeller && onPlace(p, realTeller, kind)} />
               ))}
