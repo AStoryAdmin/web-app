@@ -3870,3 +3870,5 @@ body.writing-focus .sheet-page > .headband { display: none; }
 /* the top bar's places are full touch targets */
 .pillnav a { min-height: 44px; }
 .top.stuck .pillnav a { min-height: 40px; }
+/* the two inks for small text, named as the builders and the reading spec use them */
+:root { --terracotta-ink: #9A4320; --sage-ink: #3F5B44; --sage-ink-bg: #E4E8DC; }
