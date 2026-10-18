@@ -73,7 +73,7 @@ Prompt texts are in the founder's chat message of 2026-10-17 and below.
 The founder chose the art as delivered: a soft painterly finish, warmer and more finished than the watercolour the prompts asked for. That finish is now the mascot's style; reviewers judge placement and craft, not the style.
 
 
-The founder's art arrived as one sheet of eight poses plus a separate peek. It is cut, scaled to one shared scale (watch is 640 tall), and in `public/dog/` as .png and .webp: watch 802x640, cover 738x710, peek 689x734, curious 765x949, sleep 781x622, plus book, envelope and sit (a spare, sitting and smiling). The `-paper` variants are the same art cut flat under the chest. Eye centres: watch L 0.449/0.484, R 0.686/0.380; curious L 0.468/0.272, R 0.642/0.408. Lids are his fur colour (about #A06640).
+The founder's art arrived as one sheet of eight poses plus a separate peek. It is cut, scaled to one shared scale (watch is 640 tall), and in `public/dog/` as .png and .webp: watch 802x640, cover 738x710, peek 689x734, curious 765x949, sleep 781x622, plus book, envelope and sit (a spare, sitting and smiling). The `-paper` variants of cover and curious are the art cut under the chest with the last 14% faded out, so loose on a page they dissolve into it. Sleep tapers to its paws on its own, so `sleep-paper.webp` is the same file as `sleep.webp` on purpose. Eye centres: watch L 0.449/0.484, R 0.686/0.380; curious L 0.468/0.272, R 0.642/0.408. Lids are his fur colour (about #A06640).
 
 ## After the images arrive (lead)
 
