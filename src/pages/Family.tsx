@@ -78,7 +78,7 @@ function MyCodes({ people, mine, home }: { people: Person[]; mine: ReturnType<ty
       </p>
     );
   if (!codes.length) return <p className="fp-quiet">No codes out at the moment.</p>;
-  const who = (c: MyCode) => (c.personId ? personName(people.find((p) => p.id === c.personId)) || "a place in the tree" : "the family");
+  const who = (c: MyCode) => (c.personId ? personName(people.find((p) => p.id === c.personId)) || "a place in the tree" : c.storyId ? "a keeper of the story" : "the family");
   return (
     <ul className="fp-codes" aria-label="Codes you’ve sent">
       {codes.map((c) =>
@@ -267,7 +267,7 @@ export default function Family() {
                 edge, only head and paws above it, in clear space of his own (he never touches a word) */}
             <div className="fp-keep-cards">
               <div className="fp-invite-wrap">
-                <img className="fp-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
+                <img className="fp-dog" src="/dog/curious-420.webp" alt="" aria-hidden="true" width={488} height={637} />
                 <section className="fp-keep-col fp-invites" id="invite" aria-labelledby="fp-invites-h" ref={invitesRef} tabIndex={-1}>
                   <h2 id="fp-invites-h">Invitations</h2>
                   <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>

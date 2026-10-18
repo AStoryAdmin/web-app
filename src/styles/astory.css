@@ -1028,7 +1028,8 @@ body.writing-focus .wbody { min-height: 60vh; }
 .keeperlist { list-style: none; margin: var(--s-4) 0 0; padding: 0; }
 .keeperlist li { display: flex; align-items: center; gap: var(--s-3); min-height: 56px; border-top: 1px solid var(--line); padding: var(--s-2) 0; }
 .keeperlist li:first-child { border-top: 0; }
-.keeperlist li > span:not(.chip) { flex: 1; min-width: 0; }
+.keeperlist li > span:not(.chip, .por) { flex: 1; min-width: 0; }
+.keeperlist li > .por { flex: none; }
 .keeperlist li strong { display: block; color: var(--heading); }
 .keeperlist li .meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .keeperform { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); align-items: end; margin-top: var(--s-4); }

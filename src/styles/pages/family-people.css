@@ -323,8 +323,9 @@
 /* the state of a keeper and every field's label, in sentence case like every quiet word on these pages */
 .fp .chip:not(.big) { font: 500 var(--fz-small)/1 var(--font-ui); letter-spacing: 0; text-transform: none; min-height: 28px; }
 .sheet-page :is(.fp, .pp2) .field > span:first-child { font: 600 var(--fz-small)/1.4 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
-/* the family's dog, curious on the Invitations plate's top edge: someone new is coming (D11) */
-.fp-dog { position: absolute; right: 26px; bottom: calc(100% - 22px); z-index: 0; width: 112px; height: auto; pointer-events: none; user-select: none; }
+/* the family's dog, curious, his paws resting on the Invitations plate's top edge: someone new is coming (D11).
+   In front of the plate, so the paws sit on its rule; the paws are the art's lowest 14%. */
+.fp-dog { position: absolute; right: 32px; bottom: calc(100% - 0.1 * var(--dogw) * 637 / 488); z-index: 2; --dogw: 72px; width: var(--dogw); height: auto; pointer-events: none; user-select: none; }
 
 /* where to next: the shared component (components/book/WhereNext), given the room this page's rhythm wants */
 .page:is(.fp, .pp2) .where-next { margin-top: 88px; }
@@ -358,7 +359,7 @@
   .tp-face { margin-bottom: 10px; }
   .fp-keep { margin-top: 72px; }
   .fp-keep-cards { margin-top: 76px; }
-  .fp-dog { width: 96px; right: 18px; bottom: calc(100% - 20px); }
+  .fp-dog { --dogw: 64px; right: 22px; }
   .fp-keep-col { padding: 24px 20px 20px; }
   .fp-codes li { grid-template-columns: minmax(0, 1fr) auto; }
   .fp-codes li .fp-quiet { grid-column: 1; }
