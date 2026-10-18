@@ -38,6 +38,7 @@ import Prints from "../../components/delight/Prints";
 import { useLight } from "../../components/delight/Light";
 import { MARK_MASK } from "../../components/book/markMask";
 import { isStacked, markOpened, MOVE, OUT, seedFit, seenOpening, useFit } from "./bookFit";
+import { useTurn } from "./useTurn";
 
 type Props = {
   /** The bookplate's content, or the whole right page's when `plate` is false. */
@@ -74,6 +75,8 @@ export default function AuthFrame({ children, companion, rest: restProp, poses, 
     return "closed";
   });
   useLight(ground);
+  // the next page's photographs decode while the visitor reads; a turn waits (at most 400 ms) for any not ready
+  useTurn(ground);
   const wrapRef = useRef<HTMLDivElement>(null);
   const spreadRef = useRef<HTMLDivElement>(null);
   // every AuthFrame page is fitted to the same 1440 by 720, so the book never changes size between them

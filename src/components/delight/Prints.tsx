@@ -16,6 +16,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { OUT } from "../../lib/ease";
+import { holdUntilDecoded } from "./photoReady";
 
 export type Print = {
   src: string;
@@ -100,7 +101,7 @@ export default function Prints({ active = true, prints = ALBUM }: { active?: boo
         >
           <div className="print-in">
             <div className="print-face">
-              <img src={p.src} alt="" decoding="sync" style={p.focus ? { objectPosition: p.focus } : undefined} />
+              <img src={p.src} alt="" decoding="sync" style={p.focus ? { objectPosition: p.focus } : undefined} ref={(img) => holdUntilDecoded(img, img?.closest("figure"))} />
               <i className="pc tl" />
               <i className="pc tr" />
               <i className="pc bl" />

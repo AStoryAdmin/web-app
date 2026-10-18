@@ -17,6 +17,7 @@ import { smarten } from "../lib/typography";
 import { Button, ButtonLink, Field } from "../components/ui";
 import { CloseIcon } from "../components/icons";
 import LoadingMark from "../components/delight/LoadingMark";
+import { holdUntilDecoded } from "../components/delight/photoReady";
 import { getSupabase } from "../lib/supabase";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { uuid } from "../lib/uuid";
@@ -38,7 +39,7 @@ function Person({ info }: { info: Info }) {
     <div className="cb-person ep-arrive">
       {photo ? (
         <figure className="cb-print" aria-hidden="true">
-          <img src={photo} alt="" decoding="async" />
+          <img src={photo} alt="" decoding="async" ref={(img) => holdUntilDecoded(img, img?.parentElement)} />
           <i className="pc tl" />
           <i className="pc tr" />
           <i className="pc bl" />

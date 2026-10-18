@@ -16,6 +16,7 @@ import PlateSay from "./auth/PlateSay";
 import { smarten } from "../lib/typography";
 import { Button, ButtonLink } from "../components/ui";
 import LoadingMark from "../components/delight/LoadingMark";
+import { holdUntilDecoded } from "../components/delight/photoReady";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { joinFamily, type JoinResult } from "../data/familyWrites";
@@ -31,14 +32,14 @@ function Invitation() {
   return (
     <div className="inv ep-arrive" id="joining">
       <figure className="inv-print" aria-hidden="true">
-        <img src="/photos/33-1200.webp" alt="" decoding="sync" />
+        <img src="/photos/33-1200.webp" alt="" decoding="sync" ref={(img) => holdUntilDecoded(img, img?.closest("figure"))} />
         <i className="pc tl" />
         <i className="pc tr" />
         <i className="pc bl" />
         <i className="pc br" />
       </figure>
       <figure className="inv-print two" aria-hidden="true">
-        <img src="/photos/31-1200.webp" alt="" decoding="sync" />
+        <img src="/photos/31-1200.webp" alt="" decoding="sync" ref={(img) => holdUntilDecoded(img, img?.closest("figure"))} />
         <i className="pc tl" />
         <i className="pc tr" />
         <i className="pc bl" />

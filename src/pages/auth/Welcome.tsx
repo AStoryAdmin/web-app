@@ -32,11 +32,8 @@ import { SAMPLE_BOOKS, sampleBook, type SampleBook } from "../../data/sampleBook
 import { useAuth } from "../../state/authContext";
 import { BOOK_PRINT } from "../../app-core/theme/index.js";
 import { isStacked, markOpened, OUT, seedFit, useFit } from "./bookFit";
+import { BOOK_PICTURES, decodeAll, holdUntilDecoded, turnReady } from "../../components/delight/photoReady";
 
-/** The sign-in's album: decoded before the page turns into the open book, so its prints never arrive as grey boxes. */
-const ALBUM = ["/photos/27-1200.webp", "/photos/02-1200.webp", "/photos/18-1200.webp"];
-/** At most 400 ms: the album being decoded, or nothing to wait for. */
-const albumReady = (album: { current: Promise<unknown> | null }) => Promise.race([album.current, new Promise((done) => setTimeout(done, 400))]);
 /** The three papers a book is printed on, as the swatches under "The book arrives". */
 const PAPERS = BOOK_PRINT.papers as Record<string, { page: string }>;
 const PAPER_NAMES: [string, string][] = [
@@ -55,7 +52,6 @@ export default function Welcome() {
   // the bench is drawn at 1560 by 740 and fitted to the window like the sign-in's book
   useFit(ground, wrap, canvas, 1560, 740);
   const navigate = useNavigate();
-  const album = useRef<Promise<unknown> | null>(null);
   // The three fictional families of the samples page, each in its own cover colour until a swatch is chosen.
   const [family, setFamily] = useState<SampleBook["key"]>("carolyn");
   // The first book lies on the cloth in cream: a dark board on the brown cloth reads as a hole (the founder's
@@ -69,14 +65,9 @@ export default function Welcome() {
   // Content is visible by default; this only plays it in, and finishes on its own clock (no observer).
   useLayoutEffect(() => {
     markOpened();
-    // the sign-in's album, fetched and decoded while the visitor reads, so the open book arrives with its photographs
-    album.current = Promise.all(
-      ALBUM.map((src) => {
-        const img = new Image();
-        img.src = src;
-        return img.decode().catch(() => undefined);
-      }),
-    );
+    // the sign-in book's album and bookplates, fetched and decoded while the visitor reads, so the open book arrives
+    // with its photographs (photoReady)
+    void decodeAll(BOOK_PICTURES);
     const el = ground.current;
     if (!el) return;
     const mm = gsap.matchMedia();
@@ -92,12 +83,12 @@ export default function Welcome() {
 
   if (user) return <Navigate to="/" replace />;
 
-  // Into the open book: wait (at most 400 ms) for the album to be decoded, then turn the page as a View Transition.
+  // Into the open book: wait (at most 400 ms) for its pictures to be decoded, then turn the page as a View Transition.
   const into = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     const to = e.currentTarget.getAttribute("href") || "/sign-in";
-    void albumReady(album).then(() => navigate(to, { viewTransition: true }));
+    void turnReady(BOOK_PICTURES).then(() => navigate(to, { viewTransition: true }));
   };
 
   // the bench's scale from its first frame: the last visit fitted it to this window (useFit corrects it before paint)
@@ -191,13 +182,13 @@ export default function Welcome() {
             <div className="door-bench">
               {/* loose prints on the cloth, waiting to go into a book; the book lies on top of them when it opens */}
               <figure className="loose l1" aria-hidden="true">
-                <img src="/photos/30-1200.webp" alt="" decoding="async" />
+                <img src="/photos/30-1200.webp" alt="" decoding="async" ref={(img) => holdUntilDecoded(img, img?.parentElement)} />
               </figure>
               <figure className="loose l2" aria-hidden="true">
-                <img src="/photos/12-1200.webp" alt="" decoding="async" />
+                <img src="/photos/12-1200.webp" alt="" decoding="async" ref={(img) => holdUntilDecoded(img, img?.parentElement)} />
               </figure>
               <figure className="loose l3" aria-hidden="true">
-                <img src="/photos/33-1200.webp" alt="" decoding="async" />
+                <img src="/photos/33-1200.webp" alt="" decoding="async" ref={(img) => holdUntilDecoded(img, img?.parentElement)} />
               </figure>
               <BookSpread key={family} book={book} sweepFrom={sweepFrom} />
             </div>

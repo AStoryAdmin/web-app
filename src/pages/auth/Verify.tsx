@@ -83,7 +83,7 @@ export default function Verify() {
           <span>
             The code went to <b>{email}</b>
           </span>
-          <Link className="linkish" to={change} state={{ email }} viewTransition>
+          <Link className="linkish" to={change} state={{ email }} viewTransition data-turn="now">
             Change
           </Link>
         </p>

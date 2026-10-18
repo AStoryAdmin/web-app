@@ -64,7 +64,9 @@ export function seedFit(designW: number, designH: number): number | null {
 function paint(el: HTMLElement, art: HTMLElement, fit: number | null, key: string) {
   const value = fit === null ? "" : fit.toFixed(4);
   const layout = fit === null ? "stacked" : "book";
-  if (el.style.getPropertyValue("--fit") === value && art.style.zoom === value && el.dataset.layout === layout) return;
+  // the last painted value, kept as written (the browser reads zoom back normalised: "0.9000" as "0.9"); a pass that
+  // changes nothing must not touch the frame, or `.fitting` would cut short whatever is fading at that moment
+  if (el.dataset.fit === value && el.dataset.layout === layout && (art.style.zoom === "" ? value === "" : Math.abs(parseFloat(art.style.zoom) - +value) < 1e-4)) return;
   el.classList.add("fitting");
   el.dataset.layout = layout;
   art.classList.toggle("scaled", fit !== null);
@@ -76,6 +78,7 @@ function paint(el: HTMLElement, art: HTMLElement, fit: number | null, key: strin
     art.style.zoom = value;
     lastFit.set(key, +value);
   }
+  el.dataset.fit = value;
   void art.offsetWidth; // the new style, settled with no transition
   el.classList.remove("fitting");
 }
