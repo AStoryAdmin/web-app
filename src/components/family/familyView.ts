@@ -202,6 +202,7 @@ export const myStoryIds = (family: Family | null, userId: string | null | undefi
  * Bao started about GBao read as "GBao Vo · their story" on GBao’s own account.
  */
 export function storyGroupOf(story: Story, meId: string | null | undefined, mine: string[] = []): StoryGroupKey {
+  if (story.readOnly) return "joined";
   if (mine.includes(story.id)) return "own";
   const owned = !story.ownerId || !meId || story.ownerId === meId;
   if (!owned) return "joined";

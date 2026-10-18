@@ -80,20 +80,6 @@ export async function listContributions(storyId: string, status?: Contribution["
   return fetchContributions(storyId, status).catch(() => []);
 }
 
-/**
- * The sides under one memory, for somebody who reads the story as family (family_readers.sql
- * family_memory_sides): what a keeper kept, and their own still waiting. They can't read the contributions table
- * itself, so a sender's email never reaches them. Throws when it can't be read.
- */
-export async function fetchFamilySides(memoryId: string): Promise<Contribution[]> {
-  const { data, error } = await supabase().rpc("family_memory_sides", { mem: memoryId });
-  if (error) {
-    console.warn("family_memory_sides:", error.message);
-    throw error;
-  }
-  return ((data || []) as Row[]).map(rowToContribution);
-}
-
 export async function countPending(storyId: string): Promise<number> {
   const { count, error } = await supabase().from("contributions").select("id", { count: "exact", head: true }).eq("story_id", storyId).eq("status", "pending");
   if (error) return 0;
@@ -115,7 +101,7 @@ export async function sendContribution(input: {
   personIds?: string[];
   /** Their side of one memory they read; it goes under that memory, not as its own. */
   memoryId?: string | null;
-  /** Their own row in the story's family tree: what they send is filed as them (family_readers.sql checks it is theirs). */
+  /** Their own row in the story's family tree, so what they send is filed as them. */
   personId?: string | null;
 }): Promise<void> {
   const text = input.body.trim();

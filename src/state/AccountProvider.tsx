@@ -17,6 +17,7 @@ import { useAuth } from "./authContext";
 import { AccountContext, type SaveFailure } from "./accountContext";
 import { loadAccount, type Account, type Memory, type Story } from "../data/stories";
 import { loadFamily, type Family } from "../data/family";
+import { loadFamilyReading } from "../data/familyReading";
 import { deleteMemory, newStory, saveMemory as saveMemoryRemote, saveStory, setActiveStory } from "../data/memories";
 import { refreshShared } from "../data/session";
 import { getSupabase } from "../lib/supabase";
@@ -35,13 +36,19 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const [saveFailure, setSaveFailure] = useState<SaveFailure | null>(null);
   const hiddenAt = useRef<number | null>(null);
   const ensuring = useRef<Promise<Story | null> | null>(null);
+  // a story read as family that was chosen: kept on this page only, never written to the profile (the phone app
+  // can't open it, and would start on a story it doesn't have)
+  const readingChosen = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!userId) return;
     try {
       primeCodes();
       const [loaded, tree] = await Promise.all([loadAccount(userId), loadFamily()]);
-      setAccount(loaded);
+      // the family's stories this account reads and doesn't keep (family_story_read), read-only
+      const reading = await loadFamilyReading(userId, loaded, tree).catch(() => []);
+      const chosen = readingChosen.current && reading.some((s) => s.id === readingChosen.current) ? readingChosen.current : null;
+      setAccount({ ...loaded, stories: [...loaded.stories, ...reading], activeStoryId: chosen ?? loaded.activeStoryId });
       setFamily(tree);
       setLoadError(null);
     } catch (err) {
@@ -140,10 +147,12 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const chooseStory = useCallback(
     async (storyId: string) => {
       if (!userId) return;
-      await attempt("Couldn’t remember which story you chose.", () => setActiveStory(userId, storyId, true));
-      setAccount((prev) => (prev ? { ...prev, activeStoryId: storyId, onboardingComplete: true } : prev));
+      const reading = !!account?.stories.find((s) => s.id === storyId)?.readOnly;
+      readingChosen.current = reading ? storyId : null;
+      if (!reading) await attempt("Couldn’t remember which story you chose.", () => setActiveStory(userId, storyId, true));
+      setAccount((prev) => (prev ? { ...prev, activeStoryId: storyId, ...(reading ? {} : { onboardingComplete: true }) } : prev));
     },
-    [attempt, userId],
+    [attempt, userId, account],
   );
 
   const addStory = useCallback(

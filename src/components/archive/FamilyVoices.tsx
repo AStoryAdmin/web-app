@@ -8,15 +8,41 @@
  * quiet link, "Add what you remember", opens the box to write in (the
  * page's only way to it); it stays open once anything has been typed.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Button, Problem } from "../ui";
 import { CheckIcon } from "../icons";
-import { approveContribution, fetchFamilySides, listContributions, rejectContribution, sendContribution, type Contribution } from "../../data/contributions";
+import { approveContribution, listContributions, rejectContribution, sendContribution, type Contribution } from "../../data/contributions";
 import { sidesFor } from "../../app-core/lib/memorySides.js";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { smarten } from "../../lib/typography";
 import type { Person } from "../../data/family";
 import type { Memory, Story } from "../../data/stories";
+
+/**
+ * What a reader sent from this page, by memory, for as long as the page is open: they can't read the
+ * contributions table, and family_story_read() returns only the sides a keeper kept, so their own waits here.
+ */
+const sentHere = new Map<string, Contribution[]>();
+
+/** A kept side from family_story_read(), in the shape the rows take. */
+function keptSide(memoryId: string, c: NonNullable<Memory["familySides"]>[number], i: number): Contribution {
+  return {
+    id: `kept-${memoryId}-${i}`,
+    kind: "testimonial",
+    contributorName: c.contributorName,
+    relationship: c.relationship,
+    title: "",
+    body: c.body,
+    photos: [],
+    memoryId,
+    contributorEmail: "",
+    personId: null,
+    personIds: null,
+    via: null,
+    status: "approved",
+    createdAt: c.createdAt || "",
+  };
+}
 
 function when(iso: string): string {
   const d = new Date(iso);
@@ -113,9 +139,17 @@ export default function FamilyVoices({
   const box = useRef<HTMLTextAreaElement>(null);
   const isOpen = open === undefined ? true : open || !!text.trim();
 
+  // a reader's sides come with the story (family_story_read), and theirs from this page
+  const readerItems = useMemo(
+    () => (reader ? [...(memory.familySides || []).map((c, i) => keptSide(memory.id, c, i)), ...(sentHere.get(memory.id) || [])] : []),
+    // refresh: a side just sent
+    [reader, memory.id, memory.familySides, refresh], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   useEffect(() => {
+    if (reader) return;
     let live = true;
-    (reader ? fetchFamilySides(memory.id) : listContributions(story.id, ["approved", "pending"]))
+    listContributions(story.id, ["approved", "pending"])
       .then((rows) => {
         if (!live) return;
         setItems(rows.filter((c) => c.memoryId === memory.id && (c.kind || "testimonial") === "testimonial"));
@@ -139,8 +173,9 @@ export default function FamilyVoices({
     el.focus({ preventScroll: true });
   }, [open]);
 
-  const approved = sidesFor(items, memory.id) as Contribution[];
-  const pending = items.filter((c) => c.status === "pending" && String(c.body || "").trim());
+  const shown = reader ? readerItems : items;
+  const approved = sidesFor(shown, memory.id) as Contribution[];
+  const pending = shown.filter((c) => c.status === "pending" && String(c.body || "").trim());
 
   const send = async () => {
     const body = text.trim();
@@ -152,6 +187,10 @@ export default function FamilyVoices({
     setError(null);
     try {
       await sendContribution({ storyId: story.id, contributorName: viewerName, relationship: "", body, memoryId: memory.id, personId: myPersonId });
+      if (reader) {
+        const mine: Contribution = { ...keptSide(memory.id, { body, contributorName: viewerName, relationship: "", createdAt: new Date().toISOString() }, 0), id: `sent-${Date.now()}`, personId: myPersonId, status: "pending" };
+        sentHere.set(memory.id, [...(sentHere.get(memory.id) || []), mine]);
+      }
       setText("");
       setSent(isOwner ? "Added. It shows here once a keeper has looked at it." : reader ? "Sent. It goes in the book once a keeper keeps it." : "Sent to the family.");
       setRefresh((n) => n + 1);
@@ -198,7 +237,7 @@ export default function FamilyVoices({
             </button>
           </p>
         ) : (
-          loaded && !approved.length && !pending.length && <p className="fv-empty">Nobody else has added their side yet.</p>
+          (loaded || reader) && !approved.length && !pending.length && <p className="fv-empty">Nobody else has added their side yet.</p>
         )}
       </div>
       {error && <Problem message={error} onDismiss={() => setError(null)} />}

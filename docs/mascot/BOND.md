@@ -17,6 +17,7 @@ A small fluffy mixed-breed. Warm ginger-tan coat, with darker sable-brown tips a
 | sleep | Eyes closed, chin on his paws | Verify, the writer's board edge, empty book, Person |
 | book | Asleep curled against the closed teal book | Decoration (D11) |
 | envelope | Sitting up, sealed envelope in his mouth | Family invite sent, Contribute thank-you |
+| happy | Mouth open, teeth and tongue, paws on the ledge | Join, once the family code has worked (v2) |
 
 ## How to generate (ChatGPT)
 
@@ -68,12 +69,19 @@ Prompt texts are in the founder's chat message of 2026-10-17 and below.
 - If the framing drifts, reply: "Match the framing, scale and ledge height of the watch image exactly."
 - Download each as PNG at full size.
 
-## Status (2026-10-17)
+## Status (2026-10-18, v2)
 
-The founder chose the art as delivered: a soft painterly finish, warmer and more finished than the watercolour the prompts asked for. That finish is now the mascot's style; reviewers judge placement and craft, not the style.
+v2 delivered 2026-10-18 (`Bond-Cartoon-Poses-v2.zip`): a soft 3D cartoon finish, the founder's choice of style; reviewers judge placement and craft, not the style. It replaces the painterly v1 everywhere in `public/dog/`. `source.png` is the v2 reference sheet.
 
+**The cut.** The background removal left red, yellow and white halos and loose specks. Each file was cleaned: specks outside the figure removed, the faint haze dropped and the alpha edge pulled in about a pixel, and the colour of every semi-transparent edge pixel replaced by the nearby opaque fur, so no fringe shows on the cream paper or on the chocolate cloth.
 
-The founder's art arrived as one sheet of eight poses plus a separate peek. It is cut, scaled to one shared scale (watch is 640 tall), and in `public/dog/` as .png and .webp: watch 802x640, cover 738x710, peek 689x734, curious 765x949, sleep 781x622, plus book, envelope and sit (a spare, sitting and smiling). The `-paper` variants of cover and curious are the art cut under the chest with the last 14% faded out, so loose on a page they dissolve into it. Sleep tapers to its paws on its own, so `sleep-paper.webp` is the same file as `sleep.webp` on purpose. Eye centres: watch L 0.449/0.484, R 0.686/0.380; curious L 0.468/0.272, R 0.642/0.408. Lids are his fur colour (about #A06640).
+**The scale.** Watch, cover, peek and curious are cut at one shared scale (watch is 640 tall: 562x640; cover 621x636, peek 588x648, curious 488x637), each trimmed to its figure, its paws or chest on the bottom edge. Happy (520x619) is cut at 0.9 of that scale: his snout comes toward you, so his nose is drawn larger, and 0.9 keeps his head the width of curious's. At this scale the noses are 56 to 63 px wide, close enough that no per-pose scale is needed. `Companion.tsx` holds each pose's `dx` (the nose over watch's) and `up` (the nose's height above the foot); on a page, every pose goes down behind the plate to the lowest nose among that page's poses, so the nose keeps one size and place and no paw floats (rule 27). Watch's paws are half behind the plate on sign-in; on its own (the front door) he stands on the rule.
+
+**Sleep** is `06-sleeping-on-paws` (781x622, the figure across the full width, the top 60 px clear): low and wide, his closed eyes and nose read at 84 px, and it fits the writer's board edge. The soft-expression alternate sits taller with a smaller face for its width. **Book** is the soft-expression alternate (863x474): more compact, and his face is larger at small sizes. **Envelope** is 814x1067. `sit.webp` is v1 art, used nowhere.
+
+**The paper variants.** `curious-paper` (753x630) is curious cut under his chest, above his paws, the last 14% fading into the page. `cover-paper` (781x630) is drawn for the writer, where it takes over from sleep in one box: its nose is at sleep's nose size and place, the chest fading under the board's edge. `sleep-paper` is the same file as `sleep`.
+
+**Happy** shows on Join once the code has worked, in place of watch; it is the one new place.
 
 ## After the images arrive (lead)
 

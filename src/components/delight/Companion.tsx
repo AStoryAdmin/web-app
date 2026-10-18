@@ -11,19 +11,21 @@
  * touch and under reduced motion he holds still and the poses still answer
  * the password field.
  *
- * Everything that depends on the drawing is in ART, measured from the art:
- * each picture's size, and a per-pose `scale` and `dx` that hold his face at
- * one size and in one place across poses (normalised by the nose's width
- * and its centre, against watch), and `sink`, how far a sitting pose goes
- * down behind the plate (its chest), so that lying poses keep their paws on
- * the plate's rule. A second set of drawings needs only new numbers here.
+ * Everything that depends on the drawing is in POSES, measured from the art
+ * (v2, 2026-10-18): each picture's size, cut at one shared scale (watch is
+ * 640 tall, so the head is one size in every ledge pose without a per-pose
+ * scale), a `dx` that puts the nose where watch's is, and `up`, how high the
+ * nose stands above the pose's own foot. On a page every pose is lowered
+ * behind the plate by its `up` less the lowest `up` among that page's poses,
+ * so the nose keeps one height and no paw ever floats above the rule. A
+ * second set of drawings needs only new numbers here.
  */
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { OUT } from "../../lib/ease";
 
 export type CompanionFocus = "email" | "password" | "other" | null;
-export type CompanionRest = "watch" | "curious" | "sleep";
+export type CompanionRest = "watch" | "curious" | "sleep" | "happy";
 export type CompanionState = {
   /** Which field has focus, if any. */
   focus: CompanionFocus;
@@ -36,16 +38,16 @@ export type CompanionState = {
 };
 
 type Pose = {
-  name: "watch" | "cover" | "peek" | "curious" | "sleep";
+  name: "watch" | "cover" | "peek" | "curious" | "happy" | "sleep";
   /** the picture's size at the set's one scale (watch is 640 tall) */
   w: number;
   h: number;
-  /** drawn at this multiple of that scale, so the face keeps watch's size (watch's nose width / this pose's) */
+  /** drawn at this multiple of that scale (1 for the ledge poses; sleep's head is drawn larger, so it comes down to watch's) */
   scale: number;
   /** moved this share of the box's width, so the nose lands where watch's does */
   dx: number;
-  /** lowered this share of the box's height behind the plate (a sitting pose's chest); 0 = the paws on the rule */
-  sink: number;
+  /** the nose's height above the pose's foot, as a share of the box's height; none for a pose that is always alone */
+  up?: number;
   /** where his weight meets the plate, as a share of the box's width: the head tilts about this point on the rule */
   pivot: number;
   /** an optional closed-eye frame of the same pose, for a blink; none yet */
@@ -54,24 +56,21 @@ type Pose = {
 export type PoseName = Pose["name"];
 
 /**
- * Measured from public/dog/*.webp (nose blobs: watch 106 px wide centred at 543, 424; cover 91 at 410, 450; peek
- * 82 at 336, 392; curious 92 at 327, 422; sleep 117 at 466, 497). scale = 106 / nose width (sleep keeps its own
- * height, see below). dx = (watch's nose x − 0.5) − (nose x − 0.5) × w × scale / 802. The nose stands at one height
- * above the rule in every pose of a page: watch's (640 − 424) / 640 − watch's sink; a pose's sink = its nose's height
- * above its own foot, (h − nose y) × scale / 640, minus that. So cover's chest, curious's chest and peek's resting paw
- * go down behind the plate. Watch is lowered a little (sink 0.008) so both paws (the art's lowest rows at x 360–630:
- * 637 and 634 of 640) sit on the rule. Sleep lives alone on Verify, chin on paws, paws on the rule (sink 0).
- * pivot = the middle of the paws (watch 360–630 of 802), or the chest where it meets the plate.
+ * Measured from public/dog/*.webp (v2), in the files' own pixels. Noses (the dark, low-chroma blob): watch 56.4 wide
+ * centred at 197.0, 253.2; cover 60.7 at 256.2, 277.9; peek 56.4 at 204.5, 290.8; curious 62.9 at 148.9, 267.0; happy
+ * 75.2 at 135.9, 254.6 (his snout comes toward you, so the nose is drawn larger; the head is cut 0.9 of the set's scale
+ * to keep its width); sleep 93.7 at 398.5, 430.3. The box is watch's shape, 562 by 640.
+ * dx = (watch's nose x − this nose x + w / 2 − 281) / 562. up = (h − nose y) / 640. pivot = the middle of what rests on
+ * the rule in the lowest 3% of the picture (watch's two paws 102–348, cover's chest, peek's resting paw, curious's and
+ * happy's paws), in the box. Sleep lives alone on Verify, drawn at 0.602 so his nose is watch's width, paws on the rule.
  */
-const WATCH_SINK = 0.008;
-const NOSE_ABOVE_RULE = (640 - 424) / 640 - WATCH_SINK;
-const sinkFor = (h: number, noseY: number, scale: number) => +(((h - noseY) * scale) / 640 - NOSE_ABOVE_RULE).toFixed(4);
 const POSES: Pose[] = [
-  { name: "watch", w: 802, h: 640, scale: 1, dx: 0, sink: WATCH_SINK, pivot: 0.617 },
-  { name: "cover", w: 738, h: 710, scale: 1.165, dx: 0.118, sink: sinkFor(710, 450, 1.165), pivot: 0.62 },
-  { name: "peek", w: 689, h: 734, scale: 1.293, dx: 0.191, sink: sinkFor(734, 392, 1.293), pivot: 0.66 },
-  { name: "curious", w: 765, h: 949, scale: 1.152, dx: 0.257, sink: sinkFor(949, 422, 1.152), pivot: 0.72 },
-  { name: "sleep", w: 781, h: 622, scale: 0.906, dx: 0.093, sink: 0, pivot: 0.6 },
+  { name: "watch", w: 562, h: 640, scale: 1, dx: 0, up: 0.6043, pivot: 0.4 },
+  { name: "cover", w: 621, h: 636, scale: 1, dx: -0.0527, up: 0.5596, pivot: 0.49 },
+  { name: "peek", w: 588, h: 648, scale: 1, dx: 0.0099, up: 0.5582, pivot: 0.545 },
+  { name: "curious", w: 488, h: 637, scale: 1, dx: 0.0198, up: 0.5781, pivot: 0.491 },
+  { name: "happy", w: 520, h: 619, scale: 1, dx: 0.0713, up: 0.5694, pivot: 0.544 },
+  { name: "sleep", w: 781, h: 622, scale: 0.602, dx: -0.158, pivot: 0.5 },
 ];
 /** The head turns toward the pointer by this much at most, about the paws, so they never lift off the rule. */
 const TILT = 1.5;
@@ -96,7 +95,10 @@ export default function Companion({ focus, shown, rest = "watch", poses }: Compa
   if (mood !== held && loaded.has(mood)) setHeld(mood);
   // the pose being held stays mounted until the new one has arrived (a new rest pose never leaves a blank)
   const can: PoseName[] = asked.includes(held) ? asked : [...asked, held];
-  const awake = mood === "watch" || mood === "curious";
+  // the lowest nose among this page's poses: every other pose goes down behind the plate to it (rule 27)
+  const ups = POSES.filter((p) => asked.includes(p.name) && p.up !== undefined).map((p) => p.up!);
+  const floor = ups.length ? Math.min(...ups) : 0;
+  const awake = mood === "watch" || mood === "curious" || mood === "happy";
   // the rest pose loads at once; the others start the moment it, or the pose being held, has decoded (so the held
   // pose is never filtered out while a new rest pose is on the wire)
   const more = loaded.has(rest) || loaded.has(held);
@@ -181,7 +183,8 @@ export default function Companion({ focus, shown, rest = "watch", poses }: Compa
       <div className="head" ref={head} style={{ transformOrigin: `${((POSES.find((p) => p.name === mood)?.pivot ?? 0.6) * 100).toFixed(1)}% 100%` }}>
         {/* one flat list keyed by pose, so a pose keeps its element (and its fade) as the list grows around it */}
         {POSES.filter((p) => can.includes(p.name) && (more || p.name === rest)).flatMap((p) => {
-          const style = { height: `${(p.h * p.scale * 100) / BOX_H}%`, bottom: `${-p.sink * 100}%`, left: `${50 + p.dx * 100}%` };
+          const sink = p.up === undefined ? 0 : p.up - floor;
+          const style = { height: `${(p.h * p.scale * 100) / BOX_H}%`, bottom: `${-sink * 100}%`, left: `${50 + p.dx * 100}%` };
           return [
             <img
               key={p.name}

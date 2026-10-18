@@ -127,7 +127,7 @@
 .auth .titlepg { padding: 4.5% 6% 3.5%; justify-content: flex-start; }
 .auth .promise-line { margin: 0; font-size: 36px; line-height: 1.1; white-space: nowrap; max-width: none; flex: none; }
 .auth .tp-rule { width: 12cqw; margin: 14px 0 0; flex: none; }
-.auth .plate-wrap { --pw: min(88cqw, 500px); --cw: 130px; --dogh: calc(var(--cw) / 1.2531); --dogroom: calc(var(--dogh) * 1.16 - var(--pw) * 0.089 + 6px);
+.auth .plate-wrap { --pw: min(88cqw, 500px); --cw: 104px; --dogh: calc(var(--cw) * 640 / 562); --dogroom: calc(var(--dogh) * 1.02 - var(--pw) * 0.089 + 6px);
   width: var(--pw); margin: auto 0; padding-top: var(--dogroom); flex: none; }
 /* the plate is the blank engraved frame; "This book belongs to" stays only where a name is written under it */
 .auth .plate { border-image-source: url("/book/bookplate-blank.webp"); }
@@ -137,11 +137,11 @@
 .auth .plate .paper { padding-bottom: calc(var(--pw) * 0.064); }
 
 /* Bond lies behind the plate's top edge, between its left corner flourish and the heart. The box is exactly watch's
-   shape (802 / 640): its width is --cw, its height --dogh, and nothing else sizes it. Each pose is drawn inside it at
+   shape (562 / 640): its width is --cw, its height --dogh, and nothing else sizes it. Each pose is drawn inside it at
    its own height × its ART scale, bottom-anchored and moved by its ART dx and sink, so his nose keeps one size and one
-   place in every pose (Companion.tsx): lying down (watch, sleep) his paws are on the plate's printed rule (8.8% of
-   the plate's width below its top); sitting up (cover, peek, curious) his chest or resting paw goes behind the plate.
-   --dogroom leaves 1.16 box-heights above the rule, the most any pose rises (cover, 1.15). The head tilts at most
+   place in every pose (Companion.tsx): the pose with the lowest nose on the page has its paws on the plate's printed
+   rule (8.8% of the plate's width below its top); the others go down behind the plate until their noses match.
+   --dogroom leaves 1.02 box-heights above the rule, the most any pose rises (peek, 1.0125). The head tilts at most
    1.5° about the middle of his paws on the rule (an inline transform-origin from ART), so his paws stay put. */
 .auth .companion { position: absolute; margin: 0; left: calc(var(--pw) * 0.12); top: calc(var(--dogroom) + var(--pw) * 0.089 - var(--dogh)); bottom: auto; right: auto;
   width: var(--cw); height: var(--dogh); z-index: 0; pointer-events: none; }
@@ -150,7 +150,7 @@
 /* each pose at its own height (inline, from ART), bottom-anchored and centred; nothing clips it */
 .auth .companion .state, .auth .companion .state-blink, .door .companion .state, .door .companion .state-blink { position: absolute; top: auto; right: auto; width: auto; max-width: none; transform: translateX(-50%); object-fit: contain; opacity: 0;
   transition: opacity 220ms var(--ease-out); filter: drop-shadow(0 2px 3px rgba(74, 51, 39, 0.12)); /* taste-skill-ignore: book material, a drawing lying on paper */ }
-.auth .companion[data-mood="watch"] .state.watch, .auth .companion[data-mood="cover"] .state.cover, .auth .companion[data-mood="peek"] .state.peek, .auth .companion[data-mood="curious"] .state.curious, .auth .companion[data-mood="sleep"] .state.sleep,
+.auth .companion[data-mood="watch"] .state.watch, .auth .companion[data-mood="cover"] .state.cover, .auth .companion[data-mood="peek"] .state.peek, .auth .companion[data-mood="curious"] .state.curious, .auth .companion[data-mood="happy"] .state.happy, .auth .companion[data-mood="sleep"] .state.sleep,
 .door .companion[data-mood="watch"] .state.watch, .door .companion[data-mood="curious"] .state.curious { opacity: 1; }
 /* a blink, where a pose has a drawn closed-eye frame (ART `blink`): 120 ms each way */
 .auth .companion .state-blink, .door .companion .state-blink { transition-duration: 120ms; }
@@ -618,7 +618,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
 
 /* the family dog beside the way in, on the paper (its watercolour is translucent, so it never sits on the cloth),
    the ledge under its paws on the leaf's bottom foil rule */
-.door .companion { --cw: 124px; position: relative; grid-column: 2; grid-row: 2; align-self: end; margin: -6px 14px -24px 0; /* his paws on the leaf's inner foil rule (14px in, under the foot's 38px), clear of its corner bracket */ width: var(--cw); height: calc(var(--cw) / 1.2531); pointer-events: none; }
+.door .companion { --cw: 87px; position: relative; grid-column: 2; grid-row: 2; align-self: end; margin: -6px 14px -24px 0; /* his paws on the leaf's inner foil rule (14px in, under the foot's 38px), clear of its corner bracket */ width: var(--cw); height: calc(var(--cw) * 640 / 562); pointer-events: none; }
 
 /* ───────────────────────── 7. Stacked ───────────────────────── */
 /* A phone, a portrait screen (taller than wide), or a window narrower than 1181px (bookFit STACKED): the
@@ -692,7 +692,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .auth.ritual .brand, .door .door-top .brand { top: 6px; }
   .auth .brand [data-lockup] svg, .door .brand [data-lockup] svg { height: 28px; }
   /* the plate's floors are larger in the book's own pixels at this scale: a smaller dog and title make the room */
-  .auth .plate-wrap { --cw: 112px; }
+  .auth .plate-wrap { --cw: 90px; }
   .auth .promise-line { font-size: 31px; }
   .auth.ritual .plate-links { flex-wrap: nowrap; font-size: max(14px, var(--floor)); }
   .auth.ritual .field { margin-bottom: 4px; }
@@ -704,7 +704,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .auth .spread-wrap { padding: 72px 10px 32px; }
   .auth .titlepg { padding: 9% 3.5% 8%; }
   .auth .promise-line { font-size: 30px; }
-  .auth .plate-wrap { --pw: min(93cqw, 520px); --cw: 112px; }
+  .auth .plate-wrap { --pw: min(93cqw, 520px); --cw: 90px; }
   .auth .plate .paper { padding-bottom: 18px; }
   .auth.ritual .form h1, .auth.ritual .form .plate-head { font-size: 27px; padding: 0 7%; }
   .auth .plate:not(.lettered) .paper { margin-top: 0; }
@@ -744,7 +744,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .door-leaf { padding: 36px 26px 30px; }
   .door-leaf h1 { font-size: 38px; }
   .door-how dt { font-size: 21px; }
-  .door .companion { --cw: 100px; margin-bottom: -10px; }
+  .door .companion { --cw: 70px; margin-bottom: -10px; }
   .door-acts { flex-direction: column; }
   .door-acts .btn { width: 100%; }
   .door .bk-dots { display: none; }
