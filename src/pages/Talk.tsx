@@ -18,6 +18,9 @@ import { isPaid } from "../lib/plan";
 import { track } from "../lib/analytics";
 import WhereNext, { Stop } from "../components/book/WhereNext";
 
+/** Three lengths, three sizes (as the writer sets its question): short, middling, long. */
+const qLen = (q: string) => (q.length > 50 ? "long" : q.length > 34 ? "mid" : "short");
+
 export default function Talk() {
   const { user } = useAuth();
   const { account, activeStory: story, loadError, reload } = useAccount();
@@ -47,6 +50,7 @@ export default function Talk() {
   const unlimited = isPaid(user?.plan ?? "free");
   const asked = qid ? todaysDeck(story, { unlimited: true }).find((p) => p.id === qid) : null;
   const question = asked ?? todaysQuestion(story, { unlimited });
+  const qText = question?.question ?? "Write about anything at all.";
   const own = story.relationship === "Myself";
   const who = own ? "you" : story.name;
 
@@ -89,7 +93,10 @@ export default function Talk() {
 
         <aside className="talk-card" aria-label={asked ? "The question you chose" : "Today's question"} data-rise>
           <p className="talk-card-kicker">{asked ? "The question you chose" : "Today's question"}</p>
-          {question ? <p className="talk-q">{question.question}</p> : <p className="talk-q">Write about anything at all.</p>}
+          {/* the size steps with the question's length so it always sets in two lines, on the card's ruled lines */}
+          <p className="talk-q" data-len={qLen(qText)}>
+            {qText}
+          </p>
           <div className="talk-acts">
             <ButtonLink to={question ? `/write?q=${encodeURIComponent(question.id)}` : "/write"} icon={<PenIcon />}>
               Write it instead

@@ -8,8 +8,8 @@
  * portrait (or a monogram seal), their name and a line about them; on the
  * paper the chapters as a contents column that stays beside you on a wide
  * window, and every memory they chose to show as a leaf of the book, two or
- * three to a row, the photograph a white-bordered print, the words in their
- * own voice. The chapters are the printed book's own (app-core
+ * three to a row in reading order with their tops aligned, the photograph a
+ * white-bordered print, the words in their own voice. The chapters are the printed book's own (app-core
  * bookStructure and printedChapterName), so the wall and the Book never
  * disagree. What the family added closes the page as notecards.
  */
@@ -19,6 +19,7 @@ import { Lockup } from "../components/Brand";
 import { useLight } from "../components/delight/Light";
 import LoadingMark from "../components/delight/LoadingMark";
 import { usePhotoUrl } from "../lib/photoUrls";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { arrive } from "../lib/arrive";
 import WhereNext, { Stop } from "../components/book/WhereNext";
@@ -47,22 +48,40 @@ function chaptersOf(story: WallStory): Chapter[] {
   return s.chapters.map((c) => ({ name: printedChapterName(c.era) as string, items: c.items }));
 }
 
-/** The opening of a memory, for the line set large beside a chapter's one leaf: short lines run together as a sentence. */
-function leadOf(body: string): string {
-  let out = "";
-  for (const p of paragraphs(body)) {
-    out = out ? `${out}${/[.!?…]$/.test(out) ? "" : "."} ${p}` : p;
-    if (out.length >= 60) break;
+/**
+ * The story as a visitor may see it, from the public-story Edge Function: the same object get_public_story returns,
+ * with every photograph's address already signed (six hours), so somebody with no account sees the prints. A 404
+ * means the story isn't shared. If the function can't be reached, the page falls back to the RPC (words only).
+ */
+async function loadWall(slug: string): Promise<WallStory | null> {
+  if (!slug) return null;
+  try {
+    const { data, error } = await supabase().functions.invoke(`public-story?slug=${encodeURIComponent(slug)}`, { method: "GET" });
+    if (!error) return (data as WallStory | null) ?? null;
+    if (error instanceof FunctionsHttpError && error.context?.status === 404) return null;
+  } catch {
+    /* fall through to the RPC */
   }
-  return out.length > 160 ? `${out.slice(0, out.lastIndexOf(" ", 156))}…` : out;
+  try {
+    const { data, error } = await supabase().rpc("get_public_story", { slug });
+    return error ? null : ((data as WallStory | null) ?? null);
+  } catch {
+    return null;
+  }
+}
+
+/** A photograph's address: one the function already signed is used as it is; anything else goes through the app's signing. */
+const isSigned = (u: string | null | undefined) => !!u && /\/storage\/v1\/object\/sign\//.test(u) && /[?&]token=/.test(u);
+function usePrint(u: string | null | undefined): string | null {
+  const signedHere = usePhotoUrl(isSigned(u) ? null : u);
+  return isSigned(u) ? (u as string) : signedHere;
 }
 
 function Leaf({ m }: { m: WallMemory }) {
   const [open, setOpen] = useState(false);
   const paras = paragraphs(m.body);
   const long = m.body.length > 420 || paras.length > 3;
-  // a print once its address is signed; a visitor may never be able to sign it, and then the leaf is the words alone
-  const photo = usePhotoUrl(m.photos?.[0] ?? null);
+  const photo = usePrint(m.photos?.[0] ?? null);
   const id = `leaf-${m.id}`;
   return (
     <article className={`wall-leaf${photo ? " has-photo" : ""}`} aria-labelledby={`${id}-t`}>
@@ -114,13 +133,7 @@ export default function Wall() {
 
   useEffect(() => {
     let live = true;
-    supabase()
-      .rpc("get_public_story", { slug: slug || "" })
-      .then(({ data, error }) => {
-        if (!live) return;
-        setStory(error ? null : ((data as WallStory | null) ?? null));
-      })
-      .then(undefined, () => live && setStory(null));
+    loadWall(slug || "").then((s) => live && setStory(s));
     return () => {
       live = false;
     };
@@ -135,7 +148,7 @@ export default function Wall() {
     return arrive(root.current);
   }, [story]);
 
-  const photo = usePhotoUrl(story?.photo_url ?? null);
+  const photo = usePrint(story?.photo_url ?? null);
 
   if (story === undefined)
     return (
@@ -250,7 +263,6 @@ export default function Wall() {
               <div className="wall-main">
                 {chapters.map((c, i) => {
                   const one = c.items.length === 1;
-                  const lead = one ? leadOf(c.items[0].body) : "";
                   return (
                     <section key={c.name} id={anchor(c.name)} className={`wall-chapter${one ? " one" : ""}`} aria-labelledby={`${anchor(c.name)}-h`}>
                       <header className="wall-chapter-head">
@@ -259,12 +271,6 @@ export default function Wall() {
                         </span>
                         <h2 id={`${anchor(c.name)}-h`}>{c.name}</h2>
                         <span className="wall-chapter-count">{memories(c.items.length)}</span>
-                        {/* a chapter of one memory: its first line, set large beside the leaf, so the row is not half blank */}
-                        {one && lead && (
-                          <blockquote className="wall-chapter-quote" aria-hidden="true">
-                            <p>{lead}</p>
-                          </blockquote>
-                        )}
                       </header>
                       <div className="wall-leaves">
                         {c.items.map((m) => (

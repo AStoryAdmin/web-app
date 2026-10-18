@@ -17,6 +17,20 @@
   --bka-edge-fore: 1px 0 0 #F7F0E2, 2px 1px 0 #EADFCB, 3px 2px 0 #DDCFB4, 4px 3px 0 var(--foil), 5px 4px 0 var(--foil-deep); /* D2b, at the fore-edge */
   --bka-lift: 0 1px 2px rgba(42, 35, 32, 0.12), 0 12px 20px -12px rgba(42, 35, 32, 0.4); /* a print or a book lying on the paper */
   --bka-print: var(--paper-print);
+  --bka-script: "Mrs Saint Delafield", "Snell Roundhand", cursive; /* the brand's signature script, as the book's covers set names */
+  --bka-shade-left: linear-gradient(270deg, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.05) 3.5%, rgba(0, 0, 0, 0) 9%, rgba(255, 255, 255, 0) 92%, rgba(0, 0, 0, 0.05) 100%); /* the samples' gutter */
+  --bka-shade-right: linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.05) 3.5%, rgba(0, 0, 0, 0) 9%, rgba(255, 255, 255, 0) 92%, rgba(0, 0, 0, 0.05) 100%);
+  --bka-page-shadow: 0 8px 24px rgba(20, 18, 15, 0.22);         /* a page of the open book on the paper */
+  --bka-object-shadow: 0 30px 40px -18px rgba(20, 18, 15, 0.5); /* the closed book's contact shadow */
+  --bka-board-shade: linear-gradient(90deg, rgba(0, 0, 0, 0.32), rgba(255, 255, 255, 0.08) 55%, rgba(0, 0, 0, 0.12)); /* the spine */
+  --bka-spine-shade: linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.06) 5%, transparent 9%);
+  --bka-vignette: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 60%, color-mix(in srgb, var(--chocolate) 5%, transparent) 100%);
+  --bka-cloth-ground:
+    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(90% 80% at 85% 100%, rgba(0, 0, 0, 0.28), transparent 60%),
+    linear-gradient(color-mix(in srgb, var(--chocolate) 38%, transparent), color-mix(in srgb, var(--chocolate) 38%, transparent)),
+    url("/book/bookcloth.jpg") 0 0 / 300px 300px,
+    var(--chocolate);
 }
 
 /* ─────────── shared: the fleuron, the house full stop, small print, disabled controls, Where to next ─────────── */
@@ -53,6 +67,10 @@
 .where-next a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 @media (max-width: 900px) { .where-next ul { grid-template-columns: minmax(0, 1fr); } .where-next li + li { border-top: 0; } }
 
+/* the three compact pages (Book, Plans, Talk) share one H1 on the cloth: bold Montserrat, 44px (32px on a phone) */
+.shell:has(:is(.plans-page, .talk-page)) .cloth.compact .hero h1.hero-title { font-family: var(--font-ui); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; }
+@media (max-width: 760px) { .shell:has(:is(.plans-page, .talk-page)) .cloth.compact .hero h1.hero-title { font-size: 32px; } }
+
 /* the wide pages' cloth and sheet share one gutter */
 .shell:has(:is(.book-page, .plans-page, .talk-page)) .hero-in { max-width: none; padding-left: var(--bka-gutter); padding-right: var(--bka-gutter); }
 
@@ -74,7 +92,7 @@
 .bkh-end { justify-self: end; font: 600 13px/1.35 var(--font-ui); color: var(--on-chocolate-soft); }
 
 /* 1.2 The desk: the book's contents in a rail, the spread beside it, sized to the window with its controls and note */
-.book-page { padding-top: var(--s-3); --bk-chrome: 392px; }
+.book-page { padding-top: var(--s-3); --bk-chrome: 316px; }
 .sheet-page.wide .book-page { max-width: none; }
 .bk-desk { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s-12); align-items: start; margin-bottom: 0; }
 .bk-rail { position: sticky; z-index: 3; top: calc(var(--top-h) + 56px); display: flex; flex-direction: column; gap: var(--s-8); min-width: 0; }
@@ -106,33 +124,49 @@
 .book-page .bk-reader.samples .bk-spread { width: 100%; max-width: min(100%, calc((100vh / var(--zoom, 1) - var(--bk-chrome)) * 2), 1480px); }
 .book-page .bk-reader.samples.single .bk-spread { max-width: min(100%, calc(100vh / var(--zoom, 1) - var(--bk-chrome)), 640px); }
 .book-page .bk-reader { margin-bottom: 0; }
-.bk-under { display: flex; flex-direction: column; }
+/* under the book: on the desk, one row (the note left, Back · where · Turn page centred, the voice right) over a hairline
+   of where you are; alone (the front door), the samples' order: the buttons, the dashes, then the note and the voice */
+.bk-under { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "ctrl ctrl" "dots dots" "cap read"; align-items: center; justify-items: center; column-gap: var(--s-4); }
+.bk-under > .bk-controls { grid-area: ctrl; }
+.bk-under > .bk-dots { grid-area: dots; }
+.bk-under > .bk-caption { grid-area: cap; justify-self: end; }
+.bk-under > .bk-read, .bk-under > .bk-read-none { grid-area: read; justify-self: start; }
+.bk-under.bk-row { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "cap ctrl read" "dots dots dots"; margin-top: var(--s-3); }
+.bk-under.bk-row > .bk-controls { margin-top: 0; }
+.bk-under.bk-row > .bk-caption { justify-self: start; align-items: flex-start; text-align: left; }
+.bk-under.bk-row > .bk-read, .bk-under.bk-row > .bk-read-none { justify-self: end; }
+.bk-under.bk-row > .bk-dots { margin-top: var(--s-2); }
+.bk-dots-quiet { pointer-events: none; }
+@media (max-width: 1599px) { .bk-under.bk-row .bk-caption span { display: none; } }
 /* the samples' controls: chip-light pills, 44px, the position in plain words between them */
 .bk-reader.samples .bk-controls .btn { min-height: 44px; padding: 0 20px; background: var(--card); border: 1px solid var(--line-strong); color: var(--chocolate); font-size: 14px; font-weight: 600; }
 @media (hover: hover) and (pointer: fine) { .bk-reader.samples .bk-controls .btn:not([disabled]):hover { border-color: var(--chocolate); } }
-.bk-reader.samples .bk-controls .btn[disabled] { opacity: 1; color: var(--ink-faint); border-color: var(--line); cursor: default; }
+.bk-reader.samples .bk-controls .btn[disabled] { opacity: 1; color: var(--ink-faint); border-color: var(--line); cursor: not-allowed; }
 .bk-reader.samples .bk-controls .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .sheet-page .bk-reader.samples .bk-where { font: 500 14px/1 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); min-width: 150px; text-align: center; font-variant-numeric: tabular-nums; }
 .bk-dot { height: 4px; }
 /* the samples' note for the spread, and the voice beside it */
-.bk-note { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin-top: var(--s-3); min-height: 44px; }
-.bk-caption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; max-width: 60ch; }
+.bk-caption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; max-width: 60ch; min-width: 0; margin: 0; }
 .bk-caption b { font: 600 14px/1.3 var(--font-ui); color: var(--accent); }
-.bk-caption span { font: 400 17px/1.45 var(--book-body); color: var(--sheet-ink); }
-.bk-note .bk-read { min-height: 44px; padding: 0 18px; background: transparent; border: 1px solid var(--line-strong); font-size: 14px; }
-@media (hover: hover) and (pointer: fine) { .bk-note .bk-read:hover { border-color: var(--chocolate); } }
+.bk-caption span { font: 400 15px/1.4 var(--book-body); color: var(--ink-soft); }
+.bk-under .bk-read { min-height: 44px; padding: 0 18px; background: transparent; border: 1px solid var(--line-strong); font-size: 14px; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .bk-under .bk-read:hover { border-color: var(--chocolate); } }
+.bk-under .bk-read:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* the storyteller picker in the phone hero is a 44px target */
+.hero .bkh .label .teller-pick { min-height: 44px; display: inline-flex; align-items: center; }
 /* the gutter, exactly as the samples shade it: darkest at the spine, a breath at the fore-edge */
-.bk-reader.samples .bk-page.left:not(.cover, .endpaper, .blank)::after { inset: 0; width: auto; z-index: 20; background: linear-gradient(270deg, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.05) 3.5%, rgba(0, 0, 0, 0) 9%, rgba(255, 255, 255, 0) 92%, rgba(0, 0, 0, 0.05) 100%); }
-.bk-reader.samples .bk-page.right:not(.cover, .endpaper, .blank)::after { inset: 0; width: auto; z-index: 20; background: linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.05) 3.5%, rgba(0, 0, 0, 0) 9%, rgba(255, 255, 255, 0) 92%, rgba(0, 0, 0, 0.05) 100%); }
-.bk-reader.samples .bk-spread > .bk-page:not(.blank), .bk-reader.samples .bk-face > .bk-page { box-shadow: 0 8px 24px rgba(20, 18, 15, 0.22); }
+.bk-reader.samples .bk-page.left:not(.cover, .endpaper, .blank)::after { inset: 0; width: auto; z-index: 20; background: var(--bka-shade-left); }
+.bk-reader.samples .bk-page.right:not(.cover, .endpaper, .blank)::after { inset: 0; width: auto; z-index: 20; background: var(--bka-shade-right); }
+.bk-reader.samples .bk-spread > .bk-page:not(.blank), .bk-reader.samples .bk-face > .bk-page { box-shadow: var(--bka-page-shadow); }
+/* the one-page fade is GSAP's (BookSpread), so a stalled frame clock can never hold a page at opacity 0 */
+.bk-reader.samples .bk-spread { animation: none; }
 
 /* 1.4 The book as an object (BookObject): the reader's own cover, a spine, the gilt page block, a contact shadow */
 .bk-object { position: relative; perspective: 1200px; margin: 0; flex: none; }
 .bk-object.bk-reader { margin-bottom: 0; }
 .bk-object-in { position: relative; aspect-ratio: 1; transform-style: preserve-3d; will-change: transform; }
-.bk-object-in > .bk-page { position: absolute; inset: 0; border-radius: 2px 5px 5px 2px; box-shadow: var(--bka-edge-fore), 0 30px 40px -18px rgba(20, 18, 15, 0.5); }
-.bk-object-in::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4.5%; z-index: 30; pointer-events: none; border-radius: 2px 0 0 2px;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.32), rgba(255, 255, 255, 0.08) 55%, rgba(0, 0, 0, 0.12)); }
+.bk-object-in > .bk-page { position: absolute; inset: 0; border-radius: 2px 5px 5px 2px; box-shadow: var(--bka-edge-fore), var(--bka-object-shadow); }
+.bk-object-in::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4.5%; z-index: 30; pointer-events: none; border-radius: 2px 0 0 2px; background: var(--bka-board-shade); }
 
 /* 1.5 The empty book: its cover in the chosen colour, the dog asleep against it, one sentence, the time, one action */
 .bk-empty { display: grid; grid-template-columns: minmax(240px, 420px) minmax(0, 560px); gap: var(--s-16); align-items: center; justify-content: center; padding: var(--s-8) 0 var(--s-6); }
@@ -156,7 +190,7 @@
 .ed-thanks { color: var(--green); }
 .ed-problem { color: var(--danger); }
 .ed-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
-.ed-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(16px, 1fr) minmax(150px, auto) 116px; align-items: center; gap: var(--s-5); padding: var(--s-4) 0; border-bottom: 1px solid var(--sheet-rule); }
+.ed-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(16px, 1fr) 200px 116px; align-items: center; gap: var(--s-5); padding: var(--s-4) 0; border-bottom: 1px solid var(--sheet-rule); }
 .sheet-page .ed-name h3 { font-family: var(--book-display); font-weight: 600; font-size: 24px; line-height: 1.1; color: var(--sheet-ink); }
 .ed-name p { margin-top: 4px; font: 400 16px/1.45 var(--book-body); color: var(--sheet-ink); }
 .ed-leader { align-self: center; height: 0; border-bottom: 1px dotted var(--bk-dots); }
@@ -186,9 +220,10 @@
   .bkh-rule { grid-column: 2; }
   .bkh-headline { font-size: 18px; grid-row: 1; }
   .bkh-end { display: none; }
-  .bk-under .bk-note { order: -1; margin: var(--s-3) 0 var(--s-2); min-height: 0; }
+  .bk-under.bk-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cap read" "ctrl ctrl"; row-gap: 2px; margin-top: var(--s-1); }
+  .bk-under.bk-row > .bk-caption { justify-self: start; }
   .bk-caption span { display: none; }
-  .bk-dots { display: none; }
+  .bk-under.bk-row > .bk-dots { display: none; }
   .bk-reader.samples .bk-controls { flex-wrap: nowrap; justify-content: center; gap: var(--s-2); margin-top: var(--s-2); }
   .bk-reader.samples .bk-controls .btn { padding: 0 14px; }
   .bk-reader.samples .bk-controls .bk-back.at-front { display: none; }
@@ -300,9 +335,22 @@
 .acct-pick-row:active .acct-pick-dot { transform: scale(0.9); }
 .acct-pick-row:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
-@media (min-width: 1600px) {
+/* signing in: the email, the password, then this browser, as parts of one section */
+.acct-parts { display: grid; gap: var(--s-8); }
+.acct-part { display: grid; gap: var(--s-2); align-content: start; min-width: 0; scroll-margin-top: calc(var(--top-h) + 64px); }
+.sheet-page .acct-part h3 { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.15; color: var(--sheet-ink); }
+.acct-part .acct-lead { margin: 0 0 var(--s-2); }
+.acct-pair { display: block; min-width: 0; }
+
+@media (min-width: 1560px) {
   .acct-sec { grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); }
-  .acct-sec-body { max-width: 940px; }
+  .acct-sec-body { max-width: 980px; }
+  .acct-parts { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--s-10); }
+  /* two short sections to a row; when one of a pair does not apply, the other takes the row */
+  .acct-pair { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); column-gap: var(--s-12); }
+  .acct-pair > .acct-sec { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); align-content: start; }
+  .acct-pair > .acct-sec .acct-sec-body { max-width: none; }
+  .acct-pair > .acct-sec .acct-lead { max-width: 52ch; }
 }
 @media (max-width: 1100px) {
   .acct-page { grid-template-columns: 220px minmax(0, 1fr); gap: var(--s-10); }
@@ -329,34 +377,44 @@
 .pl-hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-8); }
 .pl-promise { font: italic 400 19px/1.4 var(--book-body); color: var(--on-chocolate); max-width: 60ch; text-wrap: balance; }
 .sheet-page.wide .plans-page { max-width: none; padding-top: var(--s-6); }
-.pl-note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2) var(--s-8); margin-bottom: var(--s-6); font: 400 14px/1.5 var(--font-ui); color: var(--ink-soft); }
+.pl-note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2) var(--s-8); margin-bottom: var(--s-4); font: 400 14px/1.5 var(--font-ui); color: var(--ink-soft); }
 .pl-note b { color: var(--sheet-ink); font-weight: 600; }
-.pl-table { display: grid; grid-template-columns: minmax(130px, 0.7fr) repeat(5, minmax(0, 1fr)); grid-template-rows: auto repeat(5, auto) auto; column-gap: var(--s-2); }
+.pl-table { display: grid; grid-template-columns: minmax(112px, 0.55fr) repeat(5, minmax(0, 1fr)); grid-template-rows: auto repeat(5, auto) auto; column-gap: var(--s-2); }
 .pl-labels, .pl-col { grid-row: 1 / span 7; display: grid; grid-template-rows: subgrid; min-width: 0; }
 .pl-col { position: relative; padding: 0 var(--s-4); border-radius: 6px; }
 .pl-col.mine { background: var(--paper-print); box-shadow: inset 0 0 0 1px var(--sheet-rule); }
 .pl-col.mine::before { content: ""; position: absolute; inset: 6px; border: 1px solid var(--foil-soft); border-radius: 3px; pointer-events: none; }
-.pl-label, .pl-cell { display: flex; align-items: flex-start; padding: var(--s-3) 0; border-top: 1px solid var(--sheet-rule); margin: 0; }
+.pl-label, .pl-cell { display: flex; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--sheet-rule); margin: 0; }
 .pl-label { font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
 .pl-label-act { border-top: 0; }
 .pl-corner { display: block; }
-.pl-head { padding: var(--s-3) 0 var(--s-4); display: grid; gap: 6px; align-content: start; }
+/* the name and the price share a line, the unit and the monthly figure under them */
+.pl-head { padding: var(--s-3) 0 var(--s-3); display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-2); row-gap: 2px; align-items: baseline; align-content: start; }
+.pl-head > .pl-price { display: contents; }
+.pl-head > .pl-price b { grid-column: 2; grid-row: 1; }
+.pl-head > .pl-price span { grid-column: 1 / -1; grid-row: 2; }
+.pl-head > .pl-about { grid-column: 1 / -1; }
 .sheet-page .pl-head h2 { font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.05; color: var(--sheet-ink); }
 .pl-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
-.pl-price b { font: 600 40px/1 var(--book-display); color: var(--sheet-ink); font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
+.pl-price b { font: 600 34px/1 var(--book-display); color: var(--sheet-ink); font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
 .pl-price span { font: 400 14px/1.3 var(--font-ui); color: var(--ink-soft); }
 .pl-about { font: 400 13px/1.3 var(--font-ui); color: var(--ink-soft); min-height: 17px; }
-.pl-cell { font: 400 17px/1.4 var(--book-body); color: var(--sheet-ink); }
+.pl-cell { font: 400 16px/1.4 var(--book-body); color: var(--sheet-ink); }
 .pl-cell.none .pl-cell-value { color: var(--ink-faint); }
 .pl-cell-value { display: block; }
 /* the row's name stays readable to a screen reader where the table shows it once at the left */
 .pl-cell-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.pl-act { padding: var(--s-5) 0; border-top: 1px solid var(--sheet-rule); display: flex; align-items: flex-start; }
+.pl-act { padding: var(--s-3) 0; border-top: 1px solid var(--sheet-rule); display: flex; align-items: flex-start; }
 .pl-choose { min-height: 44px; white-space: nowrap; }
 .pl-choose span[aria-hidden] { color: var(--accent); }
 .pl-mine { font: 600 13px/44px var(--font-ui); color: var(--kicker-sage); }
 .pl-quiet { font: 400 13px/1.4 var(--font-ui); color: var(--ink-soft); padding-top: 12px; }
-.pl-keepsake { float: left; width: 36px; height: 36px; margin: 2px 10px 4px 0; }
+/* the keepsake, drawn (no 1200px image in a 36px slot), on its own line above the words, on a large window only */
+.pl-keepsake { display: none; }
+@media (min-width: 1600px) {
+  .pl-keepsake { display: block; width: 30px; height: 30px; margin: 2px 0 8px; border-radius: 1px 3px 3px 1px; transform: rotate(-3deg);
+    background: var(--bka-spine-shade), url("/book/bookcloth.jpg") 0 0 / 40px 40px, var(--bka-cover-navy); background-blend-mode: normal, overlay, normal; box-shadow: var(--bka-edge-fore); }
+}
 /* the plan you are on is gilt-edged, with two engraved flourishes (D2a, D12) and a glint as the hand passes */
 .pl-col.gilt { border: 1.5px solid var(--foil); box-shadow: none; }
 .pl-col.gilt::before { border-color: var(--foil-soft); }
@@ -377,7 +435,7 @@
   .pl-col { grid-row: auto; display: block; padding: 0 var(--s-3); }
   .pl-cell { flex-direction: column; gap: 2px; }
   .pl-cell-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: block; font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
-  .pl-price b { font-size: 36px; }
+  .pl-price b { font-size: 30px; }
 }
 @media (max-width: 900px) {
   .pl-table { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
@@ -398,43 +456,58 @@
 }
 
 /* ═════════════════════════ 4. Talk: on the phone, for now, and the question keeps ═════════════════════════ */
+/* The words and the card side by side, the card no wider than an index card ever is, the pair centred on a large window */
 .sheet-page.wide .talk-page { max-width: none; }
-.talk-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--s-16); align-items: start; padding-top: var(--s-8); padding-bottom: var(--s-12); }
-.talk-words { display: grid; gap: var(--s-5); align-content: start; max-width: 40rem; }
-.sheet-page .talk-words h2 { font-size: 48px; line-height: 1.04; }
+.talk-page { display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 760px); justify-content: center; gap: var(--s-20); align-items: start; padding-top: var(--s-8); padding-bottom: var(--s-12); }
+.talk-words { display: grid; gap: var(--s-5); align-content: start; }
+.sheet-page .page .talk-words h2 { font-size: 40px; line-height: 1.05; }
 .talk-lead { font: 400 20px/1.55 var(--book-body); color: var(--sheet-ink); }
 .talk-steps { list-style: none; margin: var(--s-2) 0 0; padding: 0; counter-reset: step; border-top: 1px solid var(--sheet-rule); }
 .talk-steps li { counter-increment: step; display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: var(--s-3); padding: var(--s-4) 0; border-bottom: 1px solid var(--sheet-rule); }
 .talk-steps li::before { content: counter(step, lower-roman) "."; grid-row: 1 / span 2; font: italic 500 22px/1.2 var(--book-display); color: var(--kicker-terracotta); }
 .talk-steps b { font: 600 22px/1.2 var(--book-display); color: var(--sheet-ink); }
 .talk-steps span { font: 400 17px/1.45 var(--book-body); color: var(--ink-soft); }
-/* the question as an index card lying on the paper: a terracotta top rule, faint ruled lines, the pen beside it;
-   told apart from the paper by its edge and its tone, not by a shadow */
-.talk-card { position: relative; display: grid; gap: var(--s-6); align-content: start; padding: var(--s-12) var(--s-12) var(--s-10); background-color: var(--paper-print);
-  background-image: repeating-linear-gradient(transparent 0 43px, var(--bka-ruled) 43px 44px); background-position: 0 104px;
+/* the question as an index card lying on the paper: a terracotta top rule, the pen beside it, told apart from the paper
+   by its edge and its tone, not by a shadow; the question is written on the card's ruled lines */
+.talk-card { position: relative; display: grid; gap: var(--s-6); align-content: start; padding: var(--s-12) var(--s-12) var(--s-10); background: var(--paper-print);
   border: 1px solid var(--sheet-rule); border-top: 3px solid var(--kicker-terracotta); border-radius: 2px; transform: rotate(-0.5deg); }
 .talk-card-kicker { font: 600 13px/1.35 var(--font-ui); color: var(--kicker-terracotta); }
-.talk-q { font: italic 500 44px/1.18 var(--book-display); color: var(--sheet-ink); text-wrap: balance; max-width: 20ch; }
-.talk-acts { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-4); }
+/* the size steps with the question's length (data-len); the line pitch is the rule pitch, and each rule sits on a baseline
+   (half the leading plus Cormorant's ascent: pitch / 2 + 0.315 × size) */
+.talk-q { --qs: 44px; --pitch: 52px; font: 500 var(--qs) / var(--pitch) var(--book-display); color: var(--sheet-ink); text-wrap: balance;
+  background: repeating-linear-gradient(transparent 0 calc(var(--pitch) / 2 + var(--qs) * 0.315), var(--bka-ruled) calc(var(--pitch) / 2 + var(--qs) * 0.315) calc(var(--pitch) / 2 + var(--qs) * 0.315 + 1px), transparent calc(var(--pitch) / 2 + var(--qs) * 0.315 + 1px) var(--pitch)); }
+.talk-q[data-len="mid"] { --qs: 36px; --pitch: 44px; }
+.talk-q[data-len="long"] { --qs: 30px; --pitch: 38px; }
+.talk-acts { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
 .talk-acts .btn { min-height: 48px; }
 .talk-nib { position: absolute; right: 40px; top: -28px; width: 30px; height: auto; transform: rotate(38deg); pointer-events: none; }
 .talk-nib .body, .talk-nib .collar { fill: var(--foil-pale); stroke: var(--foil); stroke-width: 1.2; stroke-linejoin: round; }
 .talk-nib .slit { fill: none; stroke: var(--foil); stroke-width: 1; }
 .talk-nib .hole { fill: var(--paper-print); stroke: var(--foil); stroke-width: 1; }
 .talk-next { padding-top: 0; }
-.sheet-page.wide .talk-next { max-width: none; }
+.sheet-page.wide .talk-next { max-width: 1440px; }
 .talk-next .where-next { margin-top: 0; }
-@media (min-width: 1600px) { .talk-q { font-size: 52px; } .sheet-page .talk-words h2 { font-size: 56px; } }
+@media (min-width: 1600px) {
+  .talk-q { --qs: 52px; --pitch: 60px; }
+  .talk-q[data-len="mid"] { --qs: 42px; --pitch: 50px; }
+  .talk-q[data-len="long"] { --qs: 34px; --pitch: 42px; }
+  .sheet-page .page .talk-words h2 { font-size: 44px; }
+}
 @media (max-width: 1100px) {
-  .talk-page { grid-template-columns: minmax(0, 1fr); gap: var(--s-10); }
-  .talk-q { font-size: 36px; }
+  .talk-page { grid-template-columns: minmax(0, 1fr); gap: var(--s-10); justify-content: stretch; }
+  .talk-card { max-width: 760px; }
+  .talk-q { --qs: 36px; --pitch: 44px; }
+  .talk-q[data-len="mid"] { --qs: 32px; --pitch: 40px; }
+  .talk-q[data-len="long"] { --qs: 28px; --pitch: 36px; }
 }
 @media (max-width: 760px) {
   /* a phone: the question first, then how a call works */
   .talk-page { padding-top: var(--s-6); gap: var(--s-8); }
-  .talk-card { order: -1; padding: var(--s-8) var(--s-5) var(--s-6); transform: none; background-image: repeating-linear-gradient(transparent 0 35px, var(--bka-ruled) 35px 36px); background-position: 0 80px; }
-  .sheet-page .talk-words h2 { font-size: 32px; }
-  .talk-q { font-size: 28px; }
+  .talk-card { order: -1; padding: var(--s-8) var(--s-5) var(--s-6); transform: none; }
+  .sheet-page .page .talk-words h2 { font-size: 28px; }
+  .talk-q { --qs: 28px; --pitch: 36px; }
+  .talk-q[data-len="mid"] { --qs: 24px; --pitch: 32px; }
+  .talk-q[data-len="long"] { --qs: 21px; --pitch: 28px; }
   .talk-acts .btn { flex: 1 1 100%; }
   .talk-lead { font-size: 18px; }
 }
@@ -445,13 +518,7 @@
 .start { min-height: calc(100vh / var(--zoom, 1)); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: var(--s-4);
   padding: var(--s-4) clamp(16px, calc(4vw / var(--zoom, 1)), 64px) var(--s-6);
   --logo-a: var(--on-chocolate); --logo-story: var(--logo-gold); --logo-heart: var(--logo-gold);
-  background:
-    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
-    radial-gradient(90% 80% at 85% 100%, rgba(0, 0, 0, 0.28), transparent 60%),
-    linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)),
-    url("/book/bookcloth.jpg") 0 0 / 300px 300px,
-    var(--chocolate);
-  background-blend-mode: normal, normal, normal, overlay, normal; }
+  background: var(--bka-cloth-ground); background-blend-mode: normal, normal, normal, overlay, normal; }
 .start[aria-busy="true"] { justify-content: center; }
 .start-head { width: 100%; max-width: 1240px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
 .start-close { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-2); color: var(--on-chocolate-soft); font: 500 14px/1 var(--font-ui); text-decoration: none; transition: color 160ms var(--ease-out); }
@@ -461,7 +528,7 @@
 .start-close:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; border-radius: 4px; }
 /* the sheet: the paper on the cloth, a foil frame and a fleuron at its head; the step in tone does the separating */
 .start-sheet { position: relative; isolation: isolate; width: 100%; max-width: 1240px; margin: auto 0; padding: var(--s-10) var(--s-12) var(--s-8); color: var(--sheet-ink); border-radius: 6px;
-  background: radial-gradient(ellipse 80% 70% at 50% 40%, rgba(74, 51, 39, 0) 60%, rgba(74, 51, 39, 0.05) 100%), var(--page); }
+  background: var(--bka-vignette), var(--page); }
 .start-sheet::before { content: ""; position: absolute; inset: 14px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 3px; }
 .start-sheet::after { content: ""; position: absolute; left: 50%; top: 8px; width: 12px; height: 12px; transform: translateX(-50%); background: var(--foil); -webkit-mask: var(--bka-fleuron) center / contain no-repeat; mask: var(--bka-fleuron) center / contain no-repeat; }
 .start-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-2) var(--s-12); align-items: end; margin-bottom: var(--s-6); }
@@ -491,11 +558,11 @@
 /* the specimens: their book, your pen, their code */
 .start-obj { position: relative; display: grid; place-items: center; width: 136px; height: 108px; }
 .obj-book { width: 104px; height: 104px; justify-self: center; align-content: center; gap: 5px; padding: 8px; color: var(--on-chocolate); border-radius: 2px 4px 4px 2px; transform: rotate(-3deg);
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.06) 5%, transparent 9%), url("/book/bookcloth.jpg") 0 0 / 90px 90px, var(--bka-cover-navy); background-blend-mode: normal, overlay, normal;
+  background: var(--bka-spine-shade), url("/book/bookcloth.jpg") 0 0 / 90px 90px, var(--bka-cover-navy); background-blend-mode: normal, overlay, normal;
   box-shadow: var(--bka-edge-fore), var(--bka-lift); }
 .obj-title { font: 700 12px/1.1 var(--font-ui); letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
 .obj-rule { width: 26px; height: 1px; background: var(--foil); }
-.obj-script { font: 400 17px/1 "Mrs Saint Delafield", "Snell Roundhand", cursive; }
+.obj-script { font: 400 17px/1 var(--bka-script); }
 .obj-leaf { width: 112px; height: 92px; justify-self: center; padding: 12px; align-content: start; justify-items: start; background-color: var(--paper-print); border: 1px solid var(--sheet-rule); transform: rotate(2deg);
   background-image: repeating-linear-gradient(transparent 0 17px, var(--bka-ruled) 17px 18px); background-position: 0 28px; }
 .obj-dear { font: italic 500 15px/1 var(--book-display); color: var(--sheet-ink); }
@@ -524,7 +591,29 @@
 .start-rel .chip.big { min-height: 44px; }
 .start-form .askjoin { margin-top: var(--s-6); }
 @media (prefers-reduced-motion: reduce) { .start-way, .start-back span { transition: none; } }
+/* Where to next, quietly: one row under the three ways */
+.start-sample { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 44px; margin-top: var(--s-3); font: 500 14px/1 var(--font-ui); color: var(--ink-soft); text-decoration: none; }
+.start-sample span[aria-hidden] { color: var(--accent); transition: transform 160ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .start-sample:hover { color: var(--sheet-ink); } .start-sample:hover span[aria-hidden] { transform: translate(2px, -2px); } }
+.start-sample:active { opacity: 0.7; }
+.start-sample:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* a short laptop window: the sheet and its rows give back a little height so step 1 is one screen */
+@media (min-width: 861px) and (max-height: 800px) {
+  .start { padding-top: var(--s-3); gap: var(--s-3); }
+  .start-sheet { padding-top: var(--s-6); padding-bottom: var(--s-4); }
+  .start-top { margin-bottom: var(--s-3); }
+  .start .start-top h1 { font-size: 52px; }
+  .start-way { padding-top: 10px; padding-bottom: 10px; }
+  .start-sample { margin-top: 0; }
+}
 @media (min-width: 1600px) { .start-sheet, .start-head { max-width: 1480px; } }
+/* a large window: the three ways as three tall cards side by side, the object, who writes, the title, the words, the step */
+@media (min-width: 1500px) {
+  .start-ways { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); }
+  .start-way { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; align-items: start; gap: var(--s-5); padding: var(--s-8) var(--s-8) var(--s-6); }
+  .start-obj { justify-self: start; }
+  .start-way-act { align-self: end; }
+}
 @media (max-width: 1100px) {
   .start-sheet { padding: var(--s-10) var(--s-8); }
   .start-top { grid-template-columns: minmax(0, 1fr); }
@@ -570,6 +659,7 @@
 .wall { min-height: calc(100vh / var(--zoom, 1)); }
 .wall-cloth.cloth { padding-top: 0; padding-bottom: calc(var(--s-10) + 28px); }
 .wall .wall-top { max-width: none; padding: var(--s-5) var(--bka-gutter) 0; }
+.wall-top .brand { display: inline-flex; align-items: center; min-height: 44px; }
 .wall-top .brand:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 4px; }
 .wall .wall-hero { max-width: none; margin: 0; display: block; padding: var(--s-8) 0 0; }
 .wall .wall-hero-in { max-width: none; padding: 0 var(--bka-gutter); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-10); align-items: center; }
@@ -601,13 +691,16 @@
 .wall-chapter-num .fleuron { width: 18px; height: 18px; }
 .sheet-page .wall-chapter-head h2 { font-size: 36px; }
 .wall-chapter-count { font: italic 400 16px/1.35 var(--book-body); color: var(--ink-soft); }
-.wall-chapter-quote { grid-column: 1 / -1; margin: var(--s-3) 0 0; }
-.wall-chapter-quote p { font: italic 500 30px/1.3 var(--book-display); color: var(--sheet-ink); text-wrap: balance; max-width: 28ch; }
-.wall-chapter-quote p::before { content: "“"; margin-left: -0.4em; color: var(--kicker-terracotta); }
-.wall-chapter-quote p::after { content: "”"; color: var(--kicker-terracotta); }
 /* the leaves: two to a row, three on a large window, in columns so a long one never leaves a hole */
-.wall-leaves { columns: 2 340px; column-gap: var(--s-6); }
-.wall-leaf { position: relative; isolation: isolate; break-inside: avoid; display: grid; gap: var(--s-2); margin: 0 0 var(--s-6); padding: var(--s-8) var(--s-8) var(--s-6); background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 4px; }
+/* the leaves: a grid in reading order, two to a row (three on a large window), their tops on one line; a last leaf
+   that would stand alone closes the chapter across the row, its title on the left and its words on the right */
+.wall-leaves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); align-items: stretch; }
+.wall-leaf { position: relative; isolation: isolate; display: grid; gap: var(--s-2); align-content: start; margin: 0; padding: var(--s-8) var(--s-8) var(--s-6); background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 4px; }
+.wall-leaves > .wall-leaf:nth-child(2n+1):last-child { grid-column: 1 / -1; }
+.wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); column-gap: var(--s-10); }
+.wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) > :is(.wall-date, h3, .wall-print) { grid-column: 1; }
+.wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) > :is(.wall-words, .wall-more) { grid-column: 2; }
+.wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) > .wall-words { grid-row: 1 / span 3; margin-top: 0; max-width: 70ch; }
 .wall-leaf::before { content: ""; position: absolute; inset: 6px; z-index: -1; border: 1px solid var(--foil-soft); border-radius: 2px; pointer-events: none; }
 .wall-print { display: block; margin: 0 0 var(--s-4); padding: 10px 10px 30px; background: var(--paper-print); box-shadow: var(--bka-lift); transform: rotate(-0.8deg); justify-self: start; max-width: 100%; }
 .wall-leaf:nth-child(even) .wall-print { transform: rotate(0.7deg); }
@@ -626,19 +719,30 @@
 .wall-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 /* a chapter of one memory: its head and first line on the left, the leaf on the right, never one leaf across the row */
 @media (min-width: 1100px) {
-  .wall-chapter.one { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-10); align-items: start; }
-  .wall-chapter.one .wall-chapter-head { margin-bottom: 0; }
-  .wall-chapter.one .wall-leaves { columns: auto; }
-  .wall-chapter.one .wall-leaf { margin-bottom: 0; }
+  /* a chapter of one memory: its head on the left, the memory itself in the larger track */
+  .wall-chapter.one { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--s-10); align-items: start; }
+  .wall-chapter.one .wall-chapter-head { margin-bottom: 0; grid-template-columns: auto minmax(0, 1fr); }
+  .wall-chapter.one .wall-chapter-count { grid-column: 2; }
+  .wall-chapter.one .wall-leaves { grid-template-columns: minmax(0, 1fr); }
+  .wall-chapter.one .wall-words { max-width: 70ch; }
 }
 @media (min-width: 1600px) {
-  .wall-leaves { columns: 3 300px; }
+  .wall-leaves { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .wall-print img { max-height: 240px; }
-  .wall-chapter.one { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .wall-leaves > .wall-leaf:nth-child(2n+1):last-child { grid-column: auto; }
+  .wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) { grid-template-columns: minmax(0, 1fr); }
+  .wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) > :is(.wall-date, h3, .wall-print, .wall-words, .wall-more) { grid-column: auto; grid-row: auto; max-width: none; }
+  /* three to a row: a last leaf alone takes the row; two last leaves share it */
+  .wall-leaves > .wall-leaf:nth-child(3n+1):last-child { grid-column: 1 / -1; }
+  .wall-leaves > .wall-leaf:nth-child(3n+1):last-child:not(:first-child) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); column-gap: var(--s-10); }
+  .wall-leaves > .wall-leaf:nth-child(3n+1):last-child:not(:first-child) > :is(.wall-date, h3, .wall-print) { grid-column: 1; }
+  .wall-leaves > .wall-leaf:nth-child(3n+1):last-child:not(:first-child) > :is(.wall-words, .wall-more) { grid-column: 2; }
+  .wall-leaves > .wall-leaf:nth-child(3n+1):last-child:not(:first-child) > .wall-words { grid-row: 1 / span 3; margin-top: 0; max-width: 70ch; }
+  .wall-leaves > .wall-leaf:nth-child(3n+2):last-child { grid-column: span 2; }
 }
 /* what the family added: notecards on the paper, told apart by tone and an edge, not a shadow */
-.wall-notes { columns: 2 340px; column-gap: var(--s-6); }
-.wall-note { break-inside: avoid; margin: 0 0 var(--s-6); padding: var(--s-6) var(--s-8); background: var(--paper-tone); border: 1px solid var(--sheet-rule); }
+.wall-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); align-items: stretch; }
+.wall-note { margin: 0; padding: var(--s-6) var(--s-8); background: var(--paper-tone); border: 1px solid var(--sheet-rule); }
 .wall-note p { font: italic 400 19px/1.5 var(--book-body); color: var(--sheet-ink); }
 .wall-note footer { margin-top: var(--s-3); font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
 /* nothing shared yet: the dog, one sentence, the time, one action */
@@ -650,13 +754,7 @@
 .wall-next .where-next { margin-top: 0; }
 /* the bench: loading, and a link that shows nothing */
 .wall-bench { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; color: var(--on-chocolate);
-  background:
-    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
-    radial-gradient(90% 80% at 85% 100%, rgba(0, 0, 0, 0.28), transparent 60%),
-    linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)),
-    url("/book/bookcloth.jpg") 0 0 / 300px 300px,
-    var(--chocolate);
-  background-blend-mode: normal, normal, normal, overlay, normal; }
+  background: var(--bka-cloth-ground); background-blend-mode: normal, normal, normal, overlay, normal; }
 .wall-bench > * { position: relative; z-index: 1; }
 .wall-bench > .lamp { position: absolute; z-index: 0; }
 .wall-bench .wall-top { width: 100%; }
@@ -693,7 +791,11 @@
   .wall-leaf { padding: var(--s-6) var(--s-5) var(--s-5); }
   .wall-chapter-num { font-size: 36px; }
   .sheet-page .wall-chapter-head h2 { font-size: 28px; }
-  .wall-chapter-quote p { font-size: 24px; }
+  .wall-leaves { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) { grid-template-columns: minmax(0, 1fr); }
+  .wall-leaves > .wall-leaf:nth-child(2n+1):last-child:not(:first-child) > :is(.wall-date, h3, .wall-print, .wall-words, .wall-more) { grid-column: auto; grid-row: auto; max-width: none; }
+  .sheet-page .wall-leaf h3 { font-size: 24px; }
+  .wall-notes { grid-template-columns: minmax(0, 1fr); }
   .wall-note { padding: var(--s-5); }
   .wall-none { padding: var(--s-10) var(--s-6); }
   .wall-none h1 { font-size: 32px; }

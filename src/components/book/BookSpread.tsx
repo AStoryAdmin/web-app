@@ -159,6 +159,19 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
     go(p.to, p.fast);
   }, [turn, go]);
 
+  // One page at a time (a phone, or less motion): the new page fades in on GSAP, so the motion watchdog can finish it
+  // if the frame clock stalls; a CSS animation could sit at opacity 0. Under reduced motion it is the 150ms crossfade.
+  const spreadRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = spreadRef.current;
+    if (!el || !(single || reduced)) return;
+    const tween = gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: reduced ? 0.15 : 0.24, ease: OUT, clearProps: "opacity" });
+    return () => {
+      tween.kill();
+      gsap.set(el, { clearProps: "opacity" });
+    };
+  }, [safeIndex, single, reduced]);
+
   // The leaf turns; when it lands, the new spread is the spread.
   useEffect(() => {
     if (!turn || !leafRef.current) return;
@@ -299,7 +312,7 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
   const reader = (
     <>
       <div className="bk-stage" onClick={onStageClick} ref={stageRef}>
-        <div className="bk-spread" key={single || reduced ? safeIndex : "spread"}>
+        <div className="bk-spread" ref={spreadRef} key={single || reduced ? safeIndex : "spread"}>
           {!single && <BookPage page={baseLeft.left} side="left" teller={book.name} />}
           <BookPage page={baseRight.right} side="right" teller={book.name} />
           {turn && next && (
@@ -312,36 +325,44 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
       </div>
       {sweep && sweep.into.isConnected && createPortal(<span ref={sweepRef} className="bk-sweep" aria-hidden="true" style={{ background: sweep.cover.board }} />, sweep.into)}
 
-      <div className="bk-under">
-      <div className="bk-controls">
-        {/* on the front cover, as on the samples page, Back is there and disabled (a phone takes it out of the row) */}
-        <button type="button" className={`btn outline sm bk-back${atFront ? " at-front" : ""}`} onClick={() => go(safeIndex - 1)} disabled={atFront} aria-label="Previous page">
-          <ChevronLeft /> Back
-        </button>
-        <span className="bk-where" aria-live="polite">
-          {where}
-        </span>
-        <button type="button" className="btn outline sm bk-next" onClick={() => go(safeIndex + 1)} disabled={safeIndex === last} aria-label="Next page">
-          {atFront ? "Open the book" : "Turn page"} <ChevronRight />
-        </button>
-      </div>
-
-      <div className="bk-dots" role="group" aria-label="Jump to a spread">
-        {views.map((_, i) => (
-          <button key={i} type="button" className="bk-dot" aria-label={dotLabel(i)} aria-current={i === safeIndex || undefined} onClick={() => go(i)} />
-        ))}
-      </div>
-      <div className="bk-note">
+      <div className={`bk-under${rail ? " bk-row" : ""}`}>
         <p className="bk-caption" aria-live="polite">
           {noteK && <b>{noteK}</b>}
           {noteP && <span>{noteP}</span>}
         </p>
-        {speaks && (
+        <div className="bk-controls">
+          {/* on the front cover, as on the samples page, Back is there and disabled (a phone takes it out of the row) */}
+          <button type="button" className={`btn outline sm bk-back${atFront ? " at-front" : ""}`} onClick={() => go(safeIndex - 1)} disabled={atFront} aria-label="Previous page">
+            <ChevronLeft /> Back
+          </button>
+          <span className="bk-where" aria-live="polite">
+            {where}
+          </span>
+          <button type="button" className="btn outline sm bk-next" onClick={() => go(safeIndex + 1)} disabled={safeIndex === last} aria-label="Next page">
+            {atFront ? "Open the book" : "Turn page"} <ChevronRight />
+          </button>
+        </div>
+        {speaks ? (
           <button type="button" className={`btn outline sm bk-read${reading ? " on" : ""}`} onClick={read} aria-pressed={reading}>
             {reading ? <PauseIcon /> : <PlayIcon />} {reading ? "Stop reading" : "Read this page"}
           </button>
+        ) : (
+          <span className="bk-read-none" aria-hidden="true" />
         )}
-      </div>
+        {rail ? (
+          // beside the book's own contents the dashes are a quiet hairline of where you are; the contents are the jump
+          <div className="bk-dots bk-dots-quiet" aria-hidden="true">
+            {views.map((_, i) => (
+              <span key={i} className="bk-dot" aria-current={i === safeIndex || undefined} />
+            ))}
+          </div>
+        ) : (
+          <div className="bk-dots" role="group" aria-label="Jump to a spread">
+            {views.map((_, i) => (
+              <button key={i} type="button" className="bk-dot" aria-label={dotLabel(i)} aria-current={i === safeIndex || undefined} onClick={() => go(i)} />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

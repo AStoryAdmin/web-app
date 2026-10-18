@@ -97,8 +97,8 @@ const WAYS: { key: Way; title: string; writes: string; body: string; act: string
   {
     key: "other",
     title: "Someone in my family",
-    writes: "You write, in their name",
-    body: "A parent or a grandparent who isn’t on A Story yet, or would rather you did the typing. What you write is kept in their name, as told to you.",
+    writes: "You write it down for them, as told to you",
+    body: "A parent or a grandparent who isn’t on A Story yet, or would rather you did the typing. The story is kept in their name.",
     act: "Start their story",
   },
   {
@@ -166,6 +166,7 @@ export default function Start() {
 
   // The sheet's contents rise once, a few things together, each time the step changes (transform and opacity,
   // stated at both ends, cleared after; nothing under reduced motion).
+  const loaded = account !== undefined;
   // Set up before the browser paints, so the first frame is already the start of the rise and never a flash.
   useLayoutEffect(() => {
     const el = sheet.current;
@@ -176,7 +177,7 @@ export default function Start() {
       gsap.fromTo(items, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: OUT, stagger: 0.06, clearProps: "transform,opacity" });
     });
     return () => mm.revert();
-  }, [who, account]);
+  }, [who, loaded]);
 
   if (account === undefined)
     return (
@@ -237,7 +238,7 @@ export default function Start() {
                 Whose story is this<span className="stop">?</span>
               </h1>
               <p className="start-sub" data-rise>
-                There are three ways to be in a story, and nobody ever writes as somebody else. You can keep more than one; start with one person.
+                There are three ways to be in a story, and nobody ever signs as somebody else. You can keep more than one; start with one person.
               </p>
             </div>
             <div className="start-ways">
@@ -256,6 +257,11 @@ export default function Start() {
                 );
               })}
             </div>
+            {/* Where to next, quietly: one row for someone who would like to see the book before choosing */}
+            <a className="start-sample" href="https://astoryapp.com/samples/" target="_blank" rel="noopener">
+              See a sample book first <span aria-hidden="true">↗</span>
+              <span className="sr-only"> (opens astoryapp.com)</span>
+            </a>
           </section>
         ) : (
           <div className="start-step">

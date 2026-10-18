@@ -47,6 +47,22 @@ function Section({ title, lead, children, id, tone }: { title: string; lead?: Re
   );
 }
 
+/** One part of a section (signing in has three: the email, the password, this browser). */
+function Part({ title, lead, children, id }: { title: string; lead?: ReactNode; children: ReactNode; id: string }) {
+  return (
+    <div className="acct-part" id={id} role="group" aria-labelledby={`${id}-h`}>
+      <h3 id={`${id}-h`}>{title}</h3>
+      {lead && <p className="acct-lead">{lead}</p>}
+      <div className="acct-part-body">{children}</div>
+    </div>
+  );
+}
+
+/** Two short sections side by side on a large window; one alone takes the row (a section that doesn't apply renders nothing). */
+function Pair({ children }: { children: ReactNode }) {
+  return <div className="acct-pair">{children}</div>;
+}
+
 function NoteLine({ note }: { note: Note }) {
   if (!note) return null;
   return (
@@ -169,7 +185,7 @@ function Email({ user, refresh }: { user: User; refresh: () => Promise<unknown> 
   };
 
   return (
-    <Section title="Email" lead="Where your sign-in codes and the Sunday email go." id="email">
+    <Part title="Email" lead="Where your sign-in codes and the Sunday email go." id="email">
       <p className="acct-value">
         <MailIcon /> {user.email}
       </p>
@@ -221,7 +237,7 @@ function Email({ user, refresh }: { user: User; refresh: () => Promise<unknown> 
           </div>
         </form>
       )}
-    </Section>
+    </Part>
   );
 }
 
@@ -253,7 +269,7 @@ function Password() {
   };
 
   return (
-    <Section title="Password" lead="For signing in on a new computer or phone." id="password">
+    <Part title="Password" lead="For signing in on a new computer or phone." id="password">
       <form
         className="acct-form"
         onSubmit={(e) => {
@@ -271,7 +287,7 @@ function Password() {
           <NoteLine note={note} />
         </div>
       </form>
-    </Section>
+    </Part>
   );
 }
 
@@ -292,7 +308,7 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
   };
   const groups = storyGroups(stories, meId);
   return (
-    <Section title="Whose stories" lead="The four places are about the story that is chosen. There are three ways to be in one, and nobody ever writes as somebody else." id="storytellers">
+    <Section title="Whose stories" lead="The four places are about the story that is chosen. There are three ways to be in one, and nobody ever signs as somebody else." id="storytellers">
       {groups.length === 0 && <p className="acct-empty">No stories yet.</p>}
       {groups.map((g) => (
         <div key={g.key} className="acct-group">
@@ -303,7 +319,7 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
               const on = s.id === active?.id;
               return (
                 <li key={s.id} className={on ? "on" : undefined} aria-current={on ? "true" : undefined}>
-                  <Avatar name={s.name} size={44} className="acct-seal" />
+                  <Avatar name={`${s.name} ${s.lastName}`.trim()} size={44} className="acct-seal" />
                   <span className="acct-who">
                     <strong>{`${s.name} ${s.lastName}`.trim()}</strong>
                     <span>
@@ -326,11 +342,11 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
       <NoteLine note={note} />
       <div className="acct-ways">
         <Link to="/start?another=1" className="acct-way">
-          <strong>Keep someone else's story</strong>
-          <span>For someone who isn't on A Story yet. You do the typing, in their name.</span>
+          <strong>Keep someone else’s story</strong>
+          <span>For someone who isn’t on A Story yet. You keep it for them, as they tell it.</span>
         </Link>
         <Link to="/start?another=1&join=1" className="acct-way">
-          <strong>Join someone's story</strong>
+          <strong>Join someone’s story</strong>
           <span>Someone who already has an account. You add what you remember, under your own name.</span>
         </Link>
       </div>
@@ -345,9 +361,8 @@ function PlanCard({ user }: { user: User }) {
   return (
     <Section title="Your plan" lead="Writing, reading and the family are free on every plan." id="plan">
       <p className="acct-plan">
-        <b>{PLAN_LABELS[user.plan]}</b>
+        <b>{user.plan === "complimentary" ? "Full access, through an access code." : PLAN_LABELS[user.plan]}</b>
         {user.plan === "free" && <span className="meta">Three guided questions a day, unlimited writing, the whole family, print at home free.</span>}
-        {user.plan === "complimentary" && <span className="meta">Full access through an access code.</span>}
       </p>
       {ends && !Number.isNaN(ends.getTime()) && (
         <p className="meta" style={{ marginBottom: "var(--s-4)" }}>
@@ -715,7 +730,7 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
 /* ── The index beside the page ───────────────────────────────────────── */
 
 const INDEX: { group: string; items: [string, string][] }[] = [
-  { group: "You", items: [["profile", "Your name"], ["email", "Email"], ["password", "Password"], ["signout", "Sign out"]] },
+  { group: "You", items: [["profile", "Your name"], ["signing", "Signing in"]] },
   { group: "The stories", items: [["storytellers", "Whose stories"], ["wall", "The wall"], ["export", "A copy of everything"]] },
   { group: "Plan and privacy", items: [["plan", "Your plan"], ["privacy", "Privacy"]] },
   { group: "If you can't", items: [["trusted", "Who looks after this"], ["delete", "Delete the account"]] },
@@ -848,29 +863,39 @@ export default function Account() {
             </select>
           </label>
           <Profile user={user} refresh={refresh} bookName={bookName} />
-          <Email user={user} refresh={refresh} />
-          <Password />
-          <Section title="Sign out" lead="Only this browser. Your stories stay exactly as they are." id="signout">
-            <div className="acct-acts">
-              <Button variant="outline" small onClick={leave} loading={leaving}>
-                Sign out of this browser
-              </Button>
+          <Section title="Signing in" lead="Your email, your password, and this browser." id="signing">
+            <div className="acct-parts">
+              <Email user={user} refresh={refresh} />
+              <Password />
+              <Part title="Sign out" lead="Only this browser. Your stories stay exactly as they are." id="signout">
+                <div className="acct-acts">
+                  <Button variant="outline" small onClick={leave} loading={leaving}>
+                    Sign out of this browser
+                  </Button>
+                </div>
+              </Part>
             </div>
           </Section>
           <Storytellers stories={stories} active={activeStory} chooseStory={chooseStory} meId={user.id} />
-          <Walls meId={user.id} />
-          <Export stories={stories} recordedBy={recordedBy} />
-          <PlanCard user={user} />
-          <Privacy user={user} refresh={refresh} />
-          <Trusted />
-          <Delete
-            user={user}
-            stories={stories}
-            afterDelete={async () => {
-              await signOut();
-              navigate("/welcome", { replace: true });
-            }}
-          />
+          <Pair>
+            <Walls meId={user.id} />
+            <Export stories={stories} recordedBy={recordedBy} />
+          </Pair>
+          <Pair>
+            <PlanCard user={user} />
+            <Privacy user={user} refresh={refresh} />
+          </Pair>
+          <Pair>
+            <Trusted />
+            <Delete
+              user={user}
+              stories={stories}
+              afterDelete={async () => {
+                await signOut();
+                navigate("/welcome", { replace: true });
+              }}
+            />
+          </Pair>
           <WhereNext
             rows={[
               { to: "/book", title: "Open the book", line: "Every page, as it will print." },

@@ -186,9 +186,6 @@ export default function Book() {
                 <ButtonLink to="/write" icon={<PenIcon />}>
                   Write the first memory
                 </ButtonLink>
-                <ButtonLink to="/" variant="quiet">
-                  Today's question
-                </ButtonLink>
               </div>
               {swatches}
             </div>
@@ -211,7 +208,9 @@ export default function Book() {
 
         <WhereNext
           rows={[
-            { to: "/write", title: "Write the next page", line: `One question, or anything ${story.relationship === "Myself" ? "you remember" : `${story.name} remembers`}.` },
+            empty
+              ? { to: "https://astoryapp.com/samples/", title: "Turn the pages of a sample", line: "A family book, printed exactly the way this one will be.", external: true }
+              : { to: "/write", title: "Write the next page", line: `One question, or anything ${story.relationship === "Myself" ? "you remember" : `${story.name} remembers`}.` },
             { to: "/archive", title: "Read it as an archive", line: "Every memory by year, with the photographs." },
             { to: "/family", title: "Ask the family in", line: "What they add prints under their own names." },
           ]}

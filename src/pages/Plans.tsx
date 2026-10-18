@@ -47,7 +47,7 @@ const PLANS: PlanCol[] = [
       storytellers: "One",
       questions: "Every question",
       photos: "Unlimited",
-      book: "A Classic Hardcover each year, or its $69 toward a finer edition, plus the Digital Edition",
+      book: "A Classic Hardcover each year, and the Digital Edition",
     },
   },
   {
@@ -105,7 +105,7 @@ export default function Plans() {
         <div className="pl-note" data-rise>
           {current === "complimentary" ? (
             <p>
-              <b>Your account has full access</b> through an access code. Nothing below is needed.
+              <b>Full access</b>, through an access code: none of these is needed.
             </p>
           ) : (
             <p>
@@ -147,7 +147,8 @@ export default function Plans() {
                   <p key={r.key} className={`pl-cell${p.cells[r.key] ? "" : " none"}`}>
                     <span className="pl-cell-label">{r.label}</span>
                     <span className="pl-cell-value">
-                      {r.key === "book" && p.hardcover && <img className="pl-keepsake" src="/book/keepsake-closed.webp" alt="" width={40} height={40} />}
+                      {/* a small drawn keepsake for the plans with a hardcover, on its own line, on a large window only */}
+                      {r.key === "book" && p.hardcover && <span className="pl-keepsake" aria-hidden="true" />}
                       {p.cells[r.key] ?? "—"}
                     </span>
                   </p>
@@ -157,10 +158,10 @@ export default function Plans() {
                     <span className="pl-mine">Your plan</span>
                   ) : p.id === "free" ? (
                     <span className="pl-quiet">Where every account starts</span>
-                  ) : (
+                  ) : current === "complimentary" ? null : (
                     <a className="btn outline sm pl-choose" href={PRICING_URL} target="_blank" rel="noopener" onClick={() => track("checkout_started", { plan: p.id, via: "pricing_site" })}>
-                      Choose {PLAN_LABELS[p.id]} <span aria-hidden="true">↗</span>
-                      <span className="sr-only"> (opens astoryapp.com)</span>
+                      Choose <span aria-hidden="true">↗</span>
+                      <span className="sr-only"> {PLAN_LABELS[p.id]} (opens astoryapp.com)</span>
                     </a>
                   )}
                 </div>
