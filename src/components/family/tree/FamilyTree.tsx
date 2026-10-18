@@ -133,6 +133,25 @@ function balance(el: HTMLElement) {
   }
 }
 
+/** Marks each generation whose "+" stands alone on its last row (data-ghost-up); says whether any did. */
+function liftLoneRings(el: HTMLElement): boolean {
+  let any = false;
+  for (const tier of el.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf)")) {
+    const ghost = tier.querySelector<HTMLElement>(".tp-row .tp-ghost");
+    if (!ghost || !tier.querySelector(".tp-ask-alt")) continue;
+    const others = [...tier.querySelectorAll<HTMLElement>(".tp-row > .tp-zone > *")].filter((n) => n !== ghost && n.getBoundingClientRect().width > 0);
+    if (!others.length) continue;
+    const top = ghost.getBoundingClientRect().top;
+    // a face in the storyteller's tier may sit a little lower on the centre line; a row apart is far more than that
+    const alone = !others.some((n) => Math.abs(n.getBoundingClientRect().top - top) < 40);
+    if (alone) {
+      tier.dataset.ghostUp = "1";
+      any = true;
+    }
+  }
+  return any;
+}
+
 /* ── One face ──────────────────────────────────────────────────────────── */
 
 function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; story: Story; meId: string | null | undefined; preview?: boolean; hot: Set<string> | null; onHot: (id: string | null) => void }) {
@@ -413,7 +432,11 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
         if (!tooTall()) delete el.dataset.snug;
       }
     }
+    // without threads (a laptop, a tablet, a phone) a "+" left alone on the last row of its generation moves up
+    // beside the generation's name as the small ring, as an empty generation's asks do
+    el.querySelectorAll<HTMLElement>(".tp-tier[data-ghost-up]").forEach((t) => delete t.dataset.ghostUp);
     balance(el);
+    if (getComputedStyle(svg).display === "none" && liftLoneRings(el)) balance(el);
     if (getComputedStyle(svg).display === "none") {
       setThreads((prev) => (prev.length ? [] : prev));
       return;
@@ -513,6 +536,16 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
                   <button key={g.key} type="button" className="tp-ask" onClick={() => onAdd(isReal(anchor) ? anchor : null, g.kind)}>
                     <Plus />
                     {g.label}
+                  </button>
+                );
+              })}
+              {/* the generation's "+" as the small ring by its name, shown only when the ring would stand alone on a row */}
+              {(["left", "centre", "right"] as Zone[]).flatMap((z) => tier.zones[z].filter((x) => x.ghost)).map((x) => {
+                const anchor = x.ghost!.anchorId ? byId.get(x.ghost!.anchorId) || null : null;
+                return (
+                  <button key={`alt-${x.key}`} type="button" className="tp-ask tp-ask-alt" onClick={() => onAdd(isReal(anchor) ? anchor : null, x.ghost!.kind)}>
+                    <Plus />
+                    {x.ghost!.label}
                   </button>
                 );
               })}

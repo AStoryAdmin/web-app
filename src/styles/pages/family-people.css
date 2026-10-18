@@ -654,3 +654,15 @@
   /* the quiet button's words on the column's edge, its target kept */
   .pp-plate-body .pp-edit { margin-inline-start: -16px; }
 }
+
+/* ── round 9 ─────────────────────────────────────────────────────────── */
+/* a generation's "+" that would stand alone on a row (FamilyTree liftLoneRings) is the small ring by its name instead */
+.tp-ask-alt { display: none; }
+.tp-tier[data-ghost-up] .tp-ask-alt { display: inline-flex; }
+.tp-tier[data-ghost-up] .tp-row .tp-ghost { display: none; }
+@media (min-width: 761px) and (max-width: 1099px) {
+  /* every framed card in the band on the column's left edge: the slim plate no wider than its words, the kept
+     line under it starting where it starts */
+  .pp-plate.slim { min-width: 0; }
+  .pp-words-plate { margin-inline: 0; }
+}
