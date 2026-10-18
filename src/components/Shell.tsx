@@ -20,6 +20,7 @@ import { storyGroups } from "./family/familyView";
 import { arrive } from "../lib/arrive";
 import { scrollShell } from "../lib/scrollShell";
 import { useTransitionLinks } from "../lib/pageTransition";
+import { useKeyLayer } from "../lib/keys";
 import { useLight } from "./delight/Light";
 import Leaf from "./delight/Leaf";
 import { usePillThumb } from "../lib/pillThumb";
@@ -218,6 +219,7 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   useLight(cloth);
   usePillThumb(pills, location.pathname);
   useTransitionLinks(navigate);
+  useKeyLayer(navigate);
   // once per page, and again when a page swaps its busy placeholder for its content (the hero or title changes)
   const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${title ?? ""}`;
   useEffect(() => {
