@@ -1965,6 +1965,9 @@ describe("round 20: hyphenated numbers, the curly inch mark, the r19 mutant inpu
       ["We had, like, billions of ants.", at("We had, like, billions of ants.", ", like,", "b-like"), []],
       // M6: a « is a mark
       ["She said, «Okay. Wow.» Then left.", at("She said, «Okay. Wow.» Then left.", "Wow.", "e-reaction"), []],
+      // M6, the inputs whose only mark is the «
+      ["Wow.", at("Wow.", "Wow.", "e-reaction"), ["She said, «We went."]],
+      ["She said, «We went. Wow.", at("She said, «We went. Wow.", "Wow.", "e-reaction"), []],
     ];
     for (const [said, cut, prior] of forbidden) {
       if (!breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior })) failures.push(`the checker accepts a forbidden cut: ${said} after ${JSON.stringify(prior)} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
