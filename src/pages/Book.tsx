@@ -110,7 +110,7 @@ export default function Book() {
 
   // The book's own key for its listening codes, made once a memory has a recording and kept on the design.
   useEffect(() => {
-    if (!story || keyed.current === story.id || !needsListenKey(story)) return;
+    if (!story || story.readOnly || keyed.current === story.id || !needsListenKey(story)) return;
     keyed.current = story.id;
     const design = normaliseDesign(story.bookDesign) as Design;
     updateStory({ ...story, bookDesign: { ...design, listenKey: makeListenKey() } }).catch(() => {
@@ -215,7 +215,8 @@ export default function Book() {
     }
   };
 
-  const swatches = <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />;
+  // the cover is the keepers' to choose; somebody reading as family sees the book as it is
+  const swatches = story.readOnly ? null : <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />;
   const printButton = (
     <div className="bk-print">
       <Button variant="outline" icon={<PrintIcon />} onClick={print} loading={printing}>

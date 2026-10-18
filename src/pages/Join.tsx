@@ -21,6 +21,8 @@ import { useAccount } from "../state/accountContext";
 import { joinFamily, type JoinResult } from "../data/familyWrites";
 import { joinOutcome, looksLikeFamilyCode, normaliseFamilyCode, spacedCode } from "../app-core/lib/familyCode.js";
 import { track } from "../lib/analytics";
+import { myStoryIds } from "../components/family/familyView";
+import type { Family } from "../data/family";
 
 type Outcome = { ok: boolean; title?: string; body: string };
 
@@ -111,12 +113,26 @@ function TypeCode({ initial = "", invalid, onError }: { initial?: string; invali
   );
 }
 
+/**
+ * The join's answer, with the story it names made the family's storyteller's when the story it opened is the
+ * joiner's own: a code for GBao's place, whose story Bao had started about GBao, used to say "GBao’s story is
+ * on your Family tab" to GBao. The storyteller is whoever started the family’s tree, by their first name, else
+ * whoever made the code; with neither, the line names no story.
+ */
+function namingTheTeller(result: JoinResult, family: Family | null, userId: string | null | undefined): JoinResult {
+  if (!result.ok || !result.story_id || !myStoryIds(family, userId).includes(result.story_id)) return result;
+  const place = family?.people.find((p) => p.id === result.person_id) || family?.people.find((p) => p.storyId === result.story_id);
+  const home = family?.households.find((h) => h.id === place?.householdId);
+  const teller = home?.createdBy && home.createdBy !== userId ? family?.people.find((p) => p.householdId === home.id && p.userId === home.createdBy) : null;
+  return { ...result, story_name: String(teller?.givenName || "").trim() || result.inviter_name || null };
+}
+
 export default function Join() {
   const { code: raw = "" } = useParams();
   const code = normaliseFamilyCode(raw) as string;
   const valid = looksLikeFamilyCode(code) as boolean;
   const { user } = useAuth();
-  const { ensureMyStory, reload } = useAccount();
+  const { ensureMyStory, reload, family } = useAccount();
   const [result, setResult] = useState<JoinResult | null>(null);
   const [phase, setPhase] = useState<"idle" | "joined" | "ready">("idle");
   const [attempt, setAttempt] = useState(0);
@@ -166,7 +182,7 @@ export default function Join() {
     };
   }, [phase, ensureMyStory]);
 
-  const outcome = result ? (joinOutcome(result) as Outcome) : null;
+  const outcome = result ? (joinOutcome(namingTheTeller(result, family, user?.id)) as Outcome) : null;
   const next = `/join/${code}`;
   // A code that is wrong, run out or already used is not fixed by trying
   // again; the way out is another code.

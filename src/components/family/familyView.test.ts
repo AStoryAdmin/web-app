@@ -1,6 +1,6 @@
 // The three ways to be in a story, and one person never twice (docs/PRD.md §3.3a).
 import { describe, expect, it } from "vitest";
-import { stateWords, storyGroups, storyGroupOf } from "./familyView";
+import { myStoryIds, stateWords, storyGroups, storyGroupOf, whoseWords } from "./familyView";
 import { duplicateFix, duplicateGroups, findPersonByEmail, sameNamePeople, type Family, type Person } from "../../data/family";
 import type { Story } from "../../data/stories";
 
@@ -24,6 +24,17 @@ describe("whose story: three groups, never mixed", () => {
     const legacy = story({ id: "a", ownerId: null, relationship: "Father" });
     expect(storyGroups([legacy], "me")).toHaveLength(1);
     expect(storyGroups([legacy], "me")[0].key).toBe("kept");
+  });
+  it("puts a story about you under your own, whoever started it (GBao joined at a place Bao had a story for)", () => {
+    const aboutMe = story({ id: "g", ownerId: "bao", relationship: "Friend", name: "GBao" });
+    const baos = story({ id: "b", ownerId: "bao", relationship: "Myself", name: "Bao", readOnly: true });
+    const mine = myStoryIds(fam([person({ id: "p1", userId: "me", storyId: "g" }), person({ id: "p2", userId: "bao", storyId: "b" })]), "me");
+    expect(mine).toEqual(["g"]);
+    expect(storyGroupOf(aboutMe, "me", mine)).toBe("own");
+    expect(storyGroupOf(baos, "me", mine)).toBe("joined");
+    expect(whoseWords(aboutMe, "own", "Friend")).toBe("Your own story");
+    expect(whoseWords(baos, "joined", "")).toBe("you read and add");
+    expect(whoseWords({ ...baos, readOnly: false }, "joined", "")).toBe("their story");
   });
 });
 

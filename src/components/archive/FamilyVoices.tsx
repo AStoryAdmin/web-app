@@ -2,14 +2,16 @@
  * "What the family remembers": every other version of this moment the
  * family sent, set as text the way the book sets a note, never merged:
  * their words in quotation marks, then a small face and their name. Keepers
- * also see what is still waiting and can keep it or not. Under them, one
+ * also see what is still waiting and can keep it or not; somebody who reads
+ * the story as family sees what was kept and their own still waiting, and
+ * sends their side under their own name. Under them, one
  * quiet link, "Add what you remember", opens the box to write in (the
  * page's only way to it); it stays open once anything has been typed.
  */
 import { useEffect, useRef, useState } from "react";
 import { Avatar, Button, Problem } from "../ui";
 import { CheckIcon } from "../icons";
-import { approveContribution, listContributions, rejectContribution, sendContribution, type Contribution } from "../../data/contributions";
+import { approveContribution, fetchFamilySides, listContributions, rejectContribution, sendContribution, type Contribution } from "../../data/contributions";
 import { sidesFor } from "../../app-core/lib/memorySides.js";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { smarten } from "../../lib/typography";
@@ -53,6 +55,11 @@ function Voice({ c, person, pending, onKeep, onDrop, busy }: { c: Contribution; 
           {[rel ? `, ${rel.toLowerCase()}` : "", pending ? "" : ` · ${when(c.createdAt)}`].join("")}
         </span>
       </p>
+      {pending && !onKeep && (
+        <div className="fv-acts">
+          <span className="fv-wait">Waiting for a keeper</span>
+        </div>
+      )}
       {pending && onKeep && onDrop && (
         <div className="fv-acts">
           <span className="fv-wait">Waiting for you</span>
@@ -74,6 +81,8 @@ export default function FamilyVoices({
   story,
   viewerName,
   isOwner,
+  reader = false,
+  myPersonId = null,
   people = [],
   open,
   onOpenChange,
@@ -82,6 +91,10 @@ export default function FamilyVoices({
   story: Story;
   viewerName: string;
   isOwner: boolean;
+  /** Reads the story as family, not one of its keepers: sees what was kept and their own, keeps nothing. */
+  reader?: boolean;
+  /** Their row in this story's family tree, so what they send is filed as them. */
+  myPersonId?: string | null;
   /** The family tree, for the faces beside the names. */
   people?: Person[];
   /** Whether the box to write in is open. Left out, it is always open. */
@@ -102,7 +115,7 @@ export default function FamilyVoices({
 
   useEffect(() => {
     let live = true;
-    listContributions(story.id, ["approved", "pending"])
+    (reader ? fetchFamilySides(memory.id) : listContributions(story.id, ["approved", "pending"]))
       .then((rows) => {
         if (!live) return;
         setItems(rows.filter((c) => c.memoryId === memory.id && (c.kind || "testimonial") === "testimonial"));
@@ -115,7 +128,7 @@ export default function FamilyVoices({
     return () => {
       live = false;
     };
-  }, [story.id, memory.id, refresh]);
+  }, [story.id, memory.id, refresh, reader]);
 
   // opened from "Add what you remember": bring the box into view and put the caret in it
   useEffect(() => {
@@ -138,9 +151,9 @@ export default function FamilyVoices({
     setSending(true);
     setError(null);
     try {
-      await sendContribution({ storyId: story.id, contributorName: viewerName, relationship: "", body, memoryId: memory.id });
+      await sendContribution({ storyId: story.id, contributorName: viewerName, relationship: "", body, memoryId: memory.id, personId: myPersonId });
       setText("");
-      setSent(isOwner ? "Added. It shows here once a keeper has looked at it." : "Sent to the family.");
+      setSent(isOwner ? "Added. It shows here once a keeper has looked at it." : reader ? "Sent. It goes in the book once a keeper keeps it." : "Sent to the family.");
       setRefresh((n) => n + 1);
     } catch (err) {
       console.warn("contribution not sent", err);
@@ -195,7 +208,14 @@ export default function FamilyVoices({
             <Voice key={c.id} c={c} person={faceFor(c, people)} />
           ))}
           {pending.map((c) => (
-            <Voice key={c.id} c={c} person={faceFor(c, people)} pending busy={busyId === c.id} onKeep={() => decide(c, true)} onDrop={() => decide(c, false)} />
+            <Voice
+              key={c.id}
+              c={c}
+              person={faceFor(c, people)}
+              pending
+              busy={busyId === c.id}
+              {...(reader ? {} : { onKeep: () => decide(c, true), onDrop: () => decide(c, false) })}
+            />
           ))}
         </ul>
       )}
