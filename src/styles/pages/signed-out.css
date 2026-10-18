@@ -271,7 +271,7 @@
    whole row is the one target, and the slot that comes next is marked while it has focus */
 .auth.ritual .plate-code { position: relative; margin: 2px 0 12px; }
 .auth.ritual .plate-code-slots { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; pointer-events: none; }
-.auth.ritual .plate-code .slot { display: grid; place-items: center; min-height: max(var(--tap), 52px); background: var(--code-box-fill); border: 1px solid var(--code-box-line); border-radius: 6px;
+.auth.ritual .plate-code .slot { font-variant-numeric: lining-nums tabular-nums; display: grid; place-items: center; min-height: max(var(--tap), 52px); background: var(--code-box-fill); border: 1px solid var(--code-box-line); border-radius: 6px;
   font-family: var(--book-display); font-weight: 600; font-size: max(28px, var(--ctl)); line-height: 1; color: var(--sheet-ink); transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
 .auth.ritual .plate-code .slot.is-next { border-color: var(--chocolate); box-shadow: 0 0 0 1px var(--chocolate); }
 .auth.ritual .plate-code-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent;
@@ -361,7 +361,7 @@
 }
 
 /* the code, set like the title on a spine: large, spaced, between two foil rules */
-.auth.ritual .codeseal { margin: 0 auto 12px; padding: 8px 0 6px; width: fit-content; min-width: 70%; text-align: center; font-family: var(--book-display); font-weight: 600; font-size: 44px; line-height: 1; letter-spacing: 0.14em; color: var(--chocolate);
+.auth.ritual .codeseal { font-variant-numeric: lining-nums tabular-nums; margin: 0 auto 12px; padding: 8px 0 6px; width: fit-content; min-width: 70%; text-align: center; font-family: var(--book-display); font-weight: 600; font-size: 44px; line-height: 1; letter-spacing: 0.14em; color: var(--chocolate);
   border-top: 1px solid rgba(201, 161, 90, 0.7); border-bottom: 1px solid rgba(201, 161, 90, 0.7); font-variant-numeric: lining-nums; } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
 /* waiting on the plate: the mark draws itself over a short line, never a word left alone */
 .auth.ritual .plate-wait { display: grid; justify-items: center; gap: 4px; padding: 14px 0 18px; }

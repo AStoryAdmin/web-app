@@ -32,11 +32,19 @@ export default function PlateCode({ value, onChange, length = 6, autoFocus }: { 
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, length))}
+        // the caret stays at the end, where the slots say the next digit goes (a full selection may still clear it)
+        onSelect={(e) => {
+          const i = e.currentTarget;
+          const n = i.value.length;
+          if (i.selectionStart === 0 && i.selectionEnd === n && n > 0) return;
+          if (i.selectionStart !== n || i.selectionEnd !== n) i.setSelectionRange(n, n);
+        }}
         onPaste={(e) => {
-          const text = e.clipboardData.getData("text");
-          if (!text) return;
+          // a paste with no digits in it changes nothing
+          const digits = e.clipboardData.getData("text").replace(/\D/g, "");
+          if (!digits) return;
           e.preventDefault();
-          onChange(text.replace(/\D/g, "").slice(0, length));
+          onChange(digits.slice(0, length));
         }}
       />
     </div>
