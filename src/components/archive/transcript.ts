@@ -24,6 +24,8 @@ const ASK = /^(?:and\s+|so\s+)?(?:do|did|does|is|are|was|were|how|what|why|when|
 /** A reaction, not a question to answer ("Wait, were you?", "Really?"): it is the other person's, and dropped. */
 const REACTION_Q = /^(?:wait|really|seriously|oh|huh)\b/i;
 const TAG = /\b(?:right|you know|isn't it|wasn't it|okay|yeah|huh)\?["”’]*$/i;
+/** After a lifted question, the asker's own next words, before any answer ("Because our strategy…", "We're going to…"). */
+const ASKER_GOES_ON = /^(?:because|our|we're|we’re|we are|we'll|we’ll|we will|we want|we were|and our|so our)\b/i;
 /** The mark that begins a paragraph holding the other person's question, set as the book's "We asked" line. */
 export const ASKED = "⁣";
 /** Labels a chat or call transcript puts in front of each turn. */
@@ -94,10 +96,43 @@ function punctuateRunOn(s: string): string[] {
   return out;
 }
 
+/**
+ * A clause said and then restarted: "That's how we got, that's how we
+ * built…" → "that's how we built…"; "So we did a, we built…" → "we built…".
+ * The first try goes when it is short (six words or fewer) and the next
+ * clause starts again on the same word, or the first try breaks off on a
+ * little word ("a", "to", "the") and the next picks up a word from it.
+ */
+function dropRestarts(s: string): string {
+  const parts = s.split(/,\s+/);
+  if (parts.length < 2) return s;
+  const out: string[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const a = parts[i];
+    const b = parts[i + 1];
+    if (b) {
+      const aw = a.toLowerCase().split(/\s+/).filter(Boolean);
+      const bw = b.toLowerCase().split(/\s+/).filter(Boolean);
+      const short = aw.length <= 6;
+      const sameStart = aw[0] && aw[0] === bw[0];
+      const brokeOff = /\b(?:a|an|the|to|of|like|and|so)$/i.test(a) && aw.includes(bw[0]);
+      if (short && (sameStart || brokeOff)) continue;
+    }
+    out.push(a);
+  }
+  return out.join(", ");
+}
+
+/** "My dad so I started…" → "I started…": a start abandoned before "so I" / "so we". */
+const ABANDONED = /^(?:[\w'’]+\s+){1,3}so\s+(?=(?:I|we)\b)/i;
+
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+
 /** One paragraph of speech, tidied. */
 export function cleanSpeech(text: string): string {
   const turns = tellerTurns(String(text || ""));
-  const t = sentencesOf(turns)
+  const kept: string[] = [];
+  for (const s0 of sentencesOf(turns)
     .map((s) => s.trim())
     // back-channel sentences go whole
     .filter((s) => s && !BACKCHANNEL.test(s.replace(/["“”]/g, "").trim()))
@@ -110,14 +145,21 @@ export function cleanSpeech(text: string): string {
         .replace(/\b((?:[\w'’]+\s+){0,2}[\w'’]+),?\s+\1\b/gi, "$1")
         // a false start across a joining word: "my so my mom" → "my mom"
         .replace(/\b([\w'’]+)\s+(?:so|and|uh|um)\s+\1\b/gi, "$1")
+        .replace(ABANDONED, "")
         .replace(/^[\s,;:]+/, ""),
     )
     .map(dropFillerLike)
+    .map(dropRestarts)
     .flatMap(punctuateRunOn)
-    .filter((s) => /[\p{L}\p{N}]/u.test(s) && !BACKCHANNEL.test(s.trim()))
-    .map(cap)
-    .join(" ");
-  return t
+    .filter((s) => /[\p{L}\p{N}]/u.test(s) && !BACKCHANNEL.test(s.trim()))) {
+    // a sentence said twice ("I was working a corporate job, the eSports job. I was working a corporate job.") is kept once
+    const n = norm(s0);
+    const prev = kept.length ? norm(kept[kept.length - 1]) : "";
+    if (n && (n === prev || (prev && prev.startsWith(n)) || kept.some((k) => norm(k) === n))) continue;
+    kept.push(cap(s0));
+  }
+  return kept
+    .join(" ")
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/([,;:])\s*([,.;:!?])/g, "$2")
     .replace(/^[\s,;:]+/, "")
@@ -131,6 +173,7 @@ export function cleanSpeech(text: string): string {
 function liftQuestions(paragraph: string): string[] {
   const out: string[] = [];
   let run = "";
+  let asking = false;
   for (const raw of sentencesOf(paragraph)) {
     const s = raw.trim();
     if (!s) continue;
@@ -139,8 +182,17 @@ function liftQuestions(paragraph: string): string[] {
     if (ASK.test(s) && !TAG.test(s) && s.split(/\s+/).length >= 5) {
       if (run.trim()) out.push(run.trim());
       out.push(ASKED + s);
+      asking = true;
       run = "";
-    } else run += `${s} `;
+      continue;
+    }
+    // the asker going on ("Because our strategy right now is…") is theirs, never the teller's: it stays with the question
+    if (asking && ASKER_GOES_ON.test(s)) {
+      out[out.length - 1] += ` ${s}`;
+      continue;
+    }
+    asking = false;
+    run += `${s} `;
   }
   if (run.trim()) out.push(run.trim());
   return out;
@@ -218,7 +270,7 @@ export function ownWords(text: string): string {
     .join(" ");
 }
 
-const OPENS_WEAK = /^["“‘]?(?:and then|and so|so|no|like|yeah|well|but|okay|ok|oh|um|uh|because|then|this|there|you)\b/i;
+const OPENS_WEAK = /^["“‘]?(?:i mean|and then|and so|so|no|like|yeah|well|but|okay|ok|oh|um|uh|because|then|this|there|you)\b/i;
 /** "It's", "That's", "And" open a kept line only when the sentence carries a feeling or a judgement. */
 const OPENS_SOFT = /^["“‘]?(?:and(?! then| so)|that'?s|that’s|it'?s|it’s)\b/i;
 /** The words that make a sentence worth remembering: a feeling, a judgement, a turn of a life. */
@@ -295,18 +347,29 @@ export function keptLine(text: string, { max = 170, min = 50, needFeeling = true
   return best;
 }
 
+/** A line shown out of its context loses its throat-clearing: "I mean, that was awesome." → "That was awesome." */
+const OUT_OF_CONTEXT = /^(?:i mean|so|and so|well|yeah|okay|ok|you know|like)[,]?\s+/i;
+
 /**
- * A card's words, never cut mid-sentence: a whole kept sentence of 45
- * characters or fewer when there is one; for words typed line by line, the
- * first lines whole ("We live in a small city · It's in Vietnam"); else the
- * page's kept line. Empty when none of these exists (the card then quotes
- * the opening of their own words).
+ * The memory's takeaway (Bao's Standard rule 32), one function for every
+ * place it is shown: the page sets it under the title and repeats it as
+ * the coda, the print and the List card use it as their words, and Home
+ * quotes it. In order:
+ * 1. the kept line: a whole sentence of their own with a feeling in it;
+ * 2. for words typed line by line, the first lines whole, joined by " · "
+ *    ("We live in a small city · It's in Vietnam");
+ * 3. the best whole sentence of their own that fits (30 to 140 characters,
+ *    never a question, never trailing off), from the tidied words when it
+ *    was said, with a leading "I mean" or "So" dropped.
+ * Never cut, never an ellipsis. Empty only when there are no words.
  */
-export function cardLine(text: string): string {
-  const short = keptLine(text, { max: 45, min: 18 });
-  if (short) return short;
+export function takeaway(text: string): string {
+  const kept = keptLine(text);
+  if (kept) return kept;
   const t = String(text || "").replace(/\r\n?/g, "\n").trim();
-  if (t.includes("\n") && !soundsSpoken(t)) {
+  if (!t) return "";
+  const spoken = soundsSpoken(t);
+  if (t.includes("\n") && !spoken) {
     const lines = t.split("\n").map((l) => l.trim()).filter(Boolean);
     let out = "";
     for (const l of lines) {
@@ -316,6 +379,34 @@ export function cardLine(text: string): string {
     }
     if (out) return out;
   }
-  // no feeling to keep: the card still shows one whole sentence of their own, never a cut one
-  return keptLine(text) || keptLine(text, { max: 90, min: 18, needFeeling: false });
+  const words = spoken ? cleanTranscript(t.split(/\n\s*\n/)).filter((p) => !p.startsWith(ASKED)).join(" ") : t.replace(/\s+/g, " ");
+  const sentences = (words.match(/[^.!?…]+[.!?…]+["”’)]*/g) || []).map((x) => cap(x.trim().replace(OUT_OF_CONTEXT, "")));
+  let best = "";
+  let bestScore = -Infinity;
+  sentences.forEach((x, i) => {
+    const len = x.length;
+    if (len < 30 || len > 140 || /\?["”’)]*$/.test(x) || !/^[A-Z“"‘]/.test(x) || DANGLES.test(x) || fillerLike(x) || OPENS_WEAK.test(x)) return;
+    let score = 0;
+    if (/\b(I|we|my|our|me|us)\b/.test(x)) score += 2;
+    if (len >= 45 && len <= 110) score += 2;
+    if (/\$|\d{3,}/.test(x)) score -= 1;
+    score -= i * 0.1;
+    if (score > bestScore) {
+      bestScore = score;
+      best = x;
+    }
+  });
+  const first = sentences[0] ? cap(dropFillerLike(sentences[0])) : "";
+  return best || (first.length <= 140 ? first : "");
+}
+
+/** Whether the shown paragraph holds the takeaway, ignoring case and punctuation (so it still matches once tidied). */
+export function findTakeaway(paragraph: string, line: string): [number, number] | null {
+  if (!line) return null;
+  const want = norm(line);
+  if (!want) return null;
+  for (const m of paragraph.matchAll(/[^.!?…]+[.!?…]+["”’)]*\s*/g)) {
+    if (norm(m[0]) === want || norm(m[0]).endsWith(want)) return [m.index ?? 0, (m.index ?? 0) + m[0].trimEnd().length];
+  }
+  return null;
 }

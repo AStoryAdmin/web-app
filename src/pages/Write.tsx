@@ -144,8 +144,8 @@ function plainCause(err: unknown): string {
 function Dog({ awake }: { awake: boolean }) {
   return (
     <span className="w-dog" data-awake={awake ? "" : undefined} aria-hidden="true">
-      <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={762} height={640} decoding="async" />
-      <img className="awake" src="/dog/cover-paper.webp" alt="" width={849} height={640} decoding="async" />
+      <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={781} height={622} decoding="async" />
+      <img className="awake" src="/dog/cover-paper.webp" alt="" width={738} height={630} decoding="async" />
     </span>
   );
 }
@@ -940,7 +940,7 @@ function Writer({ story }: { story: Story }) {
     <>
       {(others.length > 0 || question || editing) && (
         <section className="w-qs">
-          <h2 className="w-kick">{question || editing ? "Or another of today’s questions" : own ? "Or one of today’s questions" : `Or one of today’s questions for ${story.name}`}</h2>
+          <h2 className="w-kick">{question ? "Or another of today’s questions" : own ? "Or one of today’s questions" : `Or one of today’s questions for ${story.name}`}</h2>
           <ul>
             {others.map((p) => (
               <li key={p.id}>
@@ -968,7 +968,7 @@ function Writer({ story }: { story: Story }) {
     </p>
   );
   const tools = (
-    <section className="w-help">
+    <section className={`w-help${empty ? " off" : ""}`}>
       <h2 className="w-kick">If you’d like a hand</h2>
       <div className="w-tool-list">
         {dictation.available && (
@@ -980,19 +980,19 @@ function Writer({ story }: { story: Story }) {
             </span>
           </button>
         )}
-        <button type="button" className="w-tool" onClick={() => help("tidy")} disabled={helpsOff} aria-busy={busy === "tidy" || undefined}>
+        <button type="button" className="w-tool" onClick={() => help("tidy")} disabled={helpsOff} title={empty ? "Write a line first" : undefined} aria-busy={busy === "tidy" || undefined}>
           <SparkIcon />
           <span>
             <b>{busy === "tidy" ? "Tidying…" : "Tidy my words"}</b>
           </span>
         </button>
-        <button type="button" className="w-tool" onClick={() => help("title")} disabled={helpsOff} aria-busy={busy === "title" || undefined}>
+        <button type="button" className="w-tool" onClick={() => help("title")} disabled={helpsOff} title={empty ? "Write a line first" : undefined} aria-busy={busy === "title" || undefined}>
           <PenIcon />
           <span>
             <b>{busy === "title" ? "Finding a title…" : "Suggest a title"}</b>
           </span>
         </button>
-        <button type="button" className="w-tool" onClick={() => help("ask")} disabled={helpsOff} aria-busy={busy === "ask" || undefined}>
+        <button type="button" className="w-tool" onClick={() => help("ask")} disabled={helpsOff} title={empty ? "Write a line first" : undefined} aria-busy={busy === "ask" || undefined}>
           <HelpIcon />
           <span>
             <b>{busy === "ask" ? "Reading it…" : "What am I not saying?"}</b>

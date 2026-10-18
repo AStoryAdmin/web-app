@@ -14,7 +14,7 @@ export default function WhereNext({ rows, label = "Where to next" }: { rows: Nex
   return (
     <nav className="where-next" aria-label={label}>
       <p className="where-next-label">{label}</p>
-      <ul>
+      <ul style={{ ["--wn-n" as string]: rows.length }}>
         {rows.map((r) => {
           const inner = (
             <>

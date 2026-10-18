@@ -147,8 +147,10 @@ export async function listMyCodes(): Promise<MyCode[]> {
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
   if (error) {
-    if (!missingFunction(error) && error.code !== "42P01") console.warn("listMyCodes:", error.message || error);
-    return [];
+    // codes not switched on yet: none out; anything else is a failure the page names
+    if (missingFunction(error) || error.code === "42P01") return [];
+    console.warn("listMyCodes:", error.message || error);
+    throw error;
   }
   return (data || [])
     .map((r) => ({
@@ -262,7 +264,7 @@ export async function listManagers(storyId: string): Promise<Manager[]> {
     .order("created_at", { ascending: true });
   if (error) {
     console.warn("listManagers:", error.message);
-    return [];
+    throw error;
   }
   return (data || []).map((r) => ({
     id: r.id as string,

@@ -37,7 +37,7 @@ The bar: the founder has designed Kiyo, Shiori, Project Reboot (journal.gbaonvo.
 19. **No scattered captions, disclaimers or over-explaining.** One disclosure where needed. No giant wordmark in a footer. Don't repeat the same promise or action twice on one page.
 20. **Honest copy.** Never invent numbers, customers, quotes or reviews. Use the founder's real copy where it exists.
 21. **Real assets.** Use the mascot, Bond, the founder's own dog, drawn in the soft watercolour style (`public/dog/*`; he replaces the cream samoyed, ruling of 2026-10-17; prompts and states in `docs/mascot/BOND.md`) and photographs from the locked master library, never cropped from contact sheets and never filtered. When imagery is missing, write prompts for the founder to generate in GPT; don't generate it. Never use the book slipcase image.
-22. **The book preview is the samples page.** The reader and every book object match astoryapp.com/samples exactly ("printed exactly the way yours will be").
+22. **The book preview is the samples page.** The reader and every book object match astoryapp.com/samples exactly ("printed exactly the way yours will be"). Its printed type therefore scales with the spread: about 11px at 1366×768, as on the samples page. That is a deliberate exception to the reading-size rules (16, 17a); "Read this page" is the way to read a page large. Reviewers do not reopen it.
 
 17a. **Reading comes first.** "The paragraph is not eye friendly to read." Long text follows docs/research/reading-2026.md: a measured column, generous size and line height, full-strength ink on the paper, no ornament that gets in the way. No tinted bubbles, no heavy pill buttons, no clipped rounded photo frames: the founder called them "unacceptable".
 

@@ -30,7 +30,10 @@ export function useMyCodes(enabled = true) {
       live = false;
     };
   }, [enabled, version]);
-  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const reload = useCallback(() => {
+    setFailed(false);
+    setVersion((v) => v + 1);
+  }, []);
   /** The people (tree rows) a live code was made for. */
   const coded = useMemo(() => new Set((codes || []).map((c) => c.personId).filter((id): id is string => !!id)), [codes]);
   return { codes, setCodes, failed, reload, coded, now };

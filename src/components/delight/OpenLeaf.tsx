@@ -59,7 +59,7 @@ export default function OpenLeaf({ story }: { story: Story }) {
       const draw = gsap.fromTo(arrow, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.9, ease: MOVE, paused: true, immediateRender: false, clearProps: "strokeDasharray,strokeDashoffset" });
       ScrollTrigger.create({
         trigger: arrow,
-        start: "top bottom-=40",
+        start: "top bottom",
         once: true,
         onEnter: () => {
           draw.play();
@@ -76,8 +76,8 @@ export default function OpenLeaf({ story }: { story: Story }) {
   return (
     <section className="open-leaf" ref={root} data-running="A page for today" aria-labelledby="open-leaf-h">
       <span className="ol-dog" aria-hidden="true">
-        <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={762} height={640} loading="lazy" decoding="async" />
-        <img className="awake" src="/dog/curious-paper.webp" alt="" width={762} height={640} loading="lazy" decoding="async" />
+        <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={781} height={622} loading="lazy" decoding="async" />
+        <img className="awake" src="/dog/curious-paper.webp" alt="" width={753} height={630} loading="lazy" decoding="async" />
       </span>
       <div className="ol-page">
         <span className="page-frame" aria-hidden="true" />

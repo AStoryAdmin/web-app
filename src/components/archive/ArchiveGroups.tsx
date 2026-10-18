@@ -122,7 +122,7 @@ function InProgressRow({ memory, story }: { memory: Memory; story: Story }) {
         </span>
       )}
       <div>
-        <span className="dot">{story.name}'s call</span>
+        <span className="dot">{story.name}’s call</span>
         <h3>{memory.title || "A conversation, still being written up"}</h3>
         <p className="meta">{when}A Story is still writing it up</p>
       </div>

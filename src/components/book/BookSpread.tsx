@@ -297,7 +297,6 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
   const slidFront = atFront && !turn;
   const slidBack = atBack && !turn;
   const where = atFront ? "Front cover" : atBack ? "Back cover" : single ? `Page ${safeIndex} of ${book.pages.length - 2}` : `Spread ${safeIndex} of ${last - 1}`;
-  const dotLabel = (i: number) => (i === 0 ? "Front cover" : i === last ? "Back cover" : single ? `Page ${i}` : `Spread ${i}`);
 
   const style = {
     "--cover": shown.board,
@@ -349,20 +348,13 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
         ) : (
           <span className="bk-read-none" aria-hidden="true" />
         )}
-        {rail ? (
-          // beside the book's own contents the dashes are a quiet hairline of where you are; the contents are the jump
-          <div className="bk-dots bk-dots-quiet" aria-hidden="true">
-            {views.map((_, i) => (
-              <span key={i} className="bk-dot" aria-current={i === safeIndex || undefined} />
-            ))}
-          </div>
-        ) : (
-          <div className="bk-dots" role="group" aria-label="Jump to a spread">
-            {views.map((_, i) => (
-              <button key={i} type="button" className="bk-dot" aria-label={dotLabel(i)} aria-current={i === safeIndex || undefined} onClick={() => go(i)} />
-            ))}
-          </div>
-        )}
+        {/* the dashes are a quiet hairline of where you are; the jump is the contents beside the book, or the chapters
+            under it on the front door (a 22px dash can't be a 44px target without crowding its neighbours) */}
+        <div className="bk-dots bk-dots-quiet" aria-hidden="true">
+          {views.map((_, i) => (
+            <span key={i} className="bk-dot" aria-current={i === safeIndex || undefined} />
+          ))}
+        </div>
       </div>
     </>
   );
@@ -397,7 +389,7 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
     <section className={cls} aria-label={`${book.name}'s book, as pages`} style={style}>
       {reader}
 
-      {!book.fictional && chapters.length > 1 && (
+      {chapters.length > 1 && (
         <div className="chiprow bk-chapters" role="group" aria-label="Go to a chapter">
           {chapters.map((c) => (
             <button key={c.name} type="button" className="chip big" aria-pressed={safeIndex >= c.view && (chapters.find((n) => n.view > c.view)?.view ?? Infinity) > safeIndex} onClick={() => go(c.view)}>

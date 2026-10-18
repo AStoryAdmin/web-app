@@ -59,16 +59,25 @@ export function rowToContribution(row: Row): Contribution {
   };
 }
 
-export async function listContributions(storyId: string, status?: Contribution["status"] | Contribution["status"][]): Promise<Contribution[]> {
+/**
+ * What the family sent for a story. Throws when the server can't be reached, so a page can say so instead of
+ * showing an empty list (the Family and person pages); listContributions below keeps the old quiet behaviour.
+ */
+export async function fetchContributions(storyId: string, status?: Contribution["status"] | Contribution["status"][]): Promise<Contribution[]> {
   let q = supabase().from("contributions").select("*").eq("story_id", storyId).order("created_at", { ascending: false });
   if (Array.isArray(status)) q = q.in("status", status);
   else if (status) q = q.eq("status", status);
   const { data, error } = await q;
   if (error) {
     console.warn("listContributions:", error.message);
-    return [];
+    throw error;
   }
   return (data || []).map(rowToContribution);
+}
+
+/** The same, empty on a failure: for places where nothing is better than a message. */
+export async function listContributions(storyId: string, status?: Contribution["status"] | Contribution["status"][]): Promise<Contribution[]> {
+  return fetchContributions(storyId, status).catch(() => []);
 }
 
 export async function countPending(storyId: string): Promise<number> {

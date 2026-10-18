@@ -80,7 +80,14 @@ export default function Keepers({ story, people, senderName }: { story: Story; p
         {failed && list === null && (
           <li className="meta bad" role="alert">
             The keepers couldn't be reached just now.{" "}
-            <button type="button" className="fp-retry" onClick={() => setAttempt((a) => a + 1)}>
+            <button
+              type="button"
+              className="fp-retry"
+              onClick={() => {
+                setFailed(false);
+                setAttempt((a) => a + 1);
+              }}
+            >
               Try again
             </button>
           </li>

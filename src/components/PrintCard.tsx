@@ -14,18 +14,17 @@
  * edges instead of a badge (decoration D4, D2). No badges, no streaks.
  */
 import { Link } from "react-router-dom";
-import { cardMeta, quoteFor } from "../app-core/lib/memoryCard.js";
+import { cardMeta } from "../app-core/lib/memoryCard.js";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { useAccount } from "../state/accountContext";
 import { Mark } from "./Brand";
 import { MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
 import { realChapter } from "./archive/photos";
-import { cardLine, ownWords } from "./archive/transcript";
+import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
 import { isTreasured } from "../lib/treasured";
 import { memoryDate } from "../app-core/lib/timeline.js";
-import { opening } from "../lib/resurface";
 import { smarten } from "../lib/typography";
 import { markSeen, newFromLine, seenCount } from "../lib/seenSides";
 import type { Contribution } from "../data/contributions";
@@ -33,17 +32,12 @@ import type { Memory, Story } from "../data/stories";
 
 export type PrintSize = "lead" | "tall";
 
-/** The person's own words for the typed card: their kept line, else the first real sentence; never the server's summary. */
-function words(memory: Memory, max: number): string {
-  const body = (memory.body || "").trim();
-  const kept = cardLine(body);
-  if (kept) return smarten(kept);
-  // otherwise the opening of their own words: a call tidied to the teller's turns, typed lines kept apart
-  const own = ownWords(body);
-  if (own) return smarten(quoteFor(opening(own) || own, max) as string);
+/** The person's own words for the typed card: the memory's one takeaway, whole (the page shows the same line); never the server's summary. */
+function words(memory: Memory): string {
+  const line = takeaway(memory.body || "");
+  if (line) return smarten(line);
   const ex = (memory.excerpt || "").trim();
-  if (/^the (speaker|narrator|storyteller)\b/i.test(ex)) return "";
-  return smarten(quoteFor(ex, max) as string);
+  return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : smarten(ex.split(/(?<=[.!?])\s/)[0] || "");
 }
 
 const yearsAgo = (n: number) => (n === 1 ? "a year ago today" : n === 2 ? "two years ago today" : n === 3 ? "three years ago today" : `${n} years ago today`);
@@ -80,7 +74,7 @@ export default function PrintCard({
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
   const photo = usePhotoUrl(meta.photo);
   const dated = meta.date !== "No date yet";
-  const said = meta.photo ? "" : words(memory, size === "lead" ? 220 : 130);
+  const said = meta.photo ? "" : words(memory);
   const people = (memory.personIds || [])
     .map((id) => family?.people.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);

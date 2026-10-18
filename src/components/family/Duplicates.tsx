@@ -143,7 +143,7 @@ export default function Duplicates({
         </div>
       ))}
       {note && (
-        <p className="meta" role="alert" style={{ color: "var(--danger)" }}>
+        <p className="meta bad" role="alert">
           {note}
         </p>
       )}

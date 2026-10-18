@@ -11,7 +11,10 @@
  * instant first render and the offline fallback.
  *
  * The result is kept in this browser (localStorage, keyed by the memory and
- * a hash of its words, so an edit asks again), never in the database.
+ * a hash of its words, so an edit asks again), never in the database. It
+ * replaces the local text only before the reader has reached the words;
+ * otherwise it waits for the next visit, so nothing reflows under the eye.
+ * The requests go one at a time.
  *
  * Off until the AI server allows the web app's origin: on 17 Oct 2026 its
  * /api/memory/help answered the browser's preflight without an
@@ -94,25 +97,31 @@ export function useServerTidy(memoryId: string | null, raw: string, local: strin
     }
     if (run.length) blocks.push({ text: run.join("\n\n") });
 
-    Promise.all(
-      blocks.map(async (b) => {
-        if (b.asked) return [b.asked];
-        const input = b.text || "";
-        const out = await tidy(input, about);
-        // the writer's tidy falls back to the phone's own pass when the server is away: that is not the server's answer
-        if (!out || out === tidyText(input) || !keepsTheirWords(input, out)) throw new Error("not tidied");
-        return out
-          .replace(/\r\n?/g, "\n")
-          .split(/\n\s*\n/)
-          .map((x) => x.replace(/\s*\n\s*/g, " ").trim())
-          .filter(Boolean);
-      }),
-    )
-      .then((parts) => {
+    // one block at a time, in order: a long call with many "We asked" breaks never fires a burst of requests
+    const tidyBlock = async (b: { asked?: string; text?: string }): Promise<string[]> => {
+      if (b.asked) return [b.asked];
+      const input = b.text || "";
+      const out = await tidy(input, about);
+      // the writer's tidy falls back to the phone's own pass when the server is away: that is not the server's answer
+      if (!out || out === tidyText(input) || !keepsTheirWords(input, out)) throw new Error("not tidied");
+      return out
+        .replace(/\r\n?/g, "\n")
+        .split(/\n\s*\n/)
+        .map((x) => x.replace(/\s*\n\s*/g, " ").trim())
+        .filter(Boolean);
+    };
+    (async () => {
+      const parts: string[] = [];
+      for (const b of blocks) parts.push(...(await tidyBlock(b)));
+      return parts;
+    })()
+      .then((p) => {
         if (!live) return;
-        const p = parts.flat();
         writeCache(memoryId, h, p);
-        setResult({ for: `${memoryId}:${h}`, p });
+        // shown now only if the reader has not reached the words yet; otherwise next visit, from the cache (nothing reflows under the eye)
+        const words = document.querySelector(".mv-words");
+        const reading = words ? words.getBoundingClientRect().top < window.innerHeight * 0.85 && window.scrollY > 40 : false;
+        if (!reading) setResult({ for: `${memoryId}:${h}`, p });
       })
       .catch(() => {
         /* the local clean transcript stays */

@@ -162,17 +162,20 @@ export default function Wall() {
   if (story === null) {
     return (
       <Bench>
-        <main className="wall-none">
+        <div className="wall-none-wrap">
+          {/* Bond looks over the top edge of the sheet from behind it: the paper hides where the picture fades */}
           <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
+          <main className="wall-none">
           <h1>
             This story isn’t shared
             <Stop />
           </h1>
           <p>The family may have turned the link off, or the address isn’t quite right. Asking whoever sent it for the link again takes a minute.</p>
-          <Link className="btn outline" to="/welcome">
-            Keep your own story
-          </Link>
-        </main>
+            <Link className="btn outline" to="/welcome">
+              Keep your own story
+            </Link>
+          </main>
+        </div>
       </Bench>
     );
   }
@@ -208,11 +211,13 @@ export default function Wall() {
               <p className="wall-intro" data-rise>
                 {story.intro || `A life, in ${story.name}’s own words.`}
               </p>
+              {(count > 0 || family > 0) && (
               <p className="wall-counts" data-rise>
                 {memories(count)}
                 {chapters.length > 1 ? ` · ${chapters.length} chapters` : ""}
                 {family ? ` · ${family} from the family` : ""} · shared by the family, for anyone with the link
               </p>
+              )}
             </div>
           </div>
         </header>
@@ -305,7 +310,7 @@ export default function Wall() {
         <div className="page wall-next">
           <WhereNext
             rows={[
-              { to: "/welcome", title: "Keep your own story", line: "Every life holds a story worth keeping." },
+              ...(count === 0 && family === 0 ? [] : [{ to: "/welcome", title: "Keep your own story", line: "Every life holds a story worth keeping." }]),
               { to: "https://astoryapp.com/samples/", title: "Turn the pages of a sample", line: "A family book, printed exactly the way yours will be.", external: true },
               { to: "https://astoryapp.com/", title: "How A Story works", line: "One small question a day, and the family adds the rest.", external: true },
             ]}

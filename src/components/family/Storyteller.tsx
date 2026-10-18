@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Family, Person } from "../../data/family";
 import type { Memory, Story } from "../../data/stories";
-import { listContributions, type Contribution } from "../../data/contributions";
+import { fetchContributions, type Contribution } from "../../data/contributions";
 import { buildIndex } from "../../app-core/lib/familyGraph.js";
 import { quoteFor } from "../../app-core/lib/memoryCard.js";
 import { smarten } from "../../lib/typography";
@@ -43,7 +43,7 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
   useEffect(() => {
     if (preview) return;
     let live = true;
-    listContributions(story.id, "approved")
+    fetchContributions(story.id, "approved")
       .then((rows) => {
         if (!live) return;
         setContributions(rows);
@@ -147,7 +147,14 @@ export default function Storyteller({ family, story, meId, own, preview, onInvit
         ) : failed ? (
           <p className="st-empty" role="alert">
             The family's lines couldn't be reached just now.{" "}
-            <button type="button" className="st-act" onClick={() => setAttempt((a) => a + 1)}>
+            <button
+              type="button"
+              className="st-act"
+              onClick={() => {
+                setFailed(false);
+                setAttempt((a) => a + 1);
+              }}
+            >
               Try again
             </button>
           </p>

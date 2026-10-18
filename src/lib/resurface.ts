@@ -9,7 +9,7 @@
 import { dayKey } from "../app-core/lib/dailyQuestion.js";
 import { ageAt, memoryDate, onThisMonth } from "../app-core/lib/timeline.js";
 import { quoteFor } from "../app-core/lib/memoryCard.js";
-import { keptLine, ownWords } from "../components/archive/transcript";
+import { ownWords, takeaway } from "../components/archive/transcript";
 import type { Memory, Story } from "../data/stories";
 
 export type Resurfaced = {
@@ -39,8 +39,8 @@ const words = (m: Memory) => {
   return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : ex;
 };
 
-/** The quote for the day: their kept line when they have one, else the opening of their own words. */
-const quoteOf = (m: Memory) => keptLine(m.body || "") || quoteFor(opening(words(m)), 220);
+/** The quote for the day: the memory's one takeaway, the line its page sets under the title (never cut). */
+const quoteOf = (m: Memory) => takeaway(m.body || "") || quoteFor(opening(words(m)), 220);
 
 const FILLER = /^(yeah|yes|so|um|uh|well|okay|ok|right|oh|and|but|like|you know)\b/i;
 

@@ -136,7 +136,7 @@ export default function ReadAloud({ paragraphs, label, onPosition, autoStart = f
   const frac = reading || status === "paused" ? Math.min(1, before / Math.max(1, total)) : status === "done" ? 1 : 0;
   const minutes = Math.max(1, Math.round(total / 60));
   const about = total < 45 ? "under a minute" : `about ${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
-  const line = status === "failed" ? "The browser's voice stopped. Try again." : reading ? "Reading now" : status === "paused" ? "Paused" : status === "done" ? "Read to the end" : `${about[0].toUpperCase()}${about.slice(1)}, in the browser's own voice`;
+  const line = status === "failed" ? "The browser’s voice stopped. Try again." : reading ? "Reading now" : status === "paused" ? "Paused" : status === "done" ? "Read to the end" : `${about[0].toUpperCase()}${about.slice(1)}, in the browser’s own voice`;
   const showTime = reading || status === "paused";
 
   return (

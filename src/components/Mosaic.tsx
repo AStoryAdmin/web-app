@@ -110,7 +110,7 @@ export function InvitePrint({ story }: { story: Story }) {
           <span className="typed-in">
             <img className="sample" src="/photos/family-04.webp" alt="" />
             <span className="said">Nothing here yet.</span>
-            <span className="line">{own ? "Answer the question above, or write about anything at all: a kitchen, a road, a song on the radio." : `Answer today's question for ${story.name}, or write about anything at all: a kitchen, a road, a song on the radio.`}</span>
+            <span className="line">{own ? "Answer the question above, or write about anything at all: a kitchen, a road, a song on the radio." : `Answer today’s question for ${story.name}, or write about anything at all: a kitchen, a road, a song on the radio.`}</span>
           </span>
           <span className="cap">
             <span className="title">

@@ -24,13 +24,44 @@ export function minutesLabel(seconds: number): string {
   return `${m} ${m === 1 ? "minute" : "minutes"}`;
 }
 
+/** A sentence that answers the one before it ("But then you're also…") does not start a paragraph. */
+const ANSWERS_PREVIOUS = /^(?:but then|and then|but also|and also|but|and so)\b/i;
+
+/** Break `sentences` into `n` runs of about equal length, never before a sentence that answers the one before it. */
+function balance(sentences: string[], n: number): string[] {
+  const total = sentences.reduce((a, x) => a + x.length, 0);
+  const out: string[] = [];
+  let run = "";
+  let acc = 0;
+  let part = 1;
+  sentences.forEach((x, i) => {
+    const aim = (total * part) / n;
+    const next = sentences[i + 1];
+    run += x;
+    acc += x.length;
+    // break here when this is the boundary nearest the aim and the next sentence may begin a paragraph
+    const here = Math.abs(acc - aim);
+    const later = next ? Math.abs(acc + next.length - aim) : Infinity;
+    if (part < n && next && here <= later && !ANSWERS_PREVIOUS.test(next.trim())) {
+      out.push(run.trim());
+      run = "";
+      part += 1;
+    }
+  });
+  if (run.trim()) out.push(run.trim());
+  return out;
+}
+
 /**
  * Paragraphs a reader can take in: a transcribed call often arrives as one
  * block of a thousand words. A block longer than `max` characters is set
- * as several paragraphs, broken where a sentence ends, each about `target`
- * characters; a stretch that runs on with no full stop at all is broken
+ * as several paragraphs of about equal length near `target` characters,
+ * broken where a sentence ends and never before a sentence that answers the
+ * one before it; a stretch that runs on with no full stop at all is broken
  * before a clause word ("and then", "so", "but"), with a full stop added
- * only when `punctuate` (the tidied reading). The words are never changed.
+ * only when `punctuate` (the tidied reading of speech, where a paragraph
+ * under 120 characters also joins its neighbour; typed paragraphs keep
+ * their author's breaks). The words are never changed.
  */
 export function readableParagraphs(paragraphs: string[], { max = 560, target = 380, punctuate = false }: { max?: number; target?: number; punctuate?: boolean } = {}): string[] {
   const out: string[] = [];
@@ -39,31 +70,18 @@ export function readableParagraphs(paragraphs: string[], { max = 560, target = 3
       out.push(p);
       continue;
     }
-    const sentences = (p.match(/[^.!?…]+(?:[.!?…]+["”’)\]]*|$)\s*/g) || [p]).flatMap((s) => (s.length > max ? splitRunOn(s, target, punctuate).map((x) => `${x} `) : [s]));
-    let run = "";
-    const mine: string[] = [];
-    for (const s of sentences) {
-      // break before a sentence that would carry the paragraph well past the target
-      if (run.trim() && run.length + s.length > target * 1.45) {
-        mine.push(run.trim());
-        run = "";
-      }
-      run += s;
-      if (run.length >= target) {
-        mine.push(run.trim());
-        run = "";
-      }
-    }
-    const rest = run.trim();
-    if (rest) {
-      // a short tail joins the paragraph before it rather than standing alone
-      // (only when the two together stay a readable length)
-      if (rest.length < 140 && mine.length && mine[mine.length - 1].length + rest.length <= target * 1.45) mine[mine.length - 1] = `${mine[mine.length - 1]} ${rest}`;
-      else mine.push(rest);
-    }
-    out.push(...mine);
+    const sentences = (p.match(/[^.!?…]+(?:[.!?…]+["”’)\]]*|$)\s*/g) || [p]).flatMap((x) => (x.length > max ? splitRunOn(x, target, punctuate).map((y) => `${y} `) : [x]));
+    out.push(...balance(sentences, Math.max(2, Math.round(p.length / target))));
   }
-  return out;
+  // a short paragraph (a sentence on its own) joins a neighbour, unless it is a typed line, the other person's question, or would make a block too long
+  const merged: string[] = [];
+  for (const p of out) {
+    const prev = merged[merged.length - 1];
+    const plain = (x: string) => !x.includes("\n") && !x.startsWith(ASKED);
+    if (punctuate && prev !== undefined && plain(p) && plain(prev) && (p.length < 120 || prev.length < 120) && prev.length + p.length <= max) merged[merged.length - 1] = `${prev} ${p}`;
+    else merged.push(p);
+  }
+  return merged;
 }
 
 /** "Anything else" is where a memory waits for a chapter; it is not one, so no pill says it. */
@@ -79,6 +97,6 @@ export const isRunOfLines = (p: string) => {
   return false;
 };
 
-/** The book's drop cap only where it can rest: a first paragraph of 200 to 600 characters (nine lines at most), no line breaks, opening on a letter and not on throat-clearing. */
+/** The book's drop cap only where it can rest: a first paragraph of 200 to 600 characters (nine lines at most), no line breaks, opening on a letter (never a one-letter word: "I specifically" would read "Ispecifically") and not on throat-clearing. */
 export const takesDropCap = (p: string) =>
-  !p.includes("\n") && !p.startsWith(ASKED) && p.length >= 200 && p.length <= 600 && /^[A-Za-z]/.test(p) && !/^(?:yeah|yes|well|so|um|uh|okay|ok|oh|like|and|but)\b/i.test(p);
+  !p.includes("\n") && !p.startsWith(ASKED) && p.length >= 200 && p.length <= 600 && /^[A-Za-z]/.test(p) && !/^[A-Za-z][\s,]/.test(p) && !/^(?:yeah|yes|well|so|um|uh|okay|ok|oh|like|and|but)\b/i.test(p);

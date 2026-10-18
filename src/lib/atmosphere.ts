@@ -28,8 +28,8 @@ const MOTION_OK = "(prefers-reduced-motion: no-preference)";
 /** The ribbon's length at the top of the page and at its end, in CSS px (the wrapper in CSS §46 is RIBBON_MAX tall). */
 export const RIBBON_REST = 72;
 export const RIBBON_MAX = 200;
-/** The section headings the running head follows. A block can name itself with data-running. */
-const SECTIONS = ".sechead h2, .arc-year h2, .fv-head h2, #pp-notes-h, #pp-related-h, [data-running]";
+/** The section headings the running head follows. A block can name itself with data-running. The family's heading counts only in the flow of the words (.mv-body), never in the memory page's side margin, where it sits at the top while the memory is read. */
+const SECTIONS = ".sechead h2, .arc-year h2, .mv-body .fv-head h2, #pp-notes-h, #pp-related-h, [data-running]";
 
 function sectionName(el: Element): string {
   const named = (el as HTMLElement).dataset?.running;

@@ -103,8 +103,33 @@ describe("round four of the transcript rules", () => {
 
 describe("a card's words", () => {
   it("are whole: the first typed lines, or a short kept sentence", async () => {
-    const { cardLine } = await import("./transcript");
+    const { takeaway: cardLine } = await import("./transcript");
     expect(cardLine("We live in a small city\nIt's in Vietnam\nMom was a teacher, dad an engineer and I stay with grandmas")).toBe("We live in a small city · It's in Vietnam");
     expect(cardLine("He was like a really good fan of the team and he cheered every single week.")).not.toContain("like a really");
+  });
+});
+
+describe("round five of the transcript rules", () => {
+  it("keeps a sentence said twice once, and drops a restarted clause", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech("I was working a corporate job, the eSports job. I was working a corporate job. So I left.")).toBe("I was working a corporate job, the eSports job. So I left.");
+    expect(cleanSpeech("That's how we got, that's how we built the company.")).toBe("That's how we built the company.");
+  });
+  it("drops a start abandoned before so I", async () => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech("My dad so I started my career as a middle school teacher.")).toBe("I started my career as a middle school teacher.");
+  });
+  it("never credits the asker's words to the teller after a lifted question", async () => {
+    const { cleanTranscript, ASKED } = await import("./transcript");
+    const out = cleanTranscript([
+      "I won the challenge. Do they open to non-students as well? Because our strategy right now is we're going to find a student in schools around here. For sure. They do open it to everyone.",
+    ]);
+    const asked = out.find((p) => p.startsWith(ASKED)) || "";
+    expect(asked).toContain("Because our strategy right now");
+    expect(out.filter((p) => !p.startsWith(ASKED)).join(" ")).not.toContain("our strategy");
+  });
+  it("gives every memory a whole takeaway, without its throat-clearing", async () => {
+    const { takeaway } = await import("./transcript");
+    expect(takeaway("I mean, that was awesome and we did all these cool things together that year.")).toBe("That was awesome and we did all these cool things together that year.");
   });
 });

@@ -224,9 +224,9 @@ function Email({ user, refresh }: { user: User; refresh: () => Promise<unknown> 
             void finish();
           }}
         >
-          <p className="meta" style={{ marginBottom: "var(--s-3)" }}>Type the code from the email to {next.trim()}.</p>
+          <p className="meta acct-gap-3">Type the code from the email to {next.trim()}.</p>
           <CodeInput value={code} onChange={setCode} length={CODE_LEN} autoFocus />
-          <div className="acct-acts" style={{ marginTop: "var(--s-4)" }}>
+          <div className="acct-acts acct-acts-top">
             <Button type="submit" small loading={busy} disabled={code.length < CODE_LEN}>
               Confirm
             </Button>
@@ -365,7 +365,7 @@ function PlanCard({ user }: { user: User }) {
         {user.plan === "free" && <span className="meta">Three guided questions a day, unlimited writing, the whole family, print at home free.</span>}
       </p>
       {ends && !Number.isNaN(ends.getTime()) && (
-        <p className="meta" style={{ marginBottom: "var(--s-4)" }}>
+        <p className="meta acct-gap-4">
           Your plan ends on {ends.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}, then the account returns to Free. The app is yours. It does not stop being yours.
         </p>
       )}
@@ -537,7 +537,7 @@ function Trusted() {
           {how && <span className="meta"> · {how}</span>}
         </p>
       ) : (
-        <p className="meta" style={{ marginBottom: "var(--s-3)" }}>Nobody is named yet.</p>
+        <p className="meta acct-gap-3">Nobody is named yet.</p>
       )}
       <form
         className="acct-form"

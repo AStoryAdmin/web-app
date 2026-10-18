@@ -131,7 +131,7 @@
 .tp { --pz: 92px; --pz-t: 132px; --node: 136px; --node-t: 176px; --amp: 24px; position: relative; }
 .tp[data-size="l"] { --pz: 156px; --pz-t: 196px; --node: 196px; --node-t: 232px; --amp: 36px; }
 .tp[data-size="m"] { --pz: 120px; --pz-t: 160px; --node: 160px; --node-t: 200px; --amp: 30px; }
-.tp[data-size="t"] { --pz: 72px; --pz-t: 108px; --node: 136px; --node-t: 156px; --amp: 18px; }
+.tp[data-size="t"] { --pz: 72px; --pz-t: 108px; --node: 128px; --node-t: 150px; --amp: 18px; }
 .tp-threads { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 0; }
 .tp-threads path { fill: none; stroke: var(--foil); stroke-width: 1.25; stroke-linecap: round; opacity: 0.95; transition: stroke 200ms var(--ease-out), opacity 200ms var(--ease-out); }
 .tp-threads path.dash { stroke: var(--ink-faint); stroke-dasharray: 2 5; opacity: 0.75; }
@@ -162,13 +162,14 @@
 .tp-hint { margin: 6px 0 0; font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--ink-soft); }
 
 /* each tier in three parts; the centre is the storyteller's own line, so it sits on one axis all the way down */
-.tp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 24px; align-items: start; min-width: 0; }
-.tp-zone { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px 22px; min-width: 0; }
+.tp-row { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); column-gap: 24px; align-items: start; min-width: 0; }
+.tp-zone { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 16px 22px; min-width: 0; }
 .tp-zone.left { justify-content: flex-end; }
 .tp-zone.centre { justify-content: center; flex-wrap: nowrap; }
 .tp-zone.right { justify-content: flex-start; }
 .tp-shelf .tp-row { grid-template-columns: minmax(0, 1fr); }
 .tp-shelf .tp-zone.centre { flex-wrap: wrap; }
+.tp-shelf .tp-row .tp-zone { min-width: 0; }
 .tp-unit { display: flex; align-items: flex-start; }
 .tp-pair { display: flex; align-items: flex-start; }
 .tp-amp { flex: none; width: var(--amp); margin-top: calc(var(--pz) / 2 - 18px); text-align: center; font-family: var(--book-display); font-weight: 500; font-size: var(--fz-section); line-height: 1; color: var(--foil); }
@@ -182,7 +183,7 @@
 /* dimming eases only while somebody is pointed at; at rest GSAP owns these elements' opacity */
 .tp[data-hot] :is(.tp-node, .tp-ghost) { transition: opacity 220ms var(--ease-out); }
 .tp-face { position: relative; display: block; margin-bottom: 10px; }
-.tp-node .por { --pz: inherit; transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out); }
+.tp-node .por { --pz: inherit; transition: transform 120ms var(--ease-out), box-shadow 220ms var(--ease-out); }
 .tp-node.teller { width: var(--node-t); }
 .tp-node.teller .por { --pz: var(--pz-t); box-shadow: 0 0 0 1px var(--foil), 0 0 0 7px var(--paper-print), 0 0 0 8.5px var(--accent); }
 .tp-nm { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.12; color: var(--sheet-ink); overflow-wrap: anywhere; text-wrap: balance; }
@@ -233,7 +234,7 @@
 .tp-menu.ft-menu.shelf.start { left: 0; transform: none; }
 .tp-menu.ft-menu.shelf.end { left: auto; right: 0; transform: none; }
 .tp-menu.ft-menu button { border-radius: 4px; font: 500 var(--fz-small)/1.3 var(--font-ui); min-height: 44px; }
-.tp-menu.ft-menu button:hover { background: var(--paper-tone); }
+@media (hover: hover) and (pointer: fine) { .tp-menu.ft-menu button:hover { background: var(--paper-tone); } }
 .tp-menu.ft-menu button:focus-visible { background: var(--paper-tone); outline: 2px solid var(--kicker-terracotta); outline-offset: -2px; }
 
 /* a laptop or a tablet: the generation's name above its faces, no threads (the words under each face say whose) */
@@ -243,6 +244,7 @@
   .tp-label, .tp-tier.home .tp-label, .tp-tier.rings .tp-label { padding: 0; margin-bottom: 14px; }
   .tp-also { display: inline; margin: 0 0 0 8px; }
   .tp-ask { margin-right: 14px; }
+  .tp-label h3 + .tp-ask, .tp-label .tp-ask + .tp-ask { margin-left: 12px; }
   .tp-dot, .tp-tier.home .tp-dot, .tp-tier.rings .tp-dot { left: -30px; top: 3px; }
   .tp-dec { display: inline-block; margin: 0 10px 0 0; }
   .sheet-page .tp-label h3 { display: inline; }
@@ -252,18 +254,36 @@
 }
 
 /* ───────────── keeping the family: review, invitations, who may edit ───────────── */
-.fp-keep { position: relative; margin-top: 88px; padding-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 24px; align-items: start; }
+.fp-keep { position: relative; margin-top: 88px; padding-top: 40px; }
 .fp-keep::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--sheet-rule); }
 .fp-keep::after { content: ""; position: absolute; left: 50%; top: -9px; width: 46px; height: 18px; transform: translateX(-50%); background: var(--page); }
 .fp-keep > .orn-star { position: absolute; left: 50%; top: -7px; z-index: 1; width: 14px; height: 14px; transform: translateX(-50%); color: var(--foil); }
-.fp-keep-review { grid-column: 1 / -1; min-width: 0; display: grid; gap: 18px; }
+.fp-keep-review { min-width: 0; display: grid; gap: 18px; }
+/* 84px of clear paper above the plates: the dog's head and paws live there, never over a word */
+.fp-keep-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 24px; align-items: stretch; margin-top: 84px; }
+.fp-invite-wrap { position: relative; display: flex; flex-direction: column; min-width: 0; }
+.fp-invite-wrap > .fp-keep-col { position: relative; z-index: 1; flex: 1; }
+.fp-keep-cards > .fp-keep-col { position: relative; z-index: 1; }
 .fp-keep-review:empty { display: none; }
 .review-none { margin: 0; padding: 14px 0; border-top: 1px solid var(--sheet-rule); border-bottom: 1px solid var(--sheet-rule); font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--ink-soft); }
 .fp-keep-col { position: relative; isolation: isolate; min-width: 0; display: grid; gap: 14px; align-content: start; padding: 26px 26px 22px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; }
 .fp-keep-col::before { content: ""; position: absolute; inset: 6px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 2px; }
-.fp-retry { min-height: 44px; padding: 0; border: 0; background: none; font: 600 var(--fz-small)/1.2 var(--font-ui); color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; cursor: pointer; }
+.fp-retry { min-height: 44px; padding: 0; border: 0; background: none; font: 600 var(--fz-small)/1.2 var(--font-ui); color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; cursor: pointer;
+  transition: transform 120ms var(--ease-out), text-decoration-color 160ms var(--ease-out); }
 .fp-retry:active { transform: scale(0.97); }
-.fp-keep .meta.bad, .keepers .meta.bad { color: var(--danger); }
+.fp-retry:focus-visible { outline: 2px solid var(--kicker-terracotta); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .fp-retry:hover { text-decoration-color: var(--accent); } }
+/* a "no" held for six seconds with its Undo */
+.held { margin: 0; padding: 12px 0; border-top: 1px solid var(--sheet-rule); font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--ink-soft); }
+.review-none.bad { color: var(--danger); }
+.fp-codes-bad { grid-column: 1 / -1; }
+.meta.bad { color: var(--danger); }
+/* the invite sheet's spacing, as classes rather than inline styles */
+.meta.is-gap { margin-bottom: var(--s-4); }
+.is-top3 { margin-top: var(--s-3); }
+.is-top4 { margin-top: var(--s-4); }
+.is-top5 { margin-top: var(--s-5); }
+.btn.is-flush { padding-left: 0; }
 .keeper-ask { display: inline-flex; gap: 6px; }
 .fp-keep .card { background: none; border: 0; padding: 0; box-shadow: none; }
 .fp-keep .card::before { display: none; }
@@ -279,6 +299,13 @@
 .fp-keep .keeperlist .por { --pz: 40px; }
 .fp-keep .askrow { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-top: 1px solid var(--sheet-rule); }
 .fp-keep .contrib .pic-av { --pz: 56px; }
+.fp-keep .contrib { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; margin: 0; padding: 16px 0; background: transparent; border: 0; border-top: 1px solid var(--sheet-rule); border-radius: 0; box-shadow: none; }
+.fp-keep .contrib .pic { width: 72px; height: 72px; object-fit: cover; padding: 5px 5px 8px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 2px; box-sizing: border-box; }
+.fp-keep .contrib .who { margin: 0; font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--ink-soft); }
+.fp-keep .contrib .who b { color: var(--sheet-ink); font-weight: 600; }
+.sheet-page .fp-keep .contrib h3 { margin: 4px 0 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-name); line-height: 1.15; color: var(--sheet-ink); }
+.sheet-page .fp-keep .contrib .story { margin: 6px 0 0; font-family: var(--book-body); font-size: var(--fz-words); line-height: 1.5; color: var(--sheet-ink); }
+.fp-keep .contrib .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 /* one height for a field and the button beside it */
 :is(.fp, .pp2) .input { min-height: 44px; border-radius: 4px; }
 :is(.fp, .pp2) .input input { min-height: 44px; }
@@ -288,7 +315,7 @@
 .fp .chip:not(.big) { font: 500 var(--fz-small)/1 var(--font-ui); letter-spacing: 0; text-transform: none; min-height: 28px; }
 .sheet-page :is(.fp, .pp2) .field > span:first-child { font: 600 var(--fz-small)/1.4 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
 /* the family's dog, curious on the Invitations plate's top edge: someone new is coming (D11) */
-.fp-dog { position: absolute; right: 22px; top: 0; width: 104px; transform: translateY(-74%); pointer-events: none; user-select: none; }
+.fp-dog { position: absolute; right: 26px; bottom: calc(100% - 30px); z-index: 0; width: 112px; height: auto; pointer-events: none; user-select: none; }
 
 /* where to next: the shared component (components/book/WhereNext), given the room this page's rhythm wants */
 .page:is(.fp, .pp2) .where-next { margin-top: 88px; }
@@ -321,6 +348,8 @@
   .tp-ring { width: 48px; height: 48px; margin: calc((var(--pz) - 48px) / 2) 0 calc((var(--pz) - 48px) / 2 + 8px); }
   .tp-face { margin-bottom: 10px; }
   .fp-keep { margin-top: 72px; }
+  .fp-keep-cards { margin-top: 76px; }
+  .fp-dog { width: 96px; right: 18px; bottom: calc(100% - 26px); }
   .fp-keep-col { padding: 24px 20px 20px; }
   .fp-codes li { grid-template-columns: minmax(0, 1fr) auto; }
   .fp-codes li .fp-quiet { grid-column: 1; }
@@ -400,7 +429,7 @@
 .pp-words-plate figcaption a { color: var(--sheet-ink); text-decoration: underline; text-decoration-color: var(--foil-soft); text-underline-offset: 4px; transition: text-decoration-color 160ms var(--ease-out); }
 .pp2 .pp-rail { margin-top: 24px; }
 /* the rail's memories: a print and the words on the paper, no tinted bubble */
-.pp2 .pp-card, .pp2 .pp-card:is(.blush, .periwinkle, .sage, .lilac, .apricot, .butter, .sea) { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 12px 18px 12px 12px; transition: background 200ms var(--ease-out), border-color 200ms var(--ease-out); }
+.pp2 .pp-card, .pp2 .pp-card:is(.blush, .periwinkle, .sage, .lilac, .apricot, .butter, .sea) { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 12px 18px 12px 12px; }
 @media (hover: hover) and (pointer: fine) { .pp2 .pp-card:hover { background: var(--paper-print); border-color: var(--sheet-rule); transform: none; } }
 .pp2 .pp-card { transition: background 200ms var(--ease-out), border-color 200ms var(--ease-out), transform 120ms var(--ease-out); }
 .pp2 .pp-card:hover { transform: none; }
@@ -475,3 +504,18 @@
 .st-empty .st-act { padding: 0; border: 0; background: none; cursor: pointer; }
 /* the storyteller's name and the memory a quote comes from are links in a line of text: give them a full target */
 .st-name a, .st-said figcaption a, .pp-words-plate figcaption a { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* the "listed twice" notice: one ruled line on the paper, not a tinted bubble */
+.fp .dupes { padding: 12px 0; background: transparent; border: 0; border-top: 1px solid var(--sheet-rule); border-bottom: 1px solid var(--sheet-rule); border-radius: 0; box-shadow: none; }
+.fp .dupes::before { display: none; }
+.fp .dupe > p { font: 500 var(--fz-small)/1.45 var(--font-ui); color: var(--sheet-ink); }
+.fp .dupe .acts a.meta:hover { color: inherit; }
+@media (hover: hover) and (pointer: fine) { .fp .dupe .acts a.meta:hover { color: var(--sheet-ink); } }
+
+/* a person with no memories yet: the empty state and their family side by side on a wide window (baos 5) */
+@media (min-width: 1280px) {
+  .pp-main.bare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); gap: 64px; align-items: start; }
+  .pp-main.bare .pp-extras > :first-child { margin-top: 0; }
+  .pp-main.bare .pp-extras .pk-list { grid-template-columns: minmax(0, 1fr); }
+}
+.pp2 .pp-more { align-items: center; }

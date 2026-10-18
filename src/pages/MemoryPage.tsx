@@ -26,7 +26,7 @@ import { MemoryHead, PageTurn, Plate } from "../components/archive/MemoryLead";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
 import { isRunOfLines, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
-import { ASKED, cleanTranscript, keptLine, soundsSpoken } from "../components/archive/transcript";
+import { ASKED, cleanTranscript, findTakeaway, soundsSpoken, takeaway } from "../components/archive/transcript";
 import { useServerTidy } from "../components/archive/serverTidy";
 import { tellerParts, wasSpoken } from "../lib/memoryDisplay";
 import WhereNext from "../components/book/WhereNext";
@@ -72,16 +72,20 @@ function withLang(text: string) {
   return out;
 }
 
-/** The kept line where it stands in the words, under the same low gold marker as under the title: the source, not a repeat. */
+/**
+ * The takeaway where it stands in the words, under the same low gold marker
+ * as under the title: the source, not a repeat. Found ignoring case and
+ * punctuation, so it still matches once the words are tidied.
+ */
 function withMark(text: string, kept: string) {
-  const at = kept ? text.indexOf(kept) : -1;
-  if (at < 0) return withLang(text);
+  const at = findTakeaway(text, kept);
+  if (!at) return withLang(text);
   return [
-    <span key="a">{withLang(text.slice(0, at))}</span>,
+    <span key="a">{withLang(text.slice(0, at[0]))}</span>,
     <mark key="m" className="mv-mark">
-      {withLang(kept)}
+      {withLang(text.slice(at[0], at[1]))}
     </mark>,
-    <span key="b">{withLang(text.slice(at + kept.length))}</span>,
+    <span key="b">{withLang(text.slice(at[1]))}</span>,
   ];
 }
 
@@ -105,8 +109,8 @@ function Missing() {
       <div className="page mv">
         <div className="mp-missing mv-missing">
           <img className="mv-missing-dog" src="/dog/curious-paper.webp" alt="" width={150} height={126} />
-          <h1>That memory isn't here.</h1>
-          <p className="meta">It may have been removed, or it belongs to a story this account can't see. The rest of the archive is where it was.</p>
+          <h1>That memory isn’t here</h1>
+          <p className="meta">It may have been removed, or it belongs to a story this account can’t see. The rest of the archive is where it was.</p>
           <ButtonLink to="/archive" variant="outline">
             Back to the archive
           </ButtonLink>
@@ -201,7 +205,10 @@ export default function MemoryPage() {
   const tidyNow = served ?? (localTidy.length ? localTidy : raw);
   const body = readableParagraphs(spoken && !verbatim ? tidyNow : raw, { punctuate: spoken && !verbatim && !served }).map(smarten);
   const tidied = spoken && tidyNow.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
-  const kept = smarten(keptLine(raw.join("\n")));
+  // the memory's one takeaway: the same line as its print, its List card and Home's quote
+  const kept = smarten(takeaway(raw.join("\n")));
+  // when it stands in the last paragraph the coda is the repeat, so the body leaves it unmarked (said once nearby, not three times)
+  const markIn = kept && !findTakeaway(body[body.length - 1] || "", kept);
   // one rule for who told it, shared with the cards and "From the book": "Told by Bao in conversation"
   const { verb: told, name: toldName, rest: toldRest } = tellerParts(memory, story);
 
@@ -255,7 +262,7 @@ export default function MemoryPage() {
     }
   };
 
-  const thePlate = current ? <Plate photos={photos} current={current} onPick={setShown} when={when} alt={`${story.name}'s photograph for “${title}”`} /> : null;
+  const thePlate = current ? <Plate photos={photos} current={current} onPick={setShown} when={when} alt={`${story.name}’s photograph for “${title}”`} /> : null;
 
   const family_ = (
     <FamilyVoices memory={memory} story={story} viewerName={viewerName} isOwner={isOwner} people={family?.people ?? []} open={compose} onOpenChange={setCompose} />
@@ -273,7 +280,7 @@ export default function MemoryPage() {
         align="end"
         items={[
           { key: "public", label: "Public", hint: "The family on A Story, and the wall when it is on", checked: !isPrivate, onSelect: () => void setPrivacy(false) },
-          { key: "private", label: "Private", hint: "Only you and the story's keepers", checked: isPrivate, onSelect: () => void setPrivacy(true) },
+          { key: "private", label: "Private", hint: "Only you and the story’s keepers", checked: isPrivate, onSelect: () => void setPrivacy(true) },
         ]}
       />
       <button type="button" className="mv-tool" onClick={share}>
@@ -296,7 +303,7 @@ export default function MemoryPage() {
               <p className={[reading === k ? "reading" : "", k === 0 && takesDropCap(p) ? "drop" : "", isRunOfLines(p) ? "lines" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
-                    {withMark(line, kept)}
+                    {markIn ? withMark(line, kept) : withLang(line)}
                     {j < arr.length - 1 && <br />}
                   </span>
                 ))}
@@ -306,7 +313,7 @@ export default function MemoryPage() {
           </div>
         ))
       ) : memory.status === "in_progress" ? (
-        <p className="quiet">A Story is still writing this one up from the call. The words land here when it's done.</p>
+        <p className="quiet">A Story is still writing this one up from the call. The words land here when it’s done.</p>
       ) : (
         <>
           <p className="quiet">Nothing written down yet.</p>
@@ -376,7 +383,6 @@ export default function MemoryPage() {
               <p className="mv-tidy" aria-live="polite">
                 {verbatim ? `Word for word, as it was said` : `Lightly tidied from the ${hasVoice ? "call" : "conversation"}`}{" "}
                 <span className="mv-tidy-act">
-                  <span aria-hidden="true">· </span>
                   <button type="button" onClick={() => setVerbatim((v) => !v)} aria-pressed={verbatim}>
                     {verbatim ? "Read it tidied" : "Read it word for word"}
                   </button>
@@ -397,11 +403,11 @@ export default function MemoryPage() {
             {confirm ? (
               <div className="mp-confirm mv-confirm" role="alertdialog" aria-labelledby="rm-h">
                 <p id="rm-h" className="mv-confirm-h">
-                  Remove “{title}” from {own ? "your" : `${story.name}'s`} story?
+                  Remove “{title}” from {own ? "your" : `${story.name}’s`} story?
                 </p>
                 <p className="meta">
                   The words{memory.photos.length ? ", the photographs" : ""}
-                  {memory.audio?.length ? " and the recording" : ""} go with it. This can't be undone.
+                  {memory.audio?.length ? " and the recording" : ""} go with it. This can’t be undone.
                 </p>
                 <div className="row">
                   <Button onClick={remove} loading={removing} className="mv-danger-fill">
@@ -435,7 +441,7 @@ export default function MemoryPage() {
                   ariaLabel="More"
                   align="end"
                   items={[
-                    { key: "details", label: "When, chapter and who's in it", icon: <CalendarIcon />, onSelect: () => navigate(editDetails) },
+                    { key: "details", label: "When, chapter and who’s in it", icon: <CalendarIcon />, onSelect: () => navigate(editDetails) },
                     ...(!hasVoice && body.length > 0 && canSpeak() ? [{ key: "listen", label: listen ? "Stop listening" : "Listen", icon: <PlayIcon />, onSelect: () => setListen((v) => !v) }] : []),
                     { key: "remove", label: "Remove…", icon: <TrashIcon />, danger: true, onSelect: () => setConfirm(true) },
                   ]}

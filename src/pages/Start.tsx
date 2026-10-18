@@ -246,7 +246,10 @@ export default function Start() {
                 const taken = w.key === "self" && hasOwn;
                 return (
                   <button key={w.key} type="button" className={`start-way way-${w.key}`} onClick={() => setWho(w.key)} disabled={taken} data-rise>
-                    <WayObject way={w.key} />
+                    {/* a fixed slot, so the words under the three specimens start on one line */}
+                    <span className="start-spec">
+                      <WayObject way={w.key} />
+                    </span>
                     <span className="start-way-text">
                       <span className="start-way-writes">{w.writes}</span>
                       <span className="start-way-title">{w.title}</span>

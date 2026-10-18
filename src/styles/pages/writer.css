@@ -111,7 +111,7 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .sheet-page .w-book .leaf-one { gap: 14px; padding: 46px clamp(28px, calc(4.2vw / var(--zoom, 1)), 64px) 34px; border-radius: 2px; box-shadow: none; color: var(--w-ink); }
 .w-book .leaf-one .page-frame { inset: 12px; }
 .w-book .leaf-one .running-head { display: block; min-width: 0; margin: 0; padding: 0 44px; text-align: center; text-wrap: balance; font: 600 12px/1.4 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); }
-.w-book .leaf-one .wtitle { min-height: 44px; margin-top: 18px; font-family: var(--book-display); font-weight: 600; font-size: clamp(28px, calc(2.3vw / var(--zoom, 1)), 36px); line-height: 1.15; letter-spacing: -0.005em; color: var(--w-ink); }
+.w-book .leaf-one .wtitle { min-height: 44px; padding: max(0px, calc((44px - 1.15em) / 2)) 0; /* a short title line sits in the middle of its 44px, not at its top */ margin-top: 18px; font-family: var(--book-display); font-weight: 600; font-size: clamp(28px, calc(2.3vw / var(--zoom, 1)), 36px); line-height: 1.15; letter-spacing: -0.005em; color: var(--w-ink); }
 .w-book .leaf-one .wtitle::placeholder { font-family: var(--book-display); font-style: italic; font-weight: 500; color: var(--w-pencil); }
 .w-book .leaf-one .wtitle:focus-visible { outline: none; box-shadow: 0 2px 0 var(--wax-light); }
 .w-book .leaf-one .dear { margin: 6px 0 -6px; font-family: var(--book-body); font-style: italic; font-size: 20px; color: var(--ink-soft); }
@@ -163,18 +163,20 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   .sheet-page .page.w-desk:has(.w-grid.spread) { padding-top: 64px; }
   .w-desk .spread .w-dog { width: 84px; }
   .spread .leaf-left .w-sub, .spread .leaf-left .w-pencil:not(.asked) { display: none; }
-  .spread .leaf-left, .sheet-page .spread .w-book .leaf-one { gap: 6px; padding-top: 24px; padding-bottom: 14px; }
+  .spread .leaf-left, .sheet-page .spread .w-book .leaf-one { gap: 6px; padding-top: 20px; padding-bottom: 14px; }
   .spread .leaf-left .w-qhead { margin-top: 4px; }
   .spread .w-book .leaf-one .wtitle { margin-top: 2px; }
   .spread .w-book .leaf-one .dear { margin: 2px 0 -4px; }
   .spread .w-book .leaf-one .signoff { margin-top: 0; }
   .spread .w-book .leaf-one .folio { padding-top: 2px; }
-  .spread .w-keep { margin-top: 12px; }
-  .spread:not(.rail) .w-ribbon { height: 22px; }
+  .spread .w-keep { margin-top: 8px; }
+  .spread:not(.rail) .w-ribbon { height: 18px; }
   .spread .leaf-left { padding-bottom: 8px; }
   .spread .w-book .leaf-one .wbody { min-height: var(--w-line); }
 }
 @media (max-height: 900px) {
+  .spread .leaf-left .w-qhead { margin-top: 0; }
+  .spread .leaf-left .w-pencil { padding-top: 4px; }
   .spread .leaf-left .w-orn { display: none; }
   .spread .leaf-left .w-q { padding: 6px 0; }
   .spread .leaf-left .w-q.own { padding: 10px 0; }
@@ -191,7 +193,7 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 .leaf-left .running-head.verso { display: flex; justify-content: space-between; gap: 12px; margin: 0; font: 600 12px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-grey); }
 .leaf-left .running-head.verso span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .leaf-left .w-qhead { margin-top: 10px; }
-.spread .w-dog { width: 104px; }
+.spread .w-dog { width: 96px; }
 .w-orn { display: flex; align-items: center; gap: 14px; margin: 0; color: var(--foil); }
 .w-orn::before, .w-orn::after { content: ""; flex: 1; height: 1px; background: var(--foil-soft); }
 .w-orn i { font-style: normal; font-size: 13px; }
@@ -495,14 +497,6 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px;
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'><filter id='m' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='7'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -3 2.3'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>") 0 0 / 120px 60px; }
 .ink-stamp i { display: none; }
-
-/* ── The open leaf's dog (OpenLeaf.tsx): Bond on one scale, waking from behind the page's edge ── */
-.open-leaf .ol-dog { aspect-ratio: 781 / 640; }
-.open-leaf .ol-dog img { inset: auto 0 0 0; width: 100%; }
-.open-leaf .ol-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out); }
-.open-leaf .ol-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 12px 0); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
-.open-leaf[data-awake] .ol-dog .awake { opacity: 1; transform: none; transition-delay: 60ms; }
-@media (prefers-reduced-motion: reduce) { .open-leaf .ol-dog .sleep, .open-leaf .ol-dog .awake { transition: none; transform: none; } }
 
 /* ── The open leaf at the foot of Home and the Archive (components/delight/OpenLeaf): the same book as the
    writer's, so its pages show gilt edges; its small print at the house floor; its note in the book's italic ── */

@@ -211,7 +211,7 @@ export default function Archive() {
       await navigator.clipboard.writeText(url);
       setWallCopied("Link copied");
     } catch {
-      setWallCopied("Copy failed; it's on Account");
+      setWallCopied("Copy failed; it’s on Account");
     }
     window.setTimeout(() => setWallCopied(null), 3000);
   };
@@ -240,8 +240,8 @@ export default function Archive() {
     return (
       <Shell compact title="The Archive">
         <div className="page">
-          <Problem message="We couldn't reach the archive just now." onRetry={reload} />
-          <p className="meta">It's kept safe on our side. Check the connection and try again.</p>
+          <Problem message="We couldn’t reach the archive just now." onRetry={reload} />
+          <p className="meta">It’s kept safe on our side. Check the connection and try again.</p>
         </div>
       </Shell>
     );
@@ -250,7 +250,7 @@ export default function Archive() {
 
   const own = story.relationship === "Myself";
   const stats = archiveStats(story) as { memories: number; span: { from: number; to: number } | null };
-  const whose = own ? "your" : `${story.name}'s`;
+  const whose = own ? "your" : `${story.name}’s`;
   const photoCount = saved.reduce((n, m) => n + (m.photos?.length || 0), 0);
   // the book's progress as the fourth figure: "8 of about 20" toward the first edition, never a countdown
   const book = bookProgress(story) as { count: number; remaining: number; ratio: number; state: string };
@@ -349,7 +349,7 @@ export default function Archive() {
           <section className="card arc-empty" aria-label="Nothing here yet">
             <img src="/book/closed-640.webp" alt="" width={160} />
             <div>
-              <h2>{own ? "Your archive starts with one memory." : `${story.name}'s archive starts with one memory.`}</h2>
+              <h2>{own ? "Your archive starts with one memory." : `${story.name}’s archive starts with one memory.`}</h2>
               <p>Anything at all: a kitchen, a road, a song on the radio. Three memories and the first chapter appears.</p>
               <ButtonLink to="/write" icon={<PenIcon />}>
                 Write the first memory
@@ -479,7 +479,7 @@ export default function Archive() {
         {!nothingAtAll && (
           <WhereNext
             rows={[
-              { to: "/write", title: own ? "Write today's memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
+              { to: "/write", title: own ? "Write today’s memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
               { to: "/book", title: "Open the book", line: "See these memories set on the printed page." },
               { to: "/family", title: "Ask the family", line: "Invite someone to add what they remember." },
             ]}

@@ -113,7 +113,7 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
     }
   };
 
-  const label = `${name}'s recording`;
+  const label = `${name}’s recording`;
   return (
     <div className="mp-player">
       <div className="player" aria-label={label}>
@@ -179,7 +179,7 @@ export default function AudioPlayer({ clips, name, photo }: { clips: Clip[]; nam
       </div>
       {failed && (
         <p className="note" role="alert">
-          {failed === "play" ? "The recording wouldn't play here." : "The recording couldn't be loaded."} Check the connection and try again.{" "}
+          {failed === "play" ? "The recording wouldn’t play here." : "The recording couldn’t be loaded."} Check the connection and try again.{" "}
           <button
             type="button"
             className="mv-retry"

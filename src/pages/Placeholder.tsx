@@ -15,17 +15,19 @@ export default function Placeholder({ name }: { name: string }) {
           <Lockup height={28} />
         </Link>
       </div>
-      <main className="wall-none">
+      <div className="wall-none-wrap">
         <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
+        <main className="wall-none">
         <h1>
           {name.replace(/[.!?]$/, "")}
           <span className="stop">.</span>
         </h1>
         <p>The link may be old, or the address isn't quite right. Home is one click away.</p>
-        <Link className="btn outline" to="/">
-          Go home
-        </Link>
-      </main>
+          <Link className="btn outline" to="/">
+            Go home
+          </Link>
+        </main>
+      </div>
     </div>
   );
 }

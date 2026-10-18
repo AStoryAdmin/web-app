@@ -197,8 +197,10 @@ const rowToJoinRequest = (r: Row): JoinRequest => ({
 export async function listJoinRequests(storyId: string): Promise<JoinRequest[]> {
   const { data, error } = await supabase().from("story_join_requests").select("*").eq("story_id", storyId).eq("status", "pending").order("created_at", { ascending: false });
   if (error) {
-    if (!notThere(error)) console.warn("listJoinRequests:", error.message || error);
-    return [];
+    // a database without the table has nothing to ask; any other failure is a failure, and the page says so
+    if (notThere(error)) return [];
+    console.warn("listJoinRequests:", error.message || error);
+    throw error;
   }
   return (data || []).map(rowToJoinRequest);
 }
@@ -207,8 +209,9 @@ export async function listJoinRequests(storyId: string): Promise<JoinRequest[]> 
 export async function listMyJoinRequests(userId: string): Promise<JoinRequest[]> {
   const { data, error } = await supabase().from("story_join_requests").select("*").eq("requester", userId).eq("status", "pending").order("created_at", { ascending: false });
   if (error) {
-    if (!notThere(error)) console.warn("listMyJoinRequests:", error.message || error);
-    return [];
+    if (notThere(error)) return [];
+    console.warn("listMyJoinRequests:", error.message || error);
+    throw error;
   }
   return (data || []).map(rowToJoinRequest);
 }
@@ -285,8 +288,9 @@ const rowToSuggestion = (r: Row): Suggestion => ({
 export async function listPendingSuggestions(): Promise<Suggestion[]> {
   const { data, error } = await supabase().from("person_suggestions").select("*").eq("status", "pending").order("created_at", { ascending: false });
   if (error) {
-    if (!notThere(error)) console.warn("listPendingSuggestions:", error.message || error);
-    return [];
+    if (notThere(error)) return [];
+    console.warn("listPendingSuggestions:", error.message || error);
+    throw error;
   }
   return (data || []).map(rowToSuggestion);
 }

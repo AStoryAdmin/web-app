@@ -12,17 +12,16 @@
  */
 import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
-import { cardMeta, quoteFor } from "../app-core/lib/memoryCard.js";
+import { cardMeta } from "../app-core/lib/memoryCard.js";
 import { usePhotoUrl } from "../lib/photoUrls";
 import { useAccount } from "../state/accountContext";
 import { Avatar } from "./ui";
 import { LockIcon, MicIcon } from "./icons";
 import WaxSeal from "./archive/WaxSeal";
-import { cardLine, ownWords } from "./archive/transcript";
+import { takeaway } from "./archive/transcript";
 import Face from "./archive/Face";
 import { realChapter } from "./archive/photos";
 import { isTreasured } from "../lib/treasured";
-import { opening } from "../lib/resurface";
 import { smarten } from "../lib/typography";
 import type { Memory, Story } from "../data/stories";
 import { paperFor, toldBy } from "../lib/memoryDisplay";
@@ -32,20 +31,15 @@ const minutes = (memory: Memory) => {
   return s >= 60 ? `${Math.round(s / 60)} min` : s > 0 ? `${Math.round(s)} sec` : "";
 };
 
-/** The person's own words for the card: the first real sentence of what they said, never the summary. */
+/** The person's own words for the card: the memory's one takeaway, whole (the page shows the same line); never the summary. */
 function cardWords(memory: Memory): string {
-  const body = (memory.body || "").trim();
-  const kept = cardLine(body);
-  if (kept) return smarten(kept);
-  // otherwise the opening of their own words: a call tidied to the teller's turns, typed lines kept apart
-  const own = ownWords(body);
-  if (own) return smarten(quoteFor(opening(own) || own, 150) as string);
+  const line = takeaway(memory.body || "");
+  if (line) return smarten(line);
   const ex = (memory.excerpt || "").trim();
-  if (/^the (speaker|narrator|storyteller)\b/i.test(ex)) return "";
-  return smarten(quoteFor(ex, 150) as string);
+  return /^the (speaker|narrator|storyteller)\b/i.test(ex) ? "" : smarten(ex.split(/(?<=[.!?])\s/)[0] || "");
 }
 
-export default function MemoryCard({ memory, story, style, rise = true }: { memory: Memory; story: Story; style?: CSSProperties; /** Its own CSS arrival; off where the page's scroll hook owns the entrance. */ rise?: boolean }) {
+export default function MemoryCard({ memory, story, style, rise = true }: { memory: Memory; story: Story; style?: CSSProperties; /** Its own CSS arrival; off where the page’s scroll hook owns the entrance. */ rise?: boolean }) {
   const { family } = useAccount();
   const meta = cardMeta(story, memory) as { title: string; chapter: string; date: string; photo: string | null; photoCount: number };
   const photo = usePhotoUrl(meta.photo);

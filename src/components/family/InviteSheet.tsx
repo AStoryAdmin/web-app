@@ -274,7 +274,7 @@ export default function InviteSheet({
 
         {done ? (
           <>
-            {done.reused && <p className="meta" style={{ marginBottom: "var(--s-4)" }}>We used the {done.person.givenName} who was already listed instead of adding a second one.</p>}
+            {done.reused && <p className="meta is-gap">We used the {done.person.givenName} who was already listed instead of adding a second one.</p>}
             {done.code ? (
               <CodeCard code={done.code} who={done.person.givenName} story={story} senderName={senderName} emailed={done.emailed} email={done.email} emailReason={done.emailReason} />
             ) : (
@@ -286,7 +286,7 @@ export default function InviteSheet({
                     : `A code couldn't be made just now${done.email ? `, so no email went to ${done.email}` : ""}. Open their page later and send one.`}
               </p>
             )}
-            <div className="acts" style={{ marginTop: "var(--s-5)" }}>
+            <div className="acts is-top5">
               <Button onClick={onClose}>Done</Button>
               <Button
                 variant="quiet"
@@ -305,7 +305,7 @@ export default function InviteSheet({
           </>
         ) : twin ? (
           <>
-            <p className="meta" style={{ marginBottom: "var(--s-4)" }}>
+            <p className="meta is-gap">
               <b>{personName(twin)}</b> is already in the family, {stateWords(linkState(twin, userId).key) || "remembered"}. Adding again would list them twice.
             </p>
             <div className="acts">
@@ -323,13 +323,13 @@ export default function InviteSheet({
                 No, add another {given.trim()}
               </Button>
             </div>
-            <Button variant="quiet" small style={{ marginTop: "var(--s-3)", paddingLeft: 0 }} disabled={busy} onClick={() => setTwin(null)}>
+            <Button variant="quiet" small className="is-top3 is-flush" disabled={busy} onClick={() => setTwin(null)}>
               Back
             </Button>
           </>
         ) : need ? (
           <>
-            <p className="meta" style={{ marginBottom: "var(--s-4)" }}>
+            <p className="meta is-gap">
               {given.trim()} is {relatedTo}'s {word(kindKey).toLowerCase()}. Through whom?
             </p>
             <div className="choices">
@@ -346,7 +346,7 @@ export default function InviteSheet({
             </div>
             <Button
               variant="quiet"
-              style={{ marginTop: "var(--s-4)" }}
+              className="is-top4"
               onClick={() => {
                 setNeed(null);
                 setVia([]);
@@ -393,7 +393,7 @@ export default function InviteSheet({
               autoComplete="off"
             />
             {error && (
-              <p className="meta" role="alert" style={{ color: "var(--danger)", marginBottom: "var(--s-4)" }}>
+              <p className="meta bad is-gap" role="alert">
                 {error}
               </p>
             )}

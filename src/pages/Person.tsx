@@ -22,6 +22,8 @@ import MemoryRail from "../components/person/MemoryRail";
 import RelatedRow from "../components/person/RelatedRow";
 import FamilyNotes from "../components/person/FamilyNotes";
 import Kin from "../components/person/Kin";
+import { DateTask } from "../components/archive/ArchiveGroups";
+import { memoryDate } from "../app-core/lib/timeline.js";
 import { Leaf } from "../components/family/Ornaments";
 import WhereNext from "../components/book/WhereNext";
 import { useMyCodes } from "../components/family/useMyCodes";
@@ -118,7 +120,7 @@ export default function Person() {
     return (
       <Shell compact title="Family">
         <div className="page pp-missing">
-          <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" />
+          <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
           <div>
             <h2>This person isn't in the family tree.</h2>
             <p>They may have been merged into someone else, or taken out of the tree.</p>
@@ -142,9 +144,9 @@ export default function Person() {
   const editable = !preview && canEdit(person, family, meId);
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const name = personName(person);
-  const theirsShown = groups.theirs.slice(-RAIL_MAX);
-  const othersShown = groups.others.slice(-(theirsShown.length ? OTHERS_MAX : RAIL_MAX));
-  const more = rail.length - theirsShown.length - othersShown.length;
+  const theirsAll = groups.theirs.slice(-RAIL_MAX);
+  const othersShown = groups.others.slice(-(theirsAll.length ? OTHERS_MAX : RAIL_MAX));
+  const more = rail.length - theirsAll.length - othersShown.length;
   // Who told a memory somebody else has: their tree row when we know it, else the name on the credit, else the story's teller.
   const tellerOf = (f: Found): Teller => {
     const credit = String(f.memory.contributor || "").split(",")[0].trim();
@@ -166,10 +168,13 @@ export default function Person() {
   const said = theirs ? saidLine(theirs.memory, 160).replace(/^“|”$/g, "") : "";
   // The rail never repeats the sentence the plate above it quotes.
   const quoted = theirs?.memory.id || null;
-  const undated = [...theirsShown, ...othersShown].filter((f) => !/\d{4}/.test(f.memory.period || "")).length;
+  // every memory of theirs with no year yet, not only the ones shown: the same task the Archive sets
+  const undated = rail.filter((f) => !(memoryDate(f.memory) as { dated: boolean }).dated).map((f) => f.memory);
   const kin = kinOf(person, family, index);
   // A third column only when it carries enough; otherwise the people and lines flow under the memories.
   const three = kin.length + related.length >= 3;
+  // a group whose only memory is the one the plate above quotes says nothing new: leave it out
+  const theirsShown = theirsAll.length === 1 && theirsAll[0].memory.id === quoted ? [] : theirsAll;
   const words = person.deathYear ? "" : stateWords(stateKey);
   const tone = person.deathYear ? "gone" : stateKey === "you" || stateKey === "joined" ? "on" : stateKey === "invited" ? "waiting" : "off";
   const inviteable = !preview && stateKey !== "you" && stateKey !== "remembered" && !isTeller && !person.deathYear;
@@ -396,7 +401,7 @@ export default function Person() {
             </div>
           </aside>
 
-          <div className={`pp-main${three ? " three" : ""}`}>
+          <div className={`pp-main${rail.length === 0 ? " bare" : three ? " three" : ""}`}>
             <div className="pp-story">
               {said && (
                 <figure className="pp-words-plate" data-rise>
@@ -413,6 +418,13 @@ export default function Person() {
               )}
               {rail.length > 0 ? (
                 <>
+                  {theirsShown.length === 0 && othersShown.length === 0 && !preview && (
+                    <p className="pp-head">
+                      <Link className="pp-write" to={`/write?with=${encodeURIComponent(person.id)}`}>
+                        Write one with {first} <span aria-hidden="true">→</span>
+                      </Link>
+                    </p>
+                  )}
                   {theirsShown.length > 0 && (
                     <section className="pp-group theirs" aria-labelledby="pp-theirs-h">
                       <header className="pp-head" data-rise>
@@ -440,24 +452,25 @@ export default function Person() {
                     </section>
                   )}
                   {/* the dates nobody has given yet, gathered into one quiet row instead of "No date yet" on every card */}
-                  {(undated > 0 || (more > 0 && !preview)) && (
-                    <p className="pp-more" data-rise>
-                      {undated > 0 && !preview && (
-                        <Link className="pp-write" to="/archive">
-                          Give {undated === 1 ? "one memory" : `${undated} memories`} a year · about {Math.max(1, Math.round(undated / 2))} {undated <= 2 ? "minute" : "minutes"} <span aria-hidden="true">→</span>
+                  {/* the Archive's own dating task (same words, minutes and target), and one way to the archive */}
+                  {!preview && (undated.length > 0 || more > 0) && (
+                    <div className="pp-more" data-rise>
+                      <DateTask items={undated} />
+                      {undated.length > 0 ? (
+                        <Link className="pp-write" to="/archive#yundated">
+                          The undated ones, in the archive <span aria-hidden="true">→</span>
                         </Link>
-                      )}
-                      {more > 0 && !preview && (
+                      ) : (
                         <Link className="pp-write" to="/archive">
                           All {rail.length} with {first}, in the archive <span aria-hidden="true">→</span>
                         </Link>
                       )}
-                    </p>
+                    </div>
                   )}
                 </>
               ) : (
                 <div className="pp-none" data-rise>
-                  <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" />
+                  <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
                   <div>
                     <h2>Nothing with {first} in it yet.</h2>
                     <p>When a memory names who was there, it shows up here. Writing one with {first} in it takes about five minutes.</p>

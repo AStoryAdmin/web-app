@@ -3,18 +3,21 @@
  * photograph for one memory. "Add to the archive" saves the memory first
  * and marks the contribution approved only once it has landed, so a
  * dropped connection never leaves something approved and in nobody's
- * archive. Only keepers can read the queue; everyone else sees nothing.
+ * archive. "Not this one" waits six seconds with an Undo before it is sent.
+ * A failure to load says so, with a Try again; it never reads as "nothing
+ * waiting". Only keepers can read the queue; everyone else sees nothing.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { Story } from "../../data/stories";
-import { approveContribution, listContributions, memoryFromContribution, rejectContribution, type Contribution } from "../../data/contributions";
+import { approveContribution, fetchContributions, memoryFromContribution, rejectContribution, type Contribution } from "../../data/contributions";
 import { useAccount } from "../../state/accountContext";
 import { usePhotoUrl } from "../../lib/photoUrls";
 import { track } from "../../lib/analytics";
 import { Button } from "../ui";
 import Portrait from "./Portrait";
 import { whenLabel } from "./familyView";
+import { useHold } from "./useHold";
 
 function Pic({ url, alt }: { url: string; alt: string }) {
   const src = usePhotoUrl(url);
@@ -76,48 +79,75 @@ export default function ReviewQueue({
 }) {
   const { saveMemory } = useAccount();
   const [items, setItems] = useState<Contribution[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => new Date(0));
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const onFail = useCallback((err: unknown) => setError(`That didn't go through (${(err as Error)?.message || "no connection"}). It's still here; try again.`), []);
+  const { held, hold, undo } = useHold(onFail);
 
   useEffect(() => {
     let live = true;
-    listContributions(story.id, "pending")
+    fetchContributions(story.id, "pending")
       .then((list) => {
         if (!live) return;
         setItems(list);
+        setFailed(false);
         setNow(new Date());
       })
-      .catch(() => {
-        if (!live) return;
-        setItems([]);
-        setError("What the family sent couldn't be reached just now. Reload the page to try again.");
-      });
+      .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [story.id]);
+  }, [story.id, attempt]);
 
-  const act = async (item: Contribution, what: "keep" | "skip") => {
+  const keep = async (item: Contribution) => {
     setBusy(item.id);
     setError(null);
     try {
-      if (what === "keep") {
-        if (item.kind === "memory") await saveMemory(memoryFromContribution(item, story), story.id);
-        await approveContribution(item.id);
-        track("contribution_approved", { kind: item.kind, photos: item.photos.length });
-        onKept?.();
-      } else {
-        await rejectContribution(item.id);
-      }
+      if (item.kind === "memory") await saveMemory(memoryFromContribution(item, story), story.id);
+      await approveContribution(item.id);
+      track("contribution_approved", { kind: item.kind, photos: item.photos.length });
+      onKept?.();
       setItems((prev) => (prev || []).filter((i) => i.id !== item.id));
     } catch (err) {
-      setError(`That didn't go through (${(err as Error)?.message || "no connection"}). It's still here; try again.`);
+      onFail(err);
     } finally {
       setBusy(null);
     }
   };
+  // "Not this one" is held for six seconds with an Undo before anything is sent.
+  const skip = (item: Contribution) => {
+    setError(null);
+    const who = (item.contributorName || "Someone").split(" ")[0];
+    hold(
+      item.id,
+      `Set aside ${who}'s ${item.kind === "memory" ? "memory" : "note"}`,
+      () => rejectContribution(item.id),
+      () => setItems((prev) => (prev || []).filter((i) => i.id !== item.id)),
+    );
+  };
 
+  if (failed && items === null)
+    return (
+      <section className="review none" aria-label="Waiting for your review">
+        <p className="review-none bad" role="alert">
+          What the family sent couldn't be reached just now.{" "}
+          <button
+            type="button"
+            className="fp-retry"
+            onClick={() => {
+              setFailed(false);
+              setAttempt((n) => n + 1);
+            }}
+          >
+            Try again
+          </button>
+        </p>
+        {asked}
+      </section>
+    );
   const sent = items?.length ?? 0;
   const count = sent + askedCount;
   // Nothing waiting: one ruled line, not a box (the asks still mount, so they can say when one arrives).
@@ -138,19 +168,26 @@ export default function ReviewQueue({
           ? "Looking…"
           : sent
             ? `What the family adds goes into ${story.name}'s archive under their own name once you've had a look.`
-            : askedCount
-              ? "What the family asks lands here first."
-              : "Nothing waiting. What the family asks or sends lands here first."}
+            : "What the family asks lands here first."}
       </p>
       {asked}
       {error && (
-        <p className="meta" role="alert" style={{ color: "var(--danger)" }}>
+        <p className="meta bad" role="alert">
           {error}
         </p>
       )}
-      {items?.map((item) => (
-        <Item key={item.id} item={item} story={story} now={now} busy={busy === item.id} onKeep={() => void act(item, "keep")} onSkip={() => void act(item, "skip")} />
-      ))}
+      {items?.map((item) =>
+        held[item.id] ? (
+          <p key={item.id} className="held" role="status">
+            {held[item.id]} ·{" "}
+            <button type="button" className="fp-retry" onClick={() => undo(item.id)}>
+              Undo
+            </button>
+          </p>
+        ) : (
+          <Item key={item.id} item={item} story={story} now={now} busy={busy === item.id} onKeep={() => void keep(item)} onSkip={() => skip(item)} />
+        ),
+      )}
     </section>
   );
 }

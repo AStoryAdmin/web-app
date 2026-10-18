@@ -140,7 +140,7 @@ export default function FamilyVoices({
       setRefresh((n) => n + 1);
     } catch (err) {
       console.warn("contribution not sent", err);
-      setError("That didn't send. Your words are still here; check the connection and press Send again.");
+      setError("That didn’t send. Your words are still here; check the connection and press Send again.");
     } finally {
       setSending(false);
     }
@@ -155,7 +155,7 @@ export default function FamilyVoices({
       setItems((prev) => (keep ? prev.map((x) => (x.id === c.id ? { ...x, status: "approved" } : x)) : prev.filter((x) => x.id !== c.id)));
     } catch (err) {
       console.warn("contribution decision not saved", err);
-      setError("That didn't go through. Check the connection and try again.");
+      setError("That didn’t go through. Check the connection and try again.");
     } finally {
       setBusyId(null);
     }

@@ -68,6 +68,11 @@ function MyCodes({ people, mine }: { people: Person[]; mine: ReturnType<typeof u
           <span className="fp-quiet">
             <span className="nw">for {who(c)}</span> · <span className="nw">{expiresLabel(c.expiresAt, now)}</span>
           </span>
+          {notTaken === c.code && (
+            <span className="meta bad fp-codes-bad" role="alert">
+              That code wasn't taken back; check the connection and try again.
+            </span>
+          )}
           <Button
             variant="quiet"
             small
@@ -228,19 +233,24 @@ export default function Family() {
               <WaitingOnOthers meId={meId} family={family} />
             </div>
 
-            <section className="fp-keep-col fp-invites" id="invite" aria-labelledby="fp-invites-h">
-              {/* someone new is coming: the family's dog, curious, chin on the plate's edge (decoration D11) */}
-              <img className="fp-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" />
-              <h2 id="fp-invites-h">Invitations</h2>
-              <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>
-              <MyCodes people={people} mine={mine} />
-            </section>
-
-            {story.ownerId === meId && (
-              <div className="fp-keep-col">
-                <Keepers story={story} people={people} senderName={senderName} />
+            {/* the two plates fill the row at one height; the family's dog sits behind the Invitations plate's top
+                edge, only head and paws above it, in clear space of his own (he never touches a word) */}
+            <div className="fp-keep-cards">
+              <div className="fp-invite-wrap">
+                <img className="fp-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
+                <section className="fp-keep-col fp-invites" id="invite" aria-labelledby="fp-invites-h">
+                  <h2 id="fp-invites-h">Invitations</h2>
+                  <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>
+                  <MyCodes people={people} mine={mine} />
+                </section>
               </div>
-            )}
+
+              {story.ownerId === meId && (
+                <div className="fp-keep-col">
+                  <Keepers story={story} people={people} senderName={senderName} />
+                </div>
+              )}
+            </div>
           </section>
         )}
 

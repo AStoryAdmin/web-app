@@ -269,10 +269,23 @@ function measure(plate: HTMLElement, links: PlateLink[]): Thread[] {
   return out;
 }
 
-/** True when a part of a tier no longer fits on one line. */
+/**
+ * True when a generation no longer fits its line. On the plate's grid the side zones are as wide as their faces,
+ * so a tier that is too wide shows as a row wider than its track, or as sides of unequal width (which would push
+ * the storyteller off the axis); on a narrower window, where the faces flow, as a face on a second line.
+ */
 function wraps(plate: HTMLElement): boolean {
-  return [...plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) :is(.tp-zone, .tp-unit)")].some((zone) => {
-    const kids = [...zone.children] as HTMLElement[];
+  for (const row of plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) .tp-row")) {
+    if (getComputedStyle(row).display === "grid") {
+      if (row.scrollWidth > row.clientWidth + 1) return true;
+      const left = row.querySelector<HTMLElement>(".tp-zone.left");
+      const right = row.querySelector<HTMLElement>(".tp-zone.right");
+      if (left && right && Math.abs(left.offsetWidth - right.offsetWidth) > 2) return true;
+    }
+  }
+  return [...plate.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf) :is(.tp-zone, .tp-unit, .tp-row)")].some((zone) => {
+    if (zone.classList.contains("tp-row") && getComputedStyle(zone).display === "grid") return false;
+    const kids = [...zone.children].filter((k) => getComputedStyle(k).display !== "contents") as HTMLElement[];
     return kids.length > 1 && kids.some((k) => k.offsetTop > kids[0].offsetTop + kids[0].offsetHeight * 0.6);
   });
 }
@@ -321,7 +334,9 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
       return y;
     };
     const fold = window.innerHeight / pageZoom() - 12;
-    const floor = drawn <= 6 ? Math.max(i, 1) : SIZES.length - 1;
+    // fitting the whole plate in the window never takes a small family below the middle size, nor a large one
+    // below the normal size: the youngest generation can take the scroll instead
+    const floor = Math.max(i, drawn <= 6 ? 1 : 2);
     const tiers = () => [...el.querySelectorAll<HTMLElement>(".tp-tier:not(.tp-shelf)")];
     const bottom = (t: HTMLElement | undefined) => (t ? docTop(t) + t.offsetHeight - parseFloat(getComputedStyle(t).paddingBottom || "0") : 0);
     const tooTall = () => bottom(tiers().pop()) > fold;
