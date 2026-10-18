@@ -203,7 +203,7 @@ export function storyGroupOf(story: Story, meId: string | null | undefined): Sto
 export function storyGroups(stories: Story[], meId: string | null | undefined): StoryGroup[] {
   const defs: Omit<StoryGroup, "stories">[] = [
     { key: "own", title: "Your story", meaning: "About you, in your words." },
-    { key: "kept", title: "Stories you keep for someone", meaning: "You do the typing; it's kept in their name, as told to you." },
+    { key: "kept", title: "Stories you keep for someone", meaning: "You keep it for them, as they tell it." },
     { key: "joined", title: "Stories you've joined", meaning: "Their story, their account. You add what you remember, under your own name." },
   ];
   return defs.map((d) => ({ ...d, stories: stories.filter((s) => storyGroupOf(s, meId) === d.key) })).filter((g) => g.stories.length > 0);
