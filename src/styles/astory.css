@@ -3884,3 +3884,19 @@ body.writing-focus .sheet-page > .headband { display: none; }
 /* the loading placeholder's height under the page zoom */
 .sheet-page > .page[aria-busy="true"] { min-height: calc(40vh / var(--zoom, 1)); }
 .sheet-page > .page[aria-busy="true"] + .loading-mark { margin-top: calc(-40vh / var(--zoom, 1)); }
+
+/* ── §61 The shortcuts (rule 43): a quiet line at the foot of the sheet, and the sheet ? opens ── */
+.keys-hint { position: absolute; right: clamp(20px, calc(3.2vw / var(--zoom, 1)), 72px); bottom: 22px; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; background: none; border: 0; font: 500 12px/1 var(--font-ui); color: var(--ink-soft); cursor: pointer; border-radius: 4px; transition: color 160ms var(--ease-out); }
+.keys-hint kbd, .keys-list kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; background: var(--paper-print); font: 600 12px/1 var(--font-ui); color: var(--sheet-ink); }
+@media (hover: hover) and (pointer: fine) { .keys-hint:hover { color: var(--sheet-ink); } }
+.keys-hint:active { transform: scale(0.97); }
+.keys-hint:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+@media (hover: none), (pointer: coarse), (max-width: 760px) { .keys-hint { display: none; } }
+.keys-sheet { width: min(480px, 100%); }
+.keys-list { margin: 0; display: grid; gap: 0; }
+.keys-list > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: var(--s-4); padding: 12px 0; border-top: 1px solid var(--line-strong); }
+.keys-list > div:first-child { border-top: 0; }
+.keys-list dt { display: flex; gap: 6px; }
+.keys-list dd { margin: 0; font: 400 17px/1.4 var(--book-body); color: var(--sheet-ink); }
+.keys-note { margin: var(--s-4) 0 0; font: 400 13px/1.4 var(--font-ui); color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce) { .keys-hint { transition: none; } .keys-hint:active { transform: none; } }

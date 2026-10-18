@@ -8,6 +8,7 @@
  */
 import { useLayoutEffect, type RefObject } from "react";
 import gsap from "gsap";
+import { MOVE } from "./ease";
 import { pageZoom } from "./zoom";
 
 let last: { x: number; w: number } | null = null;
@@ -36,7 +37,7 @@ export function usePillThumb(nav: RefObject<HTMLElement | null>, key: string) {
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches || !from || to.w === 0 || (from.x === to.x && from.w === to.w);
     let tween: gsap.core.Tween | null = null;
     if (still) gsap.set(thumb, { x: to.x, width: to.w, opacity: 1 });
-    else tween = gsap.fromTo(thumb, { x: from.x, width: from.w, opacity: 1 }, { x: to.x, width: to.w, duration: 0.5, ease: "power3.inOut" });
+    else tween = gsap.fromTo(thumb, { x: from.x, width: from.w, opacity: 1 }, { x: to.x, width: to.w, duration: 0.5, ease: MOVE });
 
     // the bar's type can settle after first paint; keep the pill under its word
     const settle = () => {

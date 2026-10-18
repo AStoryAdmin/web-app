@@ -18,6 +18,7 @@
  * page's, so every length is divided by pageZoom() (lib/zoom).
  */
 import gsap from "gsap";
+import { OUT } from "./ease";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { pageZoom } from "./zoom";
 
@@ -45,7 +46,7 @@ export function atmosphere(root: HTMLElement): () => void {
   if (import.meta.env.DEV) Object.assign(window as unknown as { __st?: typeof ScrollTrigger; __gsap?: typeof gsap }, { __st: ScrollTrigger, __gsap: gsap });
 
   // the ribbon's tail, eased like silk with a little weight
-  const toY = ribbon && window.matchMedia(MOTION_OK).matches ? gsap.quickTo(ribbon, "y", { duration: 0.6, ease: "power3.out" }) : null;
+  const toY = ribbon && window.matchMedia(MOTION_OK).matches ? gsap.quickTo(ribbon, "y", { duration: 0.6, ease: OUT }) : null;
   let shown = "";
 
   const update = () => {

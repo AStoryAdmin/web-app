@@ -4,6 +4,7 @@
  */
 import { useEffect, type RefObject } from "react";
 import gsap from "gsap";
+import { OUT } from "./ease";
 
 /**
  * Leans the element under `ref` toward the pointer (rotationX/Y, in
@@ -15,8 +16,8 @@ export function useTilt(ref: RefObject<HTMLElement | null>, enabled = true, max:
     const el = ref.current;
     if (!el || !enabled) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(hover: hover)").matches) return;
-    const rx = gsap.quickTo(el, "rotationX", { duration: 0.8, ease: "power3.out" });
-    const ry = gsap.quickTo(el, "rotationY", { duration: 0.8, ease: "power3.out" });
+    const rx = gsap.quickTo(el, "rotationX", { duration: 0.8, ease: OUT });
+    const ry = gsap.quickTo(el, "rotationY", { duration: 0.8, ease: OUT });
     const move = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
       const dx = (e.clientX - (r.left + r.width / 2)) / window.innerWidth;

@@ -171,6 +171,65 @@ function AddSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** A stable opener for the key layer (one function per setter, so the listener isn't re-bound every render). */
+const openers = new WeakMap<(v: boolean) => void, () => void>();
+function openKeys(set: (v: boolean) => void): () => void {
+  let f = openers.get(set);
+  if (!f) {
+    f = () => set(true);
+    openers.set(set, f);
+  }
+  return f;
+}
+
+const SHORTCUTS: [string[], string][] = [
+  [["W"], "Write a memory"],
+  [["/"], "Search the memories"],
+  [["←", "→"], "Turn the book’s pages, or move between a memory’s photographs"],
+  [["Esc"], "Close what is open, or leave focus mode while writing"],
+  [["?"], "This list"],
+];
+
+/** The keyboard shortcuts, taught once (Bao's Standard rule 43). Opened with ? or the quiet line at the foot of the sheet. */
+function KeysSheet({ onClose }: { onClose: () => void }) {
+  const close = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const back = document.activeElement as HTMLElement | null;
+    close.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      back?.focus?.();
+    };
+  }, [onClose]);
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div className="sheetbox keys-sheet" role="dialog" aria-modal="true" aria-labelledby="keys-title" onClick={(e) => e.stopPropagation()}>
+        <div className="sheethead">
+          <h2 id="keys-title">Shortcuts</h2>
+          <button ref={close} type="button" className="iconbtn soft" onClick={onClose} aria-label="Close">
+            <CloseIcon />
+          </button>
+        </div>
+        <dl className="keys-list">
+          {SHORTCUTS.map(([keys, what]) => (
+            <div key={what}>
+              <dt>
+                {keys.map((k) => (
+                  <kbd key={k}>{k}</kbd>
+                ))}
+              </dt>
+              <dd>{what}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="keys-note">They work whenever you are not typing in a field.</p>
+      </div>
+    </div>
+  );
+}
+
 type ShellProps = {
   children: ReactNode;
   /** What this page puts on the cloth: its title and whatever belongs beside it. Without one, the title alone. */
@@ -219,7 +278,8 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
   useLight(cloth);
   usePillThumb(pills, location.pathname);
   useTransitionLinks(navigate);
-  useKeyLayer(navigate);
+  const [keysOpen, setKeysOpen] = useState(false);
+  useKeyLayer(navigate, openKeys(setKeysOpen));
   // once per page, and again when a page swaps its busy placeholder for its content (the hero or title changes)
   const ready = `${compact ? "c" : ""}${hero ? "h" : ""}${title ?? ""}`;
   useEffect(() => {
@@ -313,6 +373,11 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
             {pageName}
           </p>
         )}
+        {runningHead && (
+          <button type="button" className="keys-hint" onClick={() => setKeysOpen(true)}>
+            Press <kbd>?</kbd> for shortcuts
+          </button>
+        )}
       </main>
 
       <nav className="tabbar" aria-label="Main">
@@ -331,6 +396,7 @@ export default function Shell({ children, hero, title, back, compact, bare, wide
 
       {teller && <TellerSheet onClose={() => setTeller(false)} />}
       {add && <AddSheet key={location.pathname} onClose={() => setAdd(false)} />}
+      {keysOpen && <KeysSheet onClose={() => setKeysOpen(false)} />}
     </div>
   );
 }
