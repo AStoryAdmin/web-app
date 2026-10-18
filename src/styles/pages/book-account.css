@@ -716,10 +716,12 @@
 /* ═════════════════════════ 6. The wall (/p/:slug): the book opened at its frontispiece ═════════════════════════ */
 .wall { min-height: calc(100vh / var(--zoom, 1)); }
 /* the leaves fill by measuring the row's width: a scrollbar that came and went would change it, so its gutter stays */
-/* the app keeps its scrollbar's track, so no arrival or skeleton height can move the page sideways. (Chromium doesn't
-   honour scrollbar-gutter on the root, so the track is kept; overlay scrollbars on phones and macOS show nothing.)
-   No weight, so a page that locks its scroll (the sign-in ritual, the front door's book) still wins. */
-:where(html) { overflow-y: scroll; scrollbar-gutter: stable; }
+/* the app keeps its scrollbar's track, so no arrival or skeleton height can move the page sideways. scrollbar-gutter
+   alone reserves nothing on this root (measured: 1366 stays 1366, whatever overflow-x is), so the track is kept; it
+   takes the page's own colours, a soft thumb on a clear track. A page that locks its scroll (the sign-in ritual, the
+   front door's book) has no bar to keep room for, so the cloth reaches the window's edge. */
+:where(html):not(:has(.auth.ritual, .door[data-layout="book"])) { overflow-y: scroll; scrollbar-gutter: stable; }
+:where(html) { scrollbar-color: color-mix(in srgb, var(--ink-soft) 55%, transparent) transparent; }
 /* a phone: a person's subline runs inline as one line of text (each part kept whole), so its height never depends on
    how many parts a person has; and the Archive's three figures keep one row, their labels wrapping inside their own
    column with two lines' room, so every variant is the same height */
