@@ -3775,10 +3775,13 @@ body.writing-focus .sheet-page > .headband { display: none; }
   .hero-in:has(> .back) > .back ~ * { grid-column: 2; margin-left: 0; min-width: 0; }
 }
 
-/* ── §63 Between the phone tab bar (≤760) and the full bar (>900) the main places must still be there: the pill nav
-   stays, and the storyteller button gives up its words for its seal ── */
-@media (min-width: 761px) and (max-width: 900px) {
+/* ── §63 Between the phone tab bar (≤760) and the full bar (>960) the main places must still be there: the pill nav
+   stays, and the storyteller button shows only a short name ── */
+@media (min-width: 761px) and (max-width: 960px) {
   .top-in { grid-template-columns: auto minmax(0, 1fr) auto; }
   .pillnav { display: flex; justify-self: center; }
-  .top .teller > span:not(.avatar) { display: none; }
+  /* the storyteller keeps their name (not a second seal beside the account's), short */
+  .top .teller .avatar { display: none; }
+  .top .teller > span:not(.avatar) { display: inline; }
+  .top .teller strong { max-width: 9ch; }
 }
