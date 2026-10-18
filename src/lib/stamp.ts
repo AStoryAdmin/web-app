@@ -4,14 +4,16 @@
  * reduced motion.
  */
 import gsap from "gsap";
+import { pageZoom } from "./zoom";
 
 export function inkStamp(x: number, y: number, word = "Kept"): void {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const el = document.createElement("div");
   el.className = "ink-stamp";
   el.setAttribute("aria-hidden", "true");
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
+  const z = pageZoom();
+  el.style.left = `${x / z}px`;
+  el.style.top = `${y / z}px`;
   el.textContent = word;
   const specks = Array.from({ length: 6 }, () => el.appendChild(document.createElement("i")));
   document.body.appendChild(el);

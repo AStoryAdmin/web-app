@@ -5,6 +5,7 @@
  */
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
+import { pageZoom } from "../../lib/zoom";
 
 export type Decade = { decade: number; label: string; count: number; year: number };
 
@@ -27,7 +28,8 @@ function useRailMarker(nav: RefObject<HTMLElement | null>, active: number | null
     }
     const r = el.getBoundingClientRect();
     const b = btn.getBoundingClientRect();
-    const to = { y: b.top - r.top, height: b.height, opacity: 1 };
+    const z = pageZoom();
+    const to = { y: (b.top - r.top) / z, height: b.height / z, opacity: 1 };
     const still = !placed.current || matchMedia("(prefers-reduced-motion: reduce)").matches;
     placed.current = true;
     if (still) gsap.set(mark, to);

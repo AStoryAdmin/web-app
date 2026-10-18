@@ -1,6 +1,6 @@
 /**
  * The signed-out frame: the family book, open on the cloth. Two square
- * pages side by side, never wider than 1440px, with the chocolate cloth
+ * pages side by side, drawn at 1440 by 720 and grown to fill a larger window, with the chocolate cloth
  * (the lamp, a pressed leaf, the binder's deboss) showing either side on a
  * wide display. The left page is the inside of the front board: the
  * endpaper with the mark repeated, and three prints held by photo corners
@@ -72,6 +72,68 @@ export default function AuthFrame({ children, companion }: Props) {
     return "closed";
   });
   useLight(ground);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const spreadRef = useRef<HTMLDivElement>(null);
+
+  // The book is drawn at 1440 by 720. On a window larger than that it grows to fill the window
+  // (CSS zoom on the spread, so the type, the plate and the prints grow together); it never shrinks
+  // below its drawn size, where the fluid layout already fits. Measured in screen pixels so the
+  // html zoom steps and the browser's own zoom both count.
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const spread = spreadRef.current;
+    const root = ground.current;
+    if (!wrap || !spread || !root) return;
+    let fit = 1;
+    let frame = 0;
+    const measure = () => {
+      window.clearTimeout(frame);
+      frame = window.setTimeout(() => {
+        if (matchMedia("(max-width: 760px)").matches) {
+          fit = 1;
+          root.style.removeProperty("--fit");
+          spread.classList.remove("scaled");
+          root.dataset.room = "";
+          return;
+        }
+        const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+        const cs = getComputedStyle(wrap);
+        const padX = (parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) * z;
+        const padY = (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) * z;
+        const w = wrap.getBoundingClientRect().width - padX;
+        const h = window.innerHeight - padY;
+        const r = spread.getBoundingClientRect();
+        const scale = z * fit;
+        const natW = r.width / scale;
+        const natH = Math.max(720, (r.height / scale) * (1440 / Math.max(natW, 1)));
+        const next = Math.max(1, Math.min(w / (1440 * z), h / (natH * z)));
+        if (Math.abs(next - fit) > 0.01) {
+          fit = next;
+          if (fit > 1.01) {
+            root.style.setProperty("--fit", fit.toFixed(3));
+            spread.classList.add("scaled");
+          } else {
+            fit = 1;
+            root.style.removeProperty("--fit");
+            spread.classList.remove("scaled");
+          }
+        }
+        // the keepsake book lies on the cloth only when there is room for it beside the spread
+        const after = spread.getBoundingClientRect();
+        const room = after.left - wrap.getBoundingClientRect().left;
+        root.dataset.room = room >= 250 * z * fit ? "1" : "";
+      }, 30);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.clearTimeout(frame);
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
   const { pathname } = useLocation();
   // what the dog does when nothing is happening: asleep while a code is awaited, curious on a new account
   const rest: CompanionRest = pathname.startsWith("/verify") ? "sleep" : pathname.startsWith("/create-account") ? "curious" : "watch";
@@ -146,9 +208,9 @@ export default function AuthFrame({ children, companion }: Props) {
         <Lockup height={36} />
       </Link>
 
-      <div className="spread-wrap">
-        <img className="keepsake" src="/book/keepsake-closed.webp" alt="" width="1200" height="1200" decoding="async" aria-hidden="true" />
-        <div className="spread">
+      <div className="spread-wrap" ref={wrapRef}>
+        <div className="spread" ref={spreadRef}>
+          <img className="keepsake" src="/book/keepsake-closed.webp" alt="" width="1200" height="1200" decoding="async" aria-hidden="true" />
           {/* the inside of the front board: the endpaper, three prints held by corners */}
           <section className="leaf-l endpaper" aria-label="Photographs">
             <span className="ep-pattern" aria-hidden="true" />

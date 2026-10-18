@@ -6,6 +6,7 @@
  * and on touch, where there is no pointer.
  */
 import { useEffect, type RefObject } from "react";
+import { pageZoom } from "../../lib/zoom";
 
 export function useLight(ground: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -18,8 +19,9 @@ export function useLight(ground: RefObject<HTMLElement | null>) {
       raf = 0;
       if (!last) return;
       const r = el.getBoundingClientRect();
-      el.style.setProperty("--lx", `${last.clientX - r.left}px`);
-      el.style.setProperty("--ly", `${last.clientY - r.top}px`);
+      const z = pageZoom();
+      el.style.setProperty("--lx", `${(last.clientX - r.left) / z}px`);
+      el.style.setProperty("--ly", `${(last.clientY - r.top) / z}px`);
       const mark = el.querySelector<HTMLElement>(".foil");
       if (mark) {
         const m = mark.getBoundingClientRect();

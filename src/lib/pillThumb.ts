@@ -8,6 +8,7 @@
  */
 import { useLayoutEffect, type RefObject } from "react";
 import gsap from "gsap";
+import { pageZoom } from "./zoom";
 
 let last: { x: number; w: number } | null = null;
 
@@ -26,7 +27,8 @@ export function usePillThumb(nav: RefObject<HTMLElement | null>, key: string) {
     const measure = () => {
       const nr = el.getBoundingClientRect();
       const ar = active.getBoundingClientRect();
-      return { x: ar.left - nr.left - el.clientLeft, w: ar.width };
+      const z = pageZoom();
+      return { x: (ar.left - nr.left) / z - el.clientLeft, w: ar.width / z };
     };
     const to = measure();
     const from = last;

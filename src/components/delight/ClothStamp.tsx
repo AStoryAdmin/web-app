@@ -6,6 +6,7 @@
  */
 import { useEffect, useState, type RefObject } from "react";
 import { MARK_SVG } from "../brandArt";
+import { pageZoom } from "../../lib/zoom";
 
 type Stamp = { id: number; x: number; y: number; rot: number };
 let seq = 0;
@@ -20,7 +21,8 @@ export default function ClothStamp({ ground }: { ground: RefObject<HTMLElement |
       const t = e.target as HTMLElement;
       if (t.closest(".paper, .title-page, .print, a, button, input, label")) return;
       const r = el.getBoundingClientRect();
-      const s = { id: ++seq, x: e.clientX - r.left, y: e.clientY - r.top, rot: 0 };
+      const z = pageZoom();
+      const s = { id: ++seq, x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z, rot: 0 };
       setStamps((all) => [...all.slice(-11), s]);
       setTimeout(() => setStamps((all) => all.filter((k) => k.id !== s.id)), 2800);
     };

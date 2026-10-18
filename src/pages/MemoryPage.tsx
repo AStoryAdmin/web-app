@@ -206,7 +206,7 @@ export default function MemoryPage() {
         <div className="rd-story mpd-words" data-rise>
           {body.length ? (
             body.map((p, k) => (
-              <p key={k} className={reading === k ? "reading" : undefined}>
+              <p key={k} className={[reading === k ? "reading" : "", k === 0 && p.split("\n")[0].trim().length < 48 ? "nodrop" : ""].filter(Boolean).join(" ") || undefined}>
                 {p.split("\n").map((line, j, arr) => (
                   <span key={j}>
                     {line}

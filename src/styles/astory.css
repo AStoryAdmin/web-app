@@ -2440,10 +2440,9 @@ img.rd-hero.developing, .rd-strip img.developing, img[data-develop].developing {
 /* On a 4K monitor the app sat as a 1100px column with 16px type in the middle of a wall. Like Apple's pages,
    the whole layout steps up with the display: the column widens a little and everything else scales together
    (zoom keeps every token's proportions; pointer effects read the zoomed boxes). */
-@media (min-width: 1700px) { html { zoom: 1.15; } :root { --content-max: 1180px; } }
-@media (min-width: 2100px) { html { zoom: 1.4; } :root { --content-max: 1220px; } }
-@media (min-width: 2600px) { html { zoom: 1.7; } :root { --content-max: 1260px; } }
-@media (min-width: 3300px) { html { zoom: 2.05; } :root { --content-max: 1300px; } }
+/* Superseded by lib/zoom.ts (one continuous scale from 1600px, set on html with --zoom). The column widens a
+   little from 1600 so the content keeps about three quarters of the window. */
+@media (min-width: 1600px) { :root { --content-max: 1180px; } }
 
 /* ── 37. The mosaic of prints (agent) ── */
 /* Home's recent memories and the Archive's Prints view: the photograph IS the card, big and tall, the words a caption
@@ -3224,9 +3223,31 @@ body.writing-focus .sheet-page::before, body.writing-focus .sheet-page::after { 
    window: the sign-in's book sat in the lower half, cut off, and short pages trailed a wall of empty paper.
    The zoom steps now publish their factor and every full-height page divides by it. */
 :root { --zoom: 1; }
-@media (min-width: 1700px) { :root { --zoom: 1.15; } }
-@media (min-width: 2100px) { :root { --zoom: 1.4; } }
-@media (min-width: 2600px) { :root { --zoom: 1.7; } }
-@media (min-width: 3300px) { :root { --zoom: 2.05; } }
 .shell, .auth, .auth.ritual, .auth .spread-wrap, .start, .solo, .wall, .land, body.writing-focus .sheet-page { min-height: calc(100vh / var(--zoom)); }
 .auth .spread-wrap { padding-top: clamp(62px, calc(8vh / var(--zoom)), 96px); padding-bottom: clamp(16px, calc(3vh / var(--zoom)), 40px); }
+
+/* ───────────────────────── 43. The open book fills the window (lead) ───────────────────────── */
+/* The spread stopped at 1440px, so on a large window the book sat small in a field of cloth. It is now drawn at
+   1440 by 720 and AuthFrame sets --fit to grow it to the window; the brand stays its size in the corner. The keepsake book lies
+   beside the spread, inside it so it scales too, and only shows where there is room (data-room). */
+.auth .spread.scaled { width: 1440px; zoom: var(--fit, 1); }
+@media (min-width: 1944px) { .auth .keepsake { display: none; } }
+.auth .keepsake { display: none; position: absolute; right: calc(100% + 24px); left: auto; top: 50%; width: 212px; height: auto; transform: translateY(-46%) rotate(-7deg); pointer-events: none; z-index: 0; }
+.auth[data-room="1"] .keepsake { display: block; }
+@media (max-width: 760px) { .auth .spread.scaled { width: auto; zoom: 1; } .auth[data-room="1"] .keepsake { display: none; } }
+/* the checkbox is a button: without a reset the browser drew its grey button box around it */
+.check { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; font-size: 15px; color: inherit; text-align: left; cursor: pointer; min-height: 44px; }
+.check:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; border-radius: 4px; }
+.check:hover i { border-color: var(--ink-soft); }
+/* on a phone the plate's last line sat on the bottom ornaments, and the lamp's glow ran past the right edge */
+.auth.ritual { overflow-x: clip; }
+@media (max-width: 760px) { .auth .plate { padding-bottom: 26px; } }
+/* a drop cap needs a long first line to wrap around; words kept line by line ("We live in a small city") start plain */
+.mpd .rd-story p.nodrop:first-child::first-letter, .rd-story p.nodrop:first-child::first-letter { font-size: inherit; float: none; padding: 0; color: inherit; font-weight: inherit; font-family: inherit; line-height: inherit; }
+
+/* ───────────────────────── 44. A screen holds more than one memory (lead) ───────────────────────── */
+/* At 100% on a desktop the lead print took a whole screen. Four columns from 1100px, the lead a 3:2 print across
+   two of them, the others 4:5: two rows of memories in one screen at 1366 by 768. */
+.print-card .frame { aspect-ratio: 4 / 5; }
+.print-card.lead .frame, .mosaic-quote.lead .fromthebook { aspect-ratio: 3 / 2; }
+@media (min-width: 1100px) { .mosaic { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

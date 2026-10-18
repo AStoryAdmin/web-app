@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, type RefObject } from "react";
 import gsap from "gsap";
+import { pageZoom } from "../../lib/zoom";
 
 export default function Leaf({ ground }: { ground: RefObject<HTMLElement | null> }) {
   const leaf = useRef<SVGSVGElement>(null);
@@ -26,9 +27,10 @@ export default function Leaf({ ground }: { ground: RefObject<HTMLElement | null>
 
     const move = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
+      const z = pageZoom();
       // the leaf trails behind and a little below the pointer, like it is being drawn along
-      target.x = e.clientX - r.left + 26;
-      target.y = e.clientY - r.top + 30;
+      target.x = (e.clientX - r.left) / z + 26;
+      target.y = (e.clientY - r.top) / z + 30;
       if (!pos.seen) {
         pos.seen = true;
         pos.x = target.x;
