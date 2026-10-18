@@ -82,7 +82,7 @@ async function requestRendition(bucket: string, path: string, width: number): Pr
   const sb = getSupabase();
   try {
     if (!sb) throw new Error("not connected");
-    const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, SIGN_TTL_SECONDS, { transform: { width } });
+    const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, SIGN_TTL_SECONDS, { transform: { width, resize: "contain" } });
     if (error || !data?.signedUrl) throw error || new Error("no url");
     cache.set(key, { url: data.signedUrl, expiresAt: Date.now() + SIGN_TTL_SECONDS * 1000 });
     return data.signedUrl;
