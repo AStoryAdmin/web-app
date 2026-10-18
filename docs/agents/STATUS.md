@@ -8,4 +8,4 @@ Each page group is done when both reviewers pass it in the same round: Bao's Sta
 | Book, Plans, Account, Talk, Start, Wall | 17 | PASS (book-r17-baos.md) | APPLIED (book-r17-skills.md) | 2026-10-18 |
 | Archive, memory page, Home's prints | 22 | PASS (archive-r22-baos.md) | APPLIED (archive-r22-skills.md) | 2026-10-18 |
 | Family, Person | 17 | PASS (family-r15-baos.md) | APPLIED (family-r17-skills.md) | 2026-10-18 |
-| Signed-out pages and the front door | 9 | under review (r8 PASS) | APPLIED (signed-out-r9-skills.md) | |
+| Signed-out pages and the front door | 11 | under review | APPLIED (signed-out-r11-skills.md) | |
