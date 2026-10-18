@@ -841,7 +841,8 @@
 .wall-note footer { margin-top: var(--s-3); font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
 /* nothing shared yet: the dog, one sentence, the time, one action */
 .wall-empty { grid-column: 1 / -1; display: grid; gap: var(--s-4); justify-items: center; text-align: center; padding: var(--s-12) 0; }
-.wall-empty-dog { width: 180px; height: auto; }
+/* asleep, chin on his paws, the paws resting on a foil ledge the width of the house ledge note's (the image's own bottom border) */
+.wall-empty-dog { box-sizing: content-box; width: 160px; max-width: calc(100% - 160px); height: auto; padding: 0 80px; border-bottom: 1px solid color-mix(in srgb, var(--foil) 70%, transparent); }
 .wall-empty p { font: 400 19px/1.5 var(--book-body); color: var(--sheet-ink); max-width: 46ch; }
 .wall-empty .btn { min-height: 48px; }
 .wall-next.page { max-width: none; padding: 0 var(--bka-gutter) var(--s-16); }
@@ -852,14 +853,15 @@
 .wall-bench > * { position: relative; z-index: 1; }
 .wall-bench > .lamp { position: absolute; z-index: 0; }
 .wall-bench .wall-top { width: 100%; }
-.wall-none-wrap { position: relative; width: min(560px, calc(100% - 32px)); margin: auto; padding-top: 96px; }
+.wall-none-wrap { --dogw: 92px; position: relative; width: min(560px, calc(100% - 32px)); margin: auto; padding-top: calc(0.92 * var(--dogw) * 637 / 488 + 8px); }
 .wall-none { position: relative; isolation: isolate; width: 100%; margin: 0; padding: var(--s-12) var(--s-10); display: grid; gap: var(--s-4); justify-items: start; color: var(--sheet-ink); background: var(--page); border-radius: 6px; }
 .wall-none::before { content: ""; position: absolute; inset: 12px; z-index: -1; border: 1px solid var(--foil-soft); border-radius: 3px; pointer-events: none; }
 .wall-none h1 { font-family: var(--book-display); font-weight: 600; font-size: 40px; line-height: 1.05; color: var(--sheet-ink); }
 .wall-none p { font: 400 18px/1.55 var(--book-body); }
 .wall-none .btn { min-height: 48px; }
-/* behind the sheet (earlier in the stack, so the paper covers him): his head over the top edge, the faded fur under it */
-.wall-none-dog { position: absolute; left: 36px; top: 0; width: 150px; height: auto; pointer-events: none; }
+/* curious, in front of the sheet, his front paws resting on its top edge (the paws are the art's lowest 14%; the lowest
+   8% hangs over the edge, short of the sheet's inner foil frame at 12px), clear of the headline */
+.wall-none-dog { position: absolute; z-index: 1; left: 40px; top: 8px; width: var(--dogw); height: auto; pointer-events: none; user-select: none; }
 /* the leaves and notes rise a little as they enter, scrubbed by the scroll itself: never faded, no clock, no observer */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {

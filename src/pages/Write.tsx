@@ -147,7 +147,7 @@ function Dog({ awake }: { awake: boolean }) {
   return (
     <span className="w-dog" data-awake={awake ? "" : undefined} aria-hidden="true">
       <img className="sleep" src="/dog/sleep-paper.webp" alt="" width={781} height={622} decoding="async" />
-      <img className="awake" src="/dog/cover-paper.webp" alt="" width={781} height={630} decoding="async" />
+      <img className="awake" src="/dog/cover-420.webp" alt="" width={420} height={430} decoding="async" />
     </span>
   );
 }

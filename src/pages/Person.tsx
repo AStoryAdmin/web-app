@@ -14,7 +14,8 @@
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
-import { Button, Field, Problem } from "../components/ui";
+import { Button, ButtonLink, Field, Problem } from "../components/ui";
+import LedgeNote from "../components/archive/LedgeNote";
 import { MailIcon, UserIcon } from "../components/icons";
 import { CodeCard } from "../components/family/InviteSheet";
 import Portrait from "../components/family/Portrait";
@@ -151,15 +152,13 @@ export default function Person() {
   if (!person || !res) {
     return (
       <Shell compact title="Family" book={preview ? "A sample family" : undefined}>
+        {/* the house's failure state, as on a missing memory: Bond curious on the ledge, one headline, the cause, one way back */}
         <div className="page pp-missing">
-          <img className="pp-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
-          <div>
-            <h2>This person isn’t in the family tree.</h2>
-            <p>They may have been merged into someone else, or taken out of the tree.</p>
-            <Link className="pp-write" to={back}>
-              Back to the family <span aria-hidden="true">→</span>
-            </Link>
-          </div>
+          <LedgeNote level={2} title="This person isn’t in the family tree" line="They may have been merged into someone else, or taken out of the tree. Everyone else is where they were.">
+            <ButtonLink to={back} variant="outline">
+              Back to the family
+            </ButtonLink>
+          </LedgeNote>
         </div>
       </Shell>
     );

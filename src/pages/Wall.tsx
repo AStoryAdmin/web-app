@@ -348,8 +348,8 @@ export default function Wall() {
     return (
       <Bench>
         <div className="wall-none-wrap">
-          {/* Bond looks over the top edge of the sheet from behind it: the paper hides where the picture fades */}
-          <img className="wall-none-dog" src="/dog/curious-paper.webp" alt="" aria-hidden="true" width={753} height={630} />
+          {/* Bond, curious, his front paws resting on the sheet's top edge, in front of it: the whole dog, never a head behind the paper */}
+          <img className="wall-none-dog" src="/dog/curious-420.webp" alt="" aria-hidden="true" width={488} height={637} />
           <main className="wall-none">
           <h1>
             This story isn’t shared

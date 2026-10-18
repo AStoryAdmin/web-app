@@ -13,7 +13,7 @@
 
 :is(.fp, .pp2, .pp-missing) { --fz-display: 58px; --fz-statement: 32px; --fz-section: 28px; --fz-words: 18px; --fz-name: var(--fz-words); --fz-small: 13px; }
 /* every section heading on these pages is the section size: higher than astory's .sheet-page .page h2:not(…) (0,3,1) */
-.sheet-page .page:is(.fp, .pp2, .pp-missing) :is(h2, .st-name, .pk-h) { font-size: var(--fz-section); line-height: 1.1; }
+.sheet-page .page:is(.fp, .pp2) :is(h2, .st-name, .pk-h) { font-size: var(--fz-section); line-height: 1.1; }
 
 /* ───────────── the portrait: a round print, or the monogram seal ───────────── */
 .por { --pz: 96px; position: relative; display: grid; place-items: center; flex: none; width: var(--pz); height: var(--pz); border-radius: 50%; overflow: hidden;
@@ -461,10 +461,12 @@
 .pp2 .pp-group.theirs .pp-list > .pp-item:last-child:not(:only-child) .pp-body { padding-right: 34px; }
 .pp2 .pp-more { margin-top: 18px; padding-left: 44px; }
 .pp-none { display: flex; align-items: flex-start; gap: 24px; padding: 20px 0 8px; }
-.pp-none p, .pp-missing p { margin: 10px 0 6px; max-width: 46ch; font-family: var(--book-body); font-size: var(--fz-words); line-height: 1.5; color: var(--sheet-ink); }
-.pp-dog { flex: none; width: 128px; height: auto; margin-top: 4px; }
-.pp-missing { display: flex; align-items: flex-start; gap: 24px; padding-top: 40px; padding-bottom: 80px; }
-.sheet-page .pp-missing h2 { margin: 0; font-size: var(--fz-section); }
+.pp-none p { margin: 10px 0 6px; max-width: 46ch; font-family: var(--book-body); font-size: var(--fz-words); line-height: 1.5; color: var(--sheet-ink); }
+/* asleep with his chin on his paws, the paws resting on a short foil ledge (the image's own bottom border, a little wider
+   than he is), so he lies on something and never floats beside the words */
+.pp-dog { flex: none; box-sizing: content-box; width: 120px; height: auto; margin-top: 8px; padding: 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--foil) 70%, transparent); }
+/* a person who isn't there: the house's ledge note (components/archive/LedgeNote), centred on the sheet */
+.pp-missing { padding-top: 48px; padding-bottom: 96px; }
 
 /* the people closest to them */
 .pk { margin-top: 64px; }
@@ -495,8 +497,8 @@
   .pp-por { --pz: 148px; margin-bottom: 18px; }
   .pp-por:not(.seal) { width: 160px; height: 200px; border-radius: 80px 80px 4px 4px; }
   .pp-words-plate { padding: 22px 20px 18px; margin-bottom: 36px; }
-  .pp-none, .pp-missing { flex-direction: column; gap: 8px; }
-  .pp-dog { width: 104px; }
+  .pp-none { flex-direction: column; gap: 8px; }
+  .pp-dog { width: 100px; }
   .pk, .pp2 .pp-related, .pp2 .pp-notes { margin-top: 52px; }
   .pk-list { grid-template-columns: minmax(0, 1fr); }
   .pp2 .pp-card { padding: 10px; }

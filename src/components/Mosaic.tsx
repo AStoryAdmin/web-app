@@ -100,8 +100,8 @@ export default function Mosaic({
 
 /**
  * The empty state: one large typed card inviting the first memory, and
- * nothing else: Bond, curious, on a foil ledge above the words (never over
- * them), one headline with the foil stop, one line of what to write, and the
+ * nothing else: Bond, curious, his front paws resting on a foil ledge above
+ * the words (never over them), one headline with the foil stop, one line of what to write, and the
  * time it takes.
  */
 export function InvitePrint({ story }: { story: Story }) {
@@ -112,7 +112,7 @@ export function InvitePrint({ story }: { story: Story }) {
         <span className="frame" aria-hidden="true">
           <span className="typed-in">
             <span className="invite-ledge">
-              <img className="invite-dog" src="/dog/curious-paper.webp" alt="" width={753} height={630} />
+              <img className="invite-dog" src="/dog/curious-420.webp" alt="" width={488} height={637} />
             </span>
             <span className="said">
               Nothing here yet<span className="invite-stop">.</span>

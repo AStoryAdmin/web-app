@@ -104,8 +104,11 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
 /* every pose on one scale: the box is 781 drawing-px wide and 640 tall; each pose is drawn at its own height of 640 */
 .w-dog img { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; object-fit: contain; object-position: 50% 100%; }
 .w-dog .sleep { height: calc(100% * 622 / 640); transition: opacity 120ms var(--ease-out) 100ms; } /* returning: after the cover has gone */
-/* awake, he hides his eyes from behind the book: the drawing is cut at the board's top edge */
-.w-dog .awake { height: calc(100% * 630 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 100%; clip-path: inset(0 0 13px 0);
+/* awake, he sits up behind the book and hides his eyes: chin, chest and both forearms above the board, its top edge crossing
+   his forearms (the drawing's lowest 36% is cut away and that cut sits on the edge, --w-dog-edge above the box's foot), never a head
+   cut off under the mouth. The box's width, his nose's centre over sleep's (left 9.8%), his crown no higher than sleep's */
+.w-dog .awake { left: 9.8%; right: auto; height: auto; bottom: calc(var(--w-dog-edge, 13px) - 0.36 * 100% * 430 / 420 * 781 / 640); opacity: 0; transform: scale(0.96); transform-origin: 50% 64%;
+  clip-path: inset(0 0 36% 0);
   transition: opacity 100ms var(--ease-out), transform 100ms var(--ease-out); } /* leaving: quickly, before sleep returns */
 .w-dog[data-awake] .sleep { opacity: 0; transition-delay: 0ms; }
 .w-dog[data-awake] .awake { opacity: 1; transform: none; transition: opacity 200ms var(--ease-out) 60ms, transform 200ms var(--ease-out) 60ms; }
@@ -484,7 +487,7 @@ body.writing-focus .sheet-page .page.w-desk { padding-top: 64px; }
   /* two ways to begin, wrapped, never running off the screen */
   .w-begin-inpage button:nth-child(n + 3) { display: none; }
   .w-dog { right: 24px; width: 104px; bottom: calc(100% - 10px); }
-  .w-dog .awake { clip-path: inset(0 0 10px 0); }
+  .w-dog { --w-dog-edge: 10px; }
   .w-ribbon { height: 56px; width: 12px; }
   .w-keep { margin-top: 64px; }
   /* one row on a phone: the seal, and "Not now" at the other end */

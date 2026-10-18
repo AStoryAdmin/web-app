@@ -584,10 +584,12 @@
 .mv-tidy-act::before { content: "· "; color: var(--mv-soft); }
 @media (max-width: 599.98px) { .mv-tidy-act { display: block; } .mv-tidy-act::before { content: none; } }
 
-/* Bond on a ledge: not here, a failed load, an empty archive. Centred on the sheet; the art fades out at his foot onto the
-   foil hairline where he sits; one headline with the foil full stop, one line, one action */
+/* Bond on a ledge: not here, a failed load, an empty archive. Centred on the sheet, the whole dog on the foil hairline:
+   curious with his front paws resting on it (the art's lowest edge is his paws), never a head fading out above it;
+   one headline with the foil full stop, one line, one action */
 .ledge-note { display: grid; justify-items: center; text-align: center; max-width: 560px; margin: 24px auto 0; padding: 0 0 8px; }
-.ledge-dog { display: block; width: 190px; margin-bottom: -6px; }
+.ledge-dog { position: relative; z-index: 1; display: block; width: 112px; margin-bottom: -2px; }
+.ledge-dog:has(img[src*="sleep"]) { width: 170px; }
 .ledge-dog img { display: block; width: 100%; height: auto; }
 .ledge-line { display: block; width: min(320px, 80%); height: 1px; background: var(--foil); opacity: 0.7; }
 .sheet-page .ledge-title { margin: 22px 0 0; font-family: var(--book-display); font-weight: 600; font-size: 36px; line-height: 1.1; letter-spacing: -0.01em; color: var(--sheet-ink); text-wrap: balance; }
@@ -599,19 +601,21 @@
 .mv-missing-page .ledge-note { margin-top: 0; }
 .arc-empty-note { margin-top: 40px; }
 @media (max-width: 599.98px) {
-  .ledge-dog { width: 150px; }
+  .ledge-dog { width: 96px; }
+  .ledge-dog:has(img[src*="sleep"]) { width: 140px; }
   .sheet-page .ledge-title { font-size: 28px; }
   .ledge-text { font-size: 17px; }
 }
-/* Home's empty print, the invitation to the first memory: one wide card of print paper (never a square), Bond curious
-   on a foil ledge above the words and never over them, the headline at 40px with the foil stop, one line, then the
+/* Home's empty print, the invitation to the first memory: one wide card of print paper (never a square), Bond curious,
+   his front paws resting on a foil ledge above the words and never over them, the headline at 40px with the foil stop, one line, then the
    action and the time it takes. Home's print overrides skip it (:not(.invite)); these rules are its only sizes. */
 .print-card.invite { grid-column: 1 / -1; height: auto; padding: 8px 8px 10px; }
 .print-card.invite .frame, .print-card.lead.invite .frame { aspect-ratio: auto; height: auto; min-height: 0; overflow: visible; background: var(--paper-print); }
 .print-card.invite .typed-in { position: static; display: grid; justify-items: center; gap: 0; padding: 36px 28px 0; text-align: center; background-image: none; }
 .print-card.invite .invite-ledge { display: grid; justify-items: center; width: min(320px, 100%); }
-.print-card.invite .invite-ledge::after { content: ""; display: block; width: 100%; height: 1px; margin-top: -6px; background: var(--foil); opacity: 0.7; }
-.print-card.invite .invite-dog { position: static; display: block; width: 160px; height: auto; pointer-events: none; }
+/* the hairline under his paws; he is drawn over it (z-index), so the paws stand on it rather than behind it */
+.print-card.invite .invite-ledge::after { content: ""; display: block; width: 100%; height: 1px; margin-top: -2px; background: var(--foil); opacity: 0.7; }
+.print-card.invite .invite-dog { position: relative; z-index: 1; display: block; width: 104px; height: auto; pointer-events: none; }
 .print-card.invite .typed-in .said { display: block; margin-top: 22px; overflow: visible; -webkit-line-clamp: unset; font: 600 40px/1.1 var(--book-display); letter-spacing: -0.01em; color: var(--sheet-ink); text-wrap: balance; }
 .print-card.invite .invite-stop { color: var(--foil); }
 .print-card.invite .typed-in .line { margin-top: 12px; max-width: 34em; font: italic 400 20px/1.5 var(--book-body); color: var(--ink-soft); text-wrap: balance; }
@@ -620,7 +624,7 @@
 .print-card.invite .cap .dateline { font: 500 14px/1.4 var(--font-ui); letter-spacing: 0; color: var(--ink-soft); }
 @media (max-width: 599.98px) {
   .print-card.invite .typed-in { padding: 26px 18px 0; }
-  .print-card.invite .invite-dog { width: 120px; }
+  .print-card.invite .invite-dog { width: 88px; }
   .print-card.invite .typed-in .said { font-size: 30px; margin-top: 18px; }
   .print-card.invite .typed-in .line { font-size: 17px; }
   .print-card.invite .cap { padding: 18px 18px 24px; }
