@@ -831,24 +831,23 @@ function sentenceSpans(said: string): [number, number][] {
  * space, a comma, a colon or the start) or closes (after . ! ? or a comma); never an apostrophe inside a word, never an
  * inch mark after a digit. Returns the marks with whether each opens.
  */
-function marksIn(paragraph: string): boolean[] {
-  const out: boolean[] = [];
+function marksIn(paragraph: string): { opens: boolean; single: boolean }[] {
+  const out: { opens: boolean; single: boolean }[] = [];
+  const push = (opens: boolean, single: boolean) => out.push({ opens, single });
   const chars = [...paragraph];
   chars.forEach((c, i) => {
     const prev = chars[i - 1] ?? "";
     const next = chars[i + 1] ?? "";
     const word = /\p{L}/u.test(prev) && /\p{L}/u.test(next);
     const opensHere = prev === "" || /[\s([{“‘«—–-]/.test(prev);
-    if ("“«".includes(c)) out.push(true);
-    else if ("”»".includes(c)) out.push(false);
-    else if (c === "‘" && !word) out.push(true);
-    else if (c === "’" && !word) {
-      if (!opensHere) out.push(false);
-      else out.push(true);
-    } else if (c === '"' && !/\d/.test(prev)) out.push(opensHere && next !== "" && !/\s/.test(next));
+    if ("“«".includes(c)) push(true, false);
+    else if ("”»".includes(c)) push(false, false);
+    else if (c === "‘" && !word) push(true, true);
+    else if (c === "’" && !word) push(opensHere, true);
+    else if (c === '"' && !/\d/.test(prev)) push(opensHere && next !== "" && !/\s/.test(next), false);
     else if (c === "'") {
-      if ((prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) out.push(true);
-      else if (/[.!?,]/.test(prev)) out.push(false);
+      if ((prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) push(true, true);
+      else if (/[.!?,]/.test(prev)) push(false, true);
     }
   });
   return out;
@@ -856,12 +855,16 @@ function marksIn(paragraph: string): boolean[] {
 /** 17a (e): the reactions may go from a paragraph only when it holds no mark and no earlier paragraph left one open. */
 function reactionsMayGo(paragraph: string, before: string[]): string {
   if (marksIn(paragraph).length) return "a paragraph with a quotation mark";
-  let open = 0;
+  // a ’ only ever closes a ‘: the double and single marks are counted apart
+  let double = 0;
+  let single = 0;
   for (const p of before) {
     const marks = marksIn(p);
-    open = Math.max(0, open + marks.filter(Boolean).length - marks.filter((m) => !m).length);
+    const net = (s: boolean) => marks.filter((m) => m.single === s && m.opens).length - marks.filter((m) => m.single === s && !m.opens).length;
+    double = Math.max(0, double + net(false));
+    single = Math.max(0, single + net(true));
   }
-  return open > 0 ? "after a paragraph that leaves a quotation open" : "";
+  return double > 0 || single > 0 ? "after a paragraph that leaves a quotation open" : "";
 }
 
 function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; answer: boolean; named: boolean; cuts: Cut[]; paragraph?: string; prior?: string | string[] }): string {
@@ -916,7 +919,7 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       const nextWord = (after.match(/^\s*([^\s,.;:!?…"“”‘’']+)/u)?.[1] ?? "").toLowerCase();
       const numberWords = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred hundreds thousand thousands million millions dozen dozens".split(" ");
       const ordinals = "first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth hundredth thousandth".split(" ");
-      const closedList = "a an the this that these those last next every each all some any half whole few couple several most nothing none zero once twice forever always about around almost nearly maybe over under at in on for since until till from by during tonight today yesterday tomorrow midnight noon midday dawn sunrise sunset".split(" ");
+      const closedList = "a an the this that these those last next every each all some any half whole few couple several most nothing none zero once twice forever always never about around almost nearly maybe over under at in on for since until till from by during tonight today yesterday tomorrow midnight noon midday dawn sunrise sunset".split(" ");
       if (/^[$£€¥]?\d/.test(nextWord) || numberWords.includes(nextWord) || ordinals.includes(nextWord) || /(?:teenth|tieth)$/.test(nextWord) || closedList.includes(nextWord)) return "before a word where it may hedge";
       return "";
     }
@@ -1745,6 +1748,7 @@ describe("round 16: 17a at ec7c671 and after, every reviewer string and the r15 
 /* ───────── Round 17: 17a (b) and (e) as the closed tests of 6d0cb51 and a085c29, every r16 reviewer string ───────── */
 
 export const R17_KEEP: string[] = [
+  "He, like, never came.",
   // Bao r16 1: a plural possessive inside a “ ” quotation
   "Mom said, “We stayed at the Nguyens’. Wow. It was big.”",
   "“We visited the Vos’! Wow. Nice.”",
@@ -1786,6 +1790,9 @@ export const R17_CUT: [string, string][] = [
 ];
 
 export const R17_TRANSCRIPT: [string[], string[]][] = [
+  // round 18: a ’ only ever closes a ‘, so a plural possessive never closes an open “ for the next paragraph
+  [["He said, “We went to the boys’ room.", "Wow. We stayed.", "Then we left.”"], ["He said, “We went to the boys’ room.", "Wow. We stayed.", "Then we left.”"]],
+  [["She said, “We slept at the Nguyens’.", "Wow. It was big.", "Then we left.”"], ["She said, “We slept at the Nguyens’.", "Wow. It was big.", "Then we left.”"]],
   // Skills r16 1: a stray straight " in one paragraph, a quotation opened in the next
   [["He said \"hi and left.", "\"Okay. Wow. That's amazing.\" Then we left."], ["He said \"hi and left.", "\"Okay. Wow. That's amazing.\" Then we left."]],
   [["He said “hi and left.", "“Okay. Wow. That's amazing.” Then we left."], ["He said “hi and left.", "“Okay. Wow. That's amazing.” Then we left."]],

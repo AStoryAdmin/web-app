@@ -61,12 +61,12 @@ const LIKE_QUOTES_AFTER = /\b(?:(?:am|is|are|was|were|be|been|being|['’]s|['�
 /**
  * (b) Where a ", like," may hedge, decided by the next word alone (lead ruling, round 16: a closed list of next words): a
  * number, a teen or an ordinal; a, an, the, this, that, these, those, last, next, every, each, all, some, any, half,
- * whole, few, couple, several, most, nothing, none, zero, once, twice, forever, always; about, around, almost, nearly,
+ * whole, few, couple, several, most, nothing, none, zero, once, twice, forever, always, never; about, around, almost, nearly,
  * maybe, over, under, at, in, on, for, since, until, till, from, by, during; tonight, today, yesterday, tomorrow, midnight, noon, midday, dawn, sunrise, sunset.
  * ("We paid, like, two hundred dollars" stays.)
  */
 const LIKE_HEDGES_NEXT =
-  /^\s*(?:[$£€¥]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|a|an|the|this|that|these|those|last|next|every|each|all|some|any|half|whole|few|couple|several|most|nothing|none|zero|once|twice|forever|always|about|around|almost|nearly|maybe|over|under|at|in|on|for|since|until|till|from|by|during|tonight|today|yesterday|tomorrow|midnight|noon|midday|dawn|sunrise|sunset)(?![\p{L}'’-]))/iu;
+  /^\s*(?:[$£€¥]?\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundreds?|thousands?|millions?|dozens?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|a|an|the|this|that|these|those|last|next|every|each|all|some|any|half|whole|few|couple|several|most|nothing|none|zero|once|twice|forever|always|never|about|around|almost|nearly|maybe|over|under|at|in|on|for|since|until|till|from|by|during|tonight|today|yesterday|tomorrow|midnight|noon|midday|dawn|sunrise|sunset)(?![\p{L}'’-]))/iu;
 /** (b) A thought being quoted: the words after ", like," run to a ? or ! in the same sentence ("standing there, like, what is going on?"). */
 const LIKE_QUOTES_THOUGHT = /^[^.!?…]*[?!]/;
 /** (c) "I", "the", "and" or "that's" said twice in a row with a comma between. */
@@ -83,10 +83,11 @@ const REACTION = /^(?:wow|wow, that['’]s amazing|that['’]s amazing|that['’
  * an inch mark after a digit (5'6", 32" wide) are not quotation marks. `any`: the paragraph holds one; `opens` and
  * `closes`: how many open and close a quotation, so a paragraph that leaves its marks open is known.
  */
-function quoteMarks(text: string): { any: boolean; opens: number; closes: number } {
+function quoteMarks(text: string): { any: boolean; double: number; single: number } {
+  // double marks (“ ” « » ") and single marks (‘ ’ ') are counted apart: a ’ only ever closes a ‘, never a “
   let any = false;
-  let opens = 0;
-  let closes = 0;
+  let double = 0;
+  let single = 0;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     const prev = i > 0 ? text[i - 1] : "";
@@ -94,45 +95,47 @@ function quoteMarks(text: string): { any: boolean; opens: number; closes: number
     const atStart = prev === "" || /[\s([{“‘«—–-]/.test(prev);
     if (c === "“" || c === "«") {
       any = true;
-      opens++;
+      double++;
     } else if (c === "”" || c === "»") {
       any = true;
-      closes++;
+      double--;
     } else if (c === "‘" || c === "’") {
       // inside a word it is an apostrophe ("That’s", "rock’n’roll")
       if (/\p{L}/u.test(prev) && /\p{L}/u.test(next)) continue;
       any = true;
-      if (c === "‘") opens++;
-      else if (!atStart) closes++;
+      if (c === "‘") single++;
+      else if (!atStart) single--;
     } else if (c === '"') {
       // after a digit it is an inch mark
       if (/\d/.test(prev)) continue;
       any = true;
-      if (atStart && next && !/\s/.test(next)) opens++;
-      else closes++;
+      if (atStart && next && !/\s/.test(next)) double++;
+      else double--;
     } else if (c === "'") {
       // only a straight ' that opens or closes is a quotation mark
       if ((prev === "" || /[\s,:]/.test(prev)) && next && !/\s/.test(next)) {
         any = true;
-        opens++;
+        single++;
       } else if (/[.!?,]/.test(prev)) {
         any = true;
-        closes++;
+        single--;
       }
     }
   }
-  return { any, opens, closes };
+  return { any, double, single };
 }
 /**
  * (e) For each paragraph, whether reactions may be removed from it: never in a paragraph with a quotation mark in it, nor
  * in any paragraph after one whose marks are left open, until a paragraph that closes them.
  */
 function reactionsAllowed(paragraphs: string[]): boolean[] {
-  let open = 0;
+  let double = 0;
+  let single = 0;
   return paragraphs.map((p) => {
     const m = quoteMarks(p);
-    const allowed = open === 0 && !m.any;
-    open = Math.max(0, open + m.opens - m.closes);
+    const allowed = double === 0 && single === 0 && !m.any;
+    double = Math.max(0, double + m.double);
+    single = Math.max(0, single + m.single);
     return allowed;
   });
 }
