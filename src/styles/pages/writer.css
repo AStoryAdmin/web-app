@@ -191,8 +191,6 @@ html:has(.w-desk) { scroll-padding-bottom: calc(var(--tabbar-h, 0px) + 120px); }
   .sheet-page .w-desk .spread .leaf-left .w-qkick { margin-bottom: 8px; }
   .spread .w-keep { margin-top: 14px; }
   .spread:not(.rail) .w-ribbon { height: 24px; }
-  /* a fourth row (a question about someone, with "in your own words") would push the seal out of the first screen */
-  .spread .leaf-left .w-qs ul:has(> li:nth-child(4)) > li:has(> .w-q.own) { display: none; }
   .sheet-page .page.w-desk .spread .leaf-left .w-kick { margin-bottom: 4px; }
   .spread .leaf-left .w-pencil { margin-top: 8px; }
   .spread .leaf-left .w-orn { display: none; }

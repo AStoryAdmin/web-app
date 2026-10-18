@@ -610,8 +610,9 @@ function Writer({ story }: { story: Story }) {
     if (dailyPromptsLeft(email) <= 0) return;
     incrementDailyPrompts(email);
     queueMicrotask(() => setCounted(true));
-    track("question_shown", { question_id: question.id, depth: question.depth ?? 0, mode_offered: "write" });
-  }, [question, counted, unlimited, editing, email]);
+    // a question about someone is counted as that person's (prompt@person), never as the storyteller's own
+    track("question_shown", { question_id: draftQid || question.id, depth: question.depth ?? 0, mode_offered: "write" });
+  }, [question, draftQid, counted, unlimited, editing, email]);
 
   // The pen is ready on the page, without scrolling the question off the cloth; on a phone the keyboard waits for a tap.
   useEffect(() => {
@@ -735,12 +736,14 @@ function Writer({ story }: { story: Story }) {
   const starters = startersFor(own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
   const bookName = bookNameOf(story);
-  // Today's questions, the one on the page among them (a paid plan's walk is long; three is a page's worth).
+  // Today's questions (a paid plan's walk is long; three is a page's worth). The list is decided here, never by the
+  // window's height: a blank page offers three of today's; a page that also offers "in your own words" (a question
+  // from today, a question about someone, an edit) offers two, so every page's list is three rows at most.
   const deck = useMemo(() => {
-    const all = todaysDeck(story, { unlimited });
-    const three = all.slice(0, 3);
-    return question && !aboutQ && !three.some((p) => p.id === question.id) ? [question, ...three.slice(0, 2)] : three;
-  }, [story, unlimited, question, aboutQ]);
+    const three = todaysDeck(story, { unlimited }).slice(0, 3);
+    if (question && !aboutQ) return three.some((p) => p.id === question.id) ? three : [question, ...three.slice(0, 2)];
+    return question || editing ? three.slice(0, 2) : three;
+  }, [story, unlimited, question, aboutQ, editing]);
   const drafted = useMemo(() => new Set(deck.filter((p) => p.id !== question?.id && questionDraft(story.id, p.id)?.body?.trim()).map((p) => p.id)), [deck, question, story.id]);
 
   const insertStarter = (s: string) => {
@@ -828,7 +831,7 @@ function Writer({ story }: { story: Story }) {
         /* fine */
       }
       track("memory_saved", { mode: 1, chapter: era, has_photo: memory.photos.length > 0, from_question: Boolean(question) });
-      if (question) track("question_answered", { question_id: question.id, mode: "write" });
+      if (question) track("question_answered", { question_id: draftQid || question.id, mode: "write" });
       // The seal presses, the ink stamp lands, then the next step.
       setPressed(true);
       setKeptNumber(number);
@@ -954,7 +957,7 @@ function Writer({ story }: { story: Story }) {
     <>
       {(others.length > 0 || question || editing) && (
         <section className="w-qs">
-          <h2 className="w-kick">{question ? "Or another of today’s questions" : own ? "Or one of today’s questions" : `Or one of today’s questions for ${story.name}`}</h2>
+          <h2 className="w-kick">{question && !aboutQ ? "Or another of today’s questions" : own ? "Or one of today’s questions" : `Or one of today’s questions for ${story.name}`}</h2>
           <ul>
             {others.map((p) => (
               <li key={p.id}>
