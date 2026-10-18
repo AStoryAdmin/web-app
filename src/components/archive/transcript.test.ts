@@ -831,23 +831,44 @@ function sentenceSpans(said: string): [number, number][] {
  * space, a comma, a colon or the start, and closes only after . ! ? or a comma, so an apostrophe never counts.
  */
 function quoteOpenAfter(text: string): boolean {
+  return quoteState(text).open;
+}
+/** The same scan, with whether a mark closed a quotation at or after `from` (17a: a paragraph carries one on only then). */
+function quoteState(text: string, from = 0): { open: boolean; closed: boolean } {
   let curly = 0;
   let dbl = 0;
   let single = false;
+  let closed = false;
+  const close = (i: number) => {
+    if (i >= from) closed = true;
+  };
   [...text].forEach((c, i, all) => {
     const prev = all[i - 1] ?? "";
     const next = all[i + 1] ?? "";
+    const rest = all.slice(i + 1).join("");
     if ("“«".includes(c)) curly += 1;
     else if (c === "‘" && !/\p{L}/u.test(prev)) curly += 1;
-    else if ("”»".includes(c)) curly = Math.max(0, curly - 1);
-    else if (c === "’" && curly > 0 && (/[.!?,]/.test(prev) || (/\p{L}/u.test(prev) && !/\p{L}/u.test(next)))) curly -= 1;
-    else if (c === '"') dbl += 1;
-    else if (c === "'") {
-      if (single && /[.!?,]/.test(prev)) single = false;
-      else if (!single && (prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) single = true;
+    else if ("”»".includes(c)) {
+      if (curly > 0) close(i);
+      curly = Math.max(0, curly - 1);
+    }
+    // a curly ’ after a letter closes only before punctuation or the end ("the boys’ room" never does)
+    else if (c === "’" && curly > 0 && (/[.!?,]/.test(prev) || (/\p{L}/u.test(prev) && (/^[,.;:!?…)”»"—–]/.test(next) || /^\s*$/.test(rest))))) {
+      close(i);
+      curly -= 1;
+    }
+    // a straight " after a digit is an inch mark (5'6", 32" wide)
+    else if (c === '"' && !/\d/.test(prev)) {
+      if (dbl % 2 === 1) close(i);
+      dbl += 1;
+    } else if (c === "'") {
+      if (single && /[.!?,]/.test(prev)) {
+        close(i);
+        single = false;
+      } else if (!single && (prev === "" || /[\s,:]/.test(prev)) && next !== "" && !/\s/.test(next)) single = true;
     }
   });
-  return curly > 0 || dbl % 2 === 1 || single;
+  return { open: curly > 0 || dbl % 2 === 1 || single, closed };
 }
 
 function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; answer: boolean; named: boolean; cuts: Cut[]; prior?: string }): string {
@@ -901,7 +922,7 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       // an amount: a number, a teen, an ordinal, zero, nothing or none, a or an with a unit, several, once, twice, a few,
       // a couple, or about / around / almost / nearly / maybe / over / under / at least before a number
       const num = String.raw`(?:[$£€¥]?\d|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|a hundred|a thousand|hundreds?|thousands?|millions?|dozens?|half)\b)`;
-      if (new RegExp(String.raw`^\s*(?:${num}|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|nothing|none|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|week|month|year|decade|mile|kilometre|kilometer|quarter|third|pound|kilo|dollar|bowl|cup)s?\b|(?:about|around|almost|nearly|maybe|over|under|at least)\s+${num})`, "i").test(after)) return "before an amount: it hedges";
+      if (new RegExp(String.raw`^\s*(?:${num}|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|nothing|none|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|night|week|weekend|month|year|decade|century|centurie|semester|term|season|summer|winter|lifetime|generation|mile|kilometre|kilometer|metre|meter|centimetre|centimeter|millimetre|millimeter|inch|inche|foot|feet|yard|acre|hectare|square (?:mile|metre|meter|foot|feet|yard|kilometre|kilometer)|pound|kilo|kilogram|gram|ounce|ton|tonne|stone|litre|liter|gallon|pint|quart|quarter|third|half|dollar|bowl|cup|bag|sack|bucket|box|boxe|basket|plate|pot|bottle|can|glass|glasse|spoon|spoonful|handful|truckload|boatload|jar|crate|barrel)s?\b|(?:midnight|noon|midday|(?:the|a) whole (?:summer|winter|spring|fall|autumn|year|day|night|week|month|morning|afternoon|evening|time|semester|term|season)|all (?:day|night|week|summer|winter|year|morning|afternoon|evening))\b|(?:about|around|almost|nearly|maybe|over|under|at least)\s+${num})`, "i").test(after)) return "before an amount: it hedges";
       return "";
     }
     case "c-slip": {
@@ -922,7 +943,10 @@ function breaksRule(said: string, [a, b, rule]: Cut, ctx: { opening: boolean; an
       if (/["“”‘’']/.test(bare.replace(/(?<=\p{L})['’](?=\p{L})/gu, ""))) return "inside quotation marks";
       // a sentence in the middle of a quotation carries no mark of its own: count the quotes before it, from the
       // paragraphs before too
-      if (quoteOpenAfter(`${ctx.prior ?? ""}${before}`)) return "inside a quotation";
+      // a quotation open at the end of the paragraphs before carries in only when this paragraph holds a closing mark
+      const prior = ctx.prior ?? "";
+      const carried = !!prior && quoteOpenAfter(prior) && quoteState(`${prior}${said}`, prior.length).closed;
+      if (quoteOpenAfter(carried ? `${prior}${before}` : before)) return "inside a quotation";
       if (REACTION_SET.test(bare)) return "";
       const prevSpan = spans[si - 1];
       const prevIsReaction = !!prevSpan && ctx.cuts.some((c) => c[2] === "e-reaction" && c[0] === prevSpan[0] && c[1] === prevSpan[1] && REACTION_SET.test(said.slice(c[0], c[1]).trim()));
@@ -1583,6 +1607,133 @@ describe("round 15: 17a after 4d9630c and 6c18b87, every reviewer string", () =>
     ];
     for (const [said, cut] of allowed) {
       const why = breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut] });
+      if (why) failures.push(`the checker refuses an allowed cut: ${said} :: ${cut[2]} :: ${why}`);
+    }
+    expect(failures).toEqual([]);
+  });
+});
+
+/* ───────── Round 16: 17a at ec7c671 and after (the apostrophe, the carry, the inch mark, every unit), the r15 mutants ───────── */
+
+const R16_UNITS = ["a ton of rice", "an acre of rice", "a hectare of land", "a foot of water", "a metre of cloth", "a litre of milk", "a gallon of water", "a gram of gold", "an ounce of gold", "an inch of snow", "a bag of rice", "a sack of rice", "a bucket of fish", "a plate of noodles", "a box of letters", "a basket of fruit", "a pot of pho", "a bottle of wine", "a century ago", "a night or two", "a semester there", "a pint of beer", "a yard of silk", "a tonne of rice"];
+
+export const R16_KEEP: string[] = [
+  // Bao 1 / Skills 1: a curly ’ after a letter closes only before punctuation or the end
+  "“Our parents’ house. Wow. Big.” Mom said.",
+  "Inside “the kids’ room. Wow. Nice.” We said.",
+  "“The kids’ toys. Wow. Really.” She smiled.",
+  "“Rock ’n’ roll. Wow. Yes.”",
+  "She said, ‘Okay. The boys’ room was full. Wow. That’s amazing.’",
+  "She said, ‘We went to the Nguyens’ house. Wow. That’s amazing.’",
+  // the inch mark never counts, so a later quotation in the paragraph is still read as one
+  'He bought a 12" knife. Later Mom said, "Okay. Wow. Nice."',
+  'He is 5\'6" tall. She said, "Okay. Wow. Nice."',
+  // Bao 2: a or an with any unit of time, length, area, weight, volume or a container
+  ...R16_UNITS.map((u) => `We had, like, ${u}.`),
+  // a time or a span
+  "At, like, midnight we left.",
+  "We met at, like, noon.",
+  "We left at, like, three o'clock.",
+  "We were there, like, the whole summer.",
+  "We worked, like, all day.",
+  // the r15 mutants: V2, V3, V5, V10
+  "He said, «Okay. Wow. That's amazing.» And left.",
+  "She said, ‘Okay. It’s late. Wow. That’s amazing.’",
+  "She said, 'We're home. Wow. That's amazing.'",
+  "I said ” then. She said, “Okay. Wow. That's amazing.”",
+];
+
+export const R16_CUT: [string, string][] = [
+  // an inch mark opens nothing: the reaction after it is the listener's
+  ['The table was 32" wide. Wow. We moved.', 'The table was 32" wide. We moved.'],
+  ["The boys’ room was full. Wow. We moved.", "The boys’ room was full. We moved."],
+  // X7: "maybe" is not "be"; X10: "being" is not on the be list
+  ["It was maybe, um, Lan, Mai and Hoa.", "It was maybe, Lan, Mai and Hoa."],
+  ["Being, um, poor, hungry, we left.", "Being, poor, hungry, we left."],
+];
+
+export const R16_TRANSCRIPT: [string[], string[]][] = [
+  // W2: the asker's line carries the quotation from their line before, which it closes
+  [["Interviewer: He said, “Okay.", "Interviewer: Wow. That's amazing.” Did he?"], ["⁣He said, “Okay.", "⁣Wow. That's amazing.” Did he?"]],
+  // the carry happens only into a paragraph that holds a closing mark
+  [["He said, “We went.", "Wow. That's amazing.” Then we left."], ["He said, “We went.", "Wow. That's amazing.” Then we left."]],
+  [["He said, “We went.", "Wow. We moved."], ["He said, “We went.", "We moved."]],
+  [["She was 5'6\" tall.", "Wow. We moved."], ["She was 5'6\" tall.", "We moved."]],
+  [["It was the ’90s, “a hard time.", "Wow. We moved.", "Then he said, “Okay. Wow. Nice.”"], ["It was the ’90s, “a hard time.", "We moved.", "Then he said, “Okay. Wow. Nice.”"]],
+  // U20: a tag question closing a straight single quotation is never lifted
+  [["She said, 'It was hard. Was it good, right?' Because our school was small. Yes."], ["She said, 'It was hard. Was it good, right?' Because our school was small. Yes."]],
+];
+
+describe("round 16: 17a at ec7c671 and after, every reviewer string and the r15 mutants", () => {
+  it.each(R16_KEEP)("keeps %s", async (said) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(said);
+  });
+  it.each(R16_CUT)("%s", async (said, shown) => {
+    const { cleanSpeech } = await import("./transcript");
+    expect(cleanSpeech(said)).toBe(shown);
+  });
+  it.each(R16_TRANSCRIPT)("%s", async (said, shown) => {
+    const { cleanTranscript } = await import("./transcript");
+    expect(cleanTranscript(said)).toEqual(shown);
+  });
+  it("the takeaway keeps a straight closing quote and never picks a question in straight quotes (T42, U23)", async () => {
+    const { takeaway } = await import("./transcript");
+    expect(takeaway("I remember she said, 'We will go to the market by the river tomorrow.' Then the rain came.")).toBe("I remember she said, 'We will go to the market by the river tomorrow.'");
+    expect(takeaway("We asked her, 'Will you always remember the little house by the river?' The house stood by the river for many long years.")).toBe("The house stood by the river for many long years.");
+  });
+  it("the contract holds on every round-16 string, and the checker refuses the cuts round 15 made", async () => {
+    const { cleanSpeech, explainTranscript } = await import("./transcript");
+    const failures: string[] = [];
+    for (const said of [...R16_KEEP, ...R16_CUT.map(([x]) => x)]) {
+      for (const opening of [false, true]) {
+        const { said: base, out, cuts } = cleanSpeech(said, { opening, explain: true });
+        for (const cut of cuts) {
+          const why = breaksRule(base, cut, { opening, answer: false, named: false, cuts });
+          if (why) failures.push(`${said} (opening ${opening}) :: ${cut[2]} "${base.slice(cut[0], cut[1])}" :: ${why}`);
+        }
+        if (!onlyCutsRemoved(base, out, cuts)) failures.push(`${said} :: words changed outside the cuts: "${out}"`);
+      }
+    }
+    for (const [paragraphs] of R16_TRANSCRIPT) {
+      let prior = "";
+      for (const piece of explainTranscript(paragraphs)) {
+        if (!piece.asked) {
+          for (const cut of piece.cuts as Cut[]) {
+            const why = breaksRule(piece.said, cut, { opening: false, answer: false, named: false, cuts: piece.cuts as Cut[], prior });
+            if (why) failures.push(`${piece.said} :: ${cut[2]} :: ${why}`);
+          }
+        }
+        prior += `${piece.said} `;
+      }
+    }
+    const at = (said: string, piece: string, rule: string): Cut => {
+      const i = said.indexOf(piece);
+      if (i < 0) throw new Error(`"${piece}" not in "${said}"`);
+      return [i, i + piece.length, rule];
+    };
+    const forbidden: [string, Cut, string?][] = [
+      ["“Our parents’ house. Wow. Big.” Mom said.", at("“Our parents’ house. Wow. Big.” Mom said.", "Wow.", "e-reaction")],
+      ["She said, ‘Okay. The boys’ room was full. Wow. That’s amazing.’", at("She said, ‘Okay. The boys’ room was full. Wow. That’s amazing.’", "Wow.", "e-reaction")],
+      ["“Rock ’n’ roll. Wow. Yes.”", at("“Rock ’n’ roll. Wow. Yes.”", "Wow.", "e-reaction")],
+      ['He bought a 12" knife. Later Mom said, "Okay. Wow. Nice."', at('He bought a 12" knife. Later Mom said, "Okay. Wow. Nice."', "Wow.", "e-reaction")],
+      ["Wow. That's amazing.” Then we left.", at("Wow. That's amazing.” Then we left.", "Wow.", "e-reaction"), "He said, “We went. "],
+      ...R16_UNITS.slice(0, 6).map((u): [string, Cut] => [`We had, like, ${u}.`, at(`We had, like, ${u}.`, ", like,", "b-like")]),
+      ["At, like, midnight we left.", at("At, like, midnight we left.", ", like,", "b-like")],
+      ["We were there, like, the whole summer.", at("We were there, like, the whole summer.", ", like,", "b-like")],
+      ["We left at, like, three o'clock.", at("We left at, like, three o'clock.", ", like,", "b-like")],
+    ];
+    for (const [said, cut, prior] of forbidden) {
+      if (!breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior })) failures.push(`the checker accepts a forbidden cut: ${said} :: ${cut[2]} "${said.slice(cut[0], cut[1])}"`);
+    }
+    const allowed: [string, Cut, string?][] = [
+      ["The boys’ room was full. Wow. We moved.", at("The boys’ room was full. Wow. We moved.", "Wow.", "e-reaction")],
+      ['The table was 32" wide. Wow. We moved.', at('The table was 32" wide. Wow. We moved.', "Wow.", "e-reaction")],
+      // an open quotation does not carry into a paragraph with no closing mark
+      ["Wow. We moved.", at("Wow. We moved.", "Wow.", "e-reaction"), "He said, “We went. "],
+    ];
+    for (const [said, cut, prior] of allowed) {
+      const why = breaksRule(said, cut, { opening: false, answer: false, named: false, cuts: [cut], prior });
       if (why) failures.push(`the checker refuses an allowed cut: ${said} :: ${cut[2]} :: ${why}`);
     }
     expect(failures).toEqual([]);

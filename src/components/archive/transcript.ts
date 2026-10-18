@@ -61,11 +61,12 @@ const LIKE_QUOTES_AFTER = /\b(?:(?:am|is|are|was|were|be|been|being|['’]s|['�
 const NUMBER = String.raw`(?:[$£€¥]?\d|(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|a hundred|a thousand|hundreds?|thousands?|millions?|dozens?|half)\b)`;
 /**
  * (b) An amount after ", like,": the "like" hedges ("We paid, like, two hundred dollars") and stays. A number, a teen, an
- * ordinal ("in, like, fourth grade"), zero, nothing or none, a or an with a unit, several, once, twice, a few, a couple,
- * or about, around, almost, nearly, maybe, over, under or at least before a number.
+ * ordinal ("in, like, fourth grade"), zero, nothing or none, a or an with any unit of time, length, area, weight, volume or
+ * a container (an hour, an acre, a ton, a sack), a time or span (midnight, noon, three o'clock, the whole summer), several,
+ * once, twice, a few, a couple, or about, around, almost, nearly, maybe, over, under or at least before a number.
  */
 const LIKE_AMOUNT_NEXT = new RegExp(
-  String.raw`^\s*(?:${NUMBER}|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|nothing|none|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|week|month|year|decade|mile|kilometre|kilometer|quarter|third|pound|kilo|dollar|bowl|cup)s?\b|(?:about|around|almost|nearly|maybe|over|under|at least)\s+${NUMBER})`,
+  String.raw`^\s*(?:${NUMBER}|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|hundredth|thousandth|nothing|none|several|once|twice)\b|an? (?:few|couple|hundred|thousand|million|dozen|second|minute|hour|day|night|week|weekend|month|year|decade|century|centurie|semester|term|season|summer|winter|lifetime|generation|mile|kilometre|kilometer|metre|meter|centimetre|centimeter|millimetre|millimeter|inch|inche|foot|feet|yard|acre|hectare|square (?:mile|metre|meter|foot|feet|yard|kilometre|kilometer)|pound|kilo|kilogram|gram|ounce|ton|tonne|stone|litre|liter|gallon|pint|quart|quarter|third|half|dollar|bowl|cup|bag|sack|bucket|box|boxe|basket|plate|pot|bottle|can|glass|glasse|spoon|spoonful|handful|truckload|boatload|jar|crate|barrel)s?\b|(?:midnight|noon|midday|(?:the|a) whole (?:summer|winter|spring|fall|autumn|year|day|night|week|month|morning|afternoon|evening|time|semester|term|season)|all (?:day|night|week|summer|winter|year|morning|afternoon|evening))\b|(?:about|around|almost|nearly|maybe|over|under|at least)\s+${NUMBER})`,
   "i",
 );
 /** (b) A thought being quoted: the words after ", like," run to a ? or ! in the same sentence ("standing there, like, what is going on?"). */
@@ -78,31 +79,42 @@ const SLIP_FORM = /^(?:I|[Tt]he|[Aa]nd|[Tt]hat['’]s)$/u;
 const SLIP_STARTS = /(?:^["“‘(]?|,\s*)$/;
 /** (e) The other person's reactions, the fixed set, as whole sentences. */
 const REACTION = /^(?:wow|wow, that['’]s amazing|that['’]s amazing|that['’]s awesome|wait, were you\?|yeah, right\?)[.!]*$/i;
-/** The quotations open at a point of the text: “ ” ‘ ’ « » by depth, the straight " and ' each open or not. */
-type Quotes = { curly: number; double: boolean; single: boolean };
+/** The quotations open at a point of the text: “ ” ‘ ’ « » by depth, the straight " and ' each open or not; `closed`: a mark closed one. */
+type Quotes = { curly: number; double: boolean; single: boolean; closed?: boolean };
 const NO_QUOTES: Quotes = { curly: 0, double: false, single: false };
 /**
  * (e) The quotations still open after `text` (from `from`, the state where the text begins: a quotation can run across a
- * paragraph break). A straight ' opens only after a space, a comma, a colon or the start, and closes only after . ! ? or
- * a comma, so an apostrophe ("That's", "dads'") never counts; a ’ closes the same way, or after a word when a ‘ is open.
+ * paragraph break). A straight " after a digit is an inch mark (5'6", 32" wide) and never counts. A straight ' opens only
+ * after a space, a comma, a colon or the start, and closes only after . ! ? or a comma, so an apostrophe ("That's",
+ * "dads'") never counts. A ’ closes after . ! ? or a comma, or after a letter only before punctuation or the end, so "the
+ * boys’ room", "Our parents’ house" and "Rock ’n’ roll" never close one.
  */
 function quotesAfter(text: string, from: Quotes = NO_QUOTES): Quotes {
   let { curly, double, single } = from;
+  let closed = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     const prev = i > 0 ? text[i - 1] : "";
     const next = text[i + 1] ?? "";
     if (c === "“" || c === "«") curly++;
     else if (c === "‘" && !/\p{L}/u.test(prev)) curly++;
-    else if (c === "”" || c === "»") curly = Math.max(0, curly - 1);
-    else if (c === "’" && curly > 0 && (/[.!?,]/.test(prev) || (/\p{L}/u.test(prev) && !/\p{L}/u.test(next)))) curly--;
-    else if (c === '"') double = !double;
-    else if (c === "'") {
-      if (single && /[.!?,]/.test(prev)) single = false;
-      else if (!single && (prev === "" || /[\s,:]/.test(prev)) && next && !/\s/.test(next)) single = true;
+    else if (c === "”" || c === "»") {
+      if (curly > 0) closed = true;
+      curly = Math.max(0, curly - 1);
+    } else if (c === "’" && curly > 0 && (/[.!?,]/.test(prev) || (/\p{L}/u.test(prev) && /^(?:[,.;:!?…)”»"—–]|\s*$)/u.test(text.slice(i + 1))))) {
+      curly--;
+      closed = true;
+    } else if (c === '"' && !/\d/.test(prev)) {
+      if (double) closed = true;
+      double = !double;
+    } else if (c === "'") {
+      if (single && /[.!?,]/.test(prev)) {
+        single = false;
+        closed = true;
+      } else if (!single && (prev === "" || /[\s,:]/.test(prev)) && next && !/\s/.test(next)) single = true;
     }
   }
-  return { curly, double, single };
+  return { curly, double, single, closed };
 }
 const isOpen = (q: Quotes) => q.curly > 0 || q.double || q.single;
 /** (e) Whether position `at` of a paragraph is inside a quotation: every sentence there is someone in the story speaking. */
@@ -237,7 +249,10 @@ function applyCuts(text: string, cuts: TidyCut[]): string {
   let pos = 0;
   for (const [a, b] of sorted) {
     if (b <= pos) continue;
-    out += text.slice(pos, Math.max(pos, a)) + " ";
+    out += text.slice(pos, Math.max(pos, a));
+    // a cut just before a closing mark leaves no space in front of it ("«Wow. »" never)
+    if (!/^[”»)]/.test(text.slice(b))) out += " ";
+    else out = out.trimEnd();
     pos = Math.max(pos, b);
   }
   return out + text.slice(pos);
@@ -279,7 +294,7 @@ function tidyParagraph(
     local.push(...fillerCuts(s), ...likeCuts(s), ...slipCuts(s));
     for (const [a, b, rule] of local) cuts.push([at + a, at + b, rule]);
     const kept = applyCuts(s, local)
-      .replace(/\s+([,.;:!?”»)])/g, "$1")
+      .replace(/\s+([,.;:!?])/g, "$1")
       .replace(/([,;:])\s*([,.;:!?])/g, "$2")
       .replace(/^[\s,;:]+/, "")
       .replace(/\s{2,}/g, " ")
@@ -290,7 +305,6 @@ function tidyParagraph(
   });
   const out = shown
     .join(" ")
-    .replace(/\s+([”»)])/g, "$1")
     .replace(/\s{2,}/g, " ")
     .trim()
     // speech ends a thought with a full stop the transcript forgot
@@ -376,7 +390,9 @@ export function explainTranscript(paragraphs: string[]): { asked: boolean; said:
   let afterQuestion = false;
   let quotes = NO_QUOTES;
   for (const piece of pieces) {
-    const from = quotes;
+    // a quotation still open at a paragraph's end carries into the next only when that one holds a closing mark: a stray
+    // mark never switches (e) off for the rest of the text
+    const from = isOpen(quotes) && quotesAfter(piece.said, quotes).closed ? quotes : NO_QUOTES;
     quotes = quotesAfter(`${piece.said} `, from);
     if (piece.asked) {
       // the other person's line: only their reactions from the set go (e)
