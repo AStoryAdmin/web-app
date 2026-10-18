@@ -24,3 +24,19 @@ Two real accounts on the dev site: Bao Vo (localhost:5180) and the test account 
 ## Decisions for the founder
 - Should a family code let the person read the storyteller's shared memories (a database policy change: a "family reader" role), or only keepers?
 - Should the web offer the /c contribute link on each memory ("Ask someone who was there")?
+
+## Round two (keeper path), same day
+- Bao invited the test account as a keeper (gbao.n.vo@gmail.com). On its next load Bao's story ("8 memories") appeared under "Stories you've joined".
+- GBao opened "Losing grandparents…" and sent a version under "What the family remembers". **It failed every time from the web**: the web sent `via: "web"`, and the database allows only app, call or link (`contributions_via_known`). Fixed: the web now sends `via: "app"`.
+- Resent: "TEST: I remember Grandpa's uniform hanging by the door, pressed every Sunday." Bao saw it at once as "Waiting for you · Keep it / Not this one", pressed Keep it, and it now shows under the memory as "Bao Ngo Gia Vo · today".
+- Note: the contributor also sees "Keep it / Not this one" on their own version, because a keeper reviews everything.
+
+## The invitation email
+- "Download the app" goes to astoryapp.com/?ref=CODE, which does nothing with the code. "Already have it? Open in app" is an astory:// link: Gmail on a computer drops it, and it only works on a phone with the app installed.
+- The function already supports a browser button: set the Supabase secret `INVITE_JOIN_URL=https://app.astoryapp.com` and the first button becomes "Join in your browser →" at app.astoryapp.com/?ref=CODE. The web app now turns `/?ref=CODE` into its join page.
+- The astory:// button should be dropped from the email until the app is public (a phone-app change to send-invite-email, then a deploy).
+
+## Made during the test (real data)
+- Family code JC6ME5 for the tree row "GBao Vo" (used by the test account).
+- A keeper invite for gbao.n.vo@gmail.com on Bao's story (it emailed code ZFP78N).
+- One kept family version on "Losing grandparents…", from the test account, beginning "TEST:".

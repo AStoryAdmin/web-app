@@ -38,6 +38,15 @@ const lazyPage = (load: () => Promise<{ default: React.ComponentType }>) => {
 
 const page = (name: string) => <Placeholder name={name} />;
 
+// An invitation email links to "/?ref=CODE" (the phone app's own join link, supabase/functions/send-invite-email):
+// open the join page for that code, so the link works in a browser as well as in the app.
+if (typeof window !== "undefined") {
+  const ref = new URLSearchParams(window.location.search).get("ref");
+  if (ref && /^[A-Za-z0-9]{6}$/.test(ref) && (window.location.pathname === "/" || window.location.pathname === "/join")) {
+    window.history.replaceState(null, "", `/join/${ref.toUpperCase()}`);
+  }
+}
+
 const router = createBrowserRouter([
   { path: "/welcome", element: <Welcome /> },
   { path: "/sign-in", element: <SignIn /> },

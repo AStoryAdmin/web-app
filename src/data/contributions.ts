@@ -116,7 +116,7 @@ export async function sendContribution(input: {
       body: text.slice(0, 10000),
       photos: input.photos || [],
       status: "pending",
-      via: "web",
+      via: "app", // the signed-in app (contributions_via.sql allows app, call, link); the web is the same app
       ...(Array.isArray(input.personIds) ? { person_ids: input.personIds } : {}),
     },
     (row: Row | Row[]) => sb.from("contributions").insert(row),
