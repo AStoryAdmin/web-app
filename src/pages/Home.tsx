@@ -9,14 +9,14 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import Mosaic, { InvitePrint } from "../components/Mosaic";
 import FromTheBook from "../components/FromTheBook";
-import WeekInk from "../components/delight/WeekInk";
+import DayRibbon from "../components/DayRibbon";
 import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
 import { MicIcon, PenIcon, SearchIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { greeting, noteFor, recordSkip, skipsToday, todaysDeck, todaysQuestion } from "../lib/today";
 import { isPaid } from "../lib/plan";
-import { stripDays, dotStrength, dayLabel } from "../app-core/lib/weekStrip.js";
+import { stripDays } from "../app-core/lib/weekStrip.js";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { cardMeta } from "../app-core/lib/memoryCard.js";
@@ -82,7 +82,6 @@ export default function Home() {
   if (!story) return <Navigate to="/start" replace />;
 
   const days = stripDays(story.memories) as { key: string; label: string; day: number; count: number; today: boolean; future: boolean; offset: number }[];
-  const week = days.slice(-7);
   const byCreated = [...story.memories].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const kept = byCreated.filter((m) => m.status !== "in_progress");
   const latestPhoto = kept.find(hasPhoto) ?? null;
@@ -172,20 +171,7 @@ export default function Home() {
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
 
         <div className="weekrow" data-rise>
-          <div className="weekrow-in">
-            <span className="label">This week</span>
-            <div className="week" role="group" aria-label="This week">
-              {week.map((d) => (
-                <button key={d.key} type="button" aria-pressed={d.today} aria-label={dayLabel(d) as string} onClick={() => navigate(`/archive?day=${d.key}`)} style={d.future ? { opacity: 0.45 } : undefined}>
-                  {d.today ? "Today" : d.label}
-                  <span className={`d${d.count ? " has" : ""}`} style={d.count ? { ["--dot" as string]: dotStrength(d) } : undefined}>
-                    {d.day}
-                    {d.today && <WeekInk key={d.count} day={d.key} count={d.count} />}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <DayRibbon days={days} memories={story.memories} onPick={(key) => navigate(`/archive?day=${key}`)} />
           <Link className="home-find" to="/archive?focus=search">
             <span>Search {story.memories.length > 1 ? `all ${story.memories.length} memories` : "your memories"}</span>
             <SearchIcon aria-hidden="true" />
@@ -213,9 +199,7 @@ export default function Home() {
                 <img className="glance-book" src="/book/keepsake-closed.webp" alt="" width={52} />
                 <div className="glance-body">
                   <h3>{own ? "Your book" : `${story.name}'s book`}</h3>
-                  <p className="meta">
-                    {progress.count} {progress.count === 1 ? "memory" : "memories"} · {progress.headline}
-                  </p>
+                  <p className="meta">{progress.headline}</p>
                   <div className="progress" style={{ ["--pct" as string]: `${Math.round(progress.ratio * 100)}%` }} role="img" aria-label={`${Math.round(progress.ratio * 100)}% of the way to a first edition`}>
                     <div className="bar" />
                     <div className="end">First edition</div>
