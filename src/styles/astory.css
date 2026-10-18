@@ -3855,3 +3855,7 @@ body.writing-focus .sheet-page > .headband { display: none; }
 /* the phone tab bar's height, for anything that must sit just above it (the writer's Keep bar) */
 :root { --tabbar-h: 0px; }
 @media (max-width: 760px) { :root { --tabbar-h: calc(69px + env(safe-area-inset-bottom, 0px)); } }
+/* a wide page keeps the margin ribbon clear of its content: the gutter never drops under the ribbon's margin, and
+   its vw is divided by the page zoom (lib/zoom) */
+.sheet-page.wide .page, .sheet-page.wide .running-head-sheet { padding-left: clamp(24px, calc(3.2vw / var(--zoom, 1)), 72px); padding-right: max(76px, clamp(24px, calc(3.2vw / var(--zoom, 1)), 72px)); }
+@media (max-width: 1279px) { .sheet-page.wide .page, .sheet-page.wide .running-head-sheet { padding-right: clamp(20px, calc(3.2vw / var(--zoom, 1)), 72px); } }
