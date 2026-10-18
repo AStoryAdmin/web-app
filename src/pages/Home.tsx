@@ -40,8 +40,8 @@ export default function Home() {
     return (
       <Shell compact title="Home">
         <div className="page">
-          <Problem message="We couldn’t reach your stories. Check the connection and try again." onRetry={reload} />
-          <p className="meta">They're kept safe on our side. Check the connection and try again.</p>
+          <Problem message="We couldn’t reach your stories." onRetry={reload} />
+          <p className="meta">They’re kept safe on our side. Check the connection and try again.</p>
         </div>
       </Shell>
     );
