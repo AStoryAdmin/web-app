@@ -1,0 +1,174 @@
+/* The elder's answer page (/a/:token). The A Story bench at its calmest: a short band of chocolate cloth with the
+   asker's face, one sheet of cream paper with the question set large in the serif, and big flat buttons.
+   Sized for an 84-year-old: body 20px and up, the question 30px and up, every target 64px and up, full ink. */
+
+.ans {
+  --ans-ui: var(--font-ui);
+  --ans-serif: "EB Garamond", "Source Serif 4", Georgia, serif;
+  --ans-ink: var(--ink);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  color: var(--ans-ink);
+  font-family: var(--ans-ui);
+  font-size: 21px;
+  line-height: 1.45;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+/* Montserrat here carries no Vietnamese letters; the phone's own sans has every one of them */
+.ans:lang(vi) { --ans-ui: system-ui, -apple-system, Roboto, "Segoe UI", "Noto Sans", sans-serif; }
+
+/* the cloth: the bookcloth over chocolate, short, with the face sitting on its lower edge */
+.ans-cloth {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: max(28px, env(safe-area-inset-top)) 16px 64px;
+  color: var(--on-chocolate);
+  background:
+    linear-gradient(rgba(74, 51, 39, 0.38), rgba(74, 51, 39, 0.38)),
+    url("/book/bookcloth.jpg") 0 0 / 300px 300px,
+    var(--chocolate); /* book material */
+  background-blend-mode: normal, overlay, normal;
+  text-align: center;
+}
+.ans-end .ans-cloth { padding-bottom: 56px; min-height: 120px; }
+.ans-face {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--card);
+  box-shadow: 0 0 0 4px var(--on-chocolate), 0 0 0 5px rgba(201, 161, 90, 0.8); /* book material: the print's ivory ring and foil */
+}
+.ans-seal { display: grid; place-items: center; }
+.ans-seal span { font: 600 56px/1 "Cormorant Garamond", var(--ans-serif); color: var(--chocolate); }
+.ans-asked {
+  margin: 0;
+  font: 600 24px/1.25 var(--ans-ui);
+  letter-spacing: 0.005em;
+  color: var(--on-chocolate);
+  overflow-wrap: anywhere;
+}
+
+/* the sheet: cream paper rising over the cloth */
+.ans-sheet {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 680px;
+  margin: -32px auto 0;
+  padding: 36px 20px max(40px, env(safe-area-inset-bottom));
+  background: var(--page);
+  border-radius: 22px 22px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+@media (min-width: 700px) {
+  .ans-sheet { padding: 48px 48px 56px; gap: 36px; margin-bottom: 40px; border-radius: 22px; }
+}
+
+.ans-q {
+  margin: 0;
+  font-family: var(--ans-serif);
+  font-weight: 500;
+  font-size: clamp(30px, 8.4vw, 46px);
+  line-height: 1.22;
+  letter-spacing: -0.003em;
+  color: var(--ans-ink);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.ans-say { margin: 0; font: 500 clamp(32px, 9vw, 48px)/1.2 var(--ans-serif); color: var(--ans-ink); text-wrap: balance; }
+.ans-say-sm { font-size: clamp(28px, 7.6vw, 38px); }
+.ans-thanks { margin: 0; font: 500 clamp(26px, 7vw, 34px)/1.3 var(--ans-serif); color: var(--accent-deep); }
+.ans-note { margin: 0; font-size: 21px; line-height: 1.5; color: var(--ans-ink); text-wrap: pretty; }
+.ans-center { text-align: center; }
+.ans-warn { color: var(--danger); }
+.ans-status, .ans-act { display: flex; flex-direction: column; gap: 20px; outline: none; }
+
+/* buttons: flat, one fill, fully round, at least 64px tall; the primary one is huge */
+.ans-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 14px 28px;
+  border: 2px solid var(--chocolate);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--chocolate);
+  font: 600 22px/1.2 var(--ans-ui);
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms;
+}
+.ans-btn svg { width: 30px; height: 30px; flex: none; }
+.ans-btn:active:not(:disabled) { transform: scale(0.97); }
+.ans-btn:focus-visible, .ans-quiet:focus-visible, .ans-text:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+.ans-btn:disabled { cursor: default; opacity: 0.7; }
+.ans-primary { background: var(--chocolate); color: var(--on-chocolate); }
+/* the one huge button: the microphone above its words, so the words keep to one line even in Vietnamese at 360px */
+.ans-record { min-height: 128px; width: 100%; flex-direction: column; gap: 8px; padding: 16px 20px; border-radius: 40px; font-size: 24px; }
+.ans-record svg { width: 40px; height: 40px; }
+.ans-send { min-height: 88px; width: 100%; font-size: 24px; }
+.ans-stop { background: var(--accent-deep); border-color: var(--accent-deep); }
+.ans-hear { align-self: flex-start; min-height: 72px; }
+.ans-pair { display: flex; flex-wrap: wrap; gap: 14px; }
+.ans-pair > .ans-btn { flex: 1 1 140px; }
+@media (hover: hover) {
+  .ans-btn:hover:not(:disabled) { background: var(--sheet); }
+  .ans-primary:hover:not(:disabled) { background: var(--chocolate-deep); }
+  .ans-stop:hover:not(:disabled) { background: var(--accent); }
+}
+
+/* a quiet word that acts: still a full target */
+.ans-quiet {
+  appearance: none;
+  align-self: center;
+  min-height: 64px;
+  padding: 10px 20px;
+  border: 0;
+  background: none;
+  color: var(--chocolate);
+  font: 500 21px/1.3 var(--ans-ui);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 1.5px;
+  cursor: pointer;
+}
+
+/* the meter: one soft halo that swells with her voice */
+.ans-meter { position: relative; align-self: center; width: 132px; height: 132px; display: grid; place-items: center; color: var(--on-chocolate); }
+.ans-meter i { position: absolute; inset: 0; border-radius: 50%; background: var(--accent-100); transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+.ans-meter::after { content: ""; position: absolute; inset: 30px; border-radius: 50%; background: var(--accent-deep); }
+.ans-meter svg { position: relative; z-index: 1; width: 36px; height: 36px; }
+@media (prefers-reduced-motion: reduce) {
+  .ans-meter i, .ans-btn { transition: none; }
+}
+
+/* the written answer */
+.ans-label { font: 600 21px/1.3 var(--ans-ui); color: var(--ans-ink); }
+.ans-text {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 200px;
+  padding: 16px 18px;
+  border: 2px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--card-soft);
+  color: var(--ans-ink);
+  font: 400 22px/1.5 var(--ans-serif);
+  resize: vertical;
+}
+.ans-text::placeholder { color: var(--ink-soft); }
