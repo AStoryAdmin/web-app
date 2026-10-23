@@ -1,0 +1,95 @@
+/* The holiday gift (/gift, /gift/thanks, /gift/redeem): the cream page, the
+   book's faces for what is said and signed, Montserrat for the form, one
+   chocolate button. Tokens only (astory.css), so the dark theme follows. On a
+   phone everything is one column with a 16px gutter; from 900px the card sits
+   on the left and stays in view while the form scrolls. Printing prints the
+   card alone. */
+
+.gift { min-height: 100vh; background: var(--page); color: var(--ink); }
+.gift .stop { color: var(--accent); }
+.gift-top { max-width: 1120px; margin: 0 auto; padding: 20px 16px 0; }
+.gift-brand { display: inline-flex; color: inherit; text-decoration: none; }
+.gift-main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 80px; }
+
+.gift-intro { max-width: 720px; margin: 0 0 32px; display: grid; gap: 12px; }
+.gift-kicker { font-size: var(--t-caption); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.gift-title { font-family: var(--book-display); font-weight: 600; font-size: clamp(34px, 6vw, 56px); line-height: 1.04; letter-spacing: -0.01em; color: var(--heading); text-wrap: balance; }
+.gift-lead { font-family: var(--book-body); font-size: var(--t-story); line-height: 1.55; color: var(--ink); max-width: 60ch; }
+.gift-acts { margin-top: 12px; }
+
+.gift-grid { display: grid; gap: 32px; }
+@media (min-width: 900px) {
+  .gift-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+  .gift-preview { position: sticky; top: 24px; }
+}
+
+/* the card: a sheet of the book's paper, lifted by its shadow */
+.gift-card {
+  background: var(--card); border-radius: 6px; padding: 36px 32px 28px; box-shadow: var(--shadow-lift);
+  display: grid; gap: 14px; outline: 1px solid var(--line); outline-offset: -10px;
+}
+.gift-card-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+.gift-card-dear { font-family: var(--book-display); font-weight: 600; font-size: 34px; line-height: 1.1; color: var(--heading); }
+.gift-card-note { font-family: var(--book-body); font-style: italic; font-size: 20px; line-height: 1.55; white-space: pre-line; min-height: 1.55em; overflow-wrap: anywhere; }
+.gift-card-sign { font-family: "Mrs Saint Delafield", "Snell Roundhand", cursive; font-size: 40px; line-height: 1; text-align: right; color: var(--heading); padding-right: 8px; }
+.gift-card-rule { display: block; width: 48px; height: 2px; background: var(--gold); border-radius: 2px; margin: 6px 0; }
+.gift-card-said { font-family: var(--book-body); font-size: 17px; line-height: 1.55; color: var(--ink-soft); }
+.gift-card-q { font-family: var(--book-body); font-size: 21px; line-height: 1.4; color: var(--heading); overflow-wrap: anywhere; }
+.gift-card-q span { display: block; font-family: var(--font-ui); font-size: 12px; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: 4px; }
+.gift-card-open { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px; }
+.gift-card-codehead { font-size: 12px; color: var(--ink-soft); }
+.gift-card-code { font-size: 28px; font-weight: 600; letter-spacing: 0.12em; font-variant-numeric: lining-nums tabular-nums; color: var(--heading); }
+.gift-card-where { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.gift-card .qr-code { flex: none; border-radius: 4px; }
+.gift-card .faint, .gift-card.is-draft .faint { color: var(--ink-faint); }
+.gift-preview-cap { margin-top: 12px; font-size: var(--t-small); color: var(--ink-soft); text-align: center; }
+
+/* the form */
+.gift-form { display: grid; gap: 8px; min-width: 0; }
+.gift-form fieldset { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+.gift-form legend { padding: 0; margin: 0 0 14px; font-family: var(--book-display); font-weight: 600; font-size: 26px; color: var(--heading); }
+.gift-area { align-items: stretch; padding: 12px 16px; }
+.gift-area textarea { flex: 1; min-width: 0; border: 0; background: transparent; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--ink); resize: vertical; outline: 0; }
+.gift-area textarea::placeholder { color: var(--ink-faint); }
+.gift-ideas { display: grid; gap: 2px; margin: -8px 0 4px; }
+.gift-idea { text-align: left; background: none; border: 0; padding: 8px 0; min-height: 40px; font-family: var(--book-body); font-style: italic; font-size: 17px; color: var(--accent); cursor: pointer; }
+.gift-idea:hover { color: var(--accent-deep); }
+
+.gift-when { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.gift-chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); background: var(--card); font-size: var(--t-small); font-weight: 600; cursor: pointer; }
+.gift-chip small { font-weight: 400; color: var(--ink-soft); margin-left: 2px; }
+.gift-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.gift-chip.on { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
+.gift-chip.on small { color: var(--on-chocolate-soft); }
+.gift-chip:has(input:focus-visible) { outline: 2px solid var(--ring); outline-offset: 3px; }
+
+.gift-what { border-top: 1px solid var(--line-strong); padding-top: 20px; margin: 4px 0 12px; display: grid; gap: 12px; }
+.gift-what h2 { font-family: var(--book-display); font-weight: 600; font-size: 26px; }
+.gift-what ul { display: grid; gap: 10px; }
+.gift-what li { font-size: var(--t-small); line-height: 1.55; color: var(--ink-soft); padding-left: 18px; position: relative; }
+.gift-what li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+.gift-what li b { color: var(--ink); }
+.gift-price { font-size: var(--t-small); color: var(--ink-soft); }
+.gift-price span { font-family: var(--book-display); font-weight: 600; font-size: 34px; color: var(--heading); margin-right: 6px; }
+
+.gift-problem { color: var(--danger); font-size: var(--t-small); }
+.gift-fine { font-size: 13px; color: var(--ink-soft); text-align: center; margin-top: 4px; }
+.gift-step { font-size: var(--t-small); color: var(--ink-soft); }
+.gift-acts-col { gap: 12px; }
+.gift-typecode { max-width: 420px; margin-top: 12px; }
+
+@media (max-width: 420px) {
+  .gift-card { padding: 28px 20px 22px; }
+  .gift-card-open { flex-wrap: wrap; }
+  .gift .btn { white-space: normal; text-align: center; }
+}
+
+@media print {
+  .gift { background: #fff; min-height: 0; }
+  .no-print, .gift-top { display: none !important; }
+  .gift-main { padding: 0; max-width: none; }
+  .gift-grid { display: block; }
+  .print-only-card { position: static; max-width: 5.5in; margin: 0 auto; }
+  .gift-card { box-shadow: none; background: #fff; }
+  .gift-card, .gift-card * { color: #2A2320 !important; }
+}
