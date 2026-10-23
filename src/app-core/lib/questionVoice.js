@@ -146,7 +146,11 @@ export function inVoice(prompt, name, { relative = false } = {}) {
    memory titles. */
 export function isAnswered(prompt, answered) {
   if (!prompt?.question) return false;
-  return answered.has(prompt.question.trim()) || (!!prompt.alt && answered.has(prompt.alt.trim()));
+  return (
+    answered.has(prompt.question.trim()) ||
+    (!!prompt.alt && answered.has(prompt.alt.trim())) ||
+    (prompt.was || []).some((t) => answered.has(String(t).trim()))
+  );
 }
 
 /* Memory titles, for isAnswered. */

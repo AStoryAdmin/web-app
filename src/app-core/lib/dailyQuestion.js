@@ -97,7 +97,12 @@ export function deckForDay(
   // storyteller's wording as `alt`, and the other way round
   // (lib/questionVoice.js), so answering it in one voice answers both.
   let pool = shuffled(prompts).filter(
-    (q) => q?.question && !answered.has(q.question.trim()) && !(q.alt && answered.has(q.alt.trim()))
+    (q) =>
+      q?.question &&
+      !answered.has(q.question.trim()) &&
+      !(q.alt && answered.has(q.alt.trim())) &&
+      // An earlier wording of a reworded row (the bank's `was` column).
+      !(q.was || []).some((t) => answered.has(String(t).trim()))
   );
 
   // Hold back anything deeper than we've earned. If that empties the pool —
@@ -201,7 +206,8 @@ export function openerDeck(prompts, memories = [], { seed = "", size = 3 } = {})
       wanted.has(p.id) &&
       !p.sensitive &&
       !answered.has(p.question.trim()) &&
-      !(p.alt && answered.has(p.alt.trim()))
+      !(p.alt && answered.has(p.alt.trim())) &&
+      !(p.was || []).some((t) => answered.has(String(t).trim()))
   );
   if (!open.length) return null;
   const sorted = [...open].sort(
