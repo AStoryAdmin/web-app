@@ -93,3 +93,4 @@
   .gift-card { box-shadow: none; background: #fff; }
   .gift-card, .gift-card * { color: #2A2320 !important; }
 }
+.promo-acts { max-width: 460px; }

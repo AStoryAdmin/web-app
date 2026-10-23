@@ -111,3 +111,35 @@ export function nextLines({ recipientName, deliverOn, emailed }: { recipientName
     "When the stories are in, the hardcover is printed and posted.",
   ];
 }
+
+/* Promotion codes (FB-531): "Ilovemyfamily2026", a free month. On the web they are ours to redeem
+   (redeem_promo); the iPhone app sends them to Apple's offer-code sheet instead. */
+const PROMO_RE = /^[A-Z0-9]{4,40}$/;
+/** "gift" for an 8-character gift code, "promo" for any other code, "bad" otherwise. */
+export function codeKind(raw: string): "gift" | "promo" | "bad" {
+  const c = normaliseGiftCode(raw);
+  if (CODE_RE.test(c)) return "gift";
+  return PROMO_RE.test(c) ? "promo" : "bad";
+}
+
+const LONG_MONTHS = MONTHS;
+/** "23 November 2026" from a timestamp. */
+export function longDay(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : `${d.getUTCDate()} ${LONG_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+export const PROMO_LINES = {
+  kicker: "Try A Story",
+  title: "A free month of A Story",
+  lead: "A Story asks about a life, one question at a time, and keeps what is said in your own words. No card needed. It ends on its own, with a note from us a week before.",
+};
+
+/** What a promo answer says when it can't be used. */
+export const PROMO_REFUSALS: Record<string, string> = {
+  not_found: "That code doesn’t open anything. Check it against the message.",
+  expired: "That code has ended. Everything free stays open.",
+  used_up: "That code has been used as many times as it can be. Everything free stays open.",
+  already_used: "This account has had its free month already.",
+  already_paid: "You’re on a plan already, so there’s nothing to add.",
+};

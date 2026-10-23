@@ -6,7 +6,7 @@
  * (supabase/gift_2026_10_23.sql: gift_preview, redeem_gift).
  */
 import { getSupabase } from "../../lib/supabase";
-import { arrivalDate, normaliseGiftCode, type GiftForm } from "./giftWords";
+import { PROMO_REFUSALS, arrivalDate, normaliseGiftCode, type GiftForm } from "./giftWords";
 
 const BASE = String(import.meta.env.VITE_SUPABASE_URL || "").replace(/\/+$/, "");
 const ANON = String(import.meta.env.VITE_SUPABASE_ANON_KEY || "");
@@ -104,4 +104,32 @@ export async function redeemGift(code: string): Promise<RedeemAnswer> {
   }
   const d = (data || {}) as { already?: boolean; ends_at?: string; from_name?: string };
   return { ok: true, already: !!d.already, endsAt: d.ends_at || "", fromName: d.from_name || "Your family" };
+}
+
+export type PromoPreview = { valid: boolean; reason: string | null; months: number };
+
+/** Whether a promo code can be used, before an account exists; throws when the server can't be reached. */
+export async function promoPreview(code: string): Promise<PromoPreview> {
+  const sb = getSupabase();
+  if (!sb) throw new Error("not configured");
+  const { data, error } = await sb.rpc("promo_preview", { p_code: normaliseGiftCode(code) });
+  if (error) throw new Error(error.message);
+  const row = Array.isArray(data) ? data[0] : data;
+  return { valid: !!row?.valid, reason: row?.reason || (row?.valid ? null : "not_found"), months: Number(row?.months) || 0 };
+}
+
+export type PromoAnswer = { ok: true; endsAt: string; months: number } | { ok: false; reason: string; error: string };
+
+export async function redeemPromo(code: string): Promise<PromoAnswer> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, reason: "failed", error: OFFLINE };
+  const { data, error } = await sb.rpc("redeem_promo", { p_code: normaliseGiftCode(code) });
+  if (error) {
+    const m = error.message || "";
+    for (const k of Object.keys(PROMO_REFUSALS)) if (m.includes(k)) return { ok: false, reason: k, error: PROMO_REFUSALS[k] };
+    if (/sign in/.test(m)) return { ok: false, reason: "signed_out", error: "Sign in first, then use the code." };
+    return { ok: false, reason: "failed", error: OFFLINE };
+  }
+  const d = (data || {}) as { ends_at?: string; months?: number };
+  return { ok: true, endsAt: d.ends_at || "", months: Number(d.months) || 1 };
 }

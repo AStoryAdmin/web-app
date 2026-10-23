@@ -142,9 +142,41 @@ test("redeem, signed out: the card from Daniel, two ways in, and no price or pla
 
 test("redeem: a code that isn't one asks for the card's code", async ({ page }) => {
   await mock(page, () => ({ body: {} }));
-  await page.goto(HARNESS("/gift/redeem/nope"));
+  await page.goto(HARNESS("/gift/redeem/x1"));
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("That code doesn’t open a gift.");
-  await page.getByLabel("The code on the card").fill("K7M2QXOP");
+  await page.getByLabel("The code on the card").fill("K7");
   await page.getByRole("button", { name: "Open this code" }).click();
   await expect(page.getByText("A gift code is eight letters and numbers, like K7M2 QX9P.")).toBeVisible();
+});
+
+test("promo code: a free month, checked before an account, in any case, with no price or countdown", async ({ page }) => {
+  const seen: string[] = [];
+  await page.route(/gift-test\.supabase\.co/, async (route) => {
+    const req = route.request();
+    if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
+    if (req.url().includes("/rpc/promo_preview")) {
+      seen.push(String((req.postDataJSON() as { p_code: string }).p_code));
+      return route.fulfill({ status: 200, headers: CORS, contentType: "application/json", body: JSON.stringify([{ valid: true, reason: null, months: 1 }]) });
+    }
+    return route.fulfill({ status: 404, headers: CORS, body: "" });
+  });
+  await page.goto(HARNESS("/gift/redeem/Ilovemyfamily2026"));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("A free month of A Story.");
+  expect(seen.length).toBeGreaterThan(0);
+  expect(new Set(seen)).toEqual(new Set(["ILOVEMYFAMILY2026"]));
+  const text = await page.locator("body").innerText();
+  expect(text).not.toMatch(/\$|\bprice\b|hurry|days left/i);
+  await expect(page.getByRole("link", { name: "Create an account" })).toBeVisible();
+  await noSideways(page);
+});
+
+test("promo code that has ended says so, and nothing else is offered", async ({ page }) => {
+  await page.route(/gift-test\.supabase\.co/, (route) =>
+    route.request().method() === "OPTIONS"
+      ? route.fulfill({ status: 204, headers: CORS })
+      : route.fulfill({ status: 200, headers: CORS, contentType: "application/json", body: JSON.stringify([{ valid: false, reason: "expired", months: 1 }]) }),
+  );
+  await page.goto(HARNESS("/gift/redeem/ILOVEMYFAMILY2026"));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("That code can’t be used.");
+  await expect(page.getByText("That code has ended. Everything free stays open.")).toBeVisible();
 });

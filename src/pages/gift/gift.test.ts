@@ -41,3 +41,19 @@ describe("the gift's words", () => {
     expect(nextLines({ recipientName: "Hien", deliverOn: "2026-12-25", emailed: false })[0]).toMatch(/Print the card/);
   });
 });
+
+import { codeKind, longDay, PROMO_LINES } from "./giftWords";
+describe("promotion codes (FB-531)", () => {
+  it("tells a gift code from a promo code, in any case", () => {
+    expect(codeKind("K7M2 QX9P")).toBe("gift");
+    expect(codeKind("Ilovemyfamily2026")).toBe("promo");
+    expect(codeKind("ilovemyfamily2026")).toBe("promo");
+    expect(codeKind("!!")).toBe("bad");
+  });
+  it("says it plainly, with no price or countdown", () => {
+    const all = Object.values(PROMO_LINES).join(" ");
+    expect(all).toMatch(/A free month of A Story/);
+    expect(all).not.toMatch(/\$|price|hurry|only \d+ days|left/i);
+    expect(longDay("2026-11-23T10:00:00Z")).toBe("23 November 2026");
+  });
+});

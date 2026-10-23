@@ -14,11 +14,17 @@ import LoadingMark from "../../components/delight/LoadingMark";
 import { useAuth } from "../../state/authContext";
 import GiftCard from "./GiftCard";
 import { giftPreview, redeemGift, type GiftPreview, type RedeemAnswer } from "./giftApi";
-import { firstName, looksLikeGiftCode, normaliseGiftCode } from "./giftWords";
+import { codeKind, firstName, looksLikeGiftCode, normaliseGiftCode } from "./giftWords";
+import PromoRedeem from "./PromoRedeem";
 import "./gift.css";
 
+/** A promotion code (FB-531) opens the month-on-us page; any other code, the gift. */
 export default function GiftRedeem() {
   const { code: raw = "" } = useParams();
+  return codeKind(raw) === "promo" ? <PromoRedeem code={normaliseGiftCode(raw)} /> : <GiftOnly raw={raw} />;
+}
+
+function GiftOnly({ raw }: { raw: string }) {
   const code = normaliseGiftCode(raw);
   const valid = looksLikeGiftCode(code);
   const { user } = useAuth();
@@ -57,7 +63,7 @@ export default function GiftRedeem() {
   const tryCode = (e: FormEvent) => {
     e.preventDefault();
     const c = normaliseGiftCode(typed);
-    if (!looksLikeGiftCode(c)) return setTypedBad("A gift code is eight letters and numbers, like K7M2 QX9P.");
+    if (codeKind(c) === "bad") return setTypedBad("A gift code is eight letters and numbers, like K7M2 QX9P.");
     setTypedBad(null);
     navigate(`/gift/redeem/${c}`);
   };

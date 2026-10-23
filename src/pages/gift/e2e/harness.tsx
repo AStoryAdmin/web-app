@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- a test entry point, never hot-reloaded */
 /**
  * The gift pages mounted on their own, for e2e/gift.spec.ts: the same
  * components App.tsx routes (/gift, /gift/thanks, /gift/redeem/:code), on a
