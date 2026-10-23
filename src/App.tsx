@@ -57,6 +57,7 @@ const router = createBrowserRouter([
   { path: "/join/:code", element: lazyPage(() => import("./pages/Join")) },
   { path: "/c/:slug", element: lazyPage(() => import("./pages/Contribute")) },
   { path: "/p/:slug", element: lazyPage(() => import("./pages/Wall")) },
+  { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
   {
     element: <RequireAuth />,
     children: [
