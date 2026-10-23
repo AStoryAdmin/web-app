@@ -58,6 +58,9 @@ const router = createBrowserRouter([
   { path: "/c/:slug", element: lazyPage(() => import("./pages/Contribute")) },
   { path: "/p/:slug", element: lazyPage(() => import("./pages/Wall")) },
   { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
+  { path: "/gift", element: lazyPage(() => import("./pages/gift/Gift")) },
+  { path: "/gift/thanks", element: lazyPage(() => import("./pages/gift/GiftThanks")) },
+  { path: "/gift/redeem/:code", element: lazyPage(() => import("./pages/gift/GiftRedeem")) },
   {
     element: <RequireAuth />,
     children: [
