@@ -12,15 +12,18 @@ export async function shot(page: Page, dir: string, name: string) {
   await page.screenshot({ path: `${dir}/${name}-${test.info().project.name}.png`, fullPage: true, animations: "disabled" });
 }
 
-/** The words the product never says, anywhere in the visible text, sentence by sentence. */
-export async function checkCopy(page: Page, where: string) {
+/**
+ * The words the product never says, anywhere in the visible text, sentence by sentence. `prices` is for the one
+ * place a price belongs: the order flow once the server says ordering is open (M5).
+ */
+export async function checkCopy(page: Page, where: string, { prices = false }: { prices?: boolean } = {}) {
   const text = await page.evaluate(() => document.body.innerText);
   const sentences = text
     .split(/\n+|(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
   const said = (re: RegExp) => sentences.filter((s) => re.test(s));
-  expect.soft(said(/\$\d/), `${where}: a price is shown`).toEqual([]);
+  if (!prices) expect.soft(said(/\$\d/), `${where}: a price is shown`).toEqual([]);
   expect.soft(sentences.filter((s) => /free/i.test(s) && /book|print/i.test(s)), `${where}: the book or a print is called free`).toEqual([]);
   expect.soft(said(/days?\s+left/i), `${where}: a countdown`).toEqual([]);
   expect.soft(said(/trial/i), `${where}: trial language`).toEqual([]);

@@ -12,6 +12,7 @@
  * described here and never ordered or priced (bookCatalog.js).
  */
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button, ButtonLink } from "../ui";
 import { Stop } from "./WhereNext";
 import { CATALOG, checkBookOrder, editionTerms, formatCents, orderingOpen, orderPath, type BookOffer, type EditionId } from "../../data/book";
@@ -67,6 +68,13 @@ export default function Editions({ storyId, memories }: { storyId: string; memor
           Editions<Stop />
         </h2>
         <p className="ed-lead">A first edition reads well from about twenty memories.</p>
+        {open && (
+          <p className="ed-lead">
+            <Link to="/book/orders" className="more">
+              Your orders
+            </Link>
+          </p>
+        )}
         {!loading && !open && (
           <div className="ed-wait">
             <p className="ed-coming">Printed editions are coming. Until they are, the book prints at home.</p>

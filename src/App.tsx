@@ -80,6 +80,10 @@ const router = createBrowserRouter([
       { path: "/family/:personId", element: lazyPage(() => import("./pages/Person")) },
       { path: "/book", element: lazyPage(() => import("./pages/Book")) },
       { path: "/book/design", element: lazyPage(() => import("./pages/BookDesign")) },
+      // the printed book: ordering (open only when the server says so), Stripe's way back, and where each order is
+      { path: "/book/order", element: lazyPage(() => import("./pages/BookOrder")) },
+      { path: "/book/thanks", element: lazyPage(() => import("./pages/BookThanks")) },
+      { path: "/book/orders", element: lazyPage(() => import("./pages/BookOrders")) },
       { path: "/plans", element: lazyPage(() => import("./pages/Plans")) },
       { path: "/account", element: lazyPage(() => import("./pages/Account")) },
       { path: "/help", element: lazyPage(() => import("./pages/Help")) },
