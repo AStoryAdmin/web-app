@@ -585,6 +585,36 @@ export const PRINT_PROFILES = {
     spine: "linear",
     cover: { overhangIn: 0.125, wrapIn: 0.75 },
   },
+  // The book A Story sells (supabase/functions/_shared/printCatalog.js,
+  // ASTORY-SQ-HC-8): Prodigi's square hardcover photo book, 8.27 in square,
+  // PUR bound. TODO(sandbox): every number here is ours until checked
+  // against Prodigi's print guide and a sandbox order (trim, bleed, safe
+  // zone, margins, page rules, spine and the cover's wrap). PUR glue takes
+  // more at the gutter, so the inside margin is the widest, and every
+  // margin stays at or above safeIn (the catalog's safe zone).
+  "prodigi-square-hc-8": {
+    printer: "Prodigi",
+    binding: "pur",
+    trimIn: [8.27, 8.27],
+    bleedIn: 0.125,
+    safeIn: 0.375,
+    marginsIn: { top: 0.625, bottom: 0.7, inside: 0.8, outside: 0.6 },
+    pageMultiple: 2,
+    minPages: 24,
+    maxPages: 300,
+    spine: "linear",
+    cover: { overhangIn: 0.125, wrapIn: 0.75 },
+  },
+};
+
+/* The text block (the trim less the margins), in inches: the placed size
+   assumed for a full-width photo. No photo is drawn larger, so a check
+   against it is the conservative one. */
+export const PHOTO_PLACED_IN = (profile) => {
+  const p = typeof profile === "string" ? PRINT_PROFILES[profile] : profile;
+  const m = p.marginsIn;
+  const r = (n) => Math.round(n * 10000) / 10000;
+  return { widthIn: r(p.trimIn[0] - m.inside - m.outside), heightIn: r(p.trimIn[1] - m.top - m.bottom) };
 };
 
 // Lulu's Hardcover Casewrap spine table, [last page count, inches]

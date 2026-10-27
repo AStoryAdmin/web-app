@@ -48,6 +48,8 @@ export const FILES = [
   "lib/bookProgress.js",
   "lib/bookDesign.js",
   "lib/legacyBook.js",
+  // The checks a book passes before it is ordered (print ordering, R12).
+  "lib/preflight.js",
   "lib/bookPages.js",
   "lib/bookCase.js",
   "lib/bookSerifFont.js",

@@ -12,11 +12,17 @@ import {
   checkInterior,
   forColumns,
   interiorGeometry,
+  isPrintCapableBrowser,
   orderPdfPaths,
   prepareBookPdfs,
+  PRINT_BROWSER_MESSAGE,
+  PRINT_PROFILE,
   PrintPdfError,
+  profileName,
   readPdfPages,
   renderAndUploadBookPdfs,
+  uploadVersionPdfs,
+  versionPdfPaths,
   type Rasterizer,
 } from "./printPdf";
 import { newMemory, newStory } from "../../data/memories";
@@ -48,7 +54,10 @@ const blob = (b: Blob) =>
     r.readAsArrayBuffer(b);
   });
 
-beforeEach(() => storage.upload.mockReset());
+// a block, not an arrow that returns the mock: vitest calls a function beforeEach returns as the test's cleanup
+beforeEach(() => {
+  storage.upload.mockReset();
+});
 
 describe("bookPlan", () => {
   it("pads a short book to Lulu's 24 pages, with the narrowest spine and a 14 × 10.75 in cover", () => {
@@ -156,5 +165,99 @@ describe("prepareBookPdfs and renderAndUploadBookPdfs", () => {
   it("turns a drawing failure into render_failed", async () => {
     const r: Rasterizer = { interior: async () => Promise.reject(new Error("tainted")), single: async () => page };
     await expect(prepareBookPdfs(story(), null, { rasterizer: r })).rejects.toMatchObject({ problem: "render_failed" });
+  });
+});
+
+describe("the print profile as a parameter", () => {
+  it("defaults to the order page's profile, so the old flow is unchanged", () => {
+    expect(PRINT_PROFILE).toBe("lulu-6x9-hardcover");
+    expect(profileName()).toBe(PRINT_PROFILE);
+    expect(profileName(null)).toBe(PRINT_PROFILE);
+    expect(bookPlan(9, null)).toEqual(bookPlan(9));
+    const [a, b] = [interiorGeometry(undefined), interiorGeometry(PRINT_PROFILE)];
+    expect({ ...a, left: [a.left(1), a.left(2)] }).toEqual({ ...b, left: [b.left(1), b.left(2)] });
+  });
+
+  it("plans, measures and checks another profile when named", () => {
+    // stands in for the server's profile (prodigi-square-hc-8 arrives from prepareVersion at run time)
+    const square = "square-8x8-layflat";
+    expect(bookPlan(9, square)).toMatchObject({ pages: 20, blanks: 11, pageIn: [8.25, 8.25] });
+    expect(interiorGeometry(square).pageW).toBe(792);
+    const box: [number, number] = [594, 594];
+    expect(checkInterior({ count: 20, boxes: Array.from({ length: 20 }, () => box) }, square)).toBeNull();
+    expect(checkInterior({ count: 24, boxes: Array.from({ length: 24 }, () => [450, 666] as [number, number]) }, square)).toBe("wrong_size");
+  });
+
+  it("refuses a profile this page doesn't know, in plain words", () => {
+    expect(() => profileName("not-a-profile")).toThrow(PrintPdfError);
+    expect(() => bookPlan(9, "not-a-profile")).toThrow(/reload the page/);
+  });
+
+  it("sets and checks the whole book with the named profile", async () => {
+    const { r, seen } = fakeRasterizer(21);
+    const out = await prepareBookPdfs(story(), null, { rasterizer: r, profile: "square-8x8-layflat" });
+    expect(seen.interior).toContain("size: 8.25in 8.25in");
+    expect(out.plan).toMatchObject({ rendered: 21, pages: 22, blanks: 1 });
+    expect(readPdfPages(await blob(out.interior))).toMatchObject({ count: 22 });
+    expect(readPdfPages(await blob(out.interior)).boxes[0]).toEqual([594, 594]);
+  });
+});
+
+describe("uploadVersionPdfs", () => {
+  const files = { interior: new Blob(["i"]), cover: new Blob(["c"]) };
+
+  it("files both PDFs in book-versions at the version's two paths, replacing an earlier try", async () => {
+    storage.upload.mockResolvedValue({ error: null });
+    await expect(uploadVersionPdfs("v-1", files)).resolves.toEqual({ interior: "v-1/interior.pdf", cover: "v-1/cover.pdf" });
+    expect(storage.bucket).toBe("book-versions");
+    expect(storage.upload.mock.calls.map((c) => [c[0], c[1], c[2]])).toEqual([
+      ["v-1/interior.pdf", files.interior, { contentType: "application/pdf", upsert: true }],
+      ["v-1/cover.pdf", files.cover, { contentType: "application/pdf", upsert: true }],
+    ]);
+    expect(versionPdfPaths("v-1")).toEqual({ interior: "v-1/interior.pdf", cover: "v-1/cover.pdf" });
+  });
+
+  it("says so plainly when a file doesn't save, or the connection drops", async () => {
+    storage.upload.mockResolvedValue({ error: { message: "new row violates row-level security policy" } });
+    await expect(uploadVersionPdfs("v-1", files)).rejects.toMatchObject({ problem: "upload_failed", message: "We couldn’t save your book’s pages. Please check your connection and try again." });
+    storage.upload.mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(uploadVersionPdfs("v-1", files)).rejects.toMatchObject({ problem: "upload_failed" });
+  });
+
+  it("uploads nothing without a version or both files", async () => {
+    await expect(uploadVersionPdfs("", files)).rejects.toMatchObject({ problem: "upload_failed" });
+    await expect(uploadVersionPdfs("v-1", { interior: files.interior } as never)).rejects.toMatchObject({ problem: "upload_failed" });
+    expect(storage.upload).not.toHaveBeenCalled();
+  });
+});
+
+describe("isPrintCapableBrowser", () => {
+  const UA = {
+    chromeWin: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    edge: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0",
+    firefoxMac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.6; rv:131.0) Gecko/20100101 Firefox/131.0",
+    chromeAndroid: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36",
+    safariMac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
+    safariIphone: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+    chromeIphone: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.69 Mobile/15E148 Safari/604.1",
+  };
+
+  it("says yes to Chrome, Edge and Firefox, and to Chrome on Android", () => {
+    for (const ua of [UA.chromeWin, UA.edge, UA.firefoxMac, UA.chromeAndroid]) expect(isPrintCapableBrowser({ userAgent: ua, maxTouchPoints: 0 })).toBe(true);
+  });
+
+  it("says no to Safari, any browser on an iPhone, and an iPad that calls itself a Mac", () => {
+    expect(isPrintCapableBrowser({ userAgent: UA.safariMac, vendor: "Apple Computer, Inc.", maxTouchPoints: 0 })).toBe(false);
+    expect(isPrintCapableBrowser({ userAgent: UA.safariIphone, maxTouchPoints: 5 })).toBe(false);
+    expect(isPrintCapableBrowser({ userAgent: UA.chromeIphone, maxTouchPoints: 5 })).toBe(false);
+    expect(isPrintCapableBrowser({ userAgent: UA.safariMac, vendor: "Apple Computer, Inc.", maxTouchPoints: 5 })).toBe(false);
+  });
+
+  it("refuses nothing on a guess when there is no browser to ask", () => {
+    expect(isPrintCapableBrowser(null)).toBe(true);
+  });
+
+  it("points the family to Chrome or the app, in plain words", () => {
+    expect(PRINT_BROWSER_MESSAGE).toBe("To prepare the book for printing, please order from the A Story app, or open this page in Chrome on a computer.");
   });
 });

@@ -48,6 +48,13 @@
  *     book cannot be ordered from that browser. Chrome, Edge and Firefox work.
  *   - The cover's wrap and board overhang are the profile's assumptions
  *     (book-fulfilment.md): check them against Lulu's template once.
+ *
+ * The profile is a parameter (prepareBookPdfs's `profile`, bookPlan,
+ * checkInterior, interiorGeometry). Left out, it is PRINT_PROFILE, the
+ * order page's Lulu book, so BookOrder.tsx is unchanged. A locked book
+ * version (bookVersion.ts prepareVersion) names its own profile at run
+ * time, and its files go to the private book-versions bucket instead
+ * (uploadVersionPdfs): `{versionId}/interior.pdf` and `{versionId}/cover.pdf`.
  */
 import { buildCoverWrapHtml, buildLegacyHtml, coverSpreadIn, pageBoxIn, pageMarginsIn, paddedPageCount, printProfile, spineWidthIn } from "../../app-core/lib/legacyBook.js";
 import { signStoryPhotos, typeset } from "./printBook";
@@ -60,6 +67,8 @@ import type { Contribution } from "../../data/contributions";
 /** The printer an ordered book goes to (book-fulfilment.md: Lulu, US Trade 6 × 9 in, Hardcover Casewrap). */
 export const PRINT_PROFILE = "lulu-6x9-hardcover";
 export const BUCKET = "book-orders";
+/** The private bucket a locked book version's two files go to (R10, R11). */
+export const VERSION_BUCKET = "book-versions";
 
 const PX_PER_IN = 96; // a CSS pixel
 const PT_PER_IN = 72; // a PDF point
@@ -87,6 +96,20 @@ export class PrintPdfError extends Error {
 }
 
 const round4 = (n: number) => Math.round(n * 10000) / 10000;
+
+/**
+ * The profile to use: the one named, or PRINT_PROFILE when none is. A name this copy of app-core doesn't know (a
+ * server ahead of the web) is a PrintPdfError with a plain message, not legacyBook's developer one.
+ */
+export function profileName(name?: string | null): string {
+  const chosen = name || PRINT_PROFILE;
+  try {
+    printProfile(chosen);
+  } catch {
+    throw new PrintPdfError("render_failed", "This page needs updating before it can prepare the book. Please reload the page and try again.");
+  }
+  return chosen;
+}
 const profileOf = (name: string) => printProfile(name) as unknown as Profile;
 
 /* ── The plan: page count, spine, sizes ─────────────────────────────────── */
@@ -106,7 +129,8 @@ export type BookPlan = {
 };
 
 /** What the printer binds for a layout of `rendered` pages. Throws when it can't be bound. Pure. */
-export function bookPlan(rendered: number, profile = PRINT_PROFILE): BookPlan {
+export function bookPlan(rendered: number, profileArg?: string | null): BookPlan {
+  const profile = profileName(profileArg);
   if (!(rendered > 0)) throw new PrintPdfError("empty", "The book has no pages yet. Add a memory and try again.");
   const { pages, blanks, tooMany } = paddedPageCount(profile, rendered);
   const p = profileOf(profile);
@@ -117,7 +141,8 @@ export function bookPlan(rendered: number, profile = PRINT_PROFILE): BookPlan {
 }
 
 /** Where the text block sits on a page, in CSS pixels. Page 1 is a right-hand page (book-fulfilment.md: mirrored). */
-export function interiorGeometry(profile = PRINT_PROFILE) {
+export function interiorGeometry(profileArg?: string | null) {
+  const profile = profileName(profileArg);
   const [w, h] = pageBoxIn(profile) as [number, number];
   const { recto, verso } = pageMarginsIn(profile);
   const px = (inches: number) => round4(inches * PX_PER_IN);
@@ -232,7 +257,8 @@ export function readPdfPages(bytes: Uint8Array): { count: number; boxes: [number
  * The interior against the profile: an even count (the profile's multiple), at least its minimum, at most its
  * maximum, every page the page box. Null when the printer would take it. Pure.
  */
-export function checkInterior(info: { count: number; boxes: [number, number][] }, profile = PRINT_PROFILE): PrintPdfProblem | null {
+export function checkInterior(info: { count: number; boxes: [number, number][] }, profileArg?: string | null): PrintPdfProblem | null {
+  const profile = profileName(profileArg);
   const p = profileOf(profile);
   if (info.count < 1) return "empty";
   if (info.count < p.minPages) return "too_few_pages";
@@ -394,7 +420,8 @@ export type PreparedBookPdfs = { interior: Blob; cover: Blob; plan: BookPlan };
 
 export type PrepareOptions = {
   sides?: Contribution[];
-  profile?: string;
+  /** The print profile (legacyBook PRINT_PROFILES). Left out: PRINT_PROFILE. A book version's comes from prepareVersion. */
+  profile?: string | null;
   dpi?: number;
   rasterizer?: Rasterizer;
   /** "Laying out page 12 of 96": every page as it is drawn. */
@@ -406,7 +433,8 @@ export type PrepareOptions = {
  * so an order is only ever placed for a book whose files passed. Throws PrintPdfError.
  */
 export async function prepareBookPdfs(story: Story, design: Story["bookDesign"] | null | undefined, opts: PrepareOptions = {}): Promise<PreparedBookPdfs> {
-  const { sides = [], profile = PRINT_PROFILE, dpi = 300, rasterizer = browserRasterizer, onProgress } = opts;
+  const { sides = [], dpi = 300, rasterizer = browserRasterizer, onProgress } = opts;
+  const profile = profileName(opts.profile);
   const ready = typeset(await signStoryPhotos({ ...story, bookDesign: design ?? story.bookDesign }));
   // set as printBook's printableHtml sets them: paragraph by paragraph
   const set = sides.map((c) => ({ ...c, body: String(c.body ?? "").split("\n").map(smarten).join("\n") }));
@@ -478,4 +506,62 @@ export async function renderAndUploadBookPdfs(story: Story, design: Story["bookD
     const problem = err instanceof PrintPdfError ? err.problem : "render_failed";
     return { ok: false, problem, error: (err as Error)?.message || "We couldn’t make the book’s files." };
   }
+}
+
+/* ── A locked book version's files ──────────────────────────────────────── */
+
+/**
+ * Where a book version's files go in the book-versions bucket: the only two paths its Storage policy lets a member
+ * write, and only while the version is not yet approved (R11). The same as the server's uploadPaths(versionId).
+ */
+export const versionPdfPaths = (versionId: string) => ({ interior: `${versionId}/interior.pdf`, cover: `${versionId}/cover.pdf` });
+
+/**
+ * Files both PDFs with a book version, before it is approved. Replaces an earlier upload for the same version
+ * (upsert), so a family can prepare the book again after a failed try. Throws PrintPdfError("upload_failed").
+ */
+export async function uploadVersionPdfs(versionId: string, files: Pick<PreparedBookPdfs, "interior" | "cover">): Promise<{ interior: string; cover: string }> {
+  const failed = () => new PrintPdfError("upload_failed", "We couldn’t save your book’s pages. Please check your connection and try again.");
+  if (!versionId || !files?.interior || !files?.cover) throw failed();
+  const paths = versionPdfPaths(versionId);
+  const bucket = supabase().storage.from(VERSION_BUCKET);
+  for (const [path, blob] of [
+    [paths.interior, files.interior],
+    [paths.cover, files.cover],
+  ] as const) {
+    let error: unknown;
+    try {
+      ({ error } = await bucket.upload(path, blob, { contentType: "application/pdf", upsert: true }));
+    } catch (err) {
+      error = err ?? true; // a dropped connection rejects instead of returning an error
+    }
+    if (error) throw failed();
+  }
+  return paths;
+}
+
+/* ── Which browsers can make the files ──────────────────────────────────── */
+
+/** What a browser that can't make the files says instead (R10). */
+export const PRINT_BROWSER_MESSAGE = "To prepare the book for printing, please order from the A Story app, or open this page in Chrome on a computer.";
+
+export type BrowserHints = { userAgent?: string; maxTouchPoints?: number; vendor?: string };
+
+/**
+ * Whether this browser can draw the book's pages and read them back (step 3 above). Safari can't: WebKit taints a
+ * canvas that drew an SVG <foreignObject>, so toBlob fails. A feature test would have to draw and read a whole page
+ * to find out, which is slow and fails late, so this reads the user agent instead:
+ *   - every browser on an iPhone or iPad is WebKit underneath (Chrome there is "CriOS", Firefox "FxiOS"), including
+ *     an iPad that calls itself a Mac (a "Macintosh" with touch points);
+ *   - desktop Safari says "Safari/" and Apple as its vendor, without Chrome's, Edge's, Opera's or Firefox's names.
+ * Everything else (Chrome, Edge, Firefox on Windows, Mac, Linux or Android) can. Without a navigator (tests, a
+ * server) it answers true, so nothing is refused on a guess. The page shows PRINT_BROWSER_MESSAGE when it's false.
+ */
+export function isPrintCapableBrowser(hints: BrowserHints | null = typeof navigator === "undefined" ? null : navigator): boolean {
+  if (!hints) return true;
+  const ua = hints.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return false;
+  if (/Macintosh/i.test(ua) && (hints.maxTouchPoints ?? 0) > 1) return false;
+  if (/Chrome\/|Chromium\/|Firefox\/|Edg\/|OPR\/|Android/i.test(ua)) return true;
+  return !(/Safari\//i.test(ua) || /Apple/i.test(hints.vendor || ""));
 }
