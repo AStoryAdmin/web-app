@@ -5,7 +5,8 @@
  * src/data/auth.js, against the same project: sign-up with first and last
  * name in user_metadata (the handle_new_user() trigger makes the profiles
  * row and the referral code), a six-digit emailed code to confirm, password
- * sign-in, and a six-digit code to reset. The marketing site's src/lib/auth.ts
+ * sign-in, a six-digit code to sign in with no password (the app's default),
+ * and a six-digit code to reset. The marketing site's src/lib/auth.ts
  * does the same; the three must never drift. When the app changes how it
  * signs people in, this changes too.
  *
@@ -17,10 +18,15 @@ import { getSupabase } from "../lib/supabase";
 import { resolveEffectivePlan, type Plan } from "../lib/plan";
 import { sessionIsOver } from "../app-core/lib/sessionCheck.js";
 
+/** The project's Email OTP length: the app's VerifyCodeStage CODE_LEN. */
 export const CODE_LEN = 6;
-export const MIN_PASSWORD = 6;
+/** The app's PASSWORD_MIN (lib/copy.js). */
+export const MIN_PASSWORD = 8;
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
+
+/** What supabase-js hands back as an error, as far as this file reads it. */
+type SbError = { message?: string; code?: string; status?: number } | null | undefined;
 
 const UNCONFIGURED: AuthResult = {
   ok: false,
@@ -55,6 +61,8 @@ export function friendlyAuthError(message: string | undefined): string {
     return "That code isn’t right, or it has run out. Check it, or send another.";
   if (msg.includes("expired")) return "That code has expired. Please ask for a new one.";
   if (msg.includes("otp") || msg.includes("token")) return "That code isn’t right. Please check it and try again.";
+  if (msg.includes("different from the old")) return "That’s the password you have now. Choose a new one.";
+  if (msg.includes("reauthentication")) return "We need to check it’s you. Type the code we emailed.";
   if (msg.includes("password")) return `The password needs at least ${MIN_PASSWORD} characters.`;
   return message || "Something went wrong. Please try again.";
 }
@@ -130,11 +138,67 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   return { ok: true };
 }
 
+/* ── Signing in with an emailed code ────────────────────────────────────
+   The app's sendEmailCode / verifyEmailCode (phone src/data/auth.js). With
+   createUser the code also makes the account when the email is new, with
+   the name and any family code in user_metadata exactly as signUp() sends
+   them; without it an unknown email is refused, rather than quietly made
+   into a new, empty account by somebody who only mistyped.
+
+   The "Magic Link" email template must carry {{ .Token }} for an existing
+   account's code, and "Confirm signup" for a new one (a Supabase setting). */
+
+export type CodeFor = { createUser: false } | { createUser: true; name: string; code?: string };
+
+export async function sendEmailCode(email: string, how: CodeFor = { createUser: false }): Promise<AuthResult & { noAccount?: boolean }> {
+  const sb = getSupabase();
+  if (!sb) return UNCONFIGURED;
+  let data: Record<string, string> | undefined;
+  if (how.createUser) {
+    const { firstName, lastName } = splitName(how.name);
+    data = {
+      first_name: firstName,
+      last_name: lastName,
+      referral_code: (how.code || "").trim().toUpperCase(),
+      signed_up_on: "web",
+    };
+  }
+  const { error } = await sb.auth.signInWithOtp({
+    email: normEmail(email),
+    options: { shouldCreateUser: how.createUser, ...(data ? { data } : {}) },
+  });
+  return error ? codeSendFailed(error) : { ok: true };
+}
+
+function codeSendFailed(error: NonNullable<SbError>): AuthResult & { noAccount?: boolean } {
+  const msg = (error.message || "").toLowerCase();
+  if (msg.includes("signups not allowed") || msg.includes("user not found")) {
+    return { ok: false, error: "We don’t have an account with that email. Check it, or create one.", noAccount: true };
+  }
+  if (msg.includes("security purposes") || msg.includes("rate limit") || error.status === 429) {
+    return { ok: false, error: "A code was sent a moment ago. Give it a minute to arrive, then ask again." };
+  }
+  return fail(error.message);
+}
+
+/** type "email" covers an existing account's code and a new account's first one; either way it signs them in. */
+export async function verifyEmailCode(email: string, code: string): Promise<AuthResult> {
+  const sb = getSupabase();
+  if (!sb) return UNCONFIGURED;
+  const { data, error } = await sb.auth.verifyOtp({ email: normEmail(email), token: code.trim(), type: "email" });
+  if (error) return fail(error.message);
+  if (!data.session?.user) return fail("That code didn’t work. Please try again.");
+  return { ok: true };
+}
+
 /** Always succeeds for a well-formed address, so nobody can probe which emails exist. */
 export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const sb = getSupabase();
   if (!sb) return UNCONFIGURED;
-  const { error } = await sb.auth.resetPasswordForEmail(normEmail(email));
+  // The email's code is what the page asks for; should the template carry the link too, it opens /reset-password here
+  // (the address must be in the project's Redirect URLs, or Supabase falls back to the Site URL).
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+  const { error } = await sb.auth.resetPasswordForEmail(normEmail(email), redirectTo ? { redirectTo } : undefined);
   return error ? fail(error.message) : { ok: true };
 }
 
@@ -152,12 +216,115 @@ export async function resetPassword(email: string, code: string, newPassword: st
   return updated.error ? fail(updated.error.message) : { ok: true };
 }
 
-export async function changePassword(newPassword: string): Promise<AuthResult> {
+/**
+ * A new password for the signed-in person. With "Secure password change" on
+ * in the project, Supabase refuses a change from a session that isn't fresh
+ * until it carries the code reauthenticate() emails (the "nonce"), as the
+ * app's ChangePasswordScreen asks for. So: try without it; when Supabase
+ * says it needs one, email the code and answer needsCode, and the page
+ * calls again with the code the person typed.
+ */
+export async function changePassword(newPassword: string, nonce?: string): Promise<AuthResult & { needsCode?: boolean }> {
   const sb = getSupabase();
   if (!sb) return UNCONFIGURED;
-  const { error } = await sb.auth.updateUser({ password: newPassword });
+  const code = (nonce || "").trim();
+  const { error } = await sb.auth.updateUser(code ? { password: newPassword, nonce: code } : { password: newPassword });
+  if (!error) return { ok: true };
+  if (!code && needsReauthentication(error)) {
+    const sent = await sendPasswordChangeCode();
+    if (!sent.ok) return sent;
+    return { ok: false, needsCode: true, error: "To keep the account safe, we emailed you a code. Type it to save the new password." };
+  }
+  if (code && (error.code === "reauthentication_not_valid" || /nonce|reauthentication/i.test(error.message || ""))) {
+    return { ok: false, needsCode: true, error: "That code isn’t right, or it has run out. Check it, or send another." };
+  }
+  return fail(error.message);
+}
+
+/** Supabase's answer when a password change needs the emailed code first. */
+export function needsReauthentication(error: SbError): boolean {
+  if (!error) return false;
+  if (error.code === "reauthentication_needed" || error.code === "reauth_nonce_missing") return true;
+  return /requires reauthentication|reauthentication (is )?needed/i.test(error.message || "");
+}
+
+/** Emails the signed-in person the code a password change asks for (Supabase's reauthenticate). */
+export async function sendPasswordChangeCode(): Promise<AuthResult> {
+  const sb = getSupabase();
+  if (!sb) return UNCONFIGURED;
+  const { error } = await sb.auth.reauthenticate();
   return error ? fail(error.message) : { ok: true };
 }
+
+/* ── A reset link ───────────────────────────────────────────────────────
+   The reset email carries a six-digit code, but a link (an older email
+   template, or one sent from the app) lands on /reset-password with the
+   recovery in the address: a PKCE ?code=, or #access_token=...&type=recovery.
+   supabase-js turns it into a session and fires PASSWORD_RECOVERY;
+   AuthProvider notes that here so the page can ask for the new password
+   however late it mounts. The address is read once, as this module loads,
+   before supabase-js clears it. */
+
+export type RecoveryLink = "recovery" | "pending" | "expired" | null;
+
+/** What a reset link's address says: a recovery, one still being exchanged, or one that has run out. */
+export function readRecoveryLink(hash: string, search: string): RecoveryLink {
+  const h = new URLSearchParams(hash.replace(/^#/, ""));
+  const q = new URLSearchParams(search.replace(/^\?/, ""));
+  const get = (k: string) => h.get(k) ?? q.get(k);
+  if (get("error") || get("error_code") || get("error_description")) return "expired";
+  if (get("type") === "recovery" && h.get("access_token")) return "recovery";
+  if (q.get("code") || h.get("access_token")) return "pending";
+  return null;
+}
+
+const LINK_AT_LOAD: RecoveryLink =
+  typeof window !== "undefined" && window.location.pathname === "/reset-password"
+    ? readRecoveryLink(window.location.hash, window.location.search)
+    : null;
+
+// an implicit-grant link's tokens, kept as the page loads: the client runs the PKCE flow, so supabase-js refuses this
+// address ("Not a valid PKCE flow url.") and adoptRecoveryHash sets the session from them instead
+const HASH_AT_LOAD =
+  LINK_AT_LOAD === "recovery" ? new URLSearchParams(window.location.hash.replace(/^#/, "")) : null;
+
+/** A #access_token=...&type=recovery reset link (an older email template, or one sent from the app) made into a
+ * session, so it asks for the new password like a ?code= link does. Once, on load; a link the server refuses is
+ * left to read as run out. */
+let hashAdopted = false;
+export async function adoptRecoveryHash(): Promise<void> {
+  if (hashAdopted || !HASH_AT_LOAD) return;
+  hashAdopted = true;
+  const access_token = HASH_AT_LOAD.get("access_token");
+  const refresh_token = HASH_AT_LOAD.get("refresh_token");
+  const sb = getSupabase();
+  if (!sb || !access_token || !refresh_token) return noteRecovery(false);
+  const { error } = await sb.auth.setSession({ access_token, refresh_token });
+  // the tokens leave the address either way
+  if (window.location.hash) window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+  noteRecovery(!error);
+}
+
+let recovering = LINK_AT_LOAD === "recovery";
+const recoveryListeners = new Set<() => void>();
+
+/** On PASSWORD_RECOVERY; with false once the new password is saved, or on signing out. */
+export function noteRecovery(on = true) {
+  if (recovering === on) return;
+  recovering = on;
+  for (const l of recoveryListeners) l();
+}
+
+export const recoveryStore = {
+  subscribe(l: () => void) {
+    recoveryListeners.add(l);
+    return () => void recoveryListeners.delete(l);
+  },
+  /** True while a reset link's session waits for its new password. */
+  get: () => recovering,
+  /** What the address said when the page first loaded. */
+  linkAtLoad: () => LINK_AT_LOAD,
+};
 
 /** Starts an email change; Supabase emails a code to the new address. */
 export async function requestEmailChange(newEmail: string): Promise<AuthResult> {

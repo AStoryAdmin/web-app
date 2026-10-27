@@ -13,9 +13,11 @@ export type AccountState = {
   /** The family tree, or null when the database has none (or the tables are absent). */
   family: Family | null;
   /**
-   * The signed-in person's own story ("Myself"), made if they have none: a
-   * relative who joined by code or invitation still needs somewhere for
-   * what they remember (the app's ensureMyStory).
+   * The signed-in person's own story ("Myself"), made if they have none (the
+   * app's ensureMyStory). Only Write asks for it, when they set out to write
+   * about themselves; joining by code makes none (as on the phone). Made
+   * through addStory, which binds a "Myself" story to their own place in the
+   * family tree when they have one.
    */
   ensureMyStory: () => Promise<Story | null>;
   /** Re-reads everything from the server (after a sign-in, a relative's edit, a return to the tab). */

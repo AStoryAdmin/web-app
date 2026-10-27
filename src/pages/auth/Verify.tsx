@@ -1,17 +1,29 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
 import { useCodeAria } from "./useCodeAria";
+import { useArrive } from "./useArrive";
+import { clearHandoff, readHandoff } from "./handoff";
 import { Button } from "../../components/ui";
 import PlateCode from "./PlateCode";
-import { CODE_LEN, resendSignupCode, safeNext, verifySignupCode } from "../../data/auth";
+import { CODE_LEN, resendSignupCode, safeNext, sendEmailCode, verifyEmailCode, verifySignupCode } from "../../data/auth";
+import { useAuth } from "../../state/authContext";
 
-/** The six-digit code that confirms the email, typed here, never a link. The dog sleeps while it waits. */
+/**
+ * The six-digit emailed code, typed here, never a link: the one that confirms a new account's email, or the one that
+ * signs someone in with no password (the app's default way in). The address comes in the router's state (handoff.ts),
+ * never the URL. The dog sleeps while it waits.
+ */
 export default function Verify() {
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { arrive, arriving } = useArrive();
+  const location = useLocation();
   const [params] = useSearchParams();
-  const email = params.get("email") || "";
+  // read once: after the code is accepted the stored copy is cleared, and the page must not forget the address mid-way
+  const [handoff] = useState(() => readHandoff(location.state));
+  const email = handoff?.email || "";
+  const byCode = handoff?.mode === "email";
   const next = safeNext(params.get("next"));
   const familyCode = params.get("code") || "";
   const [code, setCode] = useState("");
@@ -30,13 +42,16 @@ export default function Verify() {
 
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
+    if (busy || arriving) return;
     if (code.length < CODE_LEN) return setError("Type all six digits from the email.");
     setError(null);
     setBusy(true);
-    const r = await verifySignupCode(email, code);
+    const r = byCode ? await verifyEmailCode(email, code) : await verifySignupCode(email, code);
     setBusy(false);
     if (!r.ok) return setError(r.error);
-    navigate(familyCode ? `/join/${familyCode}` : next, { replace: true });
+    clearHandoff();
+    // signed in now: go on once AuthProvider has them, so the signed-in pages don't send them back to sign in
+    arrive(familyCode ? `/join/${encodeURIComponent(familyCode)}` : next);
   };
 
   useEffect(() => {
@@ -44,9 +59,13 @@ export default function Verify() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
+  if (user && !arriving) return <Navigate to={next} replace />;
+
   const resend = async () => {
     setAgain("busy");
-    const r = await resendSignupCode(email);
+    const r = !byCode
+      ? await resendSignupCode(email)
+      : await sendEmailCode(email, handoff?.create ? { createUser: true, name: handoff.create.name, code: handoff.create.code } : { createUser: false });
     if (!r.ok) {
       setAgain("ready");
       return setError(r.error);
@@ -54,9 +73,12 @@ export default function Verify() {
     setAgain("sent");
   };
 
-  // a mistyped address is fixed by starting the account again with the right one; the address travels in the
-  // router's state (never in the URL), so Create account opens with it ready to correct
-  const change = `/create-account?next=${encodeURIComponent(next)}${familyCode ? `&code=${encodeURIComponent(familyCode)}` : ""}`;
+  // a mistyped address is fixed where it was typed; the address travels in the router's state (never in the URL), so
+  // that page opens with it ready to correct
+  const fromSignIn = byCode && !handoff?.create;
+  const change = fromSignIn
+    ? `/sign-in?next=${encodeURIComponent(next)}`
+    : `/create-account?next=${encodeURIComponent(next)}${familyCode ? `&code=${encodeURIComponent(familyCode)}` : ""}`;
 
   if (!email) {
     return (
@@ -65,7 +87,7 @@ export default function Verify() {
           <h1>Which email was it?</h1>
           <PlateSay>This page needs the address the code went to. Sign in with it and we’ll send a fresh code; it takes a minute.</PlateSay>
           <div className="acts">
-            <Link className="btn primary block" to="/sign-in" viewTransition>
+            <Link className="btn primary block" to={`/sign-in?next=${encodeURIComponent(next)}`} viewTransition>
               Sign in
             </Link>
           </div>
@@ -88,11 +110,11 @@ export default function Verify() {
             Change
           </Link>
         </p>
-        <PlateSay error={error}>Six digits, from the email we just sent.</PlateSay>
+        <PlateSay error={error}>{byCode ? "Six digits, from the email we just sent. No password needed." : "Six digits, from the email we just sent."}</PlateSay>
         <div className={error ? "code-wrap is-bad" : "code-wrap"} ref={codeRef}>
-          <PlateCode value={code} onChange={setCode} autoFocus />
+          <PlateCode value={code} onChange={setCode} length={CODE_LEN} autoFocus />
         </div>
-        <Button type="submit" block loading={busy}>
+        <Button type="submit" block loading={busy || arriving}>
           Continue
         </Button>
         <p className="resend">

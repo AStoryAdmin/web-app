@@ -4,15 +4,18 @@
  * under "This book belongs to", and your email), then a password and, if
  * someone in the family sent one, their code. A code that came in the link
  * (/join/:code sends ?code=, the invitation email ?ref=) is shown as given,
- * not as a field to fill in.
+ * not as a field to fill in. Instead of a password they can have a code
+ * emailed, which makes the account and signs them in, as the app does.
  */
 import { useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import AuthFrame from "./AuthFrame";
 import PlateSay from "./PlateSay";
+import { useArrive } from "./useArrive";
+import { carriedEmail, handOff } from "./handoff";
 import type { CompanionFocus } from "../../components/delight/Companion";
 import { Button, Checkbox, Field } from "../../components/ui";
-import { createAccount, MIN_PASSWORD, safeNext } from "../../data/auth";
+import { createAccount, MIN_PASSWORD, safeNext, sendEmailCode } from "../../data/auth";
 import { useAuth } from "../../state/authContext";
 import { looksLikeFamilyCode, normaliseFamilyCode, spacedCode } from "../../app-core/lib/familyCode.js";
 import { track } from "../../lib/analytics";
@@ -22,6 +25,7 @@ type Bad = "name" | "email" | "password" | "code" | null;
 
 export default function CreateAccount() {
   const { user } = useAuth();
+  const { arrive, arriving } = useArrive();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
@@ -31,21 +35,21 @@ export default function CreateAccount() {
   const [step, setStep] = useState<"who" | "password">("who");
   const [name, setName] = useState("");
   // an address carried back from Verify's "Change" (router state, never the URL), ready to correct
-  const carried = (useLocation().state as { email?: string } | null)?.email;
-  const [email, setEmail] = useState(typeof carried === "string" ? carried : "");
+  const carried = carriedEmail(useLocation().state);
+  const [email, setEmail] = useState(carried);
   const [password, setPassword] = useState("");
   const [shown, setShown] = useState(false);
   const [focus, setFocus] = useState<CompanionFocus>(null);
   const [hasCode, setHasCode] = useState(given || params.has("code"));
   const [code, setCode] = useState(prefilled);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"password" | "code" | null>(null);
   const [error, setError] = useState<string | null>(null);
   // which field the error is about, so that field points at the plate's line
   const [bad, setBad] = useState<Bad>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
-  if (user) return <Navigate to={next} replace />;
+  if (user && !arriving) return <Navigate to={next} replace />;
 
   const fail = (field: Bad, message: string) => {
     setBad(field);
@@ -63,22 +67,51 @@ export default function CreateAccount() {
     requestAnimationFrame(() => passwordRef.current?.focus());
   };
 
+  // the family code as typed, or "" for none; null when it is typed but not six
+  const familyCode = (): string | null => {
+    const cleaned = hasCode ? (normaliseFamilyCode(code) as string) : "";
+    return cleaned && !looksLikeFamilyCode(cleaned) ? null : cleaned;
+  };
+
+  // the address rides in the router state (handoff.ts), never the URL; the family code and next are not personal
+  const toVerify = (mode: "signup" | "email", cleaned: string) => {
+    const q = new URLSearchParams({ next });
+    if (cleaned) q.set("code", cleaned);
+    const handoff = mode === "email" ? { email: email.trim(), mode, create: { name, code: cleaned } } : { email: email.trim(), mode };
+    navigate(`/verify?${q}`, { state: handOff(handoff), viewTransition: true });
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (busy || arriving) return;
     setError(null);
     setBad(null);
     if (password.length < MIN_PASSWORD) return fail("password", `The password needs at least ${MIN_PASSWORD} characters.`);
-    const cleaned = hasCode ? (normaliseFamilyCode(code) as string) : "";
-    if (cleaned && !looksLikeFamilyCode(cleaned)) return fail("code", "Check the code: it has six.");
-    setBusy(true);
+    const cleaned = familyCode();
+    if (cleaned === null) return fail("code", "Check the code: it has six.");
+    setBusy("password");
     const r = await createAccount({ name, email, password, code: cleaned });
-    setBusy(false);
+    setBusy(null);
     if (!r.ok) return fail(null, r.error);
     track("account_created", { method: "email", had_code: Boolean(cleaned) });
-    const q = new URLSearchParams({ email, next });
-    if (cleaned) q.set("code", cleaned);
-    if (r.needsCode) navigate(`/verify?${q}`, { viewTransition: true });
-    else navigate(cleaned ? `/join/${cleaned}` : next, { replace: true });
+    if (r.needsCode) toVerify("signup", cleaned);
+    // signed in already (confirmation off): go on once AuthProvider has them
+    else arrive(cleaned ? `/join/${cleaned}` : next);
+  };
+
+  // No password at all: a code by email makes the account and signs them in, the app’s default. Not counted as
+  // account_created: for an address that already has an account the same code just signs them in.
+  const byCode = async () => {
+    if (busy || arriving) return;
+    setError(null);
+    setBad(null);
+    const cleaned = familyCode();
+    if (cleaned === null) return fail("code", "Check the code: it has six.");
+    setBusy("code");
+    const r = await sendEmailCode(email, { createUser: true, name, code: cleaned });
+    setBusy(null);
+    if (!r.ok) return fail(null, r.error);
+    toVerify("email", cleaned);
   };
 
   const back = () => {
@@ -193,9 +226,14 @@ export default function CreateAccount() {
               {...says("code")}
             />
           )}
-          <Button type="submit" block loading={busy}>
+          <Button type="submit" block loading={busy === "password" || arriving}>
             Create account
           </Button>
+          <p className="plate-links one">
+            <button type="button" className="linkish" onClick={byCode} disabled={busy !== null || arriving} aria-busy={busy === "code" || undefined}>
+              {busy === "code" ? "Sending…" : "Email me a code instead"}
+            </button>
+          </p>
         </form>
       )}
     </AuthFrame>

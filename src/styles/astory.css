@@ -664,7 +664,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .auth .switch { text-align: center; margin-top: var(--s-6); color: var(--ink-soft); font-size: var(--t-small); }
 .auth .switch a, .auth .legal a { color: var(--heading); font-weight: 600; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 .auth .legal { text-align: center; font-size: 13px; color: var(--ink-faint); margin-top: var(--s-5); }
-.auth .resend { text-align: center; margin: var(--s-6) 0; color: var(--ink-soft); font-size: var(--t-small); }
+.auth .resend { text-align: center; margin: var(--s-6) 0; color: var(--ink-soft); font-size: 16px; }
 .auth .resend button { display: block; margin: 4px auto 0; background: none; border: 0; color: var(--heading); font-weight: 700; cursor: pointer; font: inherit; min-height: 44px; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 .auth .form .code { margin: var(--s-6) 0; }
 .auth .code input { border-radius: 10px; background: var(--card); }
@@ -1507,7 +1507,7 @@ body.writing-focus .wbody { min-height: 60vh; }
    nothing in uppercase but a running head. Every rule here lowers something. */
 .label { font-size: 13px; font-weight: 600; letter-spacing: 0.01em; color: var(--ink-soft); }
 .hero .label { font-weight: 500; color: var(--on-chocolate-soft); }
-.meta { font-size: 14px; line-height: 1.5; }
+.meta { font-size: 16px; line-height: 1.5; } /* a sentence: never under the 16px body floor (DESIGN.md §6) */
 .pill { min-height: 26px; padding: 0 11px; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
 .pill.gold { background: var(--pill-gold); color: var(--chocolate); }
 .pill.cream { background: transparent; color: var(--ink-soft); border: 1px solid var(--line-strong); }
@@ -3438,7 +3438,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .glance-book { width: 52px; height: auto; margin-top: 4px; filter: drop-shadow(0 6px 8px rgba(42, 35, 32, 0.25)); }
 .glance-body { display: grid; gap: 6px; min-width: 0; }
 .sheet-page .glance-body h3 { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 21px; line-height: 1.15; color: var(--sheet-ink); }
-.glance-body .meta { margin: 0; font-size: 14px; line-height: 1.45; }
+.glance-body .meta { margin: 0; font-size: 16px; line-height: 1.45; }
 .glance-body .progress { margin-top: 4px; }
 .glance-body .more { justify-self: start; min-height: 32px; }
 .glance-body .news { display: grid; gap: 8px; }
@@ -3666,7 +3666,7 @@ body.writing-focus .sheet-page > .headband { display: none; }
    question now share one row (the greeting left, the question and its actions right), the hero print that repeated
    the first memory is gone, and talking is a quiet link (the browser cannot call yet). */
 .hero-grid.home-hero { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: end; }
-.home-hero .greet .label { margin-bottom: 10px; }
+.home-hero .greet .label { margin-bottom: 10px; font-size: 16px; } /* the date and whose story: read as a line, so body size */
 .home-hero .greet .foil { margin-bottom: 4px; }
 .home-hero .ask { padding: 0; border: 0; }
 .home-hero .ask .story-q.q { font-size: clamp(26px, 2.1vw, 32px); line-height: 1.22; margin: 12px 0 18px; max-width: 26ch; }

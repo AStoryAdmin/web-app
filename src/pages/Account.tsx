@@ -18,7 +18,7 @@ import LoadingMark from "../components/delight/LoadingMark";
 import { LinkIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { changePassword, confirmEmailChange, requestEmailChange, updateProfile, updateSettings, CODE_LEN, MIN_PASSWORD, type Settings, type User } from "../data/auth";
+import { changePassword, confirmEmailChange, sendPasswordChangeCode, requestEmailChange, updateProfile, updateSettings, CODE_LEN, MIN_PASSWORD, type Settings, type User } from "../data/auth";
 import { PLAN_LABELS } from "../lib/plan";
 import { supabase } from "../lib/supabase";
 import { track } from "../lib/analytics";
@@ -252,21 +252,40 @@ function Password() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note>(null);
   const [touched, setTouched] = useState(false);
+  // Supabase can ask for an emailed code before a password changes; once it has, the code field stays
+  const [asked, setAsked] = useState(false);
+  const [code, setCode] = useState("");
   // said once the second field has been left, never on the first keystroke
   const mismatch = touched && again.length > 0 && again !== pw;
-  const ready = pw.length >= MIN_PASSWORD && pw === again;
+  const ready = pw.length >= MIN_PASSWORD && pw === again && (!asked || code.length === CODE_LEN);
 
   const save = async () => {
-    if (pw.length < MIN_PASSWORD || pw !== again) return;
+    if (!ready) return;
     setBusy(true);
     setNote(null);
-    const r = await changePassword(pw);
+    const r = await changePassword(pw, asked ? code : undefined);
     if (r.ok) {
       setPw("");
       setAgain("");
       setTouched(false);
+      setAsked(false);
+      setCode("");
       setNote({ ok: "Your password is changed." });
+    } else if (r.needsCode) {
+      // the first ask is news, not a mistake; a wrong code is
+      setNote(asked ? { error: r.error } : { ok: r.error });
+      setAsked(true);
+      setCode("");
     } else setNote({ error: r.error });
+    setBusy(false);
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    setNote(null);
+    const r = await sendPasswordChangeCode();
+    setNote(r.ok ? { ok: "We sent another code. It may take a minute." } : { error: r.error });
+    setCode("");
     setBusy(false);
   };
 
@@ -281,11 +300,22 @@ function Password() {
       >
         <Field label="New password" type={shown ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" reveal={{ shown, toggle: () => setShown((s) => !s) }} hint={`At least ${MIN_PASSWORD} characters.`} />
         <Field label="Once more" type={shown ? "text" : "password"} value={again} onChange={(e) => setAgain(e.target.value)} onBlur={() => setTouched(true)} autoComplete="new-password" error={mismatch ? "These don’t match yet." : null} />
+        {asked && (
+          <>
+            <p className="meta acct-gap-3">Type the code from the email.</p>
+            <CodeInput value={code} onChange={setCode} length={CODE_LEN} autoFocus />
+          </>
+        )}
         <div className="acct-acts">
           <Button type="submit" small loading={busy} disabled={!ready}>
             Change password
           </Button>
-          {!ready && !note && <span className="acct-why">{pw.length < MIN_PASSWORD ? `Type at least ${MIN_PASSWORD} characters, then the same again.` : "Type the same password again."}</span>}
+          {asked && (
+            <Button variant="quiet" small onClick={() => void resend()} disabled={busy}>
+              Send another code
+            </Button>
+          )}
+          {!ready && !note && <span className="acct-why">{pw.length < MIN_PASSWORD ? `Type at least ${MIN_PASSWORD} characters, then the same again.` : pw !== again ? "Type the same password again." : "Type the code from the email."}</span>}
           <NoteLine note={note} />
         </div>
       </form>

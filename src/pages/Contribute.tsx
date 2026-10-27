@@ -23,6 +23,7 @@ import { usePhotoUrl } from "../lib/photoUrls";
 import { uuid } from "../lib/uuid";
 import { track } from "../lib/analytics";
 import { submitAnonymous } from "../data/contributions";
+import { rememberClaim } from "../data/session";
 import { shrinkImage } from "../data/memories";
 
 type Info = { id?: string; name: string; last_name: string; photo_url: string | null };
@@ -150,12 +151,14 @@ export default function Contribute() {
     }
     setBusy("send");
     try {
-      const ok = await submitAnonymous({ slug, contributorName: name.trim(), relationship: relationship.trim(), kind, title: kind === "memory" ? title.trim() : "", body: body.trim(), photos, contributorEmail: email });
+      const { ok, id } = await submitAnonymous({ slug, contributorName: name.trim(), relationship: relationship.trim(), kind, title: kind === "memory" ? title.trim() : "", body: body.trim(), photos, contributorEmail: email });
       if (!ok) {
         setError("This link isn’t taking memories right now. The family may have closed it.");
         return;
       }
       track("contribution_sent", { kind, photos: photos.length, with_email: !!email.trim() });
+      // held so it can be theirs once they have an account (claim_contributions at sign-in)
+      if (id) rememberClaim({ id, name: name.trim(), email, storyName: info && info !== "failed" ? info.name : undefined });
       setDone(true);
     } catch (err) {
       setError(`That didn’t send (${(err as Error)?.message || "no connection"}). Your words are still here; try again.`);

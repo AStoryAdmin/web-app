@@ -8,6 +8,10 @@
  * bookplate, the code and the two ways in. Signed in, the same plate
  * joins the family tree with the code and says what happened. A code opens
  * a place in the tree, never a story's keepers (PRODUCT-DECISIONS §6).
+ *
+ * Joining makes no story of the joiner's own, as on the phone (DECISIONS:
+ * no empty "Myself" for every joiner). Home opens on the family's story the
+ * code named; "My own story" waits on the Whose-story page for later.
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -20,6 +24,7 @@ import { holdUntilDecoded } from "../components/delight/photoReady";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { joinFamily, type JoinResult } from "../data/familyWrites";
+import { joinedLine, joinedStoryId } from "../data/joinLanding";
 import { joinOutcome, looksLikeFamilyCode, normaliseFamilyCode, spacedCode } from "../app-core/lib/familyCode.js";
 import { track } from "../lib/analytics";
 import { myStoryIds } from "../components/family/familyView";
@@ -67,7 +72,7 @@ function Invitation() {
           </div>
           <div>
             <dt>Nobody writes as anybody else.</dt>
-            <dd>Not you as them, not them as you. You also get a story of your own, empty until you want it.</dd>
+            <dd>Not you as them, not them as you. You can start a story of your own whenever you like.</dd>
           </div>
         </dl>
       </div>
@@ -133,7 +138,7 @@ export default function Join() {
   const code = normaliseFamilyCode(raw) as string;
   const valid = looksLikeFamilyCode(code) as boolean;
   const { user } = useAuth();
-  const { ensureMyStory, reload, family } = useAccount();
+  const { reload, family, stories, chooseStory } = useAccount();
   const [result, setResult] = useState<JoinResult | null>(null);
   const [phase, setPhase] = useState<"idle" | "joined" | "ready">("idle");
   const [attempt, setAttempt] = useState(0);
@@ -171,19 +176,24 @@ export default function Join() {
     };
   }, [user, valid, code, attempt, reload]);
 
-  // Then their own story, with the account read fresh after the join.
+  // Then the family's story the code named, made the one Home opens on, with the account read fresh after the
+  // join. No story of their own is made (as on the phone); a code that named none leaves Home's own choice.
   useEffect(() => {
     if (phase !== "joined") return;
     let live = true;
-    ensureMyStory()
-      .catch(() => null)
+    const storyId = joinedStoryId(result, stories);
+    (storyId ? chooseStory(storyId) : Promise.resolve())
+      .catch(() => {})
       .finally(() => live && setPhase("ready"));
     return () => {
       live = false;
     };
-  }, [phase, ensureMyStory]);
+    // once per join: a later change to the stories (the choice itself) must not choose again
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, result]);
 
-  const outcome = result ? (joinOutcome(namingTheTeller(result, family, user?.id)) as Outcome) : null;
+  const named = result ? namingTheTeller(result, family, user?.id) : null;
+  const outcome = named ? ({ ...(joinOutcome(named) as Outcome), ...(named.ok ? { body: joinedLine(named, stories.length > 0) } : {}) } as Outcome) : null;
   const next = `/join/${code}`;
   // A code that is wrong, run out or already used is not fixed by trying
   // again; the way out is another code.
@@ -254,9 +264,15 @@ export default function Join() {
         <PlateSay>{outcome.body}</PlateSay>
         <div className="acts">
           {phase === "ready" ? (
-            <ButtonLink to="/" block>
-              Go to Home
-            </ButtonLink>
+            stories.length > 0 ? (
+              <ButtonLink to="/" block>
+                Go to Home
+              </ButtonLink>
+            ) : (
+              <ButtonLink to="/start" block>
+                Start a story
+              </ButtonLink>
+            )
           ) : (
             <Button block loading disabled>
               Go to Home

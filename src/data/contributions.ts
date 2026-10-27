@@ -127,7 +127,12 @@ export async function sendContribution(input: {
   );
 }
 
-/** Anyone with the link, no account: submit_contribution(slug, …). */
+/**
+ * Anyone with the link, no account: submit_contribution(slug, …).
+ * Today the RPC answers true or false. When it answers with the new row's id
+ * (a uuid, or { id }), that id comes back too, so the page can hold it for
+ * claim_contributions once the sender has an account (phone lib/claims.js).
+ */
 export async function submitAnonymous(input: {
   slug: string;
   contributorName: string;
@@ -137,7 +142,7 @@ export async function submitAnonymous(input: {
   body: string;
   photos?: string[];
   contributorEmail?: string;
-}): Promise<boolean> {
+}): Promise<{ ok: boolean; id: string | null }> {
   const { data, error } = await supabase().rpc("submit_contribution", {
     slug: input.slug,
     contributor_name: input.contributorName,
@@ -149,7 +154,13 @@ export async function submitAnonymous(input: {
     contributor_email: (input.contributorEmail || "").trim().toLowerCase() || null,
   });
   if (error) throw error;
-  return Boolean(data);
+  return sentAnswer(data);
+}
+
+/** submit_contribution's answer, as sent-or-not and the new row's id when it gave one. Pure, so it's tested. */
+export function sentAnswer(data: unknown): { ok: boolean; id: string | null } {
+  const id = typeof data === "string" ? data : data && typeof data === "object" ? ((data as Row).id as string | undefined) || null : null;
+  return { ok: Boolean(data) && (data as Row)?.ok !== false, id: id || null };
 }
 
 async function setStatus(id: string, status: "approved" | "rejected"): Promise<void> {

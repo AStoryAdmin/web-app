@@ -55,42 +55,60 @@ export function codeFromLink(url) {
   return pick(params.get("code") || params.get("ref") || "");
 }
 
-/* What the join came to, in words. `result` is join_family()'s answer, or
-   { ok: false, reason: 'offline' | 'not_ready' } from the app. */
+/* What the join came to, in words: j3-spec §2's copy deck, exactly (R-Y4).
+   `result` is join_family()'s answer, or { ok: false, reason: 'offline' |
+   'not_ready' | 'short', filled } from the app. A refusal carries the
+   deck's title too, "That didn't work."
+   Success says where the story is now, on Home (J3: a reader's Home leads
+   with the story she joined); the screen writes the rest of the welcome
+   from the family's own facts (headcount, the newest kept memory). */
+export const JOIN_FAILED_TITLE = "That didn't work.";
 export function joinOutcome(result) {
   if (result?.ok) {
     const who = result.inviter_name;
     const story = result.story_name;
     if (result.already) {
-      return { ok: true, title: "You're already in", body: story ? `${story}'s story is on your Family tab.` : "You're already part of this family on A Story." };
+      return { ok: true, title: "You're already in", body: story ? `${story}'s story is on your Home.` : "Your family's stories are on your Home." };
     }
     const body = [
       who ? `Welcome to ${who}'s family.` : "Welcome to the family.",
-      story ? `${story}'s story is on your Family tab, and your own story is ready on Home.` : "You'll find everyone on the Family tab, and your own story is ready on Home.",
+      story ? `${story}'s story is on your Home.` : "Your family's stories are on your Home.",
       // Their own tree came with them (family_join_merge.sql).
       result.moved > 0 ? "Everyone you had added is in the family tree now." : "",
     ].filter(Boolean).join(" ");
     return { ok: true, title: result.person_name ? `You're in, ${result.person_name}` : "You're in", body };
   }
+  const no = (body) => ({ ok: false, title: JOIN_FAILED_TITLE, body });
   switch (result?.reason) {
     case "not_found":
-      return { ok: false, body: "That code doesn't match one we know. Check the letters, or ask them to send it again." };
+      return no("That code isn't one we know. Check it against the message.");
     case "expired":
-      return { ok: false, body: "That code has run out. Ask them for a new one. They'll find it in A Story, under Invite." };
+      return no("That code has run out. Ask whoever sent it for a new one.");
     case "used":
     case "taken":
-      return { ok: false, body: "Somebody has already joined with that code. Ask them to check who it was for, and to send you your own." };
+      return no("That code has been used. Ask whoever sent it for a new one.");
     case "too_many":
-      return { ok: false, body: "That's a lot of tries. Please wait an hour, then try again." };
+      return no("That's a lot of tries for one hour. Wait a little, then try again.");
     case "signed_out":
-      return { ok: false, body: "Please sign in first, then type the code again." };
+      return no("Sign in first, then type the code again. It's kept for you.");
     case "not_ready":
-      return { ok: false, body: "Joining with a code isn't switched on yet. Ask them to invite you by email for now." };
-    case "short":
-      return { ok: false, body: `A family code is ${FAMILY_CODE_LENGTH} letters and numbers. Check you have them all.` };
+      return no("Joining with a code isn't switched on yet. Ask them to invite you by email for now.");
+    case "short": {
+      const n = Number(result?.filled);
+      return no(n > 0 && n < FAMILY_CODE_LENGTH ? `That's ${n} of the ${FAMILY_CODE_LENGTH}. The rest are in the message.` : `A family code is ${FAMILY_CODE_LENGTH} letters and numbers. They're all in the message.`);
+    }
     default:
-      return { ok: false, body: "That didn't go through. Check your connection, then try again." };
+      // Offline, or no answer in 8 s.
+      return no("That didn't go through. Your code is kept, so try again in a moment.");
   }
+}
+
+/* The deck's tree note, said before the code goes in, only when her own
+   place in a tree would move to where the family put her. */
+export const JOIN_TREE_NOTE = "Your place in the family tree may move to where they put you.";
+export function joinTreeNote({ people = [], meId = null } = {}) {
+  const mine = (people || []).some((p) => p && meId && p.userId === meId && p.source !== "placeholder");
+  return mine ? JOIN_TREE_NOTE : null;
 }
 
 /* What joining does to a tree this account already made, said before the
@@ -138,8 +156,8 @@ export function inviteMessage({ code, link, senderName, storyName } = {}) {
     "",
     `Your family code: ${c}`,
     "",
-    `1. Get A Story: ${link}`,
-    `2. Tap "I have a code from family" and type ${c}.`,
+    `Tap here: ${link}`,
+    `Or open A Story, tap "I have a code from family" and type ${c}.`,
     ...(senderName ? ["", `— ${senderName}`] : []),
   ].join("\n");
 }

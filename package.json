@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
+    "test:flow": "playwright test --config playwright.config.ts",
     "sync": "node scripts/sync-from-app.mjs",
     "check": "node scripts/sync-from-app.mjs --check && npm run lint && npm run test && npm run build"
   },

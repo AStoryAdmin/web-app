@@ -8,8 +8,14 @@
  * memory that did not reach the server must never look saved (the app's
  * rule, and this product holds recordings that exist nowhere else).
  *
+ * The first load after a sign-in holds, for about three seconds at most,
+ * for the sign-in links (invites, places, contributions: data/session.ts),
+ * so an invited keeper's story is in it and they land on Home, not on
+ * "Whose story is this?". A link that lands later reloads behind the first
+ * screen, as the app's boot does.
+ *
  * On return to the tab it re-runs the sign-in links (invites, claims) and
- * reloads only if one landed, as the app does on return to the foreground.
+ * reloads, as the app does on return to the foreground.
  */
 import { primeCodes } from "../components/family/useMyCodes";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -19,9 +25,9 @@ import { loadAccount, type Account, type Memory, type Story } from "../data/stor
 import { loadFamily, type Family } from "../data/family";
 import { loadFamilyReading } from "../data/familyReading";
 import { deleteMemory, newStory, saveMemory as saveMemoryRemote, saveStory, setActiveStory } from "../data/memories";
-import { refreshShared } from "../data/session";
-import { getSupabase } from "../lib/supabase";
+import { linkedAnything, linkPersonStory, refreshShared, settleSignIn } from "../data/session";
 import { myOwnStory } from "../app-core/lib/familyStories.js";
+import { myUnboundPlace } from "../data/storyPick";
 
 const REFRESH_AFTER_HIDDEN_MS = 60 * 1000;
 
@@ -30,6 +36,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
   const userId = user?.id ?? null;
   const firstName = user?.firstName ?? "";
   const lastName = user?.lastName ?? "";
+  const userEmail = user?.email ?? "";
   const [account, setAccount] = useState<Account | null | undefined>(undefined);
   const [family, setFamily] = useState<Family | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -59,7 +66,7 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     }
   }, [userId]);
 
-  // Load on sign-in; forget on sign-out.
+  // Load on sign-in, after the sign-in links if they come quickly; forget on sign-out.
   useEffect(() => {
     if (!userId) {
       queueMicrotask(() => {
@@ -70,9 +77,20 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    queueMicrotask(() => {
-      void reload();
+    let live = true;
+    void settleSignIn(userId).then(async ({ late }) => {
+      if (!live) return;
+      await reload();
+      // Ran past the wait: when it does land with something, the stories it opened are read in behind Home.
+      late
+        ?.then((effects) => {
+          if (live && linkedAnything(effects)) void reload();
+        })
+        .catch(() => {});
     });
+    return () => {
+      live = false;
+    };
   }, [userId, reload]);
 
   // Back to the tab after a while away: a relative may have added something,
@@ -85,13 +103,13 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
       }
       if (!hiddenAt.current || Date.now() - hiddenAt.current < REFRESH_AFTER_HIDDEN_MS) return;
       hiddenAt.current = null;
-      refreshShared()
+      refreshShared(userEmail)
         .then(() => reload())
         .catch(() => {});
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [reload]);
+  }, [reload, userEmail]);
 
   const patchStory = useCallback((storyId: string, fn: (s: Story) => Story) => {
     setAccount((prev) =>
@@ -155,6 +173,18 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
     [attempt, userId, account],
   );
 
+  // A place in the tree bound to a story (link_person_story), so the tree
+  // and the story agree on who it is about. Best-effort: the story is saved
+  // either way, and the tree can still be linked from the Family page.
+  const bindPlace = useCallback(async (personId: string, storyId: string) => {
+    try {
+      if (!(await linkPersonStory(personId, storyId))) return;
+      setFamily((f) => (f ? { ...f, people: f.people.map((p) => (p.id === personId ? { ...p, storyId } : p)) } : f));
+    } catch (err) {
+      console.warn("link_person_story:", (err as Error)?.message || err);
+    }
+  }, []);
+
   const addStory = useCallback(
     async (story: Story) => {
       if (!userId) throw new Error("Not signed in");
@@ -168,39 +198,28 @@ export default function AccountProvider({ children }: { children: ReactNode }) {
           ? { ...prev, stories: [...prev.stories, owned], activeStoryId: owned.id, onboardingComplete: true }
           : { onboardingComplete: true, activeStoryId: owned.id, stories: [owned] },
       );
+      // Your own story is bound to your own place in the tree, however it was started (here, Start, Write).
+      const me = owned.relationship === "Myself" && owned.ownerId === userId ? myUnboundPlace(family?.people, userId) : null;
+      if (me) await bindPlace(me.id, owned.id);
       return owned;
     },
-    [attempt, userId],
+    [attempt, userId, family, bindPlace],
   );
 
-  // The person's own story, made on first need. Their place in the tree is
-  // bound to it with link_person_story (people_permissions.sql), so the
-  // tree and the story agree on who they are.
+  // The person's own story, made on first need; addStory binds their place in the tree to it.
   const ensureMyStory = useCallback(async (): Promise<Story | null> => {
     if (!userId || !account) return null;
     const have = myOwnStory(account, userId) as Story | null;
     if (have) return have;
     if (ensuring.current) return ensuring.current;
-    const made = (async () => {
-      const story = await addStory(
-        newStory({ ownerId: userId, name: firstName.trim() || "Me", lastName: lastName.trim(), relationship: "Myself" }),
-      );
-      const me = family?.people.find((p) => p.userId === userId && !p.storyId);
-      if (me) {
-        const sb = getSupabase();
-        const { error } = sb ? await sb.rpc("link_person_story", { pid: me.id, sid: story.id }) : { error: null };
-        if (error) console.warn("link_person_story:", error.message || error);
-        else setFamily((f) => (f ? { ...f, people: f.people.map((p) => (p.id === me.id ? { ...p, storyId: story.id } : p)) } : f));
-      }
-      return story;
-    })();
+    const made = addStory(newStory({ ownerId: userId, name: firstName.trim() || "Me", lastName: lastName.trim(), relationship: "Myself" }));
     ensuring.current = made;
     try {
       return await made;
     } finally {
       ensuring.current = null;
     }
-  }, [userId, account, family, addStory, firstName, lastName]);
+  }, [userId, account, addStory, firstName, lastName]);
 
   const stories = useMemo(() => account?.stories ?? [], [account]);
   const activeStory = useMemo(() => {

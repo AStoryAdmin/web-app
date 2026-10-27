@@ -25,6 +25,9 @@ import { OUT } from "../lib/ease";
 import { track } from "../lib/analytics";
 import { storiesToAddTo } from "../app-core/lib/familyStories.js";
 import { personName } from "../components/family/familyView";
+import { lifeLine } from "../app-core/lib/personMemories.js";
+import { relationFromTree, storyFieldsFrom, storyPicks, type StoryPick } from "../data/storyPick";
+import { linkPersonStory } from "../data/session";
 
 const RELATIONS = RELATIONSHIPS.filter((r) => r !== "Myself");
 // The app's helper is plain JS with `{} = {}` defaults; its type needs saying here.
@@ -80,6 +83,80 @@ function AskToJoin({ people, myName }: { people: Person[]; myName: string }) {
               {!r && (
                 <Button variant="outline" small loading={busy === p.id} onClick={() => void ask(p)}>
                   Ask to join
+                </Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Somebody the family tree already knows, offered as their first name is
+ * typed (the app's NewStoryScreen pick): starting from their place keeps
+ * one Rose in the tree, not two. A story that already exists is opened or
+ * joined, never started again.
+ */
+function InTheTree({
+  picks,
+  picked,
+  stories,
+  opening,
+  onStart,
+  onUnpick,
+  onOpen,
+  onJoin,
+}: {
+  picks: StoryPick[];
+  picked: Person | null;
+  stories: { id: string; readOnly?: boolean }[];
+  opening: string | null;
+  onStart: (p: Person) => void;
+  onUnpick: () => void;
+  onOpen: (p: Person) => void;
+  onJoin: () => void;
+}) {
+  const shown = picked ? picks.filter((x) => x.person.id === picked.id) : picks;
+  if (!shown.length) return null;
+  const line = ({ person, kind }: StoryPick) => {
+    if (kind === "open") return stories.find((s) => s.id === person.storyId)?.readOnly ? "You read their story already" : "You keep their story already";
+    if (kind === "join") return person.storyId ? "Their story is kept by someone else in the family" : "They’re on A Story, so they start their own";
+    if (picked) return "Their story starts from their place in the tree";
+    return (lifeLine(person) as string) || "In your family tree";
+  };
+  return (
+    <div className="askjoin">
+      <p className="label quiet">{picked ? "From your family tree" : "Already in your family tree?"}</p>
+      <ul>
+        {shown.map((pick) => {
+          const p = pick.person;
+          return (
+            <li key={p.id}>
+              <Avatar src={undefined} name={p.givenName} size={40} />
+              <span>
+                <strong>{personName(p)}</strong>
+                <span className="meta">{line(pick)}</span>
+              </span>
+              {pick.kind === "start" &&
+                (picked ? (
+                  <Button variant="outline" onClick={onUnpick}>
+                    Not them
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={() => onStart(p)}>
+                    That’s them
+                  </Button>
+                ))}
+              {pick.kind === "open" && (
+                <Button variant="outline" loading={opening === p.id} onClick={() => onOpen(p)}>
+                  Open it
+                </Button>
+              )}
+              {pick.kind === "join" && (
+                <Button variant="outline" onClick={onJoin}>
+                  Join theirs
                 </Button>
               )}
             </li>
@@ -153,7 +230,7 @@ function WayObject({ way }: { way: Way }) {
 
 export default function Start() {
   const { user } = useAuth();
-  const { account, stories, addStory, family } = useAccount();
+  const { account, stories, addStory, family, chooseStory, reload } = useAccount();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const join = params.get("join") === "1";
@@ -166,6 +243,9 @@ export default function Start() {
   const [birthYear, setBirthYear] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // the place in the family tree this story is started from, when one was chosen
+  const [picked, setPicked] = useState<Person | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
   const sheet = useRef<HTMLElement>(null);
 
   // The sheet's contents rise once, a few things together, each time the step changes (transform and opacity,
@@ -273,16 +353,27 @@ export default function Start() {
     const first = self ? user.firstName || name : name;
     if (!first.trim()) return setError(self ? "Tell us your first name." : "Tell us their first name.");
     setBusy(true);
+    const from = !self && picked && !picked.storyId ? picked : null;
     try {
-      await addStory(
+      // your own story is bound to your place in the tree by addStory itself
+      const story = await addStory(
         newStory({
           name: first,
           lastName,
           relationship: self ? "Myself" : relationship,
           birthYear: birthYear.trim(),
+          hasAccount: from ? storyFieldsFrom(from).hasAccount : null,
         }),
       );
-      track("story_created", { subject: self ? "self" : "other" });
+      if (from) {
+        // their place in the tree, bound to the story started from it; the story is kept either way
+        await linkPersonStory(from.id, story.id)
+          .then((linked) => {
+            if (linked) void reload();
+          })
+          .catch((err) => console.warn("link_person_story:", (err as Error)?.message || err));
+      }
+      track("story_created", { subject: self ? "self" : "other", fromTree: !!from });
       navigate("/", { replace: true });
     } catch (err) {
       setError((err as Error)?.message || "That didn’t save. Please try again.");
@@ -292,6 +383,35 @@ export default function Start() {
   };
 
   const way = WAYS.find((w) => w.key === who) ?? null;
+
+  const picks =
+    who === "other" ? storyPicks({ people: family?.people, meId: user?.id, myStoryIds: stories.map((s) => s.id), typed: name }) : [];
+  const typeName = (value: string) => {
+    setName(value);
+    // a different name is somebody else: the tree's place is let go
+    if (picked && value.trim().toLowerCase() !== String(picked.givenName || "").trim().toLowerCase()) setPicked(null);
+  };
+  const startFrom = (p: Person) => {
+    const f = storyFieldsFrom(p);
+    setPicked(p);
+    setName(f.name);
+    setLastName(f.lastName);
+    setBirthYear(f.birthYear);
+    const rel = relationFromTree(family, p.id, user?.id, RELATIONS);
+    if (rel) setRelationship(rel);
+  };
+  const openStory = async (p: Person) => {
+    if (!p.storyId) return;
+    setOpening(p.id);
+    try {
+      await chooseStory(p.storyId);
+      navigate("/", { replace: true });
+    } catch {
+      setError("That story didn’t open. Please try again.");
+    } finally {
+      setOpening(null);
+    }
+  };
 
   return (
     <div className="start">
@@ -390,7 +510,17 @@ export default function Start() {
               {error && <Problem message={error} onDismiss={() => setError(null)} />}
               {who === "other" && (
                 <>
-                  <Field label="Their first name" placeholder="Rose" value={name} onChange={(e) => setName(e.target.value)} autoFocus required />
+                  <Field label="Their first name" placeholder="Rose" value={name} onChange={(e) => typeName(e.target.value)} autoFocus required />
+                  <InTheTree
+                    picks={picks}
+                    picked={picked}
+                    stories={stories}
+                    opening={opening}
+                    onStart={startFrom}
+                    onUnpick={() => setPicked(null)}
+                    onOpen={(p) => void openStory(p)}
+                    onJoin={() => setWho("join")}
+                  />
                   <div className="field">
                     <span>They are my</span>
                     <div className="chiprow start-rel" role="group" aria-label="They are my">

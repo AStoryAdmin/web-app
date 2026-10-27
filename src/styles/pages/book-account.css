@@ -298,7 +298,7 @@
 .acct-sec .acct-acts .btn { min-height: 44px; }
 .acct-sec .acct-value { font-weight: 600; color: var(--sheet-ink); margin-bottom: var(--s-4); }
 .acct-empty { font: italic 400 17px/1.5 var(--book-body); color: var(--ink-soft); }
-.sheet-page .acct-sec .meta { font-size: 14px; }
+.sheet-page .acct-sec .meta { font-size: 16px; }
 
 /* the Ex Libris: the printed book's bookplate with the name on it, upright, the book's name in small caps (D16) */
 .acct-sec-profile { align-items: start; }
@@ -337,7 +337,7 @@
 .acct-sec .acct-switch:first-child { border-top: 1px solid var(--sheet-rule); }
 @media (hover: hover) and (pointer: fine) { .acct-sec .acct-switch:not([disabled]):hover .acct-switch-track { box-shadow: 0 0 0 1px var(--ink-soft); } }
 .acct-sec .acct-switch-text strong { font: 600 16px/1.3 var(--font-ui); color: var(--sheet-ink); }
-.acct-sec .acct-switch-text .meta { font-size: 14px; }
+.acct-sec .acct-switch-text .meta { font-size: 16px; }
 .acct-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .acct-switch:active .acct-switch-knob { transform: scale(0.92); }
 .acct-switch.on:active .acct-switch-knob { transform: translateX(24px) scale(0.92); }
@@ -584,7 +584,7 @@
 .start-sheet::before { content: ""; position: absolute; inset: 14px; z-index: -1; pointer-events: none; border: 1px solid var(--foil-soft); border-radius: 3px; }
 .start-sheet::after { content: ""; position: absolute; left: 50%; top: 8px; width: 12px; height: 12px; transform: translateX(-50%); background: var(--foil); -webkit-mask: var(--bka-fleuron) center / contain no-repeat; mask: var(--bka-fleuron) center / contain no-repeat; }
 .start-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-2) var(--s-12); align-items: end; margin-bottom: var(--s-6); }
-.start-step-line { font: 600 13px/1.35 var(--font-ui); color: var(--kicker-terracotta); margin-bottom: var(--s-3); }
+.start-step-line { font: 600 16px/1.35 var(--font-ui); color: var(--kicker-terracotta); margin-bottom: var(--s-3); }
 .start-top .start-step-line { grid-column: 1 / -1; margin-bottom: 0; }
 .start .start-top h1 { font-family: var(--book-display); font-weight: 600; font-size: 56px; line-height: 0.98; letter-spacing: -0.012em; color: var(--sheet-ink); margin: 0; text-wrap: balance; }
 .start-sub { font: 400 19px/1.5 var(--book-body); color: var(--sheet-ink); max-width: 44ch; }

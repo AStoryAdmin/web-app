@@ -123,7 +123,7 @@ export default function Welcome() {
               </div>
               <div>
                 <dt>The book arrives</dt>
-                <dd>Read it on screen any day, print it at home for free, or have it bound: softcover, clothbound or the Heirloom, on one of three papers.</dd>
+                <dd>Read it on screen any day, print it at home, or have it bound: softcover, clothbound or the Heirloom, on one of three papers.</dd>
                 <dd className="door-papers" aria-label="The three papers">
                   {PAPER_NAMES.map(([key, name]) => (
                     <span key={key}>
