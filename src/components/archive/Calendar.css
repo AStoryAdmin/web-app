@@ -1,0 +1,71 @@
+/* The archive's calendar (Calendar.tsx): the month as a ruled grid on the paper, the chosen day beside it on a laptop
+   and under it on a phone. Separated by tone and hairlines, never a shadow. A dot of terracotta ink under a day a memory
+   was kept; a short foil rule under a day the family keeps. Nothing moves but the pressed scale. */
+.cal { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-10); margin-top: var(--s-6); }
+@media (min-width: 960px) { .cal { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--s-12); align-items: start; } }
+
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-3); }
+.cal-title { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 32px; line-height: 1.1; color: var(--sheet-ink); }
+.cal-nav { display: flex; align-items: center; gap: var(--s-2); }
+.cal-arrow, .cal-today { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink); cursor: pointer; transition: transform var(--dur-press) var(--ease-out), background var(--dur-ui) var(--ease-out); }
+.cal-arrow svg { width: 20px; height: 20px; }
+.cal-today { padding: 0 var(--s-4); font: 600 16px/1 var(--font-ui); color: var(--ink-soft); }
+.cal-arrow:hover, .cal-today:hover { background: var(--paper-tone); color: var(--ink); }
+.cal-arrow:active, .cal-today:active, .cal-day:active, .cal-kept-row:active { transform: scale(0.97); }
+
+.cal-grid { display: grid; gap: 2px; border-top: 1px solid var(--sheet-rule); padding-top: var(--s-2); }
+.cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.cal-wd { display: flex; align-items: center; justify-content: center; min-height: 32px; font: 600 12px/1 var(--font-ui); letter-spacing: 0.14em; color: var(--kicker-grey); }
+.cal-row > [role="gridcell"] { display: block; min-width: 0; }
+.cal-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 56px; padding: 6px 0; border: 0; border-radius: 10px; background: transparent; color: var(--sheet-ink); font: 500 16px/1 var(--font-ui); cursor: pointer; transition: transform var(--dur-press) var(--ease-out), background var(--dur-ui) var(--ease-out); }
+.cal-day:hover { background: var(--paper-tone); }
+.cal-day.out { color: var(--ink-faint); }
+.cal-day.today .cal-n { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin: -6px 0; border-radius: 50%; background: var(--chocolate); color: var(--on-chocolate); }
+.cal-day.on { background: var(--paper-print); box-shadow: inset 0 0 0 1px var(--sheet-rule); }
+.cal-marks { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 6px; }
+
+/* the two marks, also used in the key and the day's rows */
+.cal-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.cal-mark { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--foil); }
+.cal-mark.remembrance { background: var(--kicker-grey); }
+.cal-mark.happened { background: var(--kicker-sage); }
+
+.cal-line { margin: var(--s-4) 0 0; font: 400 18px/1.5 var(--book-body); color: var(--sheet-ink); }
+.cal-key { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); margin: var(--s-2) 0 0; font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); }
+.cal-key span { display: inline-flex; align-items: center; gap: var(--s-2); }
+
+.cal-kept { list-style: none; margin: var(--s-6) 0 0; padding: 0; }
+.cal-kept-row { display: flex; align-items: baseline; gap: var(--s-4); width: 100%; min-height: 44px; padding: 10px 6px; border: 0; border-top: 1px solid var(--sheet-rule); background: transparent; text-align: left; cursor: pointer; transition: transform var(--dur-press) var(--ease-out), background var(--dur-ui) var(--ease-out); }
+.cal-kept li:last-child .cal-kept-row { border-bottom: 1px solid var(--sheet-rule); }
+.cal-kept-row:hover, .cal-kept-row[aria-pressed="true"] { background: var(--paper-tone); }
+.cal-kept-day { flex: none; min-width: 6.5em; font: 500 16px/1.4 var(--font-ui); color: var(--ink-soft); }
+.cal-kept-words { min-width: 0; font: 400 18px/1.4 var(--book-body); color: var(--sheet-ink); overflow-wrap: anywhere; }
+
+.cal-day-page { min-width: 0; }
+@media (min-width: 960px) { .cal-day-page { padding-top: 6px; } }
+.cal-day-title { margin: 0 0 var(--s-4); font-family: var(--book-display); font-weight: 600; font-size: 28px; line-height: 1.15; color: var(--sheet-ink); }
+.cal-day-marks, .cal-day-kept { list-style: none; margin: 0 0 var(--s-5); padding: 0; }
+.cal-day-mark { display: flex; align-items: center; flex-wrap: wrap; gap: 4px var(--s-3); min-height: 44px; padding: 8px 0; border-top: 1px solid var(--sheet-rule); color: var(--sheet-ink); text-decoration: none; }
+a.cal-day-mark:hover .cal-day-words { text-decoration: underline; text-underline-offset: 3px; }
+.cal-day-words { font: 400 19px/1.4 var(--book-body); overflow-wrap: anywhere; }
+.cal-day-when { font: 400 16px/1.4 var(--font-ui); color: var(--ink-soft); }
+.cal-day-kick { margin: 0 0 var(--s-2); font: 600 16px/1.4 var(--font-ui); color: var(--kicker-terracotta); }
+.cal-day-memory { display: flex; align-items: center; min-height: 44px; padding: 6px 0; border-top: 1px solid var(--sheet-rule); font: 600 21px/1.25 var(--book-display); color: var(--sheet-ink); text-decoration: none; overflow-wrap: anywhere; }
+.cal-day-memory:hover { color: var(--accent-deep); }
+.cal-see { min-height: 44px; padding: 0; border: 0; background: none; font-size: 16px; cursor: pointer; }
+.cal-day-none { margin: 0; font: 400 18px/1.5 var(--book-body); color: var(--ink-soft); }
+
+@media (max-width: 480.98px) {
+  .cal-title { font-size: 26px; }
+  .cal-day { min-height: 48px; font-size: 16px; }
+  .cal-kept-day { min-width: 5.5em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cal-arrow, .cal-today, .cal-day, .cal-kept-row { transition: none; }
+  .cal-arrow:active, .cal-today:active, .cal-day:active, .cal-kept-row:active { transform: none; }
+}
+
+/* Archive.tsx beside the calendar: the third view (Prints, List, Calendar) gives the search its own line on a small
+   phone, so the field keeps room to type; and the empty archive's import link is a full target */
+@media (max-width: 420.98px) { .arc-tools .arc-search { flex: 1 1 100%; } }
+.arc-import { min-height: 44px; font-size: 16px; }

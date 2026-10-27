@@ -1,0 +1,42 @@
+/* AskTheirSide (memory page): one quiet row under the tools until it is opened, then a section on the paper with the
+   question in the book's display face, the name field, and once the link is made, its QR as a white print beside the
+   link and the two copies. Separated by hairlines and tone, never a box with a shadow. */
+.ats { max-width: var(--mv-col, 640px); margin-top: var(--s-6); }
+.ats-closed { margin-top: var(--s-2); }
+.ats-open { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-left: -12px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--sheet-ink); font: 500 16px/1.2 var(--font-ui); cursor: pointer; transition: background-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
+.ats-open svg { width: 18px; height: 18px; flex: none; color: var(--accent); }
+.ats-open:hover { background: var(--paper-tone); }
+.ats-open:active, .ats-again:active { transform: scale(0.97); }
+
+section.ats { padding-top: var(--s-5); border-top: 1px solid var(--sheet-rule); }
+.ats-kick { margin: 0; font: 600 12px/1.4 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--kicker-terracotta); }
+.ats-head { margin: 6px 0 0; font-family: var(--book-display); font-weight: 600; font-size: 30px; line-height: 1.12; color: var(--sheet-ink); }
+.ats-line { margin: var(--s-2) 0 var(--s-5); max-width: 32em; font: 400 18px/1.5 var(--book-body); color: var(--sheet-ink); text-wrap: pretty; }
+
+.ats .field > span:first-child { font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--ink-soft); }
+.ats .field input { font-size: 17px; }
+.ats-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.ats-acts .btn { min-height: 44px; }
+.ats-acts .btn svg { width: 18px; height: 18px; }
+
+.ats-made { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+/* the code is a white print on the paper, as the family card's code is: a hairline ring, no shadow */
+.ats-qr { padding: 10px; background: #fff; border-radius: 2px; box-shadow: 0 0 0 1px var(--sheet-rule); line-height: 0; }
+.ats-qr .qr-code { display: block; width: 148px; height: 148px; }
+.ats-side { display: grid; gap: var(--s-3); min-width: 0; }
+.ats-for { margin: 0; font: 400 18px/1.5 var(--book-body); color: var(--sheet-ink); }
+.ats-link { margin: 0; font: 600 17px/1.4 var(--font-ui); overflow-wrap: anywhere; }
+.ats-link a { color: var(--accent-deep); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.ats-note { margin: 0; font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); }
+.ats-again { justify-self: start; min-height: 44px; padding: 0; border: 0; background: none; font: 600 16px/1 var(--font-ui); color: var(--ochre); cursor: pointer; transition: transform 120ms var(--ease-out); }
+.ats-again:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 560.98px) {
+  .ats-made { grid-template-columns: minmax(0, 1fr); }
+  .ats-qr { justify-self: start; }
+  .ats-head { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ats-open, .ats-again { transition: none; }
+  .ats-open:active, .ats-again:active { transform: none; }
+}

@@ -1,0 +1,59 @@
+/* Bringing in what's written (/import): one reading column on the sheet. The paste box is a sheet of the book's paper;
+   the two files are cards that separate by tone; a found memory is a row with a box, the ticked ones in ink. Running
+   text 16px and up, every target 44px and up. */
+
+.im-hero { display: grid; gap: var(--s-2); }
+.im-hero-sub { margin: 0; font: italic 400 19px/1.4 var(--book-body); color: var(--on-chocolate); }
+
+.im-page { max-width: 760px; }
+.im-section + .im-section { margin-top: var(--s-12); }
+.im-section h2, .im-review-head h2, .im-done h2 { font-family: var(--book-display); font-weight: 600; font-size: 28px; line-height: 1.12; color: var(--heading); margin: 0 0 var(--s-3); text-wrap: balance; }
+.im-lead { font-family: var(--book-body); font-size: 19px; line-height: 1.55; color: var(--ink); margin: 0 0 var(--s-4); }
+.im-help { font-size: 16px; line-height: 1.5; color: var(--ink-soft); margin: var(--s-2) 0 0; }
+.im-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin-top: var(--s-4); }
+.im-elsewhere { margin-top: var(--s-12); }
+.im-elsewhere a { color: var(--accent-deep); }
+
+/* paste */
+.im-paste { display: block; width: 100%; min-height: 200px; resize: vertical; border: 1.5px solid var(--field-border); border-radius: var(--r-field); background: var(--card); color: var(--ink); padding: var(--s-3) var(--s-4); font-family: var(--book-body); font-size: 20px; line-height: 1.5; outline: 0; transition: border-color var(--dur-ui) var(--ease-out); }
+.im-paste:focus { border-color: var(--accent); }
+.im-paste::placeholder { color: var(--ink-faint); font-style: italic; }
+.im-paste:disabled { opacity: 0.6; }
+
+/* files */
+.im-files { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--s-3); }
+.im-file { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-5); border-radius: var(--r-md); background: var(--card); border: 1.5px dashed transparent; transition: border-color var(--dur-ui) var(--ease-out); min-width: 0; }
+.im-file[data-over] { border-color: var(--accent); }
+.im-file h3 { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.15; color: var(--heading); margin: 0; }
+.im-file .im-help { margin: 0 0 var(--s-2); flex: 1; }
+.im-drop { font-size: 16px; color: var(--ink-soft); margin: 0; }
+@media (hover: none) { .im-drop { display: none; } }
+
+/* the review */
+.im-review-head { margin-bottom: var(--s-6); }
+.im-group + .im-group, .im-review-head + .im-group { margin-top: var(--s-10); }
+.im-group h3 { font-family: var(--book-display); font-weight: 600; font-size: 22px; color: var(--heading); margin: 0; }
+.im-group .im-list { margin-top: var(--s-4); }
+.im-note { padding: var(--s-5); border-radius: var(--r-md); background: var(--sheet); }
+.im-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.im-entry, .im-person { display: flex; align-items: flex-start; gap: var(--s-4); min-height: 56px; padding: var(--s-4); border-radius: var(--r-md); background: var(--card); border: 1.5px solid transparent; cursor: pointer; min-width: 0; transition: border-color var(--dur-ui) var(--ease-out); }
+.im-person { align-items: center; }
+.im-entry:hover, .im-person:hover { border-color: var(--line-strong); }
+.im-entry[data-on], .im-person[data-on] { border-color: var(--ink); }
+.im-entry:has(input:focus-visible), .im-person:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.im-entry input, .im-person input { width: 24px; height: 24px; margin: 2px 0 0; flex: none; accent-color: var(--chocolate); cursor: pointer; }
+.im-entry-text { display: grid; gap: var(--s-1); min-width: 0; overflow-wrap: anywhere; }
+.im-entry-title { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.15; color: var(--heading); }
+.im-entry-meta { font-size: 16px; color: var(--accent-deep); }
+.im-entry-words { font-family: var(--book-body); font-size: 17px; line-height: 1.5; color: var(--ink); white-space: pre-line; }
+.im-entry:not([data-on]) .im-entry-words { color: var(--ink-soft); }
+
+.im-foot { position: sticky; bottom: 0; margin-top: var(--s-6); padding: var(--s-4) 0; background: var(--page); }
+.im-foot .im-help:first-child { margin-top: 0; }
+
+.im-done { padding: var(--s-6) 0; }
+
+@media (max-width: 640px) {
+  .im-entry, .im-person { padding: var(--s-3); gap: var(--s-3); }
+  .im-entry-title { font-size: 20px; }
+}

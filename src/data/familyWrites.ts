@@ -79,7 +79,7 @@ export async function attachStory(storyId: string, householdId: string): Promise
 /* ── People ────────────────────────────────────────────────────────────── */
 
 // Newer columns a database a migration behind may not have (the app's list).
-const OPTIONAL_PEOPLE_COLUMNS = ["sex", "invited_at", "avatar_url", "external_ref", "source", "death_year", ...PERSON_FACT_COLUMNS];
+export const OPTIONAL_PEOPLE_COLUMNS = ["sex", "invited_at", "avatar_url", "external_ref", "source", "death_year", ...PERSON_FACT_COLUMNS];
 
 export function newPerson(input: { givenName: string; familyName?: string; email?: string; birthYear?: string | number; sex?: string }): Person {
   return {

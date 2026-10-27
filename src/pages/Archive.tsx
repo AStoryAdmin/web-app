@@ -2,7 +2,8 @@
  * The Archive: everything in one person's story, by year, with a decade
  * rail beside it on a laptop. Search, chapter chips, the book's progress,
  * and the family's contributions waiting for a look, then the chapters not yet told. Nothing to configure. It reads
- * the account again when the tab comes back, so a memory kept on the phone shows without a reload.
+ * the account again when the tab comes back, so a memory kept on the phone shows without a reload. Prints, List or
+ * Calendar: the calendar is the year as the family keeps it (components/archive/Calendar.tsx).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
@@ -16,6 +17,7 @@ import LedgeNote from "../components/archive/LedgeNote";
 import NotYetTold from "../components/archive/NotYetTold";
 import { useRefreshOnReturn } from "../components/archive/refreshOnReturn";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
+import Calendar from "../components/archive/Calendar";
 import { InProgressGroup, PrintsFlow, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useCrossfade, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
@@ -37,11 +39,14 @@ const dayLabel = (day: string) => {
 
 const VIEW_KEY = "astory.archiveView";
 
+/** How the archive is shown: the prints or the list (ArchiveGroups), or the month on a calendar. */
+type View = ArchiveView | "calendar";
+
 /** Prints on a laptop, the list on a phone, unless this browser remembers a choice. */
-function storedView(): ArchiveView {
+function storedView(): View {
   try {
     const v = localStorage.getItem(VIEW_KEY);
-    if (v === "prints" || v === "list") return v;
+    if (v === "prints" || v === "list" || v === "calendar") return v;
   } catch {
     /* no storage: the default below */
   }
@@ -80,7 +85,7 @@ function lastWall(): string | null {
 }
 
 export default function Archive() {
-  const { account, activeStory: story, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
+  const { account, stories, activeStory: story, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
@@ -90,7 +95,7 @@ export default function Archive() {
   const [pending, setPending] = useState(0);
   const [wallCopied, setWallCopied] = useState<string | null>(null);
   const [activeDecade, setActiveDecade] = useState<number | null>(null);
-  const [view, setView] = useState<ArchiveView>(storedView);
+  const [view, setView] = useState<View>(storedView);
   const narrow = useNarrow();
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLElement>(null);
@@ -163,7 +168,7 @@ export default function Archive() {
     return out;
   }, [dated]);
 
-  const chooseView = (v: ArchiveView) => {
+  const chooseView = (v: View) => {
     setView(v);
     try {
       localStorage.setItem(VIEW_KEY, v);
@@ -268,6 +273,14 @@ export default function Archive() {
     setParams(next, { replace: true });
   };
 
+  // the calendar hands a day back to the list: the memories kept on it
+  const seeDay = (key: string) => {
+    const next = new URLSearchParams(params);
+    next.set("day", key);
+    setParams(next, { replace: true });
+    chooseView("list");
+  };
+
   if (account === undefined)
     return (
       <Shell
@@ -363,6 +376,7 @@ export default function Archive() {
   const bookLine = `${bookPct}% ${bookSub.toLowerCase()}`;
   const filtering = Boolean(q || chapter || day);
   const nothingAtAll = memories.length === 0;
+  const calendar = view === "calendar";
 
   return (
     <Shell
@@ -463,37 +477,44 @@ export default function Archive() {
             <ButtonLink to="/write" icon={<PenIcon />}>
               Write the first memory
             </ButtonLink>
+            {!story.readOnly && (
+              <Link className="more arc-import" to="/import">
+                Import writing or a family tree
+              </Link>
+            )}
           </LedgeNote>
         ) : (
           <div className="arc-body">
-            <DecadeRail decades={decades} active={activeDecade} onPick={jump} />
+            {!calendar && <DecadeRail decades={decades} active={activeDecade} onPick={jump} />}
 
             <section aria-label="Memories" ref={listRef}>
               {/* one row: the search, the chapters, and how to show them */}
               <div className="arc-tools">
-                <form
-                  className="arc-search"
-                  role="search"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    searchRef.current?.blur();
-                  }}
-                >
-                  <label className="input">
-                    <span className="sr-only">Search {whose} memories</span>
-                    <input ref={searchRef} type="search" placeholder={narrow ? "Search" : `Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
-                    {query && (
-                      <button type="button" className="clear" onClick={() => setQuery("")} aria-label="Clear the search">
-                        <CloseIcon width={20} height={20} />
+                {!calendar && (
+                  <form
+                    className="arc-search"
+                    role="search"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      searchRef.current?.blur();
+                    }}
+                  >
+                    <label className="input">
+                      <span className="sr-only">Search {whose} memories</span>
+                      <input ref={searchRef} type="search" placeholder={narrow ? "Search" : `Search ${whose} memories`} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
+                      {query && (
+                        <button type="button" className="clear" onClick={() => setQuery("")} aria-label="Clear the search">
+                          <CloseIcon width={20} height={20} />
+                        </button>
+                      )}
+                      <button className="go" type="submit" aria-label="Search">
+                        <SearchIcon />
                       </button>
-                    )}
-                    <button className="go" type="submit" aria-label="Search">
-                      <SearchIcon />
-                    </button>
-                  </label>
-                </form>
+                    </label>
+                  </form>
+                )}
 
-                {chapters.length >= 2 && (
+                {!calendar && chapters.length >= 2 && (
                   <div className="chiprow scroll arc-chips" role="group" aria-label="Chapters">
                     <button type="button" className="chip big" aria-pressed={chapter === ""} onClick={() => setChapter("")}>
                       All <span className="n">· {saved.length}</span>
@@ -513,73 +534,84 @@ export default function Archive() {
                   <button type="button" className="chip big" aria-pressed={view === "list"} onClick={() => chooseView("list")}>
                     List
                   </button>
+                  <button type="button" className="chip big" aria-pressed={calendar} onClick={() => chooseView("calendar")}>
+                    Calendar
+                  </button>
                 </div>
               </div>
 
-              <DecadeRow decades={decades} active={activeDecade} onPick={jump} />
+              {!calendar && <DecadeRow decades={decades} active={activeDecade} onPick={jump} />}
 
-              {day && (
-                <div className="arc-filters">
-                  <span className="chip accent">
-                    Written on {dayLabel(day)}
-                    <button type="button" onClick={clearDay} aria-label="Show every day">
-                      <CloseIcon width={18} height={18} />
-                    </button>
-                  </span>
-                </div>
-              )}
-
-              {view === "list" ? (
-                <div className="arc-rail" key="rail">
-                  {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
-                  {byDecade.map((b) => (
-                    <section key={b.decade} className="arc-decade" aria-label={`The ${decadeLabel(b.decade)}`}>
-                      <p className="arc-decade-label" data-dot data-arrive>
-                        {decadeLabel(b.decade)}
-                      </p>
-                      {b.groups.map((g) => (
-                        <YearGroup key={g.key} group={g} story={story} decade={b.decade} />
-                      ))}
-                    </section>
-                  ))}
-                  {undated && (
-                    <section className="arc-decade" aria-label="Not dated yet">
-                      <UndatedGroup items={undated.items} story={story} />
-                    </section>
-                  )}
-                </div>
+              {calendar ? (
+                <Calendar story={story} stories={stories} people={family?.people} initialDay={day} onSeeDay={seeDay} />
               ) : (
                 <>
-                  {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
-                  {(dated.length > 0 || undated) && <PrintsFlow groups={[...dated, ...(undated ? [undated] : [])].map((g) => ({ ...g, decade: g.undated ? null : (decadeOf(g.year) as number) }))} story={story} />}
-                </>
-              )}
-
-              {filtered.length === 0 && filteredProgress.length === 0 && (
-                <div className="arc-none" role="status">
-                  <p>
-                    {day
-                      ? `Nothing was written on ${dayLabel(day)}.`
-                      : q
-                        ? `Nothing here mentions “${query.trim()}”.`
-                        : chapter
-                          ? `Nothing filed under ${chapter} yet.`
-                          : "Nothing here yet."}
-                  </p>
-                  {filtering && (
-                    <Button
-                      variant="outline"
-                      small
-                      onClick={() => {
-                        setQuery("");
-                        setChapter("");
-                        if (day) clearDay();
-                      }}
-                    >
-                      Show everything
-                    </Button>
+                  {day && (
+                    <div className="arc-filters">
+                      <span className="chip accent">
+                        Written on {dayLabel(day)}
+                        <button type="button" onClick={clearDay} aria-label="Show every day">
+                          <CloseIcon width={18} height={18} />
+                        </button>
+                      </span>
+                    </div>
                   )}
-                </div>
+
+                  {view === "list" ? (
+                    <div className="arc-rail" key="rail">
+                      {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
+                      {byDecade.map((b) => (
+                        <section key={b.decade} className="arc-decade" aria-label={`The ${decadeLabel(b.decade)}`}>
+                          <p className="arc-decade-label" data-dot data-arrive>
+                            {decadeLabel(b.decade)}
+                          </p>
+                          {b.groups.map((g) => (
+                            <YearGroup key={g.key} group={g} story={story} decade={b.decade} />
+                          ))}
+                        </section>
+                      ))}
+                      {undated && (
+                        <section className="arc-decade" aria-label="Not dated yet">
+                          <UndatedGroup items={undated.items} story={story} />
+                        </section>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {filteredProgress.length > 0 && <InProgressGroup items={filteredProgress} story={story} />}
+                      {(dated.length > 0 || undated) && (
+                        <PrintsFlow groups={[...dated, ...(undated ? [undated] : [])].map((g) => ({ ...g, decade: g.undated ? null : (decadeOf(g.year) as number) }))} story={story} />
+                      )}
+                    </>
+                  )}
+
+                  {filtered.length === 0 && filteredProgress.length === 0 && (
+                    <div className="arc-none" role="status">
+                      <p>
+                        {day
+                          ? `Nothing was written on ${dayLabel(day)}.`
+                          : q
+                            ? `Nothing here mentions “${query.trim()}”.`
+                            : chapter
+                              ? `Nothing filed under ${chapter} yet.`
+                              : "Nothing here yet."}
+                      </p>
+                      {filtering && (
+                        <Button
+                          variant="outline"
+                          small
+                          onClick={() => {
+                            setQuery("");
+                            setChapter("");
+                            if (day) clearDay();
+                          }}
+                        >
+                          Show everything
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </section>
           </div>
@@ -591,6 +623,7 @@ export default function Archive() {
               { to: "/write", title: own ? "Write today’s memory" : `Write a memory for ${story.name}`, line: "A few lines is plenty; the date and chapter come after." },
               { to: "/book", title: "Open the book", line: "See these memories set on the printed page." },
               { to: "/family", title: "Ask the family", line: "Invite someone to add what they remember." },
+              ...(story.readOnly ? [] : [{ to: "/import", title: "Import writing or a family tree", line: "Bring in pages you’ve already written, or a tree from another site." }]),
             ]}
           />
         )}

@@ -76,7 +76,13 @@ const router = createBrowserRouter([
       { path: "/record", element: lazyPage(() => import("./pages/Record")) },
       { path: "/archive", element: lazyPage(() => import("./pages/Archive")) },
       { path: "/archive/:id", element: lazyPage(() => import("./pages/MemoryPage")) },
+      // bringing in what's already written: a paste, a diary or chat export, a memoir, a family tree (M7, gap row 50)
+      { path: "/import", element: lazyPage(() => import("./pages/Import")) },
       { path: "/family", element: lazyPage(() => import("./pages/Family")) },
+      // the tree on one sheet for the printer (a static path, so it outranks :personId)
+      { path: "/family/print", element: lazyPage(() => import("./pages/TreePrint")) },
+      // a friend link the phone shared (astoryapp.com/friend/<token>): reading it needs an account
+      { path: "/friend/:token", element: lazyPage(() => import("./pages/FriendLink")) },
       { path: "/family/:personId", element: lazyPage(() => import("./pages/Person")) },
       { path: "/book", element: lazyPage(() => import("./pages/Book")) },
       { path: "/book/design", element: lazyPage(() => import("./pages/BookDesign")) },
