@@ -1,0 +1,40 @@
+/* /help (Help.tsx, help builder, M6): the questions as ruled lines that open in place, then one form to write to us.
+   Loaded with Help.tsx; reading text is 16px or more and every control is 44px or more (DESIGN.md §6). */
+.help-page { display: grid; gap: var(--s-12); max-width: 720px; }
+.help-h { font: 600 28px/1.15 var(--book-display); color: var(--heading); margin: 0 0 var(--s-4); }
+
+/* the questions: hairlines, never boxes; the whole line is the target */
+.help-qs { border-top: 1px solid var(--line-strong); }
+.help-q { border-bottom: 1px solid var(--line-strong); }
+.help-q summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); min-height: 56px; padding: var(--s-3) 0;
+  font: 600 18px/1.35 var(--font-ui); color: var(--heading); cursor: pointer; list-style: none; }
+.help-q summary::-webkit-details-marker { display: none; }
+.help-q summary::after { content: "+"; flex: none; width: 24px; text-align: center; font: 400 22px/1 var(--font-ui); color: var(--ink-soft); transition: transform 160ms var(--ease-out); }
+.help-q[open] summary::after { transform: rotate(45deg); }
+.help-q summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; }
+.help-q p { margin: 0 0 var(--s-5); max-width: 62ch; font: 400 18px/1.55 var(--book-body); color: var(--ink); text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) { .help-q summary::after { transition: none; } }
+
+/* write to us */
+.help-lead { margin: 0 0 var(--s-6); font-size: 17px; line-height: 1.5; color: var(--ink-soft); }
+.help-form { display: grid; gap: var(--s-2); }
+.help-kinds { border: 0; margin: 0 0 var(--s-4); padding: 0; min-width: 0; }
+.help-kinds legend { padding: 0; margin: 0 0 var(--s-2); font-size: 16px; font-weight: 600; color: var(--ink-soft); }
+.help-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.help-chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); background: var(--card); font-size: 16px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.help-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.help-chip.on { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
+.help-chip:has(input:focus-visible) { outline: 2px solid var(--ring); outline-offset: 3px; }
+.help-form .field > span:first-child { font-size: 16px; }
+.help-form .hint { font-size: 16px; color: var(--ink-soft); }
+.help-area { align-items: stretch; padding: var(--s-3) var(--s-4); }
+.help-area textarea { flex: 1; min-width: 0; min-height: 140px; border: 0; background: transparent; font: 400 18px/1.5 var(--book-body); color: var(--ink); resize: vertical; outline: 0; }
+.help-area textarea::placeholder { color: var(--ink-faint); }
+.help-error { display: block; margin-top: var(--s-2); font-size: 16px; color: var(--danger); }
+.help-form > .btn { justify-self: start; min-height: 48px; padding-inline: var(--s-8); }
+.help-sent p { margin: 0 0 var(--s-6); font: 400 19px/1.5 var(--book-body); color: var(--ink); }
+.help-acts { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.help-acts .btn { min-height: 48px; }
+.help-mail, .help-terms { margin: var(--s-6) 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-soft); }
+.help-terms { margin: 0; }
+.help-mail a, .help-terms a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; padding: 12px 0; }

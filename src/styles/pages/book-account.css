@@ -434,7 +434,7 @@
 .pl-hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-8); }
 .pl-promise { font: italic 400 19px/1.4 var(--book-body); color: var(--on-chocolate); max-width: 60ch; text-wrap: balance; }
 .sheet-page.wide .plans-page { max-width: none; padding-top: var(--s-6); }
-.pl-note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2) var(--s-8); margin-bottom: var(--s-4); font: 400 14px/1.5 var(--font-ui); color: var(--ink-soft); }
+.pl-note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2) var(--s-8); margin-bottom: var(--s-4); font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); }
 .pl-note b { color: var(--sheet-ink); font-weight: 600; }
 .pl-table { display: grid; grid-template-columns: minmax(112px, 0.55fr) repeat(5, minmax(0, 1fr)); grid-template-rows: auto repeat(5, auto) auto; column-gap: var(--s-2); }
 .pl-labels, .pl-col { grid-row: 1 / span 7; display: grid; grid-template-rows: subgrid; min-width: 0; }
@@ -442,47 +442,25 @@
 .pl-col.mine { background: var(--paper-print); box-shadow: inset 0 0 0 1px var(--sheet-rule); }
 .pl-col.mine::before { content: ""; position: absolute; inset: 6px; border: 1px solid var(--foil-soft); border-radius: 3px; pointer-events: none; }
 .pl-label, .pl-cell { display: flex; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--sheet-rule); margin: 0; }
-.pl-label { font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
+.pl-label { font: 600 16px/1.35 var(--font-ui); color: var(--kicker-grey); }
 .pl-label-act { border-top: 0; }
 .pl-corner { display: block; }
-/* the name and the price share a line, the unit and the monthly figure under them */
-.pl-head { padding: var(--s-3) 0 var(--s-3); display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-2); row-gap: 2px; align-items: baseline; align-content: start; }
-.pl-head > .pl-price { display: contents; }
-.pl-head > .pl-price b { grid-column: 2; grid-row: 1; }
-.pl-head > .pl-price span { grid-column: 1 / -1; grid-row: 2; }
-.pl-head > .pl-about { grid-column: 1 / -1; }
+/* the plan's name, then one line of what it gives */
+.pl-head { padding: var(--s-3) 0 var(--s-3); display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 4px; align-content: start; }
 .sheet-page .pl-head h2 { font-family: var(--book-display); font-weight: 600; font-size: 26px; line-height: 1.05; color: var(--sheet-ink); overflow-wrap: normal; }
-/* five plans across a narrow table: the price takes its own line under the name, so a name is never cut in two */
-@media (min-width: 901px) and (max-width: 1340.98px) {
-  .pl-head { grid-template-columns: minmax(0, 1fr); }
-  .pl-head > .pl-price b { grid-column: 1; grid-row: 2; }
-  .pl-head > .pl-price span { grid-row: 3; }
-}
-.pl-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
-.pl-price b { font: 600 34px/1 var(--book-display); color: var(--sheet-ink); font-variant-numeric: lining-nums; letter-spacing: -0.01em; }
-.pl-price span { font: 400 14px/1.3 var(--font-ui); color: var(--ink-soft); }
-.pl-about { font: 400 13px/1.3 var(--font-ui); color: var(--ink-soft); min-height: 17px; }
+.pl-about { font: 400 16px/1.4 var(--font-ui); color: var(--ink-soft); }
 .pl-cell { font: 400 16px/1.4 var(--book-body); color: var(--sheet-ink); }
 .pl-cell.none .pl-cell-value { color: var(--ink-faint); }
 .pl-cell-value { display: block; text-wrap: pretty; }
 /* the row's name stays readable to a screen reader where the table shows it once at the left */
 .pl-cell-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .pl-act { padding: var(--s-3) 0; border-top: 1px solid var(--sheet-rule); display: flex; align-items: flex-start; }
-.pl-choose { min-height: 44px; white-space: nowrap; }
-.pl-choose span[aria-hidden] { color: var(--accent); }
-.pl-mine { font: 600 13px/44px var(--font-ui); color: var(--kicker-sage); }
-.pl-quiet { font: 400 13px/1.4 var(--font-ui); color: var(--ink-soft); padding-top: 12px; }
+.pl-mine { font: 600 16px/44px var(--font-ui); color: var(--kicker-sage); }
 /* on an access code nothing is chosen, so the table ends on its last rule, with no row of one caption under it */
 @media (min-width: 901px) {
   .pl-table.no-act .pl-act { padding: 0; }
   .pl-table.no-act .pl-act > * { display: none; }
   .pl-table.no-act .pl-label-act { border-top: 1px solid var(--sheet-rule); padding: 0; }
-}
-/* the keepsake, drawn (no 1200px image in a 36px slot), on its own line above the words, on a large window only */
-.pl-keepsake { display: none; }
-@media (min-width: 1600px) {
-  .pl-keepsake { display: block; width: 30px; height: 30px; margin: 2px 0 8px; border-radius: 1px 3px 3px 1px; transform: rotate(-3deg);
-    background: var(--bka-spine-shade), url("/book/bookcloth.jpg") 0 0 / 40px 40px, var(--bka-cover-navy); background-blend-mode: normal, overlay, normal; box-shadow: var(--bka-edge-fore); }
 }
 /* the plan you are on is gilt-edged, with two engraved flourishes (D2a, D12) and a glint as the hand passes */
 .pl-col.gilt { border: 1.5px solid var(--foil); box-shadow: none; }
@@ -504,8 +482,7 @@
   .pl-labels { display: none; }
   .pl-col { grid-row: auto; display: block; padding: 0 var(--s-3); }
   .pl-cell { flex-direction: column; gap: 2px; }
-  .pl-cell-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: block; font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
-  .pl-price b { font-size: 30px; }
+  .pl-cell-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: block; font: 600 16px/1.35 var(--font-ui); color: var(--kicker-grey); }
 }
 @media (max-width: 900.98px) {
   .pl-table { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }

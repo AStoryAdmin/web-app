@@ -4,7 +4,7 @@
  *
  * The signed-out pages are the family book on the bookbinder's bench (AuthFrame), and the front door is the
  * same bench with one leaf of paper and the sample book lying on it (Welcome). On a desktop each is drawn at a
- * fixed design size and scaled to the window with `zoom: var(--fit)` (bookFit.ts): the book 1440 by 720, the
+ * fixed design size and scaled to the window with `zoom: var(--fit)` (bookFit.ts): the book 1440 by 800, the
  * bench 1560 by 740. Below a comfortable scale (a short laptop window, a portrait tablet, a narrow window) the
  * pages stack and scroll at their own size instead: `STACKED` in bookFit.ts, mirrored in §7.
  *
@@ -88,9 +88,11 @@
 /* the blind-tooled frame on the cloth, measured against the zoom like everything else (rule 12) */
 .auth.ritual::after { inset: clamp(10px, calc(1.6vw / var(--zoom)), 28px); }
 .auth .keepsake, .auth .tp-mark, .auth .tp-folio { display: none !important; }
-/* the book is exactly its design size before it is scaled: content can never change it (bookFit) */
-.auth .spread.scaled { width: 1440px; height: 720px; aspect-ratio: auto; }
-.auth .spread.scaled > .leaf-l, .auth .spread.scaled > .leaf-r { height: 720px; }
+/* the book is exactly its design size before it is scaled: content can never change it (bookFit). Two pages of 720
+   by 800, a little taller than wide like a real book's, so the tallest plate (sign-in, with its floors at a 1280 by
+   800 window) keeps its whole engraved frame on the page, foot ornaments included */
+.auth .spread.scaled { width: 1440px; height: 800px; aspect-ratio: auto; }
+.auth .spread.scaled > .leaf-l, .auth .spread.scaled > .leaf-r { height: 800px; }
 
 /* the lockup: a 44px target, the brass ring on the cloth */
 .auth .brand, .door-top .brand { min-height: 44px; min-width: 44px; align-items: center; border-radius: 4px; }
@@ -720,6 +722,7 @@ html:has(.door[data-layout="book"]), body:has(.door[data-layout="book"]) { overf
   .auth .brand [data-lockup] svg, .door .brand [data-lockup] svg { height: 28px; }
   /* the plate's floors are larger in the book's own pixels at this scale: a smaller dog and title make the room */
   .auth .plate-wrap { --cw: 90px; }
+  .auth .titlepg { padding-top: 3%; padding-bottom: 2%; }
   .auth .promise-line { font-size: 31px; }
   .auth.ritual .plate-links { flex-wrap: nowrap; font-size: max(16px, var(--read)); }
   .auth.ritual .field { margin-bottom: 4px; }

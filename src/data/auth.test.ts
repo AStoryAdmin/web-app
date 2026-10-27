@@ -6,11 +6,17 @@ const auth = {
   verifyOtp: vi.fn(),
   updateUser: vi.fn(),
   reauthenticate: vi.fn(),
+  getSession: vi.fn(),
+  getUser: vi.fn(),
 };
-vi.mock("../lib/supabase", () => ({ getSupabase: () => ({ auth }) }));
+// The profile row and my_gift_year(), for the plan read.
+const db = { profile: null as Record<string, unknown> | null, rpc: vi.fn() };
+const from = () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: db.profile, error: null }) }) }) });
+vi.mock("../lib/supabase", () => ({ getSupabase: () => ({ auth, from, rpc: db.rpc }) }));
 
 import {
   changePassword,
+  currentUser,
   friendlyAuthError,
   MIN_PASSWORD,
   needsReauthentication,
@@ -21,6 +27,41 @@ import {
 
 beforeEach(() => {
   for (const f of Object.values(auth)) f.mockReset();
+  db.rpc.mockReset();
+  db.profile = null;
+});
+
+describe("currentUser plan", () => {
+  const signedIn = () => {
+    const user = { id: "u1", email: "ann@example.com", user_metadata: {}, created_at: null };
+    auth.getSession.mockResolvedValue({ data: { session: { user } } });
+    auth.getUser.mockResolvedValue({ data: { user }, error: null });
+  };
+  const year = { plan: "individual", starts_at: "2026-01-01T00:00:00Z", ends_at: "2999-01-01T00:00:00Z", from_name: "Mai", hardcover_credits: 0, kind: "gift" };
+
+  it("shows a gift recipient the gifted plan", async () => {
+    signedIn();
+    db.profile = { plan: "free" };
+    db.rpc.mockResolvedValue({ data: [year], error: null });
+    const u = await currentUser();
+    expect(db.rpc).toHaveBeenCalledWith("my_gift_year");
+    expect(u).toMatchObject({ plan: "individual", planSource: "gift", giftYear: { fromName: "Mai", kind: "gift" } });
+  });
+
+  it("does not ask about gifts over a paid plan", async () => {
+    signedIn();
+    db.profile = { plan: "family" };
+    const u = await currentUser();
+    expect(db.rpc).not.toHaveBeenCalled();
+    expect(u).toMatchObject({ plan: "family", planSource: "app_store", giftYear: null });
+  });
+
+  it("stays Free when the gift read fails", async () => {
+    signedIn();
+    db.profile = { plan: "free" };
+    db.rpc.mockRejectedValue(new Error("offline"));
+    expect(await currentUser()).toMatchObject({ plan: "free", planSource: "free", giftYear: null });
+  });
 });
 
 describe("MIN_PASSWORD", () => {

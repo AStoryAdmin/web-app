@@ -7,7 +7,7 @@
  * The fit depends on the window only, never on the canvas's own height: a
  * plate with an error line, a longer form, a family switched on the front
  * door, none of them can change the size of the book. Every AuthFrame page
- * is fitted to the same 1440 by 720, so moving between them the book holds
+ * is fitted to the same 1440 by 800, so moving between them the book holds
  * still. It is computed before the first paint, after each resize (in the
  * same task as the page zoom, after it: lib/zoom's RESIZED_EVENT), and when
  * the faces arrive. The last fit of each design size is kept for the next

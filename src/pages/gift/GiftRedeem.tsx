@@ -78,7 +78,17 @@ function GiftOnly({ raw }: { raw: string }) {
   );
 
   let body;
-  if (!valid || preview === null) {
+  if (!raw) {
+    body = (
+      <section className="gift-intro">
+        <h1 className="gift-title">
+          Type the code<span className="stop">.</span>
+        </h1>
+        <p className="gift-lead">It’s on the card or in the email: eight letters and numbers.</p>
+        {typeAnother}
+      </section>
+    );
+  } else if (!valid || preview === null) {
     body = (
       <section className="gift-intro">
         <h1 className="gift-title">

@@ -4,7 +4,8 @@
  * grouped: you, the stories, the plan and privacy, if you can't), and each
  * section is one row: its name and what it is for on the left, the controls
  * on the right, rows parted by a hairline, never boxed. The person, their
- * storytellers under the three ways to be in a story, the wall, the plan,
+ * storytellers under the three ways to be in a story, the wall, the plan
+ * (how to change or stop it where it came from, and a way in for a code),
  * two privacy switches, the email and the password, who looks after this if
  * they can't, a copy of everything, and deleting the account (which names
  * who inherits each story first, docs/PORTING-MANIFEST.md §1.8). Everything
@@ -19,8 +20,9 @@ import { LinkIcon, MailIcon, PrintIcon, UserIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { changePassword, confirmEmailChange, sendPasswordChangeCode, requestEmailChange, updateProfile, updateSettings, CODE_LEN, MIN_PASSWORD, type Settings, type User } from "../data/auth";
-import { PLAN_LABELS } from "../lib/plan";
+import { APP_STORE_STEPS, keepsBilling, LEAVING_REASONS, planWords, reasonsText } from "./accountPlan";
 import { supabase } from "../lib/supabase";
+import { submitFeedback } from "../data/feedback";
 import { track } from "../lib/analytics";
 import { storyLine } from "../lib/storyLine";
 import { meOf, myStoryIds, relationTo, storyGroupOf, storyGroups, storytellerOf, whoseWords, type Index } from "../components/family/familyView";
@@ -32,6 +34,7 @@ import { editorShape, factDraft, factPatch, lifeDates, lifeLedger, MONTHS, SCHOO
 import type { Person } from "../data/family";
 import type { Story } from "../data/stories";
 import "./accountProfile.css";
+import "./account.css";
 
 type Note = { ok?: string; error?: string } | null;
 
@@ -667,24 +670,32 @@ function Storytellers({ stories, active, chooseStory, meId }: { stories: Story[]
 
 /* ── Plan ────────────────────────────────────────────────────────────── */
 
+/** The gift year or promo month the plan is running on (data/auth reads my_gift_year with the plan), or null. */
+const giftYearOf = (user: User) => user.giftYear ?? null;
+
+/** The plan, where it came from, and how to change or stop it there (planWords: no prices, no countdown). */
 function PlanCard({ user }: { user: User }) {
-  const ends = user.subscriptionCancelAt ? new Date(user.subscriptionCancelAt) : null;
+  const words = planWords(user.plan, giftYearOf(user), user.subscriptionCancelAt);
   return (
-    <Section title="Your plan" lead="Writing, reading and the family are free on every plan." id="plan">
+    <Section title="Your plan" lead="Writing, reading and the family come with every plan." id="plan">
       <p className="acct-plan">
-        <b>{user.plan === "complimentary" ? "Full access, through an access code." : PLAN_LABELS[user.plan]}</b>
-        {user.plan === "free" && <span className="meta">Three guided questions a day, unlimited writing, the whole family, and the book to print at home.</span>}
+        <b>{words.name}</b>
+        {words.source === "free" && <span className="meta">Three guided questions a day, unlimited writing and the whole family.</span>}
       </p>
-      {ends && !Number.isNaN(ends.getTime()) && (
-        <p className="meta acct-gap-4">
-          Your plan ends on {ends.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}, then the account returns to Free. The app is yours. It does not stop being yours.
-        </p>
-      )}
+      <div className="acct-plan-how" data-source={words.source}>
+        {words.lines.map((l) => (
+          <p key={l}>{l}</p>
+        ))}
+      </div>
       <div className="acct-acts">
         <ButtonLink to="/plans" variant="outline" small>
           Compare the plans
         </ButtonLink>
       </div>
+      <Link to="/gift/redeem" className="acct-way acct-code">
+        <strong>Have a code?</strong>
+        <span>A gift card or a promotion code. Type it in and it opens.</span>
+      </Link>
     </Section>
   );
 }
@@ -708,6 +719,7 @@ function Privacy({ user, refresh }: { user: User; refresh: () => Promise<unknown
         <Switch on={user.settings.shareUsage} label="Help improve A Story" hint="Counts and taps, never a word anybody said." onChange={(v) => set("shareUsage", v)} busy={busy === "shareUsage"} />
         <Switch on={user.settings.weeklyDigest} label="The Sunday email" hint="What the family added this week, once a week." onChange={(v) => set("weeklyDigest", v)} busy={busy === "weeklyDigest"} />
       </div>
+      <p className="acct-aside">Notifications, calls and reminders are set in the A Story app on your phone.</p>
       <NoteLine note={note} />
     </Section>
   );
@@ -958,11 +970,15 @@ async function whoInherits(owned: Story[]): Promise<Handoff[]> {
 }
 
 function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; afterDelete: () => Promise<void> }) {
+  const noted = useRef(false);
   const [open, setOpen] = useState(false);
   const [handoff, setHandoff] = useState<Handoff[] | null>(null);
   const [sure, setSure] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [more, setMore] = useState("");
+  const billing = keepsBilling(user.plan, giftYearOf(user), user.subscriptionCancelAt);
 
   const begin = async () => {
     setOpen(true);
@@ -977,6 +993,13 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
   const remove = async () => {
     setBusy(true);
     setNote(null);
+    // Why they are leaving, best effort (the phone's DeleteAccountScreen): a note that fails never stands in the way.
+    // Sent once: a retry after a failed delete doesn't add a second row.
+    if (!noted.current) {
+      noted.current = true;
+      const sent = await submitFeedback({ userId: user.id, type: "account_deletion", message: reasonsText(picked, more), accountEmail: user.email });
+      if ("error" in sent && sent.error !== "empty") console.warn("Delete: feedback:", sent.error);
+    }
     const { data, error } = await supabase().functions.invoke("delete-account");
     const failed = error || (data && typeof data === "object" && "error" in data && (data as { error?: string }).error);
     if (failed) {
@@ -1019,6 +1042,28 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
               {handoff !== null && handoff.length === 0 && kept.length === 0 && <p className="meta">This account keeps no stories.</p>}
             </>
           )}
+          {/* Apple runs the subscription, not us: deleting the account here doesn't stop it (App Store 5.1.1(v)) */}
+          {billing && (
+            <div className="acct-billing" role="note">
+              <strong>Your subscription keeps going</strong>
+              <p>Deleting the account doesn’t stop a subscription bought through the App Store. It keeps renewing until it’s cancelled there: {APP_STORE_STEPS}.</p>
+            </div>
+          )}
+          <fieldset className="acct-reasons">
+            <legend>Why are you leaving? You don’t have to say.</legend>
+            {LEAVING_REASONS.map((r) => (
+              <label key={r} className="check-row">
+                <input type="checkbox" checked={picked.includes(r)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, r] : p.filter((x) => x !== r)))} disabled={busy} />
+                <span>{r}</span>
+              </label>
+            ))}
+            <label className="field acct-reason-more">
+              <span>Anything else</span>
+              <span className="input">
+                <textarea value={more} onChange={(e) => setMore(e.target.value)} rows={2} maxLength={1000} disabled={busy} />
+              </span>
+            </label>
+          </fieldset>
           <label className="check-row">
             <input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} />
             <span>I understand. Delete the account and sign me out everywhere.</span>
@@ -1181,6 +1226,15 @@ export default function Account() {
                 </div>
               );
             })}
+            {/* not a section of this page: the questions and the "write to us" form have their own */}
+            <div className="acct-nav-group">
+              <p>Help</p>
+              <ul>
+                <li>
+                  <Link to="/help">Help and feedback</Link>
+                </li>
+              </ul>
+            </div>
           </nav>
         </aside>
 
@@ -1237,8 +1291,9 @@ export default function Account() {
               user={user}
               stories={stories}
               afterDelete={async () => {
+                // to the goodbye first, a page that needs no account, so signing out can't send them to sign in
+                navigate("/account-deleted", { replace: true, state: { billing: keepsBilling(user.plan, giftYearOf(user), user.subscriptionCancelAt) } });
                 await signOut();
-                navigate("/welcome", { replace: true });
               }}
             />
           </Pair>
@@ -1247,6 +1302,7 @@ export default function Account() {
               { to: "/book", title: "Open the book", line: "Every page, as it will print." },
               { to: "/family", title: "The family", line: "Who is in the book, and who is invited." },
               { to: "/", title: "Back to today", line: "Today’s question is waiting." },
+              { to: "/help", title: "Help and feedback", line: "Questions, and a way to write to us." },
             ]}
           />
         </div>

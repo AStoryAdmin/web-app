@@ -1311,7 +1311,6 @@ body.writing-focus .wbody { min-height: 60vh; }
 .acct-switch.on .acct-switch-knob { transform: translateX(24px); }
 .acct-switch[disabled] { opacity: .6; cursor: default; }
 .acct-delete { display: grid; gap: var(--s-3); }
-.acct-delete p { font-size: var(--t-small); }
 .check-row { display: flex; align-items: flex-start; gap: var(--s-3); font-size: var(--t-small); cursor: pointer; }
 .check-row input { width: 24px; height: 24px; margin: 0; accent-color: var(--accent); flex: none; }
 .btn.danger { background: var(--danger); color: #fff; }

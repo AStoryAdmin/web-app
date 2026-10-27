@@ -60,7 +60,11 @@ const router = createBrowserRouter([
   { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
   { path: "/gift", element: lazyPage(() => import("./pages/gift/Gift")) },
   { path: "/gift/thanks", element: lazyPage(() => import("./pages/gift/GiftThanks")) },
+  // no code in the address (the account's "Have a code?"): the page asks for the one on the card
+  { path: "/gift/redeem", element: lazyPage(() => import("./pages/gift/GiftRedeem")) },
   { path: "/gift/redeem/:code", element: lazyPage(() => import("./pages/gift/GiftRedeem")) },
+  // where deleting the account lands: the session is gone by then, so it is open to anyone
+  { path: "/account-deleted", element: lazyPage(() => import("./pages/AccountDeleted")) },
   {
     element: <RequireAuth />,
     children: [
@@ -78,6 +82,7 @@ const router = createBrowserRouter([
       { path: "/book/design", element: lazyPage(() => import("./pages/BookDesign")) },
       { path: "/plans", element: lazyPage(() => import("./pages/Plans")) },
       { path: "/account", element: lazyPage(() => import("./pages/Account")) },
+      { path: "/help", element: lazyPage(() => import("./pages/Help")) },
     ],
   },
   { path: "*", element: page("This page isn’t here") },

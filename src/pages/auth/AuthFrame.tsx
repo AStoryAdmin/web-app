@@ -1,6 +1,6 @@
 /**
- * The signed-out frame: the family book, open on the cloth. Two square
- * pages side by side, drawn at 1440 by 720 and scaled to fill the window,
+ * The signed-out frame: the family book, open on the cloth. Two
+ * pages side by side (720 by 800, a little taller than wide), drawn at 1440 by 800 and scaled to fill the window,
  * up or down, so the whole spread is on one screen and the page never
  * scrolls on a desktop. The left page is the inside of the front board:
  * the endpaper with the mark repeated, and an album of prints held by
@@ -79,8 +79,8 @@ export default function AuthFrame({ children, companion, rest: restProp, poses, 
   useTurn(ground);
   const wrapRef = useRef<HTMLDivElement>(null);
   const spreadRef = useRef<HTMLDivElement>(null);
-  // every AuthFrame page is fitted to the same 1440 by 720, so the book never changes size between them
-  useFit(ground, wrapRef, spreadRef, 1440, 720);
+  // every AuthFrame page is fitted to the same 1440 by 800 (tall enough for the sign-in plate whole at 1280 by 800), so the book never changes size between them
+  useFit(ground, wrapRef, spreadRef, 1440, 800);
 
   const { pathname } = useLocation();
   // what the dog does when nothing is happening: asleep while a code is awaited, curious on a new account
@@ -169,7 +169,7 @@ export default function AuthFrame({ children, companion, rest: restProp, poses, 
   }, [stage]);
 
   // the book's scale from its first frame: the last page fitted it to this window (useFit corrects it before paint)
-  const seed = seedFit(1440, 720);
+  const seed = seedFit(1440, 800);
   return (
     <div className="auth ritual on-dark" ref={ground} data-stage={stage} data-layout={isStacked() ? "stacked" : "book"}
       style={{ ["--bk-mark" as string]: MARK_MASK, ...(seed === null ? null : { ["--fit" as string]: seed.toFixed(4) }) }}>

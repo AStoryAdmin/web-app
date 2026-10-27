@@ -15,7 +15,7 @@
  */
 import type { Session } from "@supabase/supabase-js";
 import { getSupabase } from "../lib/supabase";
-import { resolveEffectivePlan, type Plan } from "../lib/plan";
+import { parseGiftYear, planSource, planWithGiftYear, resolveEffectivePlan, type GiftYear, type Plan, type PlanSource } from "../lib/plan";
 import { sessionIsOver } from "../app-core/lib/sessionCheck.js";
 
 /** The project's Email OTP length: the app's VerifyCodeStage CODE_LEN. */
@@ -407,6 +407,10 @@ export type User = {
   dateOfBirth: string;
   settings: Settings;
   plan: Plan;
+  /** Where the plan came from: the App Store, a gift year, a promo or access code, or nothing. */
+  planSource: PlanSource;
+  /** The gift year or promo month giving this plan, while it runs; null when the plan is their own. */
+  giftYear: GiftYear | null;
   subscriptionCancelAt: string | null;
   /** Seconds of the free first conversation used (deploy §3a). */
   callSecondsUsed: number;
@@ -455,9 +459,33 @@ async function fetchProfile(userId: string): Promise<ProfileRow> {
   return data as ProfileRow;
 }
 
-function mapUser(session: Session, p: ProfileRow): User {
+/**
+ * The gift year or promo month running on this account, or null (none, or a
+ * server without gift_2026_10_23.sql). Never throws: it gates words on a
+ * page, not access, and the server honours the year either way.
+ */
+async function fetchGiftYear(): Promise<GiftYear | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const { data, error } = await sb.rpc("my_gift_year");
+    return error ? null : parseGiftYear(data);
+  } catch {
+    return null;
+  }
+}
+
+const paidPlan = (p: ProfileRow): Plan =>
+  resolveEffectivePlan(p?.plan as string | undefined, p?.express_expires_at as string | undefined, p?.comp_access_at as string | undefined);
+
+function mapUser(session: Session, p: ProfileRow, giftYear: GiftYear | null = null): User {
   const meta = (session.user.user_metadata || {}) as Record<string, string | undefined>;
   const s = (k: string) => (p?.[k] as string | undefined) || "";
+  // A redeemed gift year counts only when nothing is paid for, as on the
+  // phone (getCurrentPlan); without it a recipient showed as Free here.
+  const paid = paidPlan(p);
+  const plan = planWithGiftYear(paid, giftYear);
+  const applied = plan === paid ? null : giftYear;
   return {
     id: session.user.id,
     email: (session.user.email || "").toLowerCase(),
@@ -469,7 +497,9 @@ function mapUser(session: Session, p: ProfileRow): User {
     gender: s("gender"),
     dateOfBirth: s("date_of_birth"),
     settings: settingsFromProfile(p),
-    plan: resolveEffectivePlan(s("plan"), s("express_expires_at"), s("comp_access_at")),
+    plan,
+    planSource: planSource(plan, applied),
+    giftYear: applied,
     subscriptionCancelAt: s("subscription_cancel_at") || null,
     callSecondsUsed: Number(p?.call_seconds_used) || 0,
     createdAt: session.user.created_at || null,
@@ -504,7 +534,8 @@ export async function currentUser(): Promise<User | null> {
   } catch (err) {
     console.warn("currentUser: profile:", (err as Error)?.message || err);
   }
-  return mapUser(session, profile);
+  const giftYear = paidPlan(profile) === "free" ? await fetchGiftYear() : null;
+  return mapUser(session, profile, giftYear);
 }
 
 /** Re-reads the profile row for a signed-in session (after an edit or a purchase). */
