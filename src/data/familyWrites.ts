@@ -65,6 +65,17 @@ export async function householdFor(userId: string, account: Account | null, fami
   return id!;
 }
 
+/**
+ * Puts one story in a family tree when it has none yet. householdFor fills
+ * gaps only when it makes or finds the account's own household, so a story
+ * started after joining a family would otherwise stay outside the tree (and
+ * family_code_for refuses it). Only fills a gap.
+ */
+export async function attachStory(storyId: string, householdId: string): Promise<void> {
+  const { error } = await supabase().from("stories").update({ household_id: householdId }).eq("id", storyId).is("household_id", null);
+  if (error) console.warn("attachStory:", error.message);
+}
+
 /* ── People ────────────────────────────────────────────────────────────── */
 
 // Newer columns a database a migration behind may not have (the app's list).

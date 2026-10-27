@@ -508,6 +508,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .sechead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-12) 0 var(--s-5); }
 .sechead h2 { font-size: var(--t-h3); letter-spacing: -0.01em; text-transform: none; font-weight: 700; }
 .sechead a { font-weight: 500; font-size: var(--t-small); text-decoration: none; }
+.sec-title { margin-bottom: 12px; } /* a section's own heading, straight above what it heads (Joined) */
 
 /* ───────────────────────── 15. Motion ───────────────────────── */
 .rise { animation: rise var(--dur-sheet) var(--ease-out) both; }
@@ -565,7 +566,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   .mem { grid-template-columns: 104px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3); }
   .mem h3 { font-size: 19px; }
   .mem .chips .chip { font-size: 12px; min-height: 26px; padding: 0 8px; }
-  .mem .excerpt { font-size: var(--t-small); }
+  .mem .excerpt { font-size: 16px; }
   .mem .chips { justify-content: flex-start; }
   .avatars img, .avatars span { width: 28px; height: 28px; }
   .sechead { margin: var(--s-8) 0 var(--s-4); }
@@ -3441,6 +3442,7 @@ body:has(.auth.ritual) { background: var(--chocolate) url(/book/cloth-chocolate.
 .glance-body .meta { margin: 0; font-size: 16px; line-height: 1.45; }
 .glance-body .progress { margin-top: 4px; }
 .glance-body .more { justify-self: start; min-height: 32px; }
+.glance-body .home-ask { justify-self: start; margin-top: 4px; }
 .glance-body .news { display: grid; gap: 8px; }
 
 @media (max-width: 1100.98px) {

@@ -7,8 +7,10 @@
  * storyteller largest in the middle, couples joined by an ampersand,
  * children threaded to their parents, a dashed ring where somebody is
  * missing, the not-placed shelf). Under it, the keeping of the family:
- * what waits for your review, the codes you’ve sent and how an invitation
- * works, and who may edit. Each person is in one of three states, in the
+ * what waits for your review, the family’s own code (one for anybody, with
+ * its QR and the date it works until), the codes you’ve sent and how an
+ * invitation works, and who may edit. Somebody in a family with no story
+ * yet sees the tree around themselves, and one way to start the first. Each person is in one of three states, in the
  * product’s own words ("not on A Story yet", "invited · waiting for them",
  * "on A Story"), shown under their face in the tree; nobody is listed
  * twice (docs/PRD.md §3.3a), and when somebody is, one line says so and
@@ -17,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
-import { Button, Problem } from "../components/ui";
+import { Button, ButtonLink, Problem } from "../components/ui";
 import { PlusIcon } from "../components/icons";
 import FamilyTree from "../components/family/tree/FamilyTree";
 import Storyteller from "../components/family/Storyteller";
@@ -43,13 +45,16 @@ import { useAccount } from "../state/accountContext";
 import { householdFor, revokeCode, type MyCode } from "../data/familyWrites";
 import { buildIndex } from "../app-core/lib/familyGraph.js";
 import { spacedCode } from "../app-core/lib/familyCode.js";
-import { canEdit, expiresLabel, familyTitle, personName, realPeople, type Index } from "../components/family/familyView";
+import FamilyCodeCard from "../components/family/FamilyCodeCard";
+import { canEdit, familyTitle, meOf, personName, realPeople, standingCode, untilLabel, type Index } from "../components/family/familyView";
 import type { Person } from "../data/family";
 
 /** The codes this account has sent that still open a place, each with a way to take it back (held six seconds
     with an Undo first: the code may already be in a relative’s hands, and once taken back it is dead). */
-function MyCodes({ people, mine, home }: { people: Person[]; mine: ReturnType<typeof useMyCodes>; home: RefObject<HTMLElement | null> }) {
-  const { codes, setCodes, failed, reload, now } = mine;
+function MyCodes({ people, mine, home, shown }: { people: Person[]; mine: ReturnType<typeof useMyCodes>; home: RefObject<HTMLElement | null>; shown?: string | null }) {
+  const { setCodes, failed, reload, now } = mine;
+  // the family’s own code has its card above the list: it is not said twice
+  const codes = mine.codes && shown ? mine.codes.filter((c) => c.code !== shown) : mine.codes;
   const [notTaken, setNotTaken] = useState<string | null>(null);
   const onFail = useCallback((_err: unknown, code: string) => setNotTaken(code), []);
   // the Invitations plate stays through every swap (the list going, the last code taken back): the keyboard's home
@@ -77,8 +82,8 @@ function MyCodes({ people, mine, home }: { people: Person[]; mine: ReturnType<ty
         Looking for the codes you’ve sent…
       </p>
     );
-  if (!codes.length) return <p className="fp-quiet">No codes out at the moment.</p>;
-  const who = (c: MyCode) => (c.personId ? personName(people.find((p) => p.id === c.personId)) || "a place in the tree" : c.storyId ? "a keeper of the story" : "the family");
+  if (!codes.length) return <p className="fp-quiet">{shown ? "None at the moment." : "No codes out at the moment."}</p>;
+  const who = (c: MyCode) => (c.personId ? personName(people.find((p) => p.id === c.personId)) || "a place in the tree" : "anyone in the family");
   return (
     <ul className="fp-codes" aria-label="Codes you’ve sent">
       {codes.map((c) =>
@@ -88,7 +93,7 @@ function MyCodes({ people, mine, home }: { people: Person[]; mine: ReturnType<ty
           <li key={c.code}>
             <b>{spacedCode(c.code) as string}</b>
             <span className="fp-quiet">
-              <span className="nw">for {who(c)}</span> <span className="nw">{"· "}{expiresLabel(c.expiresAt, now)}</span>
+              <span className="nw">for {who(c)}</span> <span className="nw">{"· "}{untilLabel(c.expiresAt, now)}</span>
             </span>
             {notTaken === c.code && (
               <span className="meta bad fp-codes-bad" role="alert">
@@ -140,14 +145,16 @@ export default function Family() {
   const shownFamily = sample ? sample.family : family;
   const shownStory = sample ? sample.story : story;
   const people = useMemo(() => realPeople(family), [family]);
+  // Somebody who joined a family with no story yet sees the tree with themselves at its centre.
+  const meRow = sample ? null : meOf(family, user?.id);
   const summary = useMemo(() => {
-    if (!shownStory) return "";
+    if (!shownStory && !meRow) return [];
     const all = treePeople(realPeople(shownFamily), shownStory);
     const index = buildIndex(shownFamily || { people: [], edges: [] }) as Index;
-    const teller = all.find((p) => p.storyId === shownStory.id);
-    const plate = buildPlate({ people: all, index, tellerId: teller?.id || null });
+    const centre = shownStory ? all.find((p) => p.storyId === shownStory.id) : meRow;
+    const plate = buildPlate({ people: all, index, tellerId: centre?.id || null });
     return plate.lone && !plate.unplaced.length ? [] : [generationsLine(plate.generations), peopleLine(all.length, plate.unplaced.length)];
-  }, [shownFamily, shownStory]);
+  }, [shownFamily, shownStory, meRow]);
 
   useEffect(() => {
     if (params.get("review") === "1") reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -177,14 +184,11 @@ export default function Family() {
       </Shell>
     );
   }
-  if (!story || !shownStory) return <Navigate to="/start" replace />;
+  // Nothing to draw: no story, and no place of their own in a tree.
+  if (!shownStory && (preview || !meRow)) return <Navigate to="/start" replace />;
 
   const meId = user?.id;
   const senderName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
-  const own = story.relationship === "Myself" && (!story.ownerId || story.ownerId === meId);
-  const joined = !!story.ownerId && story.ownerId !== meId;
-  const viewOwn = sample ? false : own;
-  const context = sample ? "A sample family, for looking" : own ? "Your story" : joined ? `${story.name}’s story, which you’ve joined` : `${story.name}’s story, which you keep`;
 
   const afterWrite = async () => {
     await reload();
@@ -203,6 +207,77 @@ export default function Family() {
       setError(`${person.givenName} wasn’t placed (${(err as Error)?.message || "no connection"}).`);
     }
   };
+
+  if (!story || !shownStory) {
+    // In a family with no story yet (they joined the tree, nobody has started one): the tree, centred on them,
+    // with the same ways to add somebody, and one way to start the first story.
+    const last = String(meRow?.familyName || "").trim();
+    return (
+      <Shell bare wide>
+        <div className="page fp">
+          <header className="fp-head" data-rise>
+            <div className="fp-name">
+              <Cartouche letter={(Array.from(last)[0] || "A").toUpperCase()} />
+              <div className="fp-title">
+                <h1>
+                  {last ? familyTitle({ name: "", lastName: last }) : "Your family"}
+                  <span className="stop">.</span>
+                </h1>
+                <p className="fp-sub">
+                  {["The family tree", ...summary].map((part, i) => (
+                    <span className="sub-part" key={part}>
+                      {i > 0 && <span className="sub-dot"> · </span>}
+                      <span className="nw">{part}</span>
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </div>
+            <Button icon={<PlusIcon />} onClick={() => setInvite({ anchor: meRow })}>
+              Add someone
+            </Button>
+          </header>
+
+          {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
+          {error && <Problem message={error} onDismiss={() => setError(null)} />}
+          <Duplicates people={people} family={family} stories={stories} meId={meId} onChanged={afterWrite} />
+
+          <div className="fp-grid fp-grid-solo">
+            <FamilyTree
+              family={family}
+              story={null}
+              meId={meId}
+              own
+              onAdd={(anchor, kind) => setInvite({ anchor: anchor || meRow, kind })}
+              onPlace={place}
+              canPlace={(p) => canEdit(p, family, meId)}
+              coded={mine.codes === null ? "unknown" : mine.coded}
+            />
+          </div>
+
+          <section className="fp-keep fp-nostory" aria-labelledby="fp-nostory-h">
+            <Star />
+            <div className="fp-keep-col">
+              <h2 id="fp-nostory-h">No story yet</h2>
+              <p className="fp-how">When somebody in the family starts a story, it shows here for everyone in the tree. You could start the first one, about yourself or about someone you love.</p>
+              <ButtonLink to="/start" variant="outline">
+                Start a story
+              </ButtonLink>
+            </div>
+          </section>
+        </div>
+
+        {invite && user && (
+          <InviteSheet story={null} family={family} account={account} userId={user.id} senderName={senderName} anchor={invite.anchor} presetKind={invite.kind || ""} onClose={() => setInvite(null)} onSaved={afterWrite} />
+        )}
+      </Shell>
+    );
+  }
+
+  const own = story.relationship === "Myself" && (!story.ownerId || story.ownerId === meId);
+  const joined = !!story.ownerId && story.ownerId !== meId;
+  const viewOwn = sample ? false : own;
+  const context = sample ? "A sample family, for looking" : own ? "Your story" : joined ? `${story.name}’s story, which you’ve joined` : `${story.name}’s story, which you keep`;
 
   return (
     <Shell bare wide book={preview ? "A sample family" : undefined}>
@@ -271,7 +346,9 @@ export default function Family() {
                 <section className="fp-keep-col fp-invites" id="invite" aria-labelledby="fp-invites-h" ref={invitesRef} tabIndex={-1}>
                   <h2 id="fp-invites-h">Invitations</h2>
                   <p className="fp-how">They join with a code or a link, and add what they remember under their own name.</p>
-                  <MyCodes people={people} mine={mine} home={invitesRef} />
+                  {user && !story.readOnly && <FamilyCodeCard story={story} family={family} account={account} userId={user.id} senderName={senderName} mine={mine} />}
+                  {user && !story.readOnly && <h3 className="fp-codes-h">Other codes you’ve sent</h3>}
+                  <MyCodes people={people} mine={mine} home={invitesRef} shown={user && !story.readOnly ? standingCode(mine.codes, story.id, mine.now)?.code : null} />
                 </section>
               </div>
 

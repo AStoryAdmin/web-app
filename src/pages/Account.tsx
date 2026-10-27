@@ -23,9 +23,15 @@ import { PLAN_LABELS } from "../lib/plan";
 import { supabase } from "../lib/supabase";
 import { track } from "../lib/analytics";
 import { storyLine } from "../lib/storyLine";
-import { myStoryIds, storyGroupOf, storyGroups, whoseWords } from "../components/family/familyView";
+import { meOf, myStoryIds, relationTo, storyGroupOf, storyGroups, storytellerOf, whoseWords, type Index } from "../components/family/familyView";
+import PortraitUpload from "../components/family/PortraitUpload";
 import WhereNext, { Stop } from "../components/book/WhereNext";
+import { householdFor, savePerson } from "../data/familyWrites";
+import { buildIndex } from "../app-core/lib/familyGraph.js";
+import { editorShape, factDraft, factPatch, lifeDates, lifeLedger, MONTHS, SCHOOL_LEVELS } from "../app-core/lib/personFacts.js";
+import type { Person } from "../data/family";
 import type { Story } from "../data/stories";
+import "./accountProfile.css";
 
 type Note = { ok?: string; error?: string } | null;
 
@@ -89,7 +95,260 @@ function Switch({ on, label, hint, onChange, busy }: { on: boolean; label: strin
 
 /* ── Profile ─────────────────────────────────────────────────────────── */
 
+/** The lines of your life that open in place, in the ledger's order (EditProfileScreen LIFE_LINES). */
+const LIFE_LINES = [
+  { key: "born", label: "Born" },
+  { key: "grewUp", label: "Grew up in" },
+  { key: "schools", label: "School" },
+  { key: "work", label: "Work" },
+] as const;
+type LifeKey = (typeof LIFE_LINES)[number]["key"];
+
+type School = { level: string; name: string; years: string; kind: string };
+type Job = { title: string; place: string; from: string; to: string };
+/** What one fact's editor holds (personFacts factDraft): a date and place, one line, or a list. */
+type Draft = { day?: string; month?: string; year?: string; place?: string; text?: string; schools?: School[]; jobs?: Job[] };
+
+/**
+ * "Who you are to Rose" (the app's lib/profileRelation relationRow): the row, the way into the tree when you are
+ * not in it, or nothing on your own story, where there is nobody to be somebody to.
+ */
+function relationRow({ me, teller, story, userId, toTeller }: { me: Person | null; teller: Person | null; story: Story | null; userId: string; toTeller: string }):
+  | { kind: "row"; title: string; value: string; action: string }
+  | { kind: "link"; label: string }
+  | null {
+  if (!teller || !story) return null;
+  if ((me && teller.id === me.id) || (teller.userId && teller.userId === userId)) return null;
+  if (story.relationship === "Myself" && (!story.ownerId || story.ownerId === userId)) return null;
+  const first = (teller.givenName || story.name || "").trim().split(/\s+/)[0];
+  if (!first) return null;
+  if (!me) return { kind: "link", label: `Put yourself in the family tree, beside ${first}` };
+  return toTeller
+    ? { kind: "row", title: `Who you are to ${first}`, value: `${first}’s ${toTeller}`, action: "Change it in the family tree" }
+    : { kind: "row", title: `Who you are to ${first}`, value: `Not linked to ${first} yet`, action: `Link yourself to ${first} in the family tree` };
+}
+
+/** One fact of your life, opened in place: a date and its place, one line, or a list of schools or jobs. */
+function FactEditor({ factKey, initial, onSave, onCancel }: { factKey: LifeKey; initial: Draft; onSave: (d: Draft) => Promise<string | null>; onCancel: () => void }) {
+  const [d, setD] = useState<Draft>(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const shape = editorShape(factKey) as { kind: "date" | "text" | "schools" | "jobs"; title: string };
+  const set = (patch: Draft) => setD((x) => ({ ...x, ...patch }));
+  const setRow = <K extends "schools" | "jobs">(list: K, i: number, patch: Partial<NonNullable<Draft[K]>[number]>) =>
+    setD((x) => ({ ...x, [list]: (x[list] || []).map((r, j) => (j === i ? { ...r, ...patch } : r)) }));
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    const err = await onSave(d);
+    if (err) {
+      setError(err);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      className="acct-form acct-fact"
+      aria-label={shape.title}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+    >
+      {shape.kind === "date" && (
+        <>
+          <div className="acct-fact-date">
+            <Field label="Day" value={d.day || ""} onChange={(e) => set({ day: e.target.value })} inputMode="numeric" maxLength={2} autoFocus />
+            <label className="field">
+              <span>Month</span>
+              <span className="input">
+                <select value={d.month || ""} onChange={(e) => set({ month: e.target.value })}>
+                  <option value="">Not known</option>
+                  {(MONTHS as string[]).map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </label>
+            <Field label="Year" value={d.year || ""} onChange={(e) => set({ year: e.target.value })} inputMode="numeric" maxLength={4} placeholder="1945" />
+          </div>
+          <Field label="Where" value={d.place || ""} onChange={(e) => set({ place: e.target.value })} placeholder="A town, a country" />
+        </>
+      )}
+      {shape.kind === "text" && <Field label={shape.title} value={d.text || ""} onChange={(e) => set({ text: e.target.value })} autoFocus />}
+      {shape.kind === "schools" &&
+        (d.schools || []).map((s, i) => (
+          <div key={i} className="acct-fact-item" role="group" aria-label={`School ${i + 1}`}>
+            <Field label="School" value={s.name} onChange={(e) => setRow("schools", i, { name: e.target.value })} autoFocus={i === 0} />
+            <div className="acct-two">
+              <label className="field">
+                <span>Kind of school</span>
+                <span className="input">
+                  <select value={s.level} onChange={(e) => setRow("schools", i, { level: e.target.value })}>
+                    {(SCHOOL_LEVELS as { key: string; label: string }[]).map((l) => (
+                      <option key={l.key} value={l.key}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              </label>
+              <Field label="Years" value={s.years} onChange={(e) => setRow("schools", i, { years: e.target.value })} placeholder="1963–1967" />
+            </div>
+          </div>
+        ))}
+      {shape.kind === "jobs" &&
+        (d.jobs || []).map((j, i) => (
+          <div key={i} className="acct-fact-item" role="group" aria-label={`Job ${i + 1}`}>
+            <div className="acct-two">
+              <Field label="What you did" value={j.title} onChange={(e) => setRow("jobs", i, { title: e.target.value })} placeholder="Teacher" autoFocus={i === 0} />
+              <Field label="Where" value={j.place} onChange={(e) => setRow("jobs", i, { place: e.target.value })} placeholder="The bakery" />
+            </div>
+            <div className="acct-two">
+              <Field label="From" value={j.from} onChange={(e) => setRow("jobs", i, { from: e.target.value })} inputMode="numeric" maxLength={4} placeholder="1961" />
+              <Field label="To" value={j.to} onChange={(e) => setRow("jobs", i, { to: e.target.value })} inputMode="numeric" maxLength={4} placeholder="1975" />
+            </div>
+          </div>
+        ))}
+      {(shape.kind === "schools" || shape.kind === "jobs") && <p className="meta acct-gap-3">Leave a name empty to take that one off.</p>}
+      <div className="acct-acts">
+        <Button type="submit" small loading={busy}>
+          Save
+        </Button>
+        {shape.kind === "schools" && (
+          <Button variant="quiet" small onClick={() => set({ schools: [...(d.schools || []), { level: "secondary", name: "", years: "", kind: "" }] })} disabled={busy}>
+            Add another school
+          </Button>
+        )}
+        {shape.kind === "jobs" && (
+          <Button variant="quiet" small onClick={() => set({ jobs: [...(d.jobs || []), { title: "", place: "", from: "", to: "" }] })} disabled={busy}>
+            Add another job
+          </Button>
+        )}
+        <Button variant="quiet" small onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+      </div>
+      {error && (
+        <p className="meta acct-note bad" role="alert">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
+/**
+ * Your life, as your page shows it (lifeLedger): born, grew up, school and work, each opening the same editor the
+ * person page's facts use (personFacts factDraft and factPatch), saved to your row in the tree, so what you add here
+ * is on your page and in the book at once (EditProfileScreen, FB-401).
+ */
+function LifeFacts({ me, userId }: { me: Person; userId: string }) {
+  const { account, family, stories, reload } = useAccount();
+  const [open, setOpen] = useState<LifeKey | null>(null);
+  const [note, setNote] = useState<Note>(null);
+  const ownStory = me.storyId ? stories.find((s) => s.id === me.storyId) || null : null;
+  const dates = lifeDates(me, ownStory);
+  const ledger = lifeLedger(me, dates) as { key: string; value: string }[];
+  const valueOf = (key: LifeKey) => ledger.find((r) => r.key === key)?.value || "";
+
+  const save = async (key: LifeKey, draft: Draft): Promise<string | null> => {
+    const res = factPatch(key, draft) as { patch?: Record<string, unknown>; error?: string };
+    if (res.error || !res.patch) return res.error || "Nothing to save.";
+    try {
+      const householdId = me.householdId || (await householdFor(userId, account ?? null, family));
+      await savePerson({ ...me, ...res.patch } as Person, householdId);
+      await reload();
+      setOpen(null);
+      setNote({ ok: `${(editorShape(key) as { title: string }).title} saved. It’s on your page.` });
+      return null;
+    } catch (err) {
+      return `That didn’t save (${(err as Error)?.message || "no connection"}). Try again in a moment.`;
+    }
+  };
+
+  return (
+    <div className="acct-prof-part">
+      <h2 className="acct-sub">Your life</h2>
+      <p className="acct-lead">A few facts for your page and the book. Leave out anything you like.</p>
+      <ul className="acct-life">
+        {LIFE_LINES.map((l) => {
+          const v = valueOf(l.key);
+          return (
+            <li key={l.key}>
+              {open === l.key ? (
+                <FactEditor factKey={l.key} initial={factDraft(me, l.key, dates) as Draft} onSave={(d) => save(l.key, d)} onCancel={() => setOpen(null)} />
+              ) : (
+                <button
+                  type="button"
+                  className="acct-life-row"
+                  onClick={() => {
+                    setNote(null);
+                    setOpen(l.key);
+                  }}
+                  aria-label={`${l.label}: ${v || "not given yet"}. ${v ? "Change it" : "Add it"}.`}
+                >
+                  <span className="acct-life-k">{l.label}</span>
+                  {v ? <span className="acct-life-v">{v}</span> : <span className="acct-life-add">Add</span>}
+                  <span className="acct-life-arrow" aria-hidden="true">
+                    →
+                  </span>
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="acct-acts acct-acts-top">
+        <Link to={`/family/${me.id}`} className="acct-way acct-life-page">
+          <strong>See your page as the family does</strong>
+        </Link>
+        <NoteLine note={note} />
+      </div>
+    </div>
+  );
+}
+
+/** Who you are to the person whose story is open, read from the tree; changed only in the tree (EditProfileScreen). */
+function Relation({ me, userId }: { me: Person | null; userId: string }) {
+  const { family, activeStory } = useAccount();
+  const teller = storytellerOf(family, activeStory);
+  const toTeller = me && teller && family ? relationTo(buildIndex(family) as Index, me.id, teller.id) : "";
+  const row = relationRow({ me, teller, story: activeStory, userId, toTeller });
+  if (!row) return null;
+  return (
+    <div className="acct-prof-part">
+      {row.kind === "row" ? (
+        <>
+          <h2 className="acct-sub">{row.title}</h2>
+          <p className="acct-value acct-relation">{row.value}</p>
+          <Link to="/family" className="acct-way">
+            <strong>{row.action}</strong>
+          </Link>
+        </>
+      ) : (
+        <>
+          <h2 className="acct-sub">Your place in the family</h2>
+          <p className="acct-lead">Once you are in the tree, your page and the facts of your life can be filled in here.</p>
+          <Link to="/family" className="acct-way">
+            <strong>{row.label}</strong>
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promise<unknown>; bookName: string }) {
+  const { account, family, reload } = useAccount();
+  const me = meOf(family, user.id);
+  // the face just chosen, shown on the plate before the account is read again (undefined: nothing chosen here)
+  const [face, setFace] = useState<string | null | undefined>(undefined);
+  const plateFace = face === undefined ? user.avatarUrl : face;
   const [first, setFirst] = useState(user.firstName);
   const [last, setLast] = useState(user.lastName);
   const [phone, setPhone] = useState(user.phone);
@@ -102,6 +361,16 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
     setNote(null);
     const r = await updateProfile(user.id, { firstName: first, lastName: last, phone });
     if (r.ok) {
+      // the same name on your row in the tree, so Account, your page and the tree agree (the app's familyWithName)
+      const given = first.trim();
+      if (me && given && (me.givenName !== given || (me.familyName || "") !== last.trim())) {
+        try {
+          await savePerson({ ...me, givenName: given, familyName: last.trim() } as Person, me.householdId || (await householdFor(user.id, account ?? null, family)));
+          await reload();
+        } catch (err) {
+          console.warn("Profile: tree name:", (err as Error)?.message || err);
+        }
+      }
       await refresh();
       setNote({ ok: "Saved." });
     } else setNote({ error: r.error });
@@ -115,7 +384,7 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
       <div className="acct-exlibris">
         <img className="acct-plate" src="/book/bookplate.webp" alt="" aria-hidden="true" width={1130} height={1400} />
         <div className="acct-plate-words">
-          <Avatar src={user.avatarUrl} name={name} size={56} className="acct-seal" />
+          <Avatar src={plateFace} name={name} size={56} className="acct-seal" />
           {/* the name written on the plate (the page’s one h1 is the hidden “Account” above the sections) */}
           <p className="acct-plate-name" id="profile-h" data-running="Your name">
             {name}
@@ -125,6 +394,12 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
         </div>
       </div>
       <div className="acct-sec-body">
+      <div className="acct-prof-part">
+        <h2 className="acct-sub">Your picture</h2>
+        <p className="acct-lead">Beside everything you add, and on your place in the family tree.</p>
+        <PortraitUpload forProfile currentUrl={plateFace || me?.photo || null} onChange={setFace} />
+      </div>
+      <div className="acct-prof-part">
       <h2 className="acct-sub">Your name</h2>
       <p className="acct-lead">How the family sees you, in the book’s colophon and beside what you add.</p>
       <form
@@ -147,6 +422,9 @@ function Profile({ user, refresh, bookName }: { user: User; refresh: () => Promi
           <NoteLine note={note} />
         </div>
       </form>
+      </div>
+      <Relation me={me} userId={user.id} />
+      {me && <LifeFacts me={me} userId={user.id} />}
       </div>
     </section>
   );
@@ -395,7 +673,7 @@ function PlanCard({ user }: { user: User }) {
     <Section title="Your plan" lead="Writing, reading and the family are free on every plan." id="plan">
       <p className="acct-plan">
         <b>{user.plan === "complimentary" ? "Full access, through an access code." : PLAN_LABELS[user.plan]}</b>
-        {user.plan === "free" && <span className="meta">Three guided questions a day, unlimited writing, the whole family, print at home free.</span>}
+        {user.plan === "free" && <span className="meta">Three guided questions a day, unlimited writing, the whole family, and the book to print at home.</span>}
       </p>
       {ends && !Number.isNaN(ends.getTime()) && (
         <p className="meta acct-gap-4">

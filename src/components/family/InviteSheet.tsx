@@ -10,17 +10,25 @@
  * Nobody is listed twice (docs/PRD.md §3.3a): an email already in the
  * household reuses that person instead of adding one, and a name already
  * there (not yet on A Story) asks "is this the same person?" first.
+ *
+ * Somebody who has passed away is added the same way, with the year they
+ * died, and is never sent a code (the phone’s isRemembered): the way on is
+ * their page, for their facts and a photograph, or a memory of them.
+ *
+ * In a family with no story yet (somebody who joined the tree), the sheet
+ * adds beside the viewer’s own place, and a code invites to the family.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { findPersonByEmail, sameNamePeople, type Family, type Person } from "../../data/family";
 import type { Account, Story } from "../../data/stories";
-import { Button, Field } from "../ui";
+import { Button, ButtonLink, Field } from "../ui";
 import { CheckIcon, CloseIcon, LinkIcon, MailIcon, ShareIcon, UserIcon } from "../icons";
 import { familyCodeFor, householdFor, invitePerson, newPerson, saveEdge, savePerson, sendInviteEmailDetailed, type EdgeKind, type EmailResult } from "../../data/familyWrites";
 import { NEW_VIA, RELATIVE_GROUPS, planRelative, relativeKind } from "../../app-core/lib/familyTree.js";
 import { inviteMessage, spacedCode } from "../../app-core/lib/familyCode.js";
 import { uuid } from "../../lib/uuid";
 import { track } from "../../lib/analytics";
+import { yearIn } from "./lifeFacts";
 import { joinUrl, linkState, personName, qrSvg, stateWords } from "./familyView";
 
 type Need = { step: string; index: number; through: string; candidates: string[]; allowNew: boolean };
@@ -32,7 +40,11 @@ type Plan =
 type PlanFn = (family: Family, anchorId: string, kind: string, o: { via: string[]; person: Person; newId: () => string; label: string }) => Plan;
 const plan = planRelative as unknown as PlanFn;
 
-type Done = { person: Person; code: string | null; codeError: string | null; emailed: boolean | null; emailReason: string | null; email: string; reused?: boolean };
+type Done = { person: Person; code: string | null; codeError: string | null; emailed: boolean | null; emailReason: string | null; email: string; reused?: boolean; remembered?: boolean };
+
+/** Somebody the family remembers rather than reaches: a year they died, and no account of their own. */
+const isRemembered = (p: Person) => !!p.deathYear && !p.userId;
+
 
 /** One send, as the sheet records it: went, failed with a reason, or not asked for. */
 const emailOutcome = (r: EmailResult | null) => ({ emailed: r ? r.ok : null, emailReason: r && !r.ok ? r.reason : null });
@@ -67,10 +79,17 @@ export function CodeCard({
   email,
   emailReason,
   focusFirst,
+  title,
+  until,
 }: {
   code: string;
   who: string;
-  story: Story;
+  /** The line over the code; "{who}’s family code" when not given. */
+  title?: string;
+  /** When the code stops working ("works until 3 Nov", familyView untilLabel), said under it. */
+  until?: string;
+  /** Whose stories the message names; null in a family with no story yet. */
+  story: Pick<Story, "name"> | null;
   senderName: string;
   emailed?: boolean | null;
   email?: string;
@@ -85,11 +104,11 @@ export function CodeCard({
   const link = joinUrl(code);
   const svg = useMemo(() => qrSvg(link), [link]);
   const { copied, copy } = useCopy();
-  const message = inviteMessage({ code, link, senderName, storyName: story.name }) as string;
+  const message = inviteMessage({ code, link, senderName, storyName: story?.name }) as string;
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   return (
     <div className="codecard">
-      <p className="label">{who}’s family code</p>
+      <p className="label">{title || `${who}’s family code`}</p>
       <div className="codebox">
         <div className="codebig" aria-label={`Family code ${[...code].join(" ")}`}>
           {spacedCode(code) as string}
@@ -98,6 +117,7 @@ export function CodeCard({
           {copied === "code" ? "Copied" : "Copy"}
         </Button>
       </div>
+      {until && <p className="meta codecard-until">{until.replace(/^\w/, (c) => c.toUpperCase())}.</p>}
       <div className="linkrow">
         <div className="input">
           <LinkIcon />
@@ -149,7 +169,8 @@ export default function InviteSheet({
   onClose,
   onSaved,
 }: {
-  story: Story;
+  /** Null in a family with no story yet: they are added beside the viewer. */
+  story: Story | null;
   family: Family | null;
   account: Account | null;
   userId: string;
@@ -163,10 +184,14 @@ export default function InviteSheet({
   onSaved: () => Promise<void>;
 }) {
   const [given, setGiven] = useState("");
-  const [last, setLast] = useState(story.lastName || "");
+  const [last, setLast] = useState(story?.lastName || anchor?.familyName || "");
   const [kindKey, setKindKey] = useState<string>(presetKind);
   const [label, setLabel] = useState("");
   const [email, setEmail] = useState("");
+  const [born, setBorn] = useState("");
+  const [passed, setPassed] = useState(false);
+  const [died, setDied] = useState("");
+  const passedId = useId();
   const [via, setVia] = useState<string[]>([]);
   const [need, setNeed] = useState<Need | null>(null);
   /** Somebody with this name is already listed: ask before making a second one. */
@@ -181,7 +206,7 @@ export default function InviteSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const relatedTo = anchor ? personName(anchor) : story.name;
+  const relatedTo = anchor ? personName(anchor) : story?.name || "you";
   const peopleNow = family?.people || [];
   const nameOf = (id: string) => {
     const p = peopleNow.find((x) => x.id === id);
@@ -194,13 +219,18 @@ export default function InviteSheet({
    * and relations stay as they are.
    */
   const reuse = async (person: Person, mail: string) => {
+    if (isRemembered(person)) {
+      setTwin(null);
+      setDone({ person, code: null, codeError: null, emailed: null, emailReason: null, email: "", reused: true, remembered: true });
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       if (mail && !person.email) await invitePerson(person.id, mail);
       const code = person.userId ? ({ error: "already" } as const) : await familyCodeFor({ personId: person.id });
       let sent: EmailResult | null = null;
-      if ("code" in code && mail) sent = await sendInviteEmailDetailed({ to: mail, code: code.code, storyName: story.name, senderName });
+      if ("code" in code && mail) sent = await sendInviteEmailDetailed({ to: mail, code: code.code, storyName: story?.name, senderName });
       track("invite_sent", { method: mail ? "email" : "code", relation: kindKey || "existing", reused: true });
       await onSaved();
       setTwin(null);
@@ -218,7 +248,14 @@ export default function InviteSheet({
     if (!first) return setError("Their first name, at least.");
     if (!kindKey) return setError(`How is ${first} related to ${relatedTo}?`);
     if (kindKey === "other" && !label.trim()) return setError(`What is ${first} to ${relatedTo}? A word or two.`);
-    const mail = email.trim().toLowerCase();
+    const bornIn = yearIn(born, "born");
+    if ("error" in bornIn) return setError(bornIn.error);
+    const diedIn = passed ? yearIn(died, "died") : { year: null };
+    if ("error" in diedIn) return setError(diedIn.error);
+    if (passed && !diedIn.year) return setError(`The year ${first} passed away, as near as anyone knows.`);
+    if (bornIn.year && diedIn.year && diedIn.year < bornIn.year) return setError("The year they passed away is before the year they were born. Check the two years.");
+    // somebody remembered is never sent anything
+    const mail = passed ? "" : email.trim().toLowerCase();
     // Already listed under this email: never a second row (the database
     // would silently drop the email from the copy instead).
     const byMail = findPersonByEmail(family, mail);
@@ -235,15 +272,19 @@ export default function InviteSheet({
     try {
       const householdId = await householdFor(userId, account, family);
       let fam: Family = family ?? { people: [], edges: [], households: [] };
-      let anchorId = anchor?.id || fam.people.find((p) => p.storyId === story.id)?.id;
-      if (!anchorId) {
+      let anchorId = anchor?.id || (story ? fam.people.find((p) => p.storyId === story.id)?.id : fam.people.find((p) => p.userId === userId)?.id);
+      if (!anchorId && !story) {
+        setError("There’s nobody to add them beside yet. Start a story first.");
+        return;
+      }
+      if (!anchorId && story) {
         // The storyteller has no place in the tree yet: make one, bound to the story.
         const teller = { ...newPerson({ givenName: story.name, familyName: story.lastName, birthYear: story.birthYear }), storyId: story.id } as Person;
         await savePerson(teller, householdId);
         fam = { ...fam, people: [...fam.people, teller] };
         anchorId = teller.id;
       }
-      const person = newPerson({ givenName: first, familyName: last, email: email.trim() || undefined });
+      const person = { ...newPerson({ givenName: first, familyName: last, email: mail || undefined, birthYear: bornIn.year || undefined }), ...(diedIn.year ? { deathYear: diedIn.year } : {}) } as Person;
       const planned = plan(fam, anchorId, kindKey, { via: viaNow, person, newId: uuid, label: label.trim() });
       if ("need" in planned) {
         setNeed(planned.need);
@@ -261,10 +302,16 @@ export default function InviteSheet({
       for (const e of planned.edges) await saveEdge(householdId, e.from, e.to, e.kind, e.label || "");
       const saved = (planned.people.find((p) => p.id === planned.id) || { ...person, id: planned.id }) as Person;
 
+      if (passed) {
+        track("person_added", { relation: kindKey, remembered: true });
+        await onSaved();
+        setDone({ person: saved, code: null, codeError: null, emailed: null, emailReason: null, email: "", remembered: true });
+        return;
+      }
       if (mail) await invitePerson(planned.id, mail);
       const code = await familyCodeFor({ personId: planned.id });
       let sent: EmailResult | null = null;
-      if ("code" in code && mail) sent = await sendInviteEmailDetailed({ to: mail, code: code.code, storyName: story.name, senderName });
+      if ("code" in code && mail) sent = await sendInviteEmailDetailed({ to: mail, code: code.code, storyName: story?.name, senderName });
       track("invite_sent", { method: mail ? "email" : "code", relation: kindKey });
       await onSaved();
       setDone({ person: saved, code: "code" in code ? code.code : null, codeError: "error" in code ? code.error : null, ...emailOutcome(sent), email: mail });
@@ -298,7 +345,21 @@ export default function InviteSheet({
         {done ? (
           <>
             {done.reused && <p className="meta is-gap">We used the {done.person.givenName} who was already listed instead of adding a second one.</p>}
-            {done.code ? (
+            {done.remembered ? (
+              <>
+                <p className="meta">
+                  {done.person.givenName} is in the family tree, remembered. Nobody is sent a code. Their page holds their years, the facts the family knows, and a photograph.
+                </p>
+                <div className="acts is-top4">
+                  <ButtonLink to={`/family/${done.person.id}`} variant="outline" small onClick={onClose}>
+                    Open {done.person.givenName}’s page
+                  </ButtonLink>
+                  <ButtonLink to={`/write?with=${encodeURIComponent(done.person.id)}`} variant="quiet" small onClick={onClose}>
+                    Write a memory of {done.person.givenName}
+                  </ButtonLink>
+                </div>
+              </>
+            ) : done.code ? (
               <CodeCard code={done.code} who={done.person.givenName} story={story} senderName={senderName} emailed={done.emailed} email={done.email} emailReason={done.emailReason} />
             ) : (
               <p className="meta">
@@ -317,6 +378,9 @@ export default function InviteSheet({
                   setDone(null);
                   setGiven("");
                   setEmail("");
+                  setBorn("");
+                  setPassed(false);
+                  setDied("");
                   setKindKey("");
                   setLabel("");
                   setVia([]);
@@ -332,8 +396,8 @@ export default function InviteSheet({
               <b>{personName(twin)}</b> is already in the family, {stateWords(linkState(twin, userId).key) || "remembered"}. Adding again would list them twice.
             </p>
             <div className="acts">
-              <Button loading={busy} onClick={() => void reuse(twin, email.trim().toLowerCase())}>
-                {email.trim() ? `Yes, send the code to that ${twin.givenName}` : `Yes, that’s the same ${twin.givenName}`}
+              <Button loading={busy} onClick={() => void reuse(twin, passed ? "" : email.trim().toLowerCase())}>
+                {email.trim() && !passed && !isRemembered(twin) ? `Yes, send the code to that ${twin.givenName}` : `Yes, that’s the same ${twin.givenName}`}
               </Button>
               <Button
                 variant="quiet"
@@ -405,16 +469,33 @@ export default function InviteSheet({
               </div>
             ))}
             {kindKey === "other" && <Field label={`What ${given.trim() || "they"} ${given.trim() ? "is" : "are"} to ${relatedTo}`} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Godmother, neighbour, oldest friend" />}
-            <Field
-              label="Email, if you have it"
-              icon={<MailIcon />}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="We’ll send them the code"
-              hint="Without one, you’ll get a code and a link to pass on yourself."
-              autoComplete="off"
-            />
+            <Field label="Year born" inputMode="numeric" value={born} onChange={(e) => setBorn(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Optional" autoComplete="off" />
+            <label className="passed-row" htmlFor={passedId}>
+              <input id={passedId} type="checkbox" checked={passed} onChange={(e) => setPassed(e.target.checked)} />
+              <span>{given.trim() ? `${given.trim()} has passed away` : "They have passed away"}</span>
+            </label>
+            {passed ? (
+              <Field
+                label="Year they passed away"
+                inputMode="numeric"
+                value={died}
+                onChange={(e) => setDied(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="1979"
+                hint="As near as anyone knows. Nobody is sent a code."
+                autoComplete="off"
+              />
+            ) : (
+              <Field
+                label="Email, if you have it"
+                icon={<MailIcon />}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="We’ll send them the code"
+                hint="Without one, you’ll get a code and a link to pass on yourself."
+                autoComplete="off"
+              />
+            )}
             {error && (
               <p className="meta bad is-gap" role="alert">
                 {error}
@@ -422,7 +503,7 @@ export default function InviteSheet({
             )}
             <div className="acts">
               <Button type="submit" loading={busy}>
-                {email.trim() ? "Add and send the code" : "Add to the family"}
+                {email.trim() && !passed ? "Add and send the code" : "Add to the family"}
               </Button>
               <Button variant="quiet" onClick={onClose}>
                 Not now

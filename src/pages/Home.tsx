@@ -22,6 +22,8 @@ import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { track } from "../lib/analytics";
 import { resurface } from "../lib/resurface";
 import { asksAbout } from "./write/keep";
+import { AskButton } from "../components/ask/AskButton";
+import { storytellerOf } from "../components/family/familyView";
 
 const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 
@@ -325,6 +327,8 @@ export default function Home() {
                   <Link className="more" to="/family">
                     {fromFamily.length ? "See the family" : "Invite someone"}
                   </Link>
+                  {/* today's question to the storyteller as an answer link; shows nothing when the story is your own */}
+                  <AskButton story={story} person={storytellerOf(family, story)} className="home-ask" />
                 </div>
               </div>
 

@@ -97,6 +97,18 @@ describe("questions about somebody nobody has written about yet", () => {
     expect(fitsPerson("open-worked-where", who({ birthYear: 1960 }))).toBe(true);
     expect(fitsPerson("work-longest", who({ birthYear: 1920, deathYear: 1999 }))).toBe(true);
   });
+  it("never ask about somebody who has died as if they were alive", () => {
+    const walter = (id: string) => who({ id, givenName: "Walter", birthYear: 1936, deathYear: 1979 });
+    for (const id of ["else-laugh-now", "family-in-charge", "else-holiday-kitchen", "else-sport", "open-worked-where"]) {
+      expect(fitsPerson(id, walter("w"))).toBe(false);
+      expect(fitsPerson(id, who({ birthYear: 1936 }))).toBe(true);
+    }
+    for (const id of ["w-1", "w-2", "36cfd520-c499-4771-b0e2-ffc64cabefb1", "walter", "x"]) {
+      const asked = promptsAbout(walter(id), 40);
+      expect(asked.length).toBeGreaterThan(0);
+      for (const q of asked) expect(q.question).not.toMatch(/\b(does|do|has|is|loves?|makes) Walter\b|Walter (still|is|has|does) |these days/);
+    }
+  });
   it("are three, from three topics, the same three each time, and never say \"them’s\"", () => {
     for (const id of ["p-1", "36cfd520-c499-4771-b0e2-ffc64cabefb1", "sample-sam", "x"]) {
       const a = promptsAbout(who({ id }));

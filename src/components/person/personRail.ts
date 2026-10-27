@@ -10,7 +10,7 @@ import { quoteFor } from "../../app-core/lib/memoryCard.js";
 import { opening } from "../../lib/resurface";
 import { smarten } from "../../lib/typography";
 import { keptLine, ownWords, tellerTurns } from "../archive/transcript";
-import { getAboutPrompts } from "../../app-core/data/interview.js";
+import { ALL_PROMPTS, getAboutPrompts } from "../../app-core/data/interview.js";
 import type { Contribution } from "../../data/contributions";
 import type { Family, Person } from "../../data/family";
 import { relationTo, type Index } from "../family/familyView";
@@ -165,7 +165,27 @@ const PRESENT = new Set([
   "else-first-car",
   "else-first-cooked",
   "health-remedies",
+  "else-laugh-now",
+  "else-eat-now",
+  "else-holiday-kitchen",
+  "else-holiday-clothes",
+  "else-sport",
+  "else-show-never-miss",
+  "else-collection",
+  "family-in-charge",
+  "family-visit",
+  "later-taste-again",
+  "open-worked-where",
+  "open-lived-where",
+  "list-addresses",
+  "open-full-name",
 ]);
+// The same, read off the bank's own wording ("What does {name} cook…", "Where has {name} worked…", "…these
+// days"), so a present-tense question added to the bank later is not asked of somebody who has died.
+const NOW_WORDING = /\b(does|do|has|have|is|are) \{name\} |\{name\} (still|is|has|does) |\bthese days\b|\bnowadays\b/i;
+const PRESENT_BANK = new Set(
+  (ALL_PROMPTS as { id: string; about?: string | null }[]).filter((p) => p.about && NOW_WORDING.test(p.about)).map((p) => p.id),
+);
 
 /** Whether a question from the bank fits this person: about them, of their time of life, and in their tense. */
 export function fitsPerson(id: string, person: Pick<Person, "birthYear" | "deathYear">): boolean {
@@ -174,7 +194,7 @@ export function fitsPerson(id: string, person: Pick<Person, "birthYear" | "death
   // an unknown birth year can’t vouch for an older life; a known one after about 1975 doesn’t have it
   if (OLDER.has(id) && (!born || born > 1975)) return false;
   if (WORKING.has(id) && born && born > 1998) return false;
-  if (PRESENT.has(id) && person.deathYear) return false;
+  if ((PRESENT.has(id) || PRESENT_BANK.has(id)) && person.deathYear) return false;
   if (WORK_PAST.has(id) && !person.deathYear) return false;
   return true;
 }

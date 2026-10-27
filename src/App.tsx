@@ -66,6 +66,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "/start", element: <Start /> },
+      { path: "/joined", element: lazyPage(() => import("./pages/Joined")) },
       { path: "/write", element: <Write /> },
       { path: "/talk", element: <Talk /> },
       { path: "/record", element: lazyPage(() => import("./pages/Record")) },

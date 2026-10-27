@@ -69,8 +69,8 @@ export function shownState(p: Person, meId: string | null | undefined, coded?: S
   return key === "listed" && coded?.has(p.id) ? "invited" : key;
 }
 
-/** "The Hartleys", or "Rose’s family" when the story has no family name. */
-export function familyTitle(story: Story): string {
+/** "The Hartleys", or "Rose’s family" when there is no family name (a story’s names, or a tree row’s). */
+export function familyTitle(story: Pick<Story, "name" | "lastName">): string {
   const last = String(story.lastName || "").trim();
   if (!last) return `${story.name}’s family`;
   return /s$/i.test(last) ? `The ${last} family` : `The ${last}s`;
@@ -246,11 +246,28 @@ export function whenLabel(iso: string, now: Date): string {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "long", ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}) });
 }
 
-export function expiresLabel(iso: string, now: Date): string {
-  const days = Math.ceil((new Date(iso).getTime() - now.getTime()) / 86400000);
-  if (days <= 0) return "expires today";
-  if (days === 1) return "1 day left";
-  return `${days} days left`;
+/** A week: a family code nearer its end than this is made again (family_code_for keeps one only while it has longer). */
+const RENEW_MS = 7 * 86400000;
+
+/**
+ * The family’s standing code among the codes this account has made: the one for the story itself, for nobody in
+ * particular, that still has more than a week to run. Null when a new one has to be asked for.
+ */
+export function standingCode<T extends { storyId: string | null; personId: string | null; expiresAt: string }>(codes: T[] | null, storyId: string, now: Date): T | null {
+  return (codes || []).find((c) => c.storyId === storyId && !c.personId && new Date(c.expiresAt).getTime() - now.getTime() > RENEW_MS) || null;
+}
+
+const MONTHS_SHORT =["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * "works until 3 Nov" (with the year when it isn’t this one): when a code stops opening a place, said as a date and
+ * never as a count of days (no countdowns, DESIGN.md). "" for a date that can’t be read.
+ */
+export function untilLabel(iso: string, now: Date): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const year = d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : "";
+  return `works until ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}${year}`;
 }
 
 /* ── QR ─────────────────────────────────────────────────────────────────── */

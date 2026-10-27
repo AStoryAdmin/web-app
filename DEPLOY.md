@@ -50,7 +50,10 @@ Only after `https://app.astoryapp.com` answers:
    - `https://*.pages.dev/**` (preview deploys)
 
    Do **not** change the **Site URL** if the phone app relies on it; only add redirect URLs.
-3. Supabase → **Edge Functions → Secrets**: add `INVITE_JOIN_URL` = `https://app.astoryapp.com`. Invitation emails then say "Join in your browser →" and open the web app with the family code filled in.
+3. Supabase → **Edge Functions → Secrets**: add `INVITE_JOIN_URL` = `https://app.astoryapp.com`. With the secret set, an invitation email has one button, "Join in your browser →", which opens `https://app.astoryapp.com/join/<code>` with the family code already filled in; its words say to join in the browser, and the "Open in app" button is left out. Without it, emails keep the app wording: "Download the app →" to the website, an "Open in app" button, and the steps to type the code into A Story.
+
+   This wording needs the `send-invite-email` from the phone-app server branch `web/server-for-web` to be deployed (`supabase functions deploy send-invite-email`). The older function only changes the first button to `/join/<code>` and keeps the app wording and the "Open in app" button.
+4. The database functions the family pages call come from the phone-app server's `supabase/` folder, the same ones the phone uses. Asking a relative today's question by link ("Ask Rose today's question" on Home and on a person's page) needs `daily_questions_2026_10_23.sql` (`daily_question_create`, `story_rota`) applied to the project. Until it is, the sheet says "Asking by link isn't switched on for this family yet." and nothing else changes. The family's code needs `family_codes.sql` (`family_code_for`), and the family link a signed-out visitor reads at `/join/<code>` needs `collab_2026_10_22.sql` (`family_link_read`, `family_link_add_memory`); without it `/join/<code>` shows the account plate as before.
 
 ## 4. Check it
 
@@ -58,7 +61,7 @@ On `https://app.astoryapp.com`, in a private window:
 
 - `/sign-in` shows the open book; signing in with an existing phone-app account lands on Home.
 - `/archive`, `/family`, `/book` load directly when typed into the address bar (not only by clicking).
-- `/join/ABCD-EFGH` shows the join page, not a Cloudflare 404.
+- `/join/K7M2QX` shows the join page with that code on it, not a Cloudflare 404. (A family code is six letters and digits, never I, L, O, 0 or 1.)
 - "Forgot password" sends an email whose link opens `app.astoryapp.com`, not `localhost`.
 
 ## Afterwards

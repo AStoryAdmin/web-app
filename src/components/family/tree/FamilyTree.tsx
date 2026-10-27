@@ -33,7 +33,8 @@ import { useTreeMotion } from "./treeMotion";
 
 type Props = {
   family: Family | null;
-  story: Story;
+  /** Null in a family with no story yet: the tree is drawn around the viewer (meId) instead. */
+  story: Story | null;
   meId: string | null | undefined;
   own: boolean;
   /** The sample family: nothing on it writes; its people open with ?preview=tree. */
@@ -155,7 +156,7 @@ function liftLoneRings(el: HTMLElement): boolean {
 
 /* ── One face ──────────────────────────────────────────────────────────── */
 
-function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; story: Story; meId: string | null | undefined; preview?: boolean; hot: Set<string> | null; onHot: (id: string | null) => void }) {
+function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; story: Story | null; meId: string | null | undefined; preview?: boolean; hot: Set<string> | null; onHot: (id: string | null) => void }) {
   const p = node.person;
   const coded = useContext(Coded);
   const unknown = coded === "unknown";
@@ -184,7 +185,7 @@ function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; sto
       </span>
       <span className="tp-nm">{name}</span>
       {/* "brother-in-law" never breaks at its hyphens */}
-      {node.teller ? <span className="tp-rel teller">Storyteller</span> : node.rel && <span className="tp-rel">{node.rel.replace(/-/g, "‑")}</span>}
+      {node.teller ? story && <span className="tp-rel teller">Storyteller</span> : node.rel && <span className="tp-rel">{node.rel.replace(/-/g, "‑")}</span>}
       {stateLine && (
         <span className={`tp-state ${DOT[state] || "off"}`}>
           <StateWords words={stateLine} />
@@ -193,7 +194,7 @@ function Face({ node, story, meId, preview, hot, onHot }: { node: PlateNode; sto
     </>
   );
   const handlers = { onPointerEnter: () => onHot(node.id), onPointerLeave: () => onHot(null), onFocus: () => onHot(node.id), onBlur: () => onHot(null) };
-  const label = [name, node.teller ? "the storyteller" : node.rel, stateLine, caption].filter(Boolean).join(", ");
+  const label = [name, node.teller ? (story ? "the storyteller" : "") : node.rel, stateLine, caption].filter(Boolean).join(", ");
   return to ? (
     <Link className={cls} to={to} data-node={node.id} data-tp-rise aria-label={label} {...handlers}>
       {body}
@@ -218,7 +219,7 @@ function Ring({ ghost, anchor, onAdd, hot }: { ghost: PlateGhost; anchor: Person
 
 /* ── Somebody not placed yet ───────────────────────────────────────────── */
 
-function Unplaced({ person, anchor, story, meId, preview, canPlace, onPlace }: { person: Person; anchor: Person | null; story: Story; meId: string | null | undefined; preview?: boolean; canPlace: boolean; onPlace: (kind: GhostKind) => void }) {
+function Unplaced({ person, anchor, story, meId, preview, canPlace, onPlace }: { person: Person; anchor: Person | null; story: Story | null; meId: string | null | undefined; preview?: boolean; canPlace: boolean; onPlace: (kind: GhostKind) => void }) {
   const [open, setOpen] = useState(false);
   const [flip, setFlip] = useState("");
   const box = useRef<HTMLDivElement>(null);
@@ -400,7 +401,8 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
   const svgRef = useRef<SVGSVGElement>(null);
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
   const people = useMemo(() => treePeople(realPeople(family), story), [family, story]);
-  const tellerRow = people.find((p) => p.storyId === story.id) || null;
+  // the storyteller at the centre; with no story yet, the viewer
+  const tellerRow = (story ? people.find((p) => p.storyId === story.id) : people.find((p) => !!meId && p.userId === meId)) || null;
   const plate = useMemo(() => buildPlate({ people, index, tellerId: tellerRow?.id || null, meId, own }), [people, index, tellerRow, meId, own]);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
   const teller = plate.teller;
@@ -521,7 +523,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
     };
   }, [draw]);
 
-  useTreeMotion(plateRef, `${story.id}:${people.length}`);
+  useTreeMotion(plateRef, `${story?.id || "family"}:${people.length}`);
 
   const item = (x: { key: string; unit?: { key: string; nodes: PlateNode[] }; ghost?: PlateGhost }) => {
     if (x.ghost) {
@@ -604,7 +606,7 @@ export default function FamilyTree({ family, story, meId, own, preview, onAdd, o
             <header className="tp-label">
               <span className="tp-dot open" aria-hidden="true" />
               <h3>Not placed yet</h3>
-              <p className="tp-hint">Say who they are to {own ? "you" : firstName(teller) || story.name}.</p>
+              <p className="tp-hint">Say who they are to {own ? "you" : firstName(teller) || story?.name || "them"}.</p>
             </header>
             <div className="tp-row">
               <div className="tp-zone centre">

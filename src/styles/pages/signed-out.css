@@ -457,6 +457,15 @@
 .cb .btn[aria-busy="true"] { opacity: 0.8; cursor: progress; }
 /* the second step: their words quoted back, three ruled fields */
 .cb-quote { margin: 0 0 14px; padding-left: 16px; border-left: 1px solid var(--foil); font-family: var(--book-body); font-style: italic; font-size: max(18px, var(--read)); line-height: 1.5; color: var(--sheet-ink); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
+.cb-quote footer { font-style: normal; font-size: max(16px, var(--read)); color: var(--ink-soft); margin-top: 6px; }
+/* the family link's shared memories (FamilyLink): the list scrolls inside the right page, so the page keeps its size on a desktop */
+.fl-list { flex: 1; min-height: 0; overflow-y: auto; margin: 4px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--sheet-rule); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
+.fl-row { border-bottom: 1px solid var(--sheet-rule); } /* taste-skill-ignore: book material: a foil or printed rule (DESIGN.md: the book's own language) */
+.fl-row summary { min-height: var(--tap); padding: 12px 0; cursor: pointer; display: grid; gap: 4px; }
+.fl-row summary:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; border-radius: 2px; }
+.fl-title { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.2; color: var(--sheet-ink); }
+.fl-meta { font: 500 max(16px, var(--read))/1.4 var(--font-ui); color: var(--ink-soft); }
+.cb-p.fl-open { margin: 0 0 14px; white-space: pre-wrap; }
 .cb-fields { display: grid; gap: 2px; }
 .cb .field { margin-bottom: 12px; }
 .cb .field > span:first-child { font-size: max(14px, var(--floor)); font-weight: 600; color: var(--ink-soft); }

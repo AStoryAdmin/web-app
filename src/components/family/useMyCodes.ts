@@ -10,7 +10,7 @@ import { listMyCodes, type MyCode } from "../../data/familyWrites";
 
 /** The last list this session: an in-app visit draws with it at once, so the tree never refits when the codes come back. */
 let last: MyCode[] | null = null;
-/** When `last` was fetched: a cached list counts its days left from here, never from 1970. */
+/** When `last` was fetched: a cached list reads its dates against this, never against 1970. */
 let lastAt: Date | null = null;
 /** Bumped on sign-out, so a fetch that was in flight never fills the next account's cache. */
 let gen = 0;

@@ -11,11 +11,20 @@
  *
  * Joining makes no story of the joiner's own, as on the phone (DECISIONS:
  * no empty "Myself" for every joiner). Home opens on the family's story the
- * code named; "My own story" waits on the Whose-story page for later.
+ * code named; "My own story" waits on the Whose-story page for later. A
+ * first join goes on to /joined (Joined.tsx): who invited them, the
+ * family's newest memory and three things to do next.
+ *
+ * The same address is the family's link (phone FamilyLinkScreen, S-PL8):
+ * signed out, a code that opens a story shows the family's page to read and
+ * add to with no account (FamilyLink.tsx), and "Join with the code" comes
+ * back to the plate here. A code that opens no story, or a link that can't
+ * be read, goes straight to the plate.
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AuthFrame from "./auth/AuthFrame";
+import FamilyLink from "./FamilyLink";
 import PlateSay from "./auth/PlateSay";
 import { smarten } from "../lib/typography";
 import { Button, ButtonLink } from "../components/ui";
@@ -25,6 +34,7 @@ import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
 import { joinFamily, type JoinResult } from "../data/familyWrites";
 import { joinedLine, joinedStoryId } from "../data/joinLanding";
+import { holdJoined, readFamilyLink, type FamilyLinkRead } from "../data/familyLink";
 import { joinOutcome, looksLikeFamilyCode, normaliseFamilyCode, spacedCode } from "../app-core/lib/familyCode.js";
 import { track } from "../lib/analytics";
 import { myStoryIds } from "../components/family/familyView";
@@ -138,11 +148,15 @@ export default function Join() {
   const code = normaliseFamilyCode(raw) as string;
   const valid = looksLikeFamilyCode(code) as boolean;
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { reload, family, stories, chooseStory } = useAccount();
   const [result, setResult] = useState<JoinResult | null>(null);
   const [phase, setPhase] = useState<"idle" | "joined" | "ready">("idle");
   const [attempt, setAttempt] = useState(0);
   const [typed, setTyped] = useState<string | null>(null);
+  // Signed out: the family's link for this code, read once per code; "Join with the code" sets it aside for the plate.
+  const [visit, setVisit] = useState<{ code: string; read: FamilyLinkRead } | null>(null);
+  const [joinInstead, setJoinInstead] = useState(false);
   // One join per attempt, kept here so a re-run of the effect (StrictMode
   // runs it twice; a new `reload` would too) subscribes to the same call
   // instead of starting another or, worse, losing the answer. Before this
@@ -176,6 +190,16 @@ export default function Join() {
     };
   }, [user, valid, code, attempt, reload]);
 
+  // Signed out, what the code opens, to read and add to without an account. Reading never uses the code up.
+  useEffect(() => {
+    if (user !== null || !valid) return;
+    let live = true;
+    void readFamilyLink(code).then((read) => live && setVisit({ code, read }));
+    return () => {
+      live = false;
+    };
+  }, [user, valid, code]);
+
   // Then the family's story the code named, made the one Home opens on, with the account read fresh after the
   // join. No story of their own is made (as on the phone); a code that named none leaves Home's own choice.
   useEffect(() => {
@@ -193,6 +217,19 @@ export default function Join() {
   }, [phase, result]);
 
   const named = result ? namingTheTeller(result, family, user?.id) : null;
+
+  // A first join goes on to the welcome, with who invited them; joining again stays here ("You're already in").
+  const welcomeNext = phase === "ready" && !!named?.ok && !named.already;
+  useEffect(() => {
+    if (!welcomeNext || !named?.ok) return;
+    navigate("/joined", { replace: true, state: holdJoined(named), viewTransition: true });
+    // once, when the join is ready
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeNext]);
+
+  const link = visit?.code === code && !("error" in visit.read) ? visit.read : null;
+  if (user === null && valid && link && !joinInstead) return <FamilyLink link={link} onJoin={() => setJoinInstead(true)} />;
+  const readingLink = user === null && valid && visit?.code !== code;
   const outcome = named ? ({ ...(joinOutcome(named) as Outcome), ...(named.ok ? { body: joinedLine(named, stories.length > 0) } : {}) } as Outcome) : null;
   const next = `/join/${code}`;
   // A code that is wrong, run out or already used is not fixed by trying
@@ -214,7 +251,7 @@ export default function Join() {
         <TypeCode initial={code.length > 0 && code.length <= 12 ? code : ""} invalid={!!typed} onError={setTyped} />
       </div>
     );
-  } else if (user === undefined) {
+  } else if (user === undefined || readingLink) {
     plate = (
       <div className="form plate-wait" aria-busy="true">
         <LoadingMark />

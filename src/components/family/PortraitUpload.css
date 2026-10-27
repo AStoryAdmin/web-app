@@ -1,0 +1,14 @@
+/* PortraitUpload: a face and the way to change it, on the paper, never in a box (media builder, M3).
+   The face is components/family/Portrait (.por, family-people.css); only the row around it is here.
+   Colours come from tokens; the one motion is the face settling while it goes up, off when motion is reduced. */
+.pup { display: flex; align-items: center; gap: var(--s-5); min-width: 0; border-radius: 6px; outline: 2px dashed transparent; outline-offset: 6px; transition: outline-color 160ms var(--ease-out); }
+.pup.over { outline-color: var(--accent); }
+.pup-side { display: grid; gap: var(--s-2); min-width: 0; }
+.pup-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.pup-acts .btn { min-height: 44px; }
+.pup-acts .btn svg { width: 18px; height: 18px; }
+.pup-note { margin: 0; font: 400 16px/1.45 var(--font-ui); color: var(--kicker-sage); }
+.pup-note.bad { color: var(--danger); }
+.pup .por.pup-going { opacity: 0.72; transition: opacity 200ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .pup, .pup .por.pup-going { transition: none; } }
+@media (max-width: 480.98px) { .pup { align-items: flex-start; gap: var(--s-4); } }

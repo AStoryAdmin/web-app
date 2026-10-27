@@ -67,6 +67,8 @@
   .fp-grid > .tp-wrap { order: 0; }
   .fp-grid > .st { position: sticky; top: 112px; }
 }
+/* a family with no story yet: the plate alone, the whole width */
+@media (min-width: 1500px) { .fp-grid.fp-grid-solo { grid-template-columns: minmax(0, 1fr); } }
 
 /* ───────────── the storyteller's plate: their words, the family's lines ───────────── */
 .st { position: relative; isolation: isolate; padding: 30px 30px 26px; background: var(--paper-print); border: 1px solid var(--sheet-rule); border-radius: 6px; min-width: 0; }
@@ -304,6 +306,17 @@
 .fp-codes { list-style: none; margin: 0; padding: 0; display: grid; }
 .fp-codes li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; min-height: 56px; border-top: 1px solid var(--sheet-rule); }
 .fp-codes li:last-child { border-bottom: 1px solid var(--sheet-rule); }
+/* the family's own code, above the codes sent to one person: one card in the Invitations plate */
+.fcode { display: grid; gap: 14px; padding-bottom: 20px; }
+.fcode-lead { margin: 0; font: 500 16px/1.5 var(--font-ui); color: var(--sheet-ink); }
+.fcode-note { margin: 0; font: 500 16px/1.5 var(--font-ui); color: var(--ink-soft); }
+.fcode-note.bad { color: var(--danger); }
+.fcode .codecard .label { margin: 0; font: 600 16px/1.3 var(--font-ui); color: var(--sheet-ink); }
+.fcode .codecard .meta, .fcode .codecard .linkrow .input .url { font-size: 16px; }
+.codecard-until { margin: 0; }
+/* the plate is narrow on a phone: the QR stands over its words rather than squeezing them to a column */
+@media (max-width: 760.98px) { .fcode .qrwrap { grid-template-columns: minmax(0, 1fr); justify-items: start; } }
+.sheet-page .fp-keep .fp-codes-h { margin: 0; font: 600 16px/1.3 var(--font-ui); color: var(--sheet-ink); }
 .fp-codes b { font-family: var(--book-display); font-weight: 600; font-size: var(--fz-words); letter-spacing: 0.08em; color: var(--sheet-ink); font-variant-numeric: lining-nums; white-space: nowrap; }
 .fp-keep .keeperlist .por { --pz: 40px; }
 .fp-keep .askrow { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-top: 1px solid var(--sheet-rule); }
@@ -402,6 +415,18 @@
 .pp-editbox .acts { display: flex; gap: 10px; flex-wrap: wrap; }
 .pp-editbox .removebox { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--sheet-rule); display: grid; gap: 10px; justify-items: start; }
 .pp-editbox .danger { color: var(--danger); }
+.pp-editbox > .pup { margin-bottom: 18px; }
+/* "has passed away": a whole-row tick, 44px tall, in the form's own type */
+.passed-row { display: flex; align-items: center; gap: 12px; min-height: 44px; font: 500 16px/1.4 var(--font-ui); color: var(--sheet-ink, var(--ink)); cursor: pointer; }
+.passed-row input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--accent); }
+.invite-sheet .passed-row { margin: var(--s-2) 0 var(--s-3); }
+/* the picture link is a button when it opens the details: dressed exactly as the link */
+button.pp-addphoto { background: none; border: 0; padding: 0; cursor: pointer; }
+.pp-ask { margin-top: 14px; }
+/* no story yet: one plate under the tree, with the one way to start */
+.fp-nostory .fp-keep-col { max-width: 560px; margin: 0 auto; justify-items: start; }
+.sheet-page .fp-nostory h2 { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: var(--fz-section); line-height: 1.1; color: var(--sheet-ink); }
+.fp-nostory .fp-how { font: 500 16px/1.5 var(--font-ui); color: var(--ink-soft); }
 /* the title on the cloth: bold Montserrat (the lead's ruling for the cloth), the house full stop in brass */
 .hero .phero-title { font-family: var(--font-ui); font-weight: 700; letter-spacing: -0.025em; line-height: 1.04; font-size: clamp(34px, calc(4.2vw / var(--zoom, 1)), 58px); }
 .hero .phero-title .stop { color: var(--brass); }

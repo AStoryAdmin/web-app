@@ -219,7 +219,7 @@ Branch: `web/m3-family-loop`.
 | tree | `pages/Family.tsx`, `pages/Person.tsx`, `components/family/familyView.ts`, `components/family/InviteSheet.tsx` |
 | ask | new `components/ask/*`, `data/dailyQuestions.ts` |
 | media | new `components/family/PortraitUpload.tsx`, `data/portraits.ts`, `pages/Account.tsx` (Profile section only) |
-| onboarding | `pages/Join.tsx`, new `pages/FirstRun.tsx`, `pages/FamilyLink.tsx`, `App.tsx` routes |
+| onboarding | `pages/Join.tsx`, new `pages/Joined.tsx` (built as `/joined`, not `FirstRun.tsx`), `pages/FamilyLink.tsx`, `data/familyLink.ts`, `App.tsx` routes |
 | server (separate PR in phone-app) | `send-invite-email/index.ts`: browser wording when `JOIN_URL` is set; hide `astory://`. Fix `DEPLOY.md:53,61`. |
 
 Acceptance: e2e for invite → join → answer link created (mocked). The walkthrough shows no countdown text.

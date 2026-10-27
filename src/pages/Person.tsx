@@ -9,7 +9,10 @@
  * the one thing to do about it, and the people closest to them in the
  * tree; on the right, their memories on a terracotta rail (oldest first,
  * the newest last), three related memories, and what they wrote for the
- * family. Their details can be changed by whoever may change them.
+ * family. Their details can be changed by whoever may change them: their
+ * name, their years (and whether they have passed away), where they grew up,
+ * their work, what they were known for, and their photograph. Anybody
+ * living who isn’t you can be asked today’s question ("Ask {name}").
  */
 import { useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -19,6 +22,9 @@ import LedgeNote from "../components/archive/LedgeNote";
 import { MailIcon, UserIcon } from "../components/icons";
 import { CodeCard } from "../components/family/InviteSheet";
 import Portrait from "../components/family/Portrait";
+import PortraitUpload from "../components/family/PortraitUpload";
+import AskButton from "../components/ask/AskButton";
+import { TEXT_FACTS, lifeDraft, lifePatch, type LifeDraft } from "../components/family/lifeFacts";
 import MemoryRail from "../components/person/MemoryRail";
 import RelatedRow from "../components/person/RelatedRow";
 import FamilyNotes from "../components/person/FamilyNotes";
@@ -44,8 +50,7 @@ import { familyCodeFor, householdFor, invitePerson, removePerson, revokeCode, sa
 import { spacedCode } from "../app-core/lib/familyCode.js";
 import { buildIndex } from "../app-core/lib/familyGraph.js";
 import { lifeLine, personMemories } from "../app-core/lib/personMemories.js";
-import { canEdit, expiresLabel, personName, realPeople, relationTo, shownState, stateWords, storytellerOf, type Index } from "../components/family/familyView";
-import type { Person as PersonType } from "../data/family";
+import { canEdit, personName, realPeople, relationTo, shownState, stateWords, storytellerOf, untilLabel, type Index } from "../components/family/familyView";
 import type { Story } from "../data/stories";
 
 type Res = { own: Story | null; told: Found[]; tagged: Found[]; mentions: Found[]; total: number };
@@ -69,7 +74,7 @@ export default function Person() {
   const family = sample ? sample.family : live.family;
   const person = family?.people.find((p) => p.id === personId) || null;
   const index = useMemo(() => buildIndex(family || { people: [], edges: [] }) as Index, [family]);
-  const [edit, setEdit] = useState<{ given: string; last: string; birth: string; email: string } | null>(null);
+  const [edit, setEdit] = useState<LifeDraft | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [busy, setBusy] = useState<"" | "save" | "remove" | "code">("");
   const [error, setError] = useState<string | null>(null);
@@ -188,6 +193,7 @@ export default function Person() {
   // The sample is looked at from outside: nobody in it is "you".
   const meId = sample ? null : user?.id;
   const first = person.givenName || "them";
+  const theirStory = person.storyId ? stories.find((s) => s.id === person.storyId) || null : null;
   const teller = storytellerOf(family, story);
   const rel = teller ? relationTo(index, person.id, teller.id) : "";
   const isTeller = person.storyId === story.id;
@@ -286,14 +292,13 @@ export default function Person() {
 
   const save = async () => {
     if (!edit || !user) return;
-    if (!edit.given.trim()) return setError("A first name, at least.");
+    const r = lifePatch(person, edit);
+    if ("error" in r) return setError(r.error);
     setBusy("save");
     setError(null);
     try {
       const householdId = person.householdId || (await householdFor(user.id, account, family));
-      const year = parseInt(edit.birth, 10);
-      const next = { ...person, givenName: edit.given.trim(), familyName: edit.last.trim(), birthYear: Number.isFinite(year) && year > 0 ? year : undefined, email: edit.email.trim().toLowerCase() || undefined } as PersonType;
-      await savePerson(next, householdId);
+      await savePerson(r.person, householdId);
       await reload();
       focusNext("change");
       setEdit(null);
@@ -366,10 +371,33 @@ export default function Person() {
               <Portrait photo={person.photo} given={person.givenName} family={person.familyName} gone={!!person.deathYear} className={`pp-por${isTeller ? " teller" : ""}`} />
               {/* on a tablet the portrait stands to the left of all this; elsewhere it runs under the portrait */}
               <div className="pp-plate-body">
-              {!person.photo && !preview && (
-                <Link className="pp-addphoto" to={`/write?photo=1&with=${encodeURIComponent(person.id)}`}>
-                  Add a photograph of {first} <span aria-hidden="true">→</span>
-                </Link>
+              {/* their face on the tree is changed with their details (the form below holds the upload); anyone
+                  else may add a photograph of them to a memory */}
+              {!person.photo &&
+                !preview &&
+                !edit &&
+                (editable ? (
+                  <button
+                    type="button"
+                    className="pp-addphoto"
+                    onClick={() => {
+                      focusNext("form");
+                      setEdit(lifeDraft(person));
+                    }}
+                  >
+                    Add a picture of {first} <span aria-hidden="true">→</span>
+                  </button>
+                ) : (
+                  <Link className="pp-addphoto" to={`/write?photo=1&with=${encodeURIComponent(person.id)}`}>
+                    Add a photograph of {first} <span aria-hidden="true">→</span>
+                  </Link>
+                ))}
+              {/* AskButton opens the ask sheet, and shows nothing for somebody who can't be asked (you, the late) */}
+              {/* asked on their own story, which may not be the one open; nothing when the account can't see one */}
+              {!preview && theirStory && (
+                <AskButton story={theirStory} person={person} className="pp-ask">
+                  Ask {first}
+                </AskButton>
               )}
               {/* when the codes can’t be reached the alert below says so, once; no state line above it */}
               {!(codesUnknown && mine.failed) && (
@@ -416,7 +444,7 @@ export default function Person() {
                   ) : liveCode && !person.email ? (
                     <>
                       <p className="pp-why">
-                        Invited with a code, {expiresLabel(liveCode.expiresAt, mine.now)}; nothing here reaches {first} until they accept.
+                        Invited with a code that {untilLabel(liveCode.expiresAt, mine.now)}; nothing here reaches {first} until they accept.
                       </p>
                       <p className="pp-code">
                         <b>{spacedCode(liveCode.code) as string}</b>
@@ -459,7 +487,7 @@ export default function Person() {
                   ref={focusAt("change")}
                   onClick={() => {
                     focusNext("form");
-                    setEdit({ given: person.givenName || "", last: person.familyName || "", birth: person.birthYear ? String(person.birthYear) : "", email: person.email || "" });
+                    setEdit(lifeDraft(person));
                   }}
                 >
                   Change {first}’s details
@@ -467,7 +495,9 @@ export default function Person() {
               )}
 
               {editable && edit && (
-                <section className="pp-editbox" aria-label={`Edit ${first}`} ref={focusAt("form", (el) => el.querySelector("input"))}>
+                <section className="pp-editbox" aria-label={`Edit ${first}`} ref={focusAt("form", (el) => el.querySelector<HTMLElement>("form input"))}>
+                  {/* the picture saves on its own, the moment it is chosen; it re-reads the family itself */}
+                  <PortraitUpload personId={person.id} currentUrl={person.photo || null} onChange={() => {}} size={72} />
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -477,7 +507,25 @@ export default function Person() {
                     <Field label="First name" icon={<UserIcon />} value={edit.given} onChange={(e) => setEdit({ ...edit, given: e.target.value })} autoComplete="off" />
                     <Field label="Last name" value={edit.last} onChange={(e) => setEdit({ ...edit, last: e.target.value })} autoComplete="off" />
                     <Field label="Year born" inputMode="numeric" value={edit.birth} onChange={(e) => setEdit({ ...edit, birth: e.target.value.replace(/\D/g, "").slice(0, 4) })} placeholder="1938" autoComplete="off" />
-                    {!person.userId && <Field label="Email" icon={<MailIcon />} type="email" value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} autoComplete="off" />}
+                    <Field label="Where they were born" value={edit.birthPlace} onChange={(e) => setEdit({ ...edit, birthPlace: e.target.value })} placeholder="Optional" autoComplete="off" />
+                    {/* somebody on A Story is living: only somebody without an account can be marked as passed away */}
+                    {!person.userId && (
+                      <label className="passed-row">
+                        <input type="checkbox" checked={edit.passed} onChange={(e) => setEdit({ ...edit, passed: e.target.checked })} />
+                        <span>{first} has passed away</span>
+                      </label>
+                    )}
+                    {edit.passed && !person.userId && (
+                      <>
+                        <Field label="Year they passed away" inputMode="numeric" value={edit.death} onChange={(e) => setEdit({ ...edit, death: e.target.value.replace(/\D/g, "").slice(0, 4) })} placeholder="1979" hint="As near as anyone knows." autoComplete="off" />
+                        <Field label="Where they passed away" value={edit.deathPlace} onChange={(e) => setEdit({ ...edit, deathPlace: e.target.value })} placeholder="Optional" autoComplete="off" />
+                        <Field label="Where they rest" value={edit.restingPlace} onChange={(e) => setEdit({ ...edit, restingPlace: e.target.value })} placeholder="Optional" autoComplete="off" />
+                      </>
+                    )}
+                    {TEXT_FACTS.map((f) => (
+                      <Field key={f.key} label={f.label} value={edit[f.key]} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.value })} placeholder={f.placeholder} autoComplete="off" />
+                    ))}
+                    {!person.userId && !edit.passed && <Field label="Email" icon={<MailIcon />} type="email" value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} autoComplete="off" />}
                     <div className="acts">
                       <Button type="submit" small loading={busy === "save"}>
                         Save
@@ -520,7 +568,7 @@ export default function Person() {
                         <Button
                           variant="quiet"
                           small
-                          className="danger"
+                          className="danger-text"
                           ref={focusAt("askRemove")}
                           onClick={() => {
                             focusNext("keep");
