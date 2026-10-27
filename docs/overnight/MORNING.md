@@ -14,7 +14,7 @@ They are stacked, so each one contains everything before it:
 | 4 | `web/m4-book-design` | `/book/design` (cover, paper, title, dedication, chapter order, memories in or out); the preview and print follow it; the editions page shows no prices while ordering is closed |
 | 5 | `web/m6-account-help` | Plans with no prices or hardcover promises, gift plans shown correctly, how to cancel by plan source, safe account deletion, "Have a code?", `/help` with feedback |
 | 6 | `web/m5-book-order` (**the tip: test this one**) | `/book/order`, `/book/thanks`, `/book/orders`, print PDFs. Unreachable while the server keeps ordering closed |
-| 7 | `web/m7-extras` | Imports, calendar, tree print, story merges, friend links, "ask for their side". Still being built in `../web-app-m7` and not part of the noon test |
+| 7 | `web/m7-extras` | Imports (writing, WhatsApp, memoir, GEDCOM), archive calendar, tree print and admins, story merges, `/friend` links, "ask for their side". Done and checked (1144 unit, 136 flow tests), in the worktree `../web-app-m7`. Test it after M1–M6 |
 
 The server changes are on `web/server-for-web` in `phone-app-server`, a worktree of the phone-app repo cut from `design-sprint`. They cover the invite email's browser wording, the checkout `returnTo` allow-list, refunds, shipped/tracking SQL, and fulfilment email links. None of it is deployed.
 
