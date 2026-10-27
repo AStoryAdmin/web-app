@@ -90,6 +90,7 @@ const router = createBrowserRouter([
       { path: "/book/order", element: lazyPage(() => import("./pages/BookOrder")) },
       { path: "/book/thanks", element: lazyPage(() => import("./pages/BookThanks")) },
       { path: "/book/orders", element: lazyPage(() => import("./pages/BookOrders")) },
+      { path: "/book/orders/:id", element: lazyPage(() => import("./pages/BookOrderStatus")) },
       { path: "/plans", element: lazyPage(() => import("./pages/Plans")) },
       { path: "/account", element: lazyPage(() => import("./pages/Account")) },
       { path: "/help", element: lazyPage(() => import("./pages/Help")) },

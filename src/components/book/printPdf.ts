@@ -50,13 +50,18 @@
  *     (book-fulfilment.md): check them against Lulu's template once.
  *
  * The profile is a parameter (prepareBookPdfs's `profile`, bookPlan,
- * checkInterior, interiorGeometry). Left out, it is PRINT_PROFILE, the
- * order page's Lulu book, so BookOrder.tsx is unchanged. A locked book
- * version (bookVersion.ts prepareVersion) names its own profile at run
- * time, and its files go to the private book-versions bucket instead
- * (uploadVersionPdfs): `{versionId}/interior.pdf` and `{versionId}/cover.pdf`.
+ * checkInterior, interiorGeometry). Left out, it is PRINT_PROFILE, the old
+ * Lulu book. The order page (BookOrder.tsx, Phase 4) always passes the one a
+ * locked book version names (bookVersion.ts prepareVersion), and files to
+ * the private book-versions bucket (uploadVersionPdfs):
+ * `{versionId}/interior.pdf` and `{versionId}/cover.pdf`.
+ *
+ * prepareBookPdfs also hands back the drawn pages as object URLs (`pages`,
+ * `coverPage`), the same JPEGs the PDF holds, for the flip-through
+ * (BookFlip.tsx), and each printed photograph's size (`photos`) for
+ * preflight.js. The page revokes the URLs (revokeBookPages) when it is done.
  */
-import { buildCoverWrapHtml, buildLegacyHtml, coverSpreadIn, pageBoxIn, pageMarginsIn, paddedPageCount, printProfile, spineWidthIn } from "../../app-core/lib/legacyBook.js";
+import { bookStructure, buildCoverWrapHtml, buildLegacyHtml, coverSpreadIn, pageBoxIn, pageMarginsIn, paddedPageCount, printProfile, spineWidthIn } from "../../app-core/lib/legacyBook.js";
 import { signStoryPhotos, typeset } from "./printBook";
 import { listenBase } from "../../lib/qrLinks";
 import { smarten } from "../../lib/typography";
@@ -416,7 +421,24 @@ export const browserRasterizer: Rasterizer = {
 
 /* ── Making and filing the two files ────────────────────────────────────── */
 
-export type PreparedBookPdfs = { interior: Blob; cover: Blob; plan: BookPlan };
+/** A photograph in the book, measured, as preflight.js reads it (pixelsW and pixelsH at full size). */
+export type MeasuredPhoto = { id: string; memoryId: string; label: string; pixelsW: number; pixelsH: number };
+
+export type PreparedBookPdfs = {
+  interior: Blob;
+  cover: Blob;
+  plan: BookPlan;
+  /**
+   * The interior's pages as the PDF holds them, one object URL per drawn page and null for each blank page added
+   * at the back: the flip-through shows the exact file (P4-R2). Empty where the browser can't make object URLs.
+   * Revoke them with revokeBookPages when the page is done with them.
+   */
+  pages: (string | null)[];
+  /** The cover laid flat, as an object URL (or null). */
+  coverPage: string | null;
+  /** Each photograph in the printed memories with its size in pixels, for preflight. One that couldn't be read is left out. */
+  photos: MeasuredPhoto[];
+};
 
 export type PrepareOptions = {
   sides?: Contribution[];
@@ -426,16 +448,78 @@ export type PrepareOptions = {
   rasterizer?: Rasterizer;
   /** "Laying out page 12 of 96": every page as it is drawn. */
   onProgress?: (done: number, total: number) => void;
+  /** How a page picture becomes something an <img> shows. URL.createObjectURL by default; the tests pass their own. */
+  objectUrl?: ((blob: Blob) => string) | null;
+  /** How a photograph's size is read. The browser's own by default; the tests pass their own. */
+  measurePhoto?: (url: string) => Promise<{ width: number; height: number } | null>;
 };
+
+/** A photograph's full size, read by the browser; null when it can't be loaded within 15 s. */
+async function browserMeasure(url: string): Promise<{ width: number; height: number } | null> {
+  if (typeof Image === "undefined" || !url) return null;
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await Promise.race([img.decode(), sleep(15000).then(() => Promise.reject(new Error("timeout")))]);
+    return img.naturalWidth > 0 && img.naturalHeight > 0 ? { width: img.naturalWidth, height: img.naturalHeight } : null;
+  } catch {
+    return null;
+  }
+}
+
+const defaultObjectUrl = typeof URL !== "undefined" && typeof URL.createObjectURL === "function" ? (b: Blob) => URL.createObjectURL(b) : null;
+
+/** The photographs of the memories that print, each measured once. Never throws: a photo that can't be read is left out. */
+async function measurePhotos(story: Story, design: unknown, measure: NonNullable<PrepareOptions["measurePhoto"]>): Promise<MeasuredPhoto[]> {
+  let printed: { id: string; title?: string; photos?: string[] }[];
+  try {
+    const book = bookStructure(story, { design }) as { chapters: { items: { id: string; title?: string; photos?: string[] }[] }[] };
+    printed = book.chapters.flatMap((c) => c.items);
+  } catch {
+    return [];
+  }
+  const sizes = new Map<string, Promise<{ width: number; height: number } | null>>();
+  const sizeOf = (u: string) => {
+    if (!sizes.has(u)) sizes.set(u, measure(u).catch(() => null));
+    return sizes.get(u)!;
+  };
+  const out = await Promise.all(
+    printed.flatMap((m) =>
+      (m.photos || []).filter(Boolean).map(async (url, i) => {
+        const size = await sizeOf(url);
+        return size ? { id: `${m.id}:${i}`, memoryId: m.id, label: (m.title || "").trim() || "a photo", pixelsW: size.width, pixelsH: size.height } : null;
+      }),
+    ),
+  );
+  return out.filter((p): p is MeasuredPhoto => !!p);
+}
+
+/** Lets go of the page pictures prepareBookPdfs made. Safe to call twice, and with nothing. */
+export function revokeBookPages(prepared: Pick<PreparedBookPdfs, "pages" | "coverPage"> | null | undefined, revoke: (url: string) => void = (u) => URL.revokeObjectURL?.(u)) {
+  if (!prepared) return;
+  for (const u of [...prepared.pages, prepared.coverPage]) {
+    if (u && u.startsWith("blob:")) {
+      try {
+        revoke(u);
+      } catch {
+        /* already gone */
+      }
+    }
+  }
+}
 
 /**
  * Both files for the printer, checked, nothing uploaded. The ordering page calls this before it starts the checkout,
  * so an order is only ever placed for a book whose files passed. Throws PrintPdfError.
  */
 export async function prepareBookPdfs(story: Story, design: Story["bookDesign"] | null | undefined, opts: PrepareOptions = {}): Promise<PreparedBookPdfs> {
-  const { sides = [], dpi = 300, rasterizer = browserRasterizer, onProgress } = opts;
+  const { sides = [], dpi = 300, rasterizer = browserRasterizer, onProgress, measurePhoto = browserMeasure } = opts;
+  const objectUrl = opts.objectUrl === undefined ? defaultObjectUrl : opts.objectUrl;
   const profile = profileName(opts.profile);
   const ready = typeset(await signStoryPhotos({ ...story, bookDesign: design ?? story.bookDesign }));
+  // measured first, so the layout below finds each photograph already in the browser's cache
+  const photos = await measurePhotos(ready, ready.bookDesign, measurePhoto);
   // set as printBook's printableHtml sets them: paragraph by paragraph
   const set = sides.map((c) => ({ ...c, body: String(c.body ?? "").split("\n").map(smarten).join("\n") }));
   const html = buildLegacyHtml(ready, { now: new Date(), listenBase: listenBase(), sides: set as never[], print: profile as never }) as string;
@@ -471,7 +555,18 @@ export async function prepareBookPdfs(story: Story, design: Story["bookDesign"] 
   }
   const cover = buildImagePdf([{ widthPt: plan.coverIn[0] * PT_PER_IN, heightPt: plan.coverIn[1] * PT_PER_IN, ...coverPage }]);
 
-  return { interior: new Blob([interior as BlobPart], { type: "application/pdf" }), cover: new Blob([cover as BlobPart], { type: "application/pdf" }), plan };
+  // the same JPEGs the PDF holds, so what the family looks through is the file that prints
+  const picture = (p: RasterPage) => (objectUrl ? objectUrl(new Blob([p.jpeg as BlobPart], { type: "image/jpeg" })) : null);
+  const pictures = objectUrl ? [...drawn.map(picture), ...Array.from({ length: plan.blanks }, () => null)] : [];
+
+  return {
+    interior: new Blob([interior as BlobPart], { type: "application/pdf" }),
+    cover: new Blob([cover as BlobPart], { type: "application/pdf" }),
+    plan,
+    pages: pictures,
+    coverPage: picture(coverPage),
+    photos,
+  };
 }
 
 /** Where an order's files go in the book-orders bucket: the phone's paths, the only ones its Storage policy lets the owner write. */

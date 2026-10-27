@@ -1,5 +1,7 @@
-/* Ordering the printed book (/book/order, /book/thanks, /book/orders): one reading column on the sheet. Choices are
-   cards that separate by tone, the chosen one in ink; every target 44px and up, running text 16px and up. */
+/* Ordering the printed book (/book/order, /book/orders, /book/orders/:id): one reading column on the sheet, in three
+   steps. Choices are cards that separate by tone, the chosen one in ink. The floor on these pages (P4-R10): every word
+   16px and up, controls included (this overrides DESIGN.md's 14px ui label here), every target 44px and up, one primary
+   button per step. */
 
 .bo-hero { display: grid; gap: var(--s-2); }
 .bo-promise { margin: 0; font: italic 400 19px/1.4 var(--book-body); color: var(--on-chocolate); max-width: 60ch; }
@@ -7,84 +9,136 @@
 .bo-page { max-width: 720px; }
 .bo-section + .bo-section { margin-top: var(--s-12); }
 .bo-section h2, .bo-closed h2 { font-family: var(--book-display); font-weight: 600; font-size: 28px; line-height: 1.12; color: var(--heading); margin: 0 0 var(--s-4); }
+.bo-section h3 { font-family: var(--book-display); font-weight: 600; font-size: 22px; line-height: 1.2; color: var(--heading); margin: 0; }
 .bo-lead, .bo-closed p { font-family: var(--book-body); font-size: 19px; line-height: 1.55; color: var(--ink); margin: 0 0 var(--s-5); }
 .bo-help { font-size: 16px; line-height: 1.5; color: var(--ink-soft); margin: var(--s-2) 0 0; }
 .bo-center { text-align: center; }
-.bo-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin: var(--s-6) 0 0; }
+.bo-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin: var(--s-8) 0 0; }
 
-/* which edition */
-.bo-editions { display: grid; gap: var(--s-2); }
-.bo-edition { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-4); align-items: baseline; min-height: 56px; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--card); border: 1.5px solid transparent; cursor: pointer; transition: border-color var(--dur-ui) var(--ease-out); }
-.bo-edition:hover { border-color: var(--line-strong); }
-.bo-edition[data-on] { border-color: var(--ink); }
-.bo-edition:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-.bo-edition-name { font-family: var(--book-display); font-weight: 600; font-size: 22px; color: var(--heading); }
-.bo-edition-price { font-family: var(--book-display); font-weight: 600; font-size: 22px; color: var(--heading); font-variant-numeric: lining-nums tabular-nums; }
-.bo-edition-line { grid-column: 1 / -1; font-size: 16px; color: var(--ink-soft); }
+/* the floor: controls at 16px and 44px on every ordering page */
+.bo-flow .btn, .bo-flow .btn.sm { font-size: 16px; min-height: 48px; }
+.bo-flow .field > span:first-child, .bo-flow .hint, .bo-flow .check, .bo-flow .more { font-size: 16px; }
+.bo-flow .input input, .bo-flow .input select { font-size: 17px; }
+.bo-flow .input select { min-height: 48px; appearance: auto; cursor: pointer; }
+.bo-flow .btn[disabled] { opacity: .45; }
+.bo-error { color: var(--danger); display: block; margin-top: var(--s-2); }
 
-/* how many */
-.bo-copies { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: var(--s-5); font-size: 17px; color: var(--ink); }
+/* the three steps, named; the current one in ink */
+.bo-steps-bar { list-style: none; margin: 0 0 var(--s-8); padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+.bo-steps-bar li { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--card); font-size: 16px; line-height: 1.25; color: var(--ink-soft); }
+.bo-steps-bar li span { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 999px; border: 1.5px solid var(--line-strong); font-weight: 600; }
+.bo-steps-bar li[aria-current] { color: var(--ink); font-weight: 600; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.bo-steps-bar li[aria-current] span { background: var(--chocolate); border-color: var(--chocolate); color: var(--on-chocolate); }
+.bo-steps-bar li[data-done] span { border-color: var(--ink-soft); }
+
+/* step 1: getting the book ready, looking through it, approving it */
+.bo-making { display: grid; justify-items: start; gap: var(--s-4); }
+.bo-making .bo-lead { margin: 0; }
+.bo-facts { margin: var(--s-6) 0 0; display: grid; gap: var(--s-2); }
+.bo-facts div { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: baseline; }
+.bo-facts dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.bo-facts dd { margin: 0; font-family: var(--book-display); font-weight: 600; font-size: 24px; line-height: 1.2; color: var(--heading); font-variant-numeric: lining-nums; }
+.bo-warnings { margin-top: var(--s-6); padding: var(--s-5); border-radius: var(--r-card); background: var(--card); }
+.bo-warnings ul { margin: var(--s-3) 0 0; padding-left: 1.2em; display: grid; gap: var(--s-2); }
+.bo-warnings li { font-family: var(--book-body); font-size: 18px; line-height: 1.5; color: var(--ink); }
+.bo-approve { margin: var(--s-8) 0 var(--s-5); }
+.bo-approve .check { min-height: 56px; width: 100%; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--card); border: 1.5px solid var(--line-strong); text-align: left; font-size: 17px; font-weight: 600; cursor: pointer; }
+.bo-approve .check.on { border-color: var(--ink); }
+.bo-approve .check i { width: 28px; height: 28px; flex: none; }
+.bo-approve .check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bo-next { display: grid; gap: var(--s-3); margin-top: var(--s-6); }
+
+/* the flip-through: the printed page on the sheet, one at a time */
+.bf { display: grid; gap: var(--s-3); margin-top: var(--s-5); outline: 0; }
+.bf:focus-visible .bf-stage { outline: 2px solid var(--accent); outline-offset: 4px; }
+.bf-stage { display: grid; place-items: center; min-height: 240px; padding: var(--s-5); border-radius: var(--r-card); background: var(--paper-tone, var(--card)); touch-action: pan-y; user-select: none; }
+/* book material: the page lifted off the bench */
+.bf-page { display: block; max-width: 100%; max-height: min(70vh, 640px); width: auto; height: auto; aspect-ratio: auto; background: var(--book-print, var(--card)); box-shadow: 0 1px 2px rgba(42,35,32,0.14), 0 12px 28px -14px rgba(42,35,32,0.5); }
+.bf-blank { width: min(100%, 420px); aspect-ratio: 1; display: grid; place-items: center; color: var(--ink-faint); font: italic 400 18px var(--book-body); }
+.bf-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); }
+.bf-turn, .bf-full-toggle { min-height: 48px; padding: 0 var(--s-4); border-radius: 999px; border: 1.5px solid var(--line-strong); background: var(--card); color: var(--ink); font: 600 16px var(--font-ui); cursor: pointer; white-space: nowrap; }
+.bf-turn:hover:not(:disabled), .bf-full-toggle:hover { border-color: var(--ink-soft); }
+.bf-turn:active:not(:disabled), .bf-full-toggle:active { transform: scale(0.97); }
+.bf-turn:focus-visible, .bf-full-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bf-turn:disabled { opacity: 0.4; cursor: default; }
+.bf-where { text-align: center; font-size: 16px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.bf-full-toggle { justify-self: center; }
+.bf-placeholder { min-height: 240px; }
+.bf-scrim { position: fixed; inset: 0; z-index: 80; display: grid; padding: var(--s-4); background: var(--sheet, var(--card)); overflow: auto; }
+.bf[data-full] { margin: 0; max-width: 1100px; width: 100%; justify-self: center; grid-template-rows: minmax(0, 1fr) auto auto; }
+.bf[data-full] .bf-stage { min-height: 0; }
+.bf[data-full] .bf-page { max-height: calc(100vh - 200px); }
+
+/* step 2: one card per address */
+.bo-cards { display: grid; gap: var(--s-5); margin: var(--s-5) 0; }
+.bo-card { min-width: 0; margin: 0; padding: var(--s-5); border: 0; border-radius: var(--r-card); background: var(--card); }
+.bo-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-4); }
+.bo-card-problem { margin: 0 0 var(--s-4); font-size: 16px; color: var(--danger); }
+.bo-card > .btn { margin-top: var(--s-2); }
+.bo-picks { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0 0 var(--s-5); }
+.bo-pick { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-4); border-radius: 999px; border: 1.5px solid var(--line-strong); font-size: 16px; color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
+.bo-pick[data-on] { border-color: var(--ink); background: var(--page, var(--card)); font-weight: 600; }
+.bo-pick:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bo-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); }
+
 .bo-stepper { display: inline-flex; align-items: center; gap: var(--s-2); }
-.bo-stepper button { width: 44px; height: 44px; border-radius: 999px; border: 1.5px solid var(--line-strong); background: transparent; color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
+.bo-stepper button { width: 48px; height: 48px; border-radius: 999px; border: 1.5px solid var(--line-strong); background: transparent; color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
 .bo-stepper button:hover:not(:disabled) { border-color: var(--ink); }
 .bo-stepper button:active:not(:disabled) { transform: scale(0.97); }
 .bo-stepper button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bo-stepper button:disabled { opacity: 0.4; cursor: default; }
-.bo-stepper output { min-width: 2ch; text-align: center; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bo-stepper output { min-width: 8ch; text-align: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; outline: 0; }
 
-/* send it to */
-.bo-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--s-2); }
-.bo-person { display: flex; align-items: center; gap: var(--s-3); min-height: 64px; padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--card); border: 1.5px solid transparent; cursor: pointer; min-width: 0; }
-.bo-person:hover { border-color: var(--line-strong); }
-.bo-person[data-on] { border-color: var(--ink); }
-.bo-person:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-.bo-person-new { display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 999px; background: var(--paper-tone, var(--card)); color: var(--ink-soft); font-size: 22px; }
-.bo-person-words { display: grid; min-width: 0; }
-.bo-person-words b { font-size: 16px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
-.bo-person-words span { font-size: 16px; color: var(--ink-soft); }
-
-.bo-address { margin-top: var(--s-6); }
-.bo-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); }
-.bo-country { border: 0; padding: 0; margin: 0 0 var(--s-5); display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.bo-country legend { font-size: var(--t-caption); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-soft); margin-bottom: var(--s-2); padding: 0; }
-.bo-country label { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-4); border-radius: 999px; border: 1.5px solid var(--line-strong); font-size: 16px; color: var(--ink); cursor: pointer; }
-.bo-country label[data-on] { border-color: var(--ink); background: var(--card); }
-.bo-country label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-.bo-label { display: grid; font-style: normal; font-family: var(--book-body); font-size: 19px; line-height: 1.5; color: var(--ink); margin-bottom: var(--s-2); }
-.bo-label span + span { color: var(--ink-soft); }
-
-/* the note */
-.bo-note { display: block; width: 100%; margin-top: var(--s-3); min-height: 96px; resize: vertical; border: 1.5px solid var(--field-border); border-radius: var(--r-field); background: var(--card); color: var(--ink); padding: var(--s-3) var(--s-4); font-family: var(--book-body); font-size: 19px; line-height: 1.5; outline: 0; transition: border-color var(--dur-ui) var(--ease-out); }
-.bo-note:hover { border-color: var(--line-strong); }
-.bo-note:focus { border-color: var(--accent); }
-.bo-note::placeholder { color: var(--ink-faint); font-style: italic; }
-
-/* the order, summed up */
+/* step 3: the order, summed up */
 .bo-summary { padding: var(--s-6); border-radius: var(--r-card); background: var(--paper-tone, var(--card)); }
 .bo-summary dl { margin: 0 0 var(--s-2); }
 .bo-line { display: flex; justify-content: space-between; gap: var(--s-4); padding: var(--s-1) 0; font-size: 17px; color: var(--ink); }
 .bo-line dt, .bo-line dd { margin: 0; }
 .bo-line dd { font-variant-numeric: lining-nums tabular-nums; white-space: nowrap; }
-.bo-soft { color: var(--ink-soft); }
+.bo-line[data-kind="deposit"] dd, .bo-line[data-kind="founding_copy"] dd, .bo-line[data-kind="gift_copy"] dd { color: var(--sage-ink, var(--ink)); }
 .bo-total { border-top: 1px solid var(--line-strong); margin-top: var(--s-3); padding-top: var(--s-3); font-weight: 600; }
-.bo-total dd { font-family: var(--book-display); font-size: 24px; }
+.bo-total dd { font-family: var(--book-display); font-size: 24px; white-space: normal; text-align: right; }
+.bo-recipients { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; gap: var(--s-1); font-size: 16px; color: var(--ink-soft); }
+.bo-arrives { margin: var(--s-4) 0 0; font-family: var(--book-display); font-weight: 600; font-size: 22px; color: var(--heading); }
 .bo-summary .btn.block { margin-top: var(--s-6); }
+.bo-note-line { margin: 0 0 var(--s-5); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--card); font-size: 17px; color: var(--ink); }
+.bo-problem { display: grid; gap: var(--s-3); justify-items: start; }
 
-/* thanks and orders */
-.bo-thanks [aria-busy] { display: grid; justify-items: start; gap: var(--s-4); }
-.bo-steps { margin: 0; padding-left: 1.2em; display: grid; gap: var(--s-2); font-size: 17px; line-height: 1.55; color: var(--ink); }
+/* the status page */
+.bo-tracker { list-style: none; margin: 0 0 var(--s-6); padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); }
+.bo-tracker li { display: grid; justify-items: start; gap: var(--s-2); padding-top: var(--s-3); border-top: 3px solid var(--line-strong); font-size: 16px; color: var(--ink-soft); }
+.bo-tracker li[data-state="done"] { border-top-color: var(--sage-ink, var(--ink)); color: var(--ink); }
+.bo-tracker li[data-state="current"] { border-top-color: var(--chocolate); color: var(--heading); font-weight: 600; }
+.bo-dot { width: 14px; height: 14px; border-radius: 999px; border: 2px solid currentColor; }
+.bo-tracker li[data-state="done"] .bo-dot, .bo-tracker li[data-state="current"] .bo-dot { background: currentColor; }
+.bo-stage-line { margin-bottom: var(--s-6); }
+.bo-parcels { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+.bo-parcels li { display: grid; gap: var(--s-3); justify-items: start; padding: var(--s-4) var(--s-5); border-radius: var(--r-md); background: var(--card); }
+.bo-parcels p { margin: 0; font-size: 17px; color: var(--ink); }
+.bo-parcels .btn { white-space: normal; text-align: center; }
+
+/* the list of orders */
 .bo-orders { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
 .bo-order { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4); align-items: start; padding: var(--s-4) var(--s-5); border-radius: var(--r-md); background: var(--card); }
 .bo-order h2 { font-family: var(--book-display); font-weight: 600; font-size: 22px; color: var(--heading); margin: 0; }
+.bo-order h2 a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .bo-order-what p { font-size: 17px; color: var(--ink); margin: var(--s-1) 0 0; overflow-wrap: anywhere; }
 .bo-order-what .bo-help { color: var(--ink-soft); font-size: 16px; }
 .bo-order-status { margin: 0; text-align: right; font-size: 16px; font-weight: 600; color: var(--sage-ink, var(--ink)); max-width: 22ch; }
-.bo-order[data-status="pending"] .bo-order-status,
-.bo-order[data-status="canceled"] .bo-order-status { color: var(--ink-soft); font-weight: 500; }
+.bo-order[data-stage="Canceled"] .bo-order-status,
+.bo-order[data-stage="Refunded"] .bo-order-status { color: var(--ink-soft); font-weight: 500; }
 
 @media (max-width: 560px) {
+  .bo-steps-bar { grid-template-columns: minmax(0, 1fr); }
   .bo-two { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .bo-order { grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
   .bo-order-status { text-align: left; max-width: none; }
-  .bo-summary { padding: var(--s-5) var(--s-4); }
+  .bo-summary, .bo-card { padding: var(--s-5) var(--s-4); }
+  .bo-tracker { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s-4); }
+  .bf-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .bf-where { grid-column: 1 / -1; grid-row: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-turn:active, .bf-full-toggle:active, .bo-stepper button:active { transform: none; }
 }

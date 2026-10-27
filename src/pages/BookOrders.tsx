@@ -1,17 +1,18 @@
 /**
- * /book/orders: the printed books this account has ordered, newest first,
- * each with whose book it is, the edition, where it went and where it is now
- * (data/bookOrders.ts; book_orders is read-only for its owner). No amounts:
- * Stripe's receipt carries those.
+ * /book/orders: the printed books this account has paid for, newest first,
+ * each with whose book it is, how many copies, where it is now in the family's
+ * words (orderStatus.js customerStage, data/orderStage.ts) and a link to its
+ * status page (/book/orders/:id). Orders never paid for are left out
+ * (P4-R6); the one just back from the payment page has its own page.
  */
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Shell from "../components/Shell";
 import LoadingMark from "../components/delight/LoadingMark";
 import { ButtonLink, Problem } from "../components/ui";
 import { Stop } from "../components/book/WhereNext";
 import { useAccount } from "../state/accountContext";
-import { EDITION_WORDS } from "../data/book";
-import { listOrders, orderStatusLine, type BookOrder } from "../data/bookOrders";
+import { listOrders, type BookOrder } from "../data/bookOrders";
 import "../styles/pages/book-order.css";
 
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) : "");
@@ -71,7 +72,7 @@ export default function BookOrders() {
           <LoadingMark />
         </div>
       ) : (
-        <div className="page bo-page">
+        <div className="page bo-page bo-flow">
           {problem && <Problem message={problem} onRetry={() => setAsk((n) => n + 1)} />}
           {orders.length === 0 && !problem ? (
             <div className="bo-closed">
@@ -80,38 +81,18 @@ export default function BookOrders() {
             </div>
           ) : (
             <ol className="bo-orders">
-              {orders.map((o) => {
-                const where = [o.shippingName, o.shippingAddress?.city].map((s) => (s ?? "").trim()).filter(Boolean).join(", ");
-                const started = o.status === "pending" || o.status === "canceled";
-                return (
-                  <li key={o.id} className="bo-order" data-status={o.status}>
-                    <div className="bo-order-what">
-                      <h2>{bookOf(o)}</h2>
-                      <p>
-                        {EDITION_WORDS[o.edition].name}
-                        {o.copies > 1 ? `, ${o.copies} copies` : ""}
-                        {where ? `, to ${where}` : ""}
-                      </p>
-                      {o.createdAt && (
-                        <p className="bo-help">
-                          {started ? "Started" : "Ordered"} {day(o.createdAt)}
-                        </p>
-                      )}
-                    </div>
-                    <p className="bo-order-status">
-                      {orderStatusLine(o)}
-                      {o.trackingUrl && (
-                        <>
-                          {" "}
-                          <a href={o.trackingUrl} target="_blank" rel="noreferrer">
-                            Follow it
-                          </a>
-                        </>
-                      )}
-                    </p>
-                  </li>
-                );
-              })}
+              {orders.map((o) => (
+                <li key={o.id} className="bo-order" data-stage={o.stage}>
+                  <div className="bo-order-what">
+                    <h2>
+                      <Link to={`/book/orders/${encodeURIComponent(o.id)}`}>{bookOf(o)}</Link>
+                    </h2>
+                    <p>{o.copies > 1 ? `${o.copies} copies` : "One copy"}</p>
+                    {(o.paidAt || o.createdAt) && <p className="bo-help">Ordered {day(o.paidAt || o.createdAt)}</p>}
+                  </div>
+                  <p className="bo-order-status">{o.stage}</p>
+                </li>
+              ))}
             </ol>
           )}
         </div>

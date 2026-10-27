@@ -21,6 +21,7 @@ import {
   profileName,
   readPdfPages,
   renderAndUploadBookPdfs,
+  revokeBookPages,
   uploadVersionPdfs,
   versionPdfPaths,
   type Rasterizer,
@@ -259,5 +260,49 @@ describe("isPrintCapableBrowser", () => {
 
   it("points the family to Chrome or the app, in plain words", () => {
     expect(PRINT_BROWSER_MESSAGE).toBe("To prepare the book for printing, please order from the A Story app, or open this page in Chrome on a computer.");
+  });
+});
+
+describe("the pages the family looks through, and the photos preflight reads", () => {
+  it("hands back every drawn page as a picture, a null for each blank page, and the cover", async () => {
+    const { r } = fakeRasterizer(31);
+    let n = 0;
+    const made: Blob[] = [];
+    const out = await prepareBookPdfs(story(), null, { rasterizer: r, objectUrl: (b) => (made.push(b), `blob:page-${++n}`), measurePhoto: async () => null });
+    expect(out.pages).toHaveLength(32);
+    expect(out.pages.slice(0, 2)).toEqual(["blob:page-1", "blob:page-2"]);
+    expect(out.pages[31]).toBeNull();
+    expect(out.coverPage).toBe("blob:page-32");
+    expect(made.every((b) => b.type === "image/jpeg")).toBe(true);
+  });
+
+  it("makes no pictures where the browser can't, and the files still come", async () => {
+    const { r } = fakeRasterizer(24);
+    const out = await prepareBookPdfs(story(), null, { rasterizer: r, objectUrl: null, measurePhoto: async () => null });
+    expect([out.pages, out.coverPage]).toEqual([[], null]);
+    expect(out.plan.pages).toBe(24);
+  });
+
+  it("measures each printed memory's photos once, named for the memory, and leaves out one it can't read", async () => {
+    const s = story();
+    s.memories[0].photos = ["https://x.test/a.jpg", "https://x.test/b.jpg"];
+    s.memories.push(newMemory({ id: "m2", title: "Our wedding", era: "Love & family", body: "June.", createdAt: "2026-09-02T10:00:00.000Z" }));
+    s.memories[1].photos = ["https://x.test/a.jpg"];
+    const asked: string[] = [];
+    const measurePhoto = async (u: string) => (asked.push(u), u.endsWith("b.jpg") ? null : { width: 400, height: 300 });
+    const out = await prepareBookPdfs(s, null, { rasterizer: fakeRasterizer(24).r, objectUrl: null, measurePhoto });
+    expect(asked.sort()).toEqual(["https://x.test/a.jpg", "https://x.test/b.jpg"]);
+    expect(out.photos).toEqual([
+      expect.objectContaining({ memoryId: "m1", label: "Nora’s kitchen", pixelsW: 400, pixelsH: 300 }),
+      expect.objectContaining({ memoryId: "m2", label: "Our wedding", pixelsW: 400, pixelsH: 300 }),
+    ]);
+  });
+
+  it("lets go of every page picture, and nothing else", () => {
+    const gone: string[] = [];
+    revokeBookPages({ pages: ["blob:1", null, "blob:2"], coverPage: "blob:3" }, (u) => gone.push(u));
+    revokeBookPages(null, (u) => gone.push(u));
+    revokeBookPages({ pages: ["https://x.test/p.jpg"], coverPage: null }, (u) => gone.push(u));
+    expect(gone).toEqual(["blob:1", "blob:2", "blob:3"]);
   });
 });

@@ -1,85 +1,160 @@
 /**
- * Ordering the printed book (/book/order?story=…&edition=…): the phone's
- * BookOrderScreen on one sheet. Top to bottom: which edition, with its price;
- * how many; who it is sent to (the storyteller, the family who are grown,
- * you, or someone else), with the addresses kept on this computer once typed;
- * a note for the first page, two lines in the giver's words; the order summed
- * up; then "Pay with Stripe", which goes to Stripe's own page and comes back
- * to /book/thanks. A gift's Classic Hardcover pays for one copy with no
- * checkout at all.
+ * Ordering the printed book (/book/order?story=…&step=review|send|pay): one
+ * flow, three steps, one place (P4-R1). The step is in the URL, so the
+ * browser's Back goes back one step, and so does the header's.
  *
- * The book's print-ready PDF is laid out and filed with the order before the
- * page leaves for Stripe (components/book/printPdf.ts), so every order has its
- * print file. While the server says ordering is closed, the page says so and
- * shows no prices and no form (DECISIONS.md); printing at home stays on /book.
+ *   1. Review your book. The server makes a new, unlocked book version
+ *      (lib/bookVersion prepareVersion) and names the print profile; this page
+ *      lays the book out with it (printPdf prepareBookPdfs: "Laying out page
+ *      12 of 140…"), files the two files with the version (uploadVersionPdfs)
+ *      and checks them (app-core preflight.js). The family looks through the
+ *      exact pages that will print (BookFlip), reads how many pages and what
+ *      one copy costs, reads any warning in plain words (a blurry photo never
+ *      stops them; over 300 pages does), and ticks "I've reviewed my book and
+ *      it's ready to print." Continue locks the version (approveVersion).
+ *   2. Who should receive it. One card per address, US only, each with its
+ *      own copies; quick picks from the family (book.ts shipChoices) with
+ *      the addresses kept on this computer; one secondary button, "Add another
+ *      copy for someone else". The rules and their sentences are the server's
+ *      (printOrder.ts validateShipments).
+ *   3. Pay. The server's itemised total, read-only (previewPrintOrder): the
+ *      book, shipping, the deposit as its own line, the total and when it
+ *      arrives. Pay places the order then (placePrintOrder) and the page goes
+ *      to the payment page; an order credits cover goes straight to its
+ *      status page. If the real total differs from the one shown, the new
+ *      lines are shown and Pay is pressed again.
+ *
+ * The approved version and the address cards are kept in sessionStorage per
+ * story, so a family back from the payment page (canceled=1) lands on Pay and
+ * is not asked to look through the book again.
+ *
+ * While create-book-order says ordering is closed the page says "Printed
+ * books are coming", with no price and no form. Safari can't lay the book
+ * out (printPdf.ts), so there it says PRINT_BROWSER_MESSAGE instead.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import LoadingMark from "../components/delight/LoadingMark";
-import { Avatar, Button, ButtonLink, Field, Problem } from "../components/ui";
+import { Button, ButtonLink, Checkbox, Field, Problem } from "../components/ui";
 import { Stop } from "../components/book/WhereNext";
-import { prepareBookPdfs, uploadBookPdfs } from "../components/book/printPdf";
+import BookFlip from "../components/book/BookFlip";
+import { PRINT_BROWSER_MESSAGE, PrintPdfError, isPrintCapableBrowser, prepareBookPdfs, revokeBookPages, uploadVersionPdfs, type PreparedBookPdfs } from "../components/book/printPdf";
+import { preflightBook } from "../app-core/lib/preflight.js";
+import { APPROVE_CHECKBOX_TEXT, approveVersion, prepareVersion, BookVersionError, type PreflightResult } from "../lib/bookVersion";
+import { listenBase } from "../lib/qrLinks";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
+import { shipChoices } from "../data/book";
 import {
-  EDITION_WORDS,
-  MAX_COPIES,
-  NOTE_MAX,
-  SHIP_COUNTRIES,
-  addressLines,
-  addressShort,
+  FIELD_OF_ERROR,
+  MAX_ADDRESSES,
+  MAX_COPIES_PER_ADDRESS,
+  PrintOrderError,
+  US_STATES,
+  arrivesWords,
   blankAddress,
-  checkBookOrder,
-  formatCents,
-  giftCreditCovers,
-  missingFields,
-  orderBook,
-  orderShipping,
-  orderingOpen,
-  quoteOrder,
-  shipChoices,
+  checkPrintOrder,
+  coveredWords,
+  fromSaved,
+  groupWarnings,
+  lineLabel,
+  money,
+  placePrintOrder,
+  previewPrintOrder,
+  price,
   tidyAddress,
-  tidyNote,
-  type BookOffer,
-  type EditionId,
-  type ShipField,
-  type ShipTo,
-} from "../data/book";
-import { listContributions, type Contribution } from "../data/contributions";
+  validateShipments,
+  type OrderLine,
+  type PlacedOrder,
+  type PrintAddress,
+  type PrintCheck,
+  type PrintField,
+  type PrintPreview,
+  type Shipment,
+} from "../data/printOrder";
+import { listContributions } from "../data/contributions";
 import type { Story } from "../data/stories";
 import "../styles/pages/book-order.css";
 
-/** The addresses on file, on this computer, by the choice each belongs to (the phone keeps its own). */
+type Step = "review" | "send" | "pay";
+const STEPS: { id: Step; name: string }[] = [
+  { id: "review", name: "Review your book" },
+  { id: "send", name: "Who should receive it" },
+  { id: "pay", name: "Pay" },
+];
+const isStep = (v: string | null): v is Step => v === "review" || v === "send" || v === "pay";
+
+/** One address on the Send step: which quick pick it came from, how many copies, and where. */
+type Card = { id: string; pick: string; quantity: number; address: PrintAddress };
+/** What this tab keeps per story: the approved book and the address cards (P4-R6). */
+type Draft = { versionId: string | null; pageCount: number | null; copyCents: number | null; cards: Card[] };
+type CardProblem = { index: number; field: PrintField | "quantity" | null; message: string };
+
+/** The addresses kept on this computer, by the pick each belongs to (the phone keeps its own). Older ones carry region and country. */
 const SAVED_KEY = "astory:book-ship-to:v1";
+const draftKey = (storyId: string) => `astory:book-order:${storyId}:v1`;
 
-const FIELD_WORDS: Record<ShipField, string> = {
-  name: "their name",
-  line1: "the street",
-  line2: "",
-  city: "the city",
-  region: "",
-  postal: "",
-  country: "the country",
-  phone: "",
-};
-
-function readSaved(): Record<string, ShipTo> {
+function readSaved(): Record<string, PrintAddress> {
   try {
-    const s = JSON.parse(localStorage.getItem(SAVED_KEY) || "{}");
-    return s && typeof s === "object" ? s : {};
+    const raw = JSON.parse(localStorage.getItem(SAVED_KEY) || "{}") as Record<string, unknown>;
+    const out: Record<string, PrintAddress> = {};
+    for (const [k, v] of Object.entries(raw && typeof raw === "object" ? raw : {})) {
+      const a = fromSaved(v);
+      if (a) out[k] = a;
+    }
+    return out;
   } catch {
     return {};
   }
 }
 
-function writeSaved(saved: Record<string, ShipTo>) {
+function writeSaved(saved: Record<string, PrintAddress>) {
   try {
     localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
   } catch {
     /* a private window: it is simply not kept */
   }
 }
+
+const EMPTY_DRAFT: Draft = { versionId: null, pageCount: null, copyCents: null, cards: [] };
+
+function readDraft(storyId: string): Draft {
+  try {
+    const d = JSON.parse(sessionStorage.getItem(draftKey(storyId)) || "null") as Partial<Draft> | null;
+    if (!d || typeof d !== "object") return EMPTY_DRAFT;
+    const cards = Array.isArray(d.cards)
+      ? d.cards
+          .filter((c) => c && typeof c === "object")
+          .slice(0, MAX_ADDRESSES)
+          .map((c, i) => ({
+            id: typeof c.id === "string" ? c.id : `card-${i}`,
+            pick: typeof c.pick === "string" ? c.pick : "other",
+            quantity: Number.isInteger(c.quantity) ? Math.min(MAX_COPIES_PER_ADDRESS, Math.max(1, c.quantity)) : 1,
+            address: { ...blankAddress(), ...tidyAddress(c.address) },
+          }))
+      : [];
+    return {
+      versionId: typeof d.versionId === "string" && d.versionId ? d.versionId : null,
+      pageCount: Number.isInteger(d.pageCount) ? (d.pageCount as number) : null,
+      copyCents: Number.isInteger(d.copyCents) ? (d.copyCents as number) : null,
+      cards,
+    };
+  } catch {
+    return EMPTY_DRAFT;
+  }
+}
+
+function writeDraft(storyId: string, d: Draft) {
+  try {
+    sessionStorage.setItem(draftKey(storyId), JSON.stringify(d));
+  } catch {
+    /* a private window: Pay will ask again from step 1 */
+  }
+}
+
+let cardSeq = 0;
+const newCardId = () => `card-${Date.now().toString(36)}-${++cardSeq}`;
 
 export default function BookOrder() {
   const { account, stories, activeStory, loadError, reload } = useAccount();
@@ -104,368 +179,741 @@ export default function BookOrder() {
     );
   const story = (asked && stories.find((s) => s.id === asked)) || activeStory;
   if (!story) return <Navigate to="/book" replace />;
-  return <OrderForm key={story.id} story={story} edition={params.get("edition")} />;
+  return <OrderFlow key={story.id} story={story} />;
 }
 
-function OrderForm({ story, edition: askedEdition }: { story: Story; edition: string | null }) {
-  const { user } = useAuth();
-  const { family } = useAccount();
-  const navigate = useNavigate();
+function OrderFlow({ story }: { story: Story }) {
+  const [params, setParams] = useSearchParams();
   const name = story.name.trim().split(/\s+/)[0] || story.name;
+  const book = `${name}’s book`;
 
-  // What ordering costs, as the server works it out: undefined while asking, null when it couldn't be asked.
-  const [offer, setOffer] = useState<BookOffer | null | undefined>(undefined);
+  // Is ordering open (create-book-order's check)? undefined while asking, null when it couldn't be reached.
+  const [check, setCheck] = useState<PrintCheck | null | undefined>(undefined);
   const [ask, setAsk] = useState(0);
   useEffect(() => {
     let live = true;
-    checkBookOrder(story.id)
-      .then((o) => live && setOffer(o))
-      .catch(() => live && setOffer(null));
+    checkPrintOrder()
+      .then((c) => live && setCheck(c))
+      .catch((err) => {
+        if (!live) return;
+        // a server that refuses the question is closed; only a dropped connection is worth another try
+        setCheck(err instanceof PrintOrderError && err.reason === "network" ? null : { orderingOpen: false, product: null, credits: [], copyCents: null });
+      });
     return () => {
       live = false;
     };
-  }, [story.id, ask]);
+  }, [ask]);
 
-  const open = orderingOpen(offer);
-  const editions = useMemo(() => (offer?.editions ?? []).filter((e) => e.sale === "stripe"), [offer]);
-  // The Classic Hardcover first, unless Order was pressed on another: it's the one most families mean by "the book".
-  const [editionId, setEditionId] = useState<EditionId>(() => (askedEdition as EditionId) || "hardcover");
-  const edition = editions.find((e) => e.id === editionId) ?? editions.find((e) => e.id === "hardcover") ?? editions[0] ?? null;
-  const [copies, setCopies] = useState(1);
-  const included = edition?.copiesIncluded ?? 1;
-  const quote = edition ? quoteOrder(edition, copies) : null;
-  const credited = !!edition && giftCreditCovers({ credits: offer?.credits ?? 0, edition: edition.id, copies });
+  const [draft, setDraftState] = useState<Draft>(() => readDraft(story.id));
+  const setDraft = useCallback(
+    (next: Draft | ((d: Draft) => Draft)) =>
+      setDraftState((d) => {
+        const n = typeof next === "function" ? next(d) : next;
+        writeDraft(story.id, n);
+        return n;
+      }),
+    [story.id],
+  );
 
-  // Send it to. The addresses on file load once; the one being typed is kept per choice, so switching and back loses nothing.
-  const [saved, setSaved] = useState<Record<string, ShipTo>>(readSaved);
-  const choices = useMemo(() => shipChoices({ story, people: family?.people ?? [], me: user ?? null, saved }), [story, family, user, saved]);
-  const [toKey, setToKey] = useState<string | null>(null);
-  const to = choices.find((c) => c.key === toKey) ?? choices[0];
-  const [typed, setTyped] = useState<Record<string, ShipTo>>({});
-  const [editing, setEditing] = useState<Record<string, boolean>>({});
-  const onFile = to.address;
-  const showForm = !onFile || !!editing[to.key];
-  const address = typed[to.key] ?? onFile ?? { ...blankAddress(), name: to.key === "other" ? "" : to.name };
-  const setAddr = (patch: Partial<ShipTo>) => {
-    setTyped((t) => ({ ...t, [to.key]: { ...address, ...patch } }));
-    // a field once filled in stops asking for itself
-    setMissing((m) => m.filter((k) => !(k in patch)));
+  // The pages the family looked through, kept while the flow is open (going back to step 1 shows them again).
+  const [prepared, setPrepared] = useState<PreparedBookPdfs | null>(null);
+  const preparedRef = useRef<PreparedBookPdfs | null>(null);
+  const keepPrepared = (p: PreparedBookPdfs | null) => {
+    if (preparedRef.current && preparedRef.current !== p) revokeBookPages(preparedRef.current);
+    preparedRef.current = p;
+    setPrepared(p);
   };
-  const [missing, setMissing] = useState<ShipField[]>([]);
-  const form = useRef<HTMLDivElement>(null);
+  useEffect(() => () => revokeBookPages(preparedRef.current), []);
 
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  // "Laying the book out for the printer…" while the print files are made, before the order starts
-  const [laying, setLaying] = useState<string | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
-  // the family's approved pages, printed with the book as in the preview and at home (Book.tsx)
-  const [sides, setSides] = useState<Contribution[]>([]);
+  // a refusal from the server about one address, carried back to its card on the Send step
+  const [sendProblem, setSendProblem] = useState<CardProblem | null>(null);
 
-  useEffect(() => {
-    let live = true;
-    listContributions(story.id, "approved")
-      .then((rows) => live && setSides(rows))
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [story.id]);
+  const asked = params.get("step");
+  // Send and Pay need an approved book; without one (a new tab, a link typed in), the flow starts at the review.
+  const step: Step = isStep(asked) && (asked === "review" || draft.versionId) ? asked : "review";
+  const canceled = params.get("canceled") === "1";
+  const go = useCallback(
+    (to: Step, replace = false) => {
+      setParams({ story: story.id, step: to }, { replace });
+      window.scrollTo({ top: 0 });
+    },
+    [setParams, story.id],
+  );
+  const stepUrl = (to: Step) => `/book/order?${new URLSearchParams({ story: story.id, step: to })}`;
+  const back = step === "review" ? "/book" : stepUrl(step === "pay" ? "send" : "review");
 
   useEffect(() => {
     document.title = `Order ${name}’s book · A Story`;
   }, [name]);
 
-  const keepOnFile = (a: ShipTo) => {
-    const next = { ...saved, [to.key]: a };
-    setSaved(next);
-    writeSaved(next);
-    setEditing((e) => ({ ...e, [to.key]: false }));
-  };
-
-  const pay = async () => {
-    if (!edition || !quote || busy) return;
-    const shipping = orderShipping({ address, note });
-    if (!shipping) {
-      const miss = missingFields(tidyAddress(address));
-      setMissing(miss);
-      setEditing((e) => ({ ...e, [to.key]: true }));
-      // the first field still empty, once the form is drawn
-      requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>(`[name="${miss[0]}"]`)?.focus());
-      return;
-    }
-    setMissing([]);
-    keepOnFile(shipping.shipTo);
-    setProblem(null);
-    setBusy(true);
-    try {
-      // The print files are made and checked first, so an order is never placed for a book the printer can't take
-      // (PrintPdfError, whose message is for a person).
-      setLaying("Laying the book out for the printer…");
-      const files = await prepareBookPdfs(story, story.bookDesign, {
-        sides,
-        onProgress: (done, total) => setLaying(`Laying the book out for the printer: page ${done} of ${total}…`),
-      });
-      setLaying(null);
-      const started = await orderBook(story.id, { edition: edition.id, copies, shipTo: shipping.shipTo, note: shipping.note, returnTo: `${window.location.origin}/book/thanks` });
-      // Filed with the order before the page leaves for Stripe: a page that has gone can't finish an upload.
-      // Best-effort, as on the phone: the order stands, and the files can be laid out again from the design.
-      await uploadBookPdfs(started.orderId, files).catch((e) => console.warn("book order pdf:", e));
-      // the thanks page counts the order (book_ordered) once it reads it paid
-      if (started.paidWithCredit) {
-        navigate(`/book/thanks?order=${encodeURIComponent(started.orderId)}`);
-        return;
-      }
-      // the page stays busy while the browser goes
-      window.location.assign(started.checkoutUrl!);
-    } catch (err) {
-      const reason = (err as { reason?: string }).reason;
-      setLaying(null);
-      setProblem((err as Error).message || "We couldn’t start the order. Please try again.");
-      setBusy(false);
-      // the server said something about the offer (closed, a credit just used): ask it again
-      if (reason) setAsk((n) => n + 1);
-    }
-  };
-
+  const at = STEPS.findIndex((s) => s.id === step);
   const hero = (
     <div className="bo-hero">
       <h1 className="hero-title">
-        A printed copy, sent to someone
+        A printed copy of {book}
         <Stop />
       </h1>
-      <p className="bo-promise">Bound, and posted to the door you choose.</p>
+      {check?.orderingOpen && (
+        <p className="bo-promise">
+          Step {at + 1} of 3: {STEPS[at].name}
+        </p>
+      )}
     </div>
   );
 
-  if (offer === undefined)
-    return (
-      <Shell compact tone="teal" back="/book" title="Order the book" hero={hero}>
-        <div className="page bo-page" aria-busy="true">
-          <LoadingMark />
-        </div>
-      </Shell>
+  const shell = (children: React.ReactNode, extra = "") => (
+    <Shell compact tone="teal" back={back} title="Order the book" hero={hero}>
+      <div className={`page bo-page bo-flow ${extra}`}>{children}</div>
+    </Shell>
+  );
+
+  if (check === undefined)
+    return shell(
+      <div aria-busy="true">
+        <LoadingMark />
+      </div>,
+    );
+  if (check === null) return shell(<Problem message="We couldn’t reach A Story just now. Check the connection and try again." onRetry={() => setAsk((n) => n + 1)} />);
+  if (!check.orderingOpen)
+    return shell(
+      <>
+        <h2>Printed books are coming</h2>
+        <p>Ordering isn’t open yet. Until it is, {name}’s book prints at home, from the Book page.</p>
+        <ButtonLink to="/book">Back to the book</ButtonLink>
+      </>,
+      "bo-closed",
     );
 
-  if (offer === null)
+  return shell(
+    <>
+      <ol className="bo-steps-bar" aria-label="Ordering, in three steps">
+        {STEPS.map((s, i) => (
+          <li key={s.id} aria-current={i === at ? "step" : undefined} data-done={i < at || undefined}>
+            <span aria-hidden="true">{i + 1}</span> {s.name}
+          </li>
+        ))}
+      </ol>
+      {step === "review" && (
+        <ReviewStep
+          story={story}
+          book={book}
+          draft={draft}
+          prepared={prepared}
+          onPrepared={keepPrepared}
+          onApproved={(v) => {
+            setDraft((d) => ({ ...d, ...v }));
+            go("send");
+          }}
+          onAgain={() => {
+            keepPrepared(null);
+            setDraft((d) => ({ ...d, versionId: null, pageCount: null, copyCents: null }));
+          }}
+          onNext={() => go("send")}
+        />
+      )}
+      {step === "send" && (
+        <SendStep
+          story={story}
+          check={check}
+          cards={draft.cards}
+          problem={sendProblem}
+          onDone={(cards) => {
+            setSendProblem(null);
+            setDraft((d) => ({ ...d, cards }));
+            go("pay");
+          }}
+          onCards={(cards) => setDraft((d) => ({ ...d, cards }))}
+        />
+      )}
+      {step === "pay" && (
+        <PayStep
+          draft={draft}
+          canceled={canceled}
+          onAddresses={(p) => {
+            setSendProblem(p ?? null);
+            go("send");
+          }}
+          onReview={() => {
+            setDraft((d) => ({ ...d, versionId: null, pageCount: null, copyCents: null }));
+            go("review");
+          }}
+        />
+      )}
+    </>,
+  );
+}
+
+/* ── Step 1: Review your book ───────────────────────────────────────────── */
+
+type Approved = { versionId: string; pageCount: number; copyCents: number | null };
+
+function ReviewStep({
+  story,
+  book,
+  draft,
+  prepared,
+  onPrepared,
+  onApproved,
+  onAgain,
+  onNext,
+}: {
+  story: Story;
+  book: string;
+  draft: Draft;
+  prepared: PreparedBookPdfs | null;
+  onPrepared: (p: PreparedBookPdfs | null) => void;
+  onApproved: (v: Approved) => void;
+  onAgain: () => void;
+  onNext: () => void;
+}) {
+  const capable = useMemo(() => isPrintCapableBrowser(), []);
+  // "making" while the book is laid out and saved; "ready" to look through and approve; "blocked" when it can't print
+  const [phase, setPhase] = useState<"idle" | "making" | "ready" | "blocked" | "failed">("idle");
+  const [progress, setProgress] = useState("Getting your book ready…");
+  const [problem, setProblem] = useState<string | null>(null);
+  const [made, setMade] = useState<{ versionId: string; pageCount: number; copyCents: number | null; warnings: string[]; preflight: PreflightResult } | null>(null);
+  const [ticked, setTicked] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const started = useRef(false);
+
+  const make = useCallback(async () => {
+    setPhase("making");
+    setProblem(null);
+    setTicked(false);
+    setProgress("Getting your book ready…");
+    try {
+      const version = await prepareVersion(story.id);
+      const sides = await listContributions(story.id, "approved").catch(() => []);
+      const files = await prepareBookPdfs(story, story.bookDesign, {
+        sides,
+        profile: version.printProfile,
+        onProgress: (done, total) => setProgress(`Laying out page ${done} of ${total}…`),
+      });
+      onPrepared(files);
+      setProgress("Saving your book’s pages…");
+      await uploadVersionPdfs(version.versionId, files);
+      const memories = story.memories.map((m) => ({ id: m.id, title: m.title, hasAudio: (m.audio || []).length > 0 }));
+      const found = (preflightBook as (args: Record<string, unknown>) => unknown)({
+        profile: version.printProfile,
+        pageCount: files.plan.rendered,
+        photos: files.photos,
+        qrCodes: [],
+        memories,
+        listenBase: listenBase(),
+        listenKey: version.listenKey,
+      }) as PreflightResult & { blocking: { words: string }[]; warnings: { kind: string; words: string; memoryId?: string | null }[] };
+      if (!found.ok) {
+        setProblem(found.blocking[0]?.words || "This book can’t be printed as it is.");
+        setPhase("blocked");
+        return;
+      }
+      const copy = await checkPrintOrder({ pageCount: files.plan.pages }).catch(() => null);
+      setMade({ versionId: version.versionId, pageCount: files.plan.pages, copyCents: copy?.copyCents ?? null, warnings: groupWarnings(found.warnings, memories), preflight: found });
+      setPhase("ready");
+    } catch (err) {
+      const blocked = err instanceof PrintPdfError && (err.problem === "too_many_pages" || err.problem === "empty");
+      setProblem(err instanceof PrintPdfError || err instanceof BookVersionError ? err.message : "We couldn’t get the book ready. Please try again.");
+      setPhase(blocked ? "blocked" : "failed");
+    }
+  }, [story, onPrepared]);
+
+  useEffect(() => {
+    if (draft.versionId || !capable || started.current) return;
+    started.current = true;
+    void make();
+  }, [draft.versionId, capable, make]);
+
+  const approve = async () => {
+    if (!made || !ticked || approving) return;
+    setApproving(true);
+    setProblem(null);
+    try {
+      await approveVersion({ versionId: made.versionId, pageCount: made.pageCount, preflight: made.preflight, confirmed: true });
+      onApproved({ versionId: made.versionId, pageCount: made.pageCount, copyCents: made.copyCents });
+    } catch (err) {
+      setProblem((err as Error).message || "We couldn’t lock the book for printing. Please try again.");
+      setApproving(false);
+    }
+  };
+
+  // Already looked through and approved in this tab: no need to do it again.
+  if (draft.versionId) {
     return (
-      <Shell compact tone="teal" back="/book" title="Order the book" hero={hero}>
-        <div className="page bo-page">
-          <Problem message="We couldn’t reach the printer just now. Check the connection and try again." onRetry={() => setAsk((n) => n + 1)} />
+      <section className="bo-section" aria-labelledby="bo-review-h">
+        <h2 id="bo-review-h">You’ve approved {book}</h2>
+        {prepared && <BookFlip pages={prepared.pages} cover={prepared.coverPage} title={book} />}
+        <BookFacts pages={draft.pageCount} copyCents={draft.copyCents} />
+        <p className="bo-help">It’s locked for printing exactly as you saw it.</p>
+        <div className="bo-next">
+          <Button block onClick={onNext}>
+            Continue
+          </Button>
+          <Button
+            variant="outline"
+            block
+            onClick={() => {
+              started.current = false;
+              onAgain();
+            }}
+          >
+            Make the book again from the latest memories
+          </Button>
         </div>
-      </Shell>
+      </section>
+    );
+  }
+
+  if (!capable)
+    return (
+      <section className="bo-section">
+        <h2>Please use Chrome or the app</h2>
+        <p className="bo-lead">{PRINT_BROWSER_MESSAGE}</p>
+        <ButtonLink to="/book">Back to the book</ButtonLink>
+      </section>
     );
 
-  if (!open || !edition || !quote)
+  if (phase === "making" || phase === "idle")
     return (
-      <Shell compact tone="teal" back="/book" title="Order the book" hero={hero}>
-        <div className="page bo-page bo-closed">
-          <h2>Printed editions are coming</h2>
-          <p>Ordering isn’t open yet. Until it is, {name}’s book prints at home, from the Book page.</p>
-          <ButtonLink to="/book">Back to the book</ButtonLink>
-        </div>
-      </Shell>
+      <section className="bo-section bo-making" aria-busy="true">
+        <h2>Getting {book} ready to print</h2>
+        <LoadingMark />
+        <p className="bo-lead" role="status">
+          {progress}
+        </p>
+        <p className="bo-help">A long book takes a few minutes. Please keep this page open.</p>
+      </section>
     );
 
-  const country = SHIP_COUNTRIES.find((c) => c.code === address.country) ?? SHIP_COUNTRIES[0];
-  const words = (k: ShipField) => (k === "region" ? `the ${country.region.toLowerCase()}` : k === "postal" ? `the ${country.postal === "ZIP" ? "ZIP" : "postal code"}` : FIELD_WORDS[k]);
-  const bad = (k: ShipField) => (missing.includes(k) ? `Add ${words(k)}, so the courier can find the door.` : null);
-  const first = to.key === "other" ? "them" : to.first;
-  const shown = included > 1 ? copies - 1 : copies;
-  const step = (d: 1 | -1) => setCopies((n) => Math.min(MAX_COPIES, Math.max(1, n + d)));
+  if (phase === "blocked" || phase === "failed")
+    return (
+      <section className="bo-section">
+        <h2>{phase === "blocked" ? "This book can’t be printed yet" : "We couldn’t get the book ready"}</h2>
+        <p className="bo-lead" role="alert">
+          {problem}
+        </p>
+        {phase === "failed" ? (
+          <Button onClick={() => void make()}>Try again</Button>
+        ) : (
+          <ButtonLink to="/book/design">Change what goes in the book</ButtonLink>
+        )}
+      </section>
+    );
 
   return (
-    <Shell compact tone="teal" back="/book" title="Order the book" hero={hero}>
-      <div className="page bo-page">
-        <section className="bo-section" aria-labelledby="bo-edition-h">
-          <h2 id="bo-edition-h">Which edition</h2>
-          <div className="bo-editions" role="radiogroup" aria-labelledby="bo-edition-h">
-            {editions.map((e) => {
-              const on = e.id === edition.id;
-              return (
-                <label key={e.id} className="bo-edition" data-on={on || undefined}>
-                  <input
-                    className="sr-only"
-                    type="radio"
-                    name="edition"
-                    value={e.id}
-                    checked={on}
-                    onChange={() => {
-                      setEditionId(e.id);
-                      setCopies(1);
-                    }}
-                  />
-                  <span className="bo-edition-name">{EDITION_WORDS[e.id].name}</span>
-                  <span className="bo-edition-price">{formatCents(e.priceCents)}</span>
-                  <span className="bo-edition-line">{EDITION_WORDS[e.id].delivery}</span>
-                </label>
-              );
-            })}
-          </div>
-
-          <div className="bo-copies">
-            <span id="bo-copies-l">{included > 1 ? `Extra copies, beyond the ${included}` : "Copies"}</span>
-            <div className="bo-stepper" role="group" aria-labelledby="bo-copies-l">
-              <button type="button" onClick={() => step(-1)} disabled={copies <= 1} aria-label="One fewer copy">
-                −
-              </button>
-              <output aria-live="polite">{shown}</output>
-              <button type="button" onClick={() => step(1)} disabled={copies >= MAX_COPIES} aria-label="One more copy">
-                +
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="bo-section" aria-labelledby="bo-to-h">
-          <h2 id="bo-to-h">Send it to</h2>
-          <div className="bo-people" role="radiogroup" aria-labelledby="bo-to-h">
-            {choices.map((c) => (
-              <label key={c.key} className="bo-person" data-on={c.key === to.key || undefined}>
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="ship-to"
-                  value={c.key}
-                  checked={c.key === to.key}
-                  onChange={() => {
-                    setToKey(c.key);
-                    setMissing([]);
-                  }}
-                />
-                {c.key === "other" ? (
-                  <span className="bo-person-new" aria-hidden="true">
-                    +
-                  </span>
-                ) : (
-                  <Avatar name={c.name} size={44} />
-                )}
-                <span className="bo-person-words">
-                  <b>{c.name}</b>
-                  <span>{c.address ? "Address on file" : c.relation}</span>
-                </span>
-              </label>
+    <section className="bo-section" aria-labelledby="bo-review-h">
+      <h2 id="bo-review-h">Look through {book}</h2>
+      <p className="bo-help">These are the exact pages that will be printed.</p>
+      {prepared && <BookFlip pages={prepared.pages} cover={prepared.coverPage} title={book} />}
+      <BookFacts pages={made?.pageCount ?? null} copyCents={made?.copyCents ?? null} />
+      {made && made.warnings.length > 0 && (
+        <div className="bo-warnings">
+          <h3>Worth a look before you print</h3>
+          <ul>
+            {made.warnings.map((w) => (
+              <li key={w}>{w}</li>
             ))}
-          </div>
+          </ul>
+          <p className="bo-help">None of these stop the book from printing.</p>
+        </div>
+      )}
+      <div className="bo-approve">
+        <Checkbox checked={ticked} onChange={setTicked}>
+          {APPROVE_CHECKBOX_TEXT}
+        </Checkbox>
+      </div>
+      {problem && <Problem message={problem} onDismiss={() => setProblem(null)} />}
+      <Button block onClick={approve} disabled={!ticked} loading={approving}>
+        Continue
+      </Button>
+    </section>
+  );
+}
 
-          <div className="bo-address" ref={form}>
-            {showForm ? (
-              <>
-                <Field label={to.key === "other" ? "Their name" : "Name on the parcel"} name="name" autoComplete="shipping name" value={address.name} onChange={(e) => setAddr({ name: e.target.value })} error={bad("name")} />
-                <Field label="Street address" name="line1" autoComplete="shipping address-line1" value={address.line1} onChange={(e) => setAddr({ line1: e.target.value })} error={bad("line1")} />
-                <Field label="Apartment or floor (if any)" name="line2" autoComplete="shipping address-line2" value={address.line2} onChange={(e) => setAddr({ line2: e.target.value })} />
-                <Field label="City" name="city" autoComplete="shipping address-level2" value={address.city} onChange={(e) => setAddr({ city: e.target.value })} error={bad("city")} />
-                <div className="bo-two">
-                  <Field label={country.region} name="region" autoComplete="shipping address-level1" value={address.region} onChange={(e) => setAddr({ region: e.target.value })} error={bad("region")} />
-                  <Field label={country.postal} name="postal" autoComplete="shipping postal-code" value={address.postal} onChange={(e) => setAddr({ postal: e.target.value })} error={bad("postal")} />
+function BookFacts({ pages, copyCents }: { pages: number | null; copyCents: number | null }) {
+  if (!pages) return null;
+  return (
+    <dl className="bo-facts">
+      <div>
+        <dt>Pages</dt>
+        <dd>Your book has {pages} pages</dd>
+      </div>
+      {copyCents !== null && (
+        <div>
+          <dt>Price</dt>
+          <dd>Each copy: {price(copyCents)}</dd>
+        </div>
+      )}
+    </dl>
+  );
+}
+
+/* ── Step 2: Who should receive it ─────────────────────────────────────── */
+
+const FIELD_LABELS: Record<Exclude<PrintField, "state">, { label: string; auto: string; optional?: boolean; type?: string; inputMode?: "numeric" | "tel" }> = {
+  name: { label: "Their name", auto: "shipping name" },
+  line1: { label: "Street address", auto: "shipping address-line1" },
+  line2: { label: "Apartment or floor (if any)", auto: "shipping address-line2", optional: true },
+  city: { label: "City", auto: "shipping address-level2" },
+  postal: { label: "ZIP code", auto: "shipping postal-code", inputMode: "numeric" },
+  phone: { label: "Phone, for the courier (optional)", auto: "shipping tel", optional: true, type: "tel", inputMode: "tel" },
+};
+
+function SendStep({
+  story,
+  check,
+  cards: kept,
+  problem,
+  onCards,
+  onDone,
+}: {
+  story: Story;
+  check: PrintCheck;
+  cards: Card[];
+  problem: CardProblem | null;
+  onCards: (c: Card[]) => void;
+  onDone: (c: Card[]) => void;
+}) {
+  const { user } = useAuth();
+  const { family } = useAccount();
+  const [saved, setSaved] = useState<Record<string, PrintAddress>>(readSaved);
+  const choices = useMemo(() => shipChoices<PrintAddress>({ story, people: family?.people ?? [], me: user ?? null, saved }), [story, family, user, saved]);
+  const maxCopies = check.product?.maxCopiesPerShipment ?? MAX_COPIES_PER_ADDRESS;
+  const maxCards = check.product?.maxShipments ?? MAX_ADDRESSES;
+
+  const fresh = useCallback(
+    (pick: string): Card => {
+      const c = choices.find((x) => x.key === pick);
+      return { id: newCardId(), pick, quantity: 1, address: c?.address ? { ...c.address } : { ...blankAddress(), name: pick === "other" || !c ? "" : c.name } };
+    },
+    [choices],
+  );
+  const [cards, setCardsState] = useState<Card[]>(() => (kept.length ? kept : [fresh(choices[0]?.key ?? "other")]));
+  const setCards = (next: Card[]) => {
+    setCardsState(next);
+    onCards(next);
+  };
+  const [bad, setBad] = useState<CardProblem | null>(problem);
+  const list = useRef<HTMLDivElement>(null);
+
+  const update = (i: number, patch: Partial<Card>) => {
+    setCards(cards.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+    if (bad?.index === i) setBad(null);
+  };
+  const setField = (i: number, field: PrintField, value: string) => update(i, { address: { ...cards[i].address, [field]: value } });
+
+  const focusProblem = (p: CardProblem) =>
+    requestAnimationFrame(() => {
+      const card = list.current?.querySelectorAll<HTMLElement>(".bo-card")[p.index];
+      const target = card?.querySelector<HTMLElement>(p.field ? `[data-field="${p.field}"]` : "input") ?? card;
+      target?.focus();
+      card?.scrollIntoView({ block: "nearest" });
+    });
+
+  const add = () => {
+    if (cards.length >= maxCards) return;
+    // the next person not yet on a card, or someone new
+    const used = new Set(cards.map((c) => c.pick));
+    const next = choices.find((c) => c.key !== "other" && !used.has(c.key))?.key ?? "other";
+    setCards([...cards, fresh(next)]);
+    requestAnimationFrame(() => {
+      const all = list.current?.querySelectorAll<HTMLElement>(".bo-card");
+      all?.[all.length - 1]?.querySelector<HTMLElement>("input")?.focus();
+    });
+  };
+
+  const done = () => {
+    const out = validateShipments(cards.map((c) => ({ quantity: c.quantity, address: c.address })));
+    if (!out.ok) {
+      const p = { index: out.index ?? 0, field: out.field ?? null, message: out.message };
+      setBad(p);
+      focusProblem(p);
+      return;
+    }
+    // each address is kept on this computer under the pick it was typed for, so the next copy needs no retyping
+    const next = { ...saved };
+    const tidied = cards.map((c, i) => ({ ...c, address: out.shipments[i].address }));
+    for (const c of tidied) next[c.pick === "other" ? "other" : c.pick] = c.address;
+    setSaved(next);
+    writeSaved(next);
+    setBad(null);
+    onDone(tidied);
+  };
+
+  return (
+    <section className="bo-section" aria-labelledby="bo-send-h">
+      <h2 id="bo-send-h">Who should receive it</h2>
+      <p className="bo-help">We send printed books to addresses in the United States.</p>
+      <div className="bo-cards" ref={list}>
+        {cards.map((card, i) => {
+          const who = choices.find((c) => c.key === card.pick);
+          const first = card.address.name.trim().split(/\s+/)[0] || (card.pick === "other" ? "" : who?.first) || "";
+          const heading = first ? `For ${first}` : cards.length > 1 ? `Address ${i + 1}` : "Their address";
+          const err = (f: PrintField) => (bad?.index === i && bad.field === f ? bad.message : null);
+          const cardWide = bad?.index === i && (!bad.field || bad.field === "quantity") ? bad.message : null;
+          return (
+            <fieldset key={card.id} className="bo-card" aria-labelledby={`${card.id}-h`}>
+              <legend className="sr-only">{heading}</legend>
+              <div className="bo-card-head">
+                <h3 id={`${card.id}-h`}>{heading}</h3>
+                <div className="bo-stepper" role="group" aria-label={`Copies ${first ? `for ${first}` : "to this address"}`}>
+                  <button type="button" onClick={() => update(i, { quantity: Math.max(1, card.quantity - 1) })} disabled={card.quantity <= 1} aria-label="One fewer copy">
+                    −
+                  </button>
+                  <output aria-live="polite" data-field="quantity" tabIndex={-1}>
+                    {card.quantity} {card.quantity === 1 ? "copy" : "copies"}
+                  </output>
+                  <button type="button" onClick={() => update(i, { quantity: Math.min(maxCopies, card.quantity + 1) })} disabled={card.quantity >= maxCopies} aria-label="One more copy">
+                    +
+                  </button>
                 </div>
-                <fieldset className="bo-country">
-                  <legend>Country</legend>
-                  {SHIP_COUNTRIES.map((c) => (
-                    <label key={c.code} data-on={c.code === address.country || undefined}>
-                      <input className="sr-only" type="radio" name="country" value={c.code} checked={c.code === address.country} onChange={() => setAddr({ country: c.code })} />
-                      {c.name}
-                    </label>
-                  ))}
-                </fieldset>
+              </div>
+
+              <div className="bo-picks" role="radiogroup" aria-label="Send it to">
+                {choices.map((c) => (
+                  <label key={c.key} className="bo-pick" data-on={c.key === card.pick || undefined}>
+                    <input
+                      className="sr-only"
+                      type="radio"
+                      name={`${card.id}-pick`}
+                      value={c.key}
+                      checked={c.key === card.pick}
+                      onChange={() => {
+                        const f = fresh(c.key);
+                        update(i, { pick: c.key, address: f.address });
+                      }}
+                    />
+                    {c.key === "other" ? "Someone else" : c.name}
+                  </label>
+                ))}
+              </div>
+
+              {cardWide && (
+                <p className="bo-card-problem" role="alert">
+                  {cardWide}
+                </p>
+              )}
+
+              {(["name", "line1", "line2", "city"] as const).map((f) => (
                 <Field
-                  label="Phone, for the courier (optional)"
-                  name="phone"
-                  type="tel"
-                  autoComplete="shipping tel"
-                  value={address.phone}
-                  onChange={(e) => setAddr({ phone: e.target.value })}
-                  hint={`Kept on this computer, so the next copy for ${first} needs no retyping.`}
+                  key={f}
+                  label={FIELD_LABELS[f].label}
+                  name={f}
+                  data-field={f}
+                  autoComplete={FIELD_LABELS[f].auto}
+                  value={card.address[f]}
+                  onChange={(e) => setField(i, f, e.target.value)}
+                  error={err(f)}
                 />
-                {onFile && (
-                  <Button
-                    variant="quiet"
-                    small
-                    onClick={() => {
-                      const miss = missingFields(tidyAddress(address));
-                      setMissing(miss);
-                      if (!miss.length) keepOnFile(tidyAddress(address));
-                    }}
-                  >
-                    Keep this address
-                  </Button>
-                )}
-              </>
-            ) : (
-              <>
-                <address className="bo-label">
-                  {addressLines(onFile).map((line, i) => (
-                    <span key={i}>{line}</span>
-                  ))}
-                </address>
-                <Button variant="quiet" small onClick={() => setEditing((e) => ({ ...e, [to.key]: true }))}>
-                  Change the address
+              ))}
+              <div className="bo-two">
+                <label className="field">
+                  <span>State</span>
+                  <span className="input" style={err("state") ? { borderColor: "var(--danger)" } : undefined}>
+                    <select
+                      name="state"
+                      data-field="state"
+                      autoComplete="shipping address-level1"
+                      value={card.address.state}
+                      onChange={(e) => setField(i, "state", e.target.value)}
+                      aria-invalid={err("state") ? true : undefined}
+                    >
+                      <option value="">Choose a state</option>
+                      {Object.entries(US_STATES).map(([code, n]) => (
+                        <option key={code} value={code}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                  {err("state") && (
+                    <span className="hint bo-error" role="alert">
+                      {err("state")}
+                    </span>
+                  )}
+                </label>
+                <Field
+                  label={FIELD_LABELS.postal.label}
+                  name="postal"
+                  data-field="postal"
+                  inputMode="numeric"
+                  autoComplete={FIELD_LABELS.postal.auto}
+                  value={card.address.postal}
+                  onChange={(e) => setField(i, "postal", e.target.value)}
+                  error={err("postal")}
+                />
+              </div>
+              <Field
+                label={FIELD_LABELS.phone.label}
+                name="phone"
+                data-field="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete={FIELD_LABELS.phone.auto}
+                value={card.address.phone}
+                onChange={(e) => setField(i, "phone", e.target.value)}
+                error={err("phone")}
+              />
+              {cards.length > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCards(cards.filter((_, j) => j !== i));
+                    setBad(null);
+                  }}
+                >
+                  Remove this address
                 </Button>
-              </>
-            )}
-          </div>
-        </section>
+              )}
+            </fieldset>
+          );
+        })}
+      </div>
 
-        <section className="bo-section" aria-labelledby="bo-note-h">
-          <h2 id="bo-note-h">A note for the first page</h2>
-          <p className="bo-help" id="bo-note-help">
-            Two lines, printed in your words. Leave it empty and the page stays {name}’s.
-          </p>
-          <textarea
-            className="bo-note"
-            aria-labelledby="bo-note-h"
-            aria-describedby="bo-note-help"
-            rows={3}
-            value={note}
-            maxLength={NOTE_MAX + 40}
-            onChange={(e) => setNote(e.target.value)}
-            onBlur={() => setNote((v) => tidyNote(v))}
-            placeholder={to.key === "me" ? "For our family, in their own words." : `For ${first}. Every word is ${name}’s.`}
-          />
-          {note.length > NOTE_MAX - 30 && <p className="bo-help">{Math.max(0, NOTE_MAX - note.length)} letters left</p>}
-        </section>
+      {cards.length < maxCards && (
+        <Button variant="outline" block onClick={add}>
+          Add another copy for someone else
+        </Button>
+      )}
+      <p className="bo-help">Addresses are kept on this computer, so the next copy needs no retyping.</p>
+      <div className="bo-next">
+        <Button block onClick={done}>
+          Continue
+        </Button>
+      </div>
+    </section>
+  );
+}
 
-        <section className="bo-section bo-summary" aria-labelledby="bo-sum-h">
-          <h2 id="bo-sum-h">Your order</h2>
+/* ── Step 3: Pay ────────────────────────────────────────────────────────── */
+
+function PayStep({ draft, canceled, onAddresses, onReview }: { draft: Draft; canceled: boolean; onAddresses: (p?: CardProblem) => void; onReview: () => void }) {
+  const navigate = useNavigate();
+  const checked = useMemo(() => validateShipments(draft.cards.map((c) => ({ quantity: c.quantity, address: c.address }))), [draft.cards]);
+  const shipments: Shipment[] | null = checked.ok ? checked.shipments : null;
+  const [preview, setPreview] = useState<PrintPreview | null | undefined>(undefined);
+  const [problem, setProblem] = useState<PrintOrderError | null>(null);
+  const [ask, setAsk] = useState(0);
+  const [busy, setBusy] = useState(false);
+  // the order the server made, when its total came out different from the one shown: the next press goes on with it
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+
+  useEffect(() => {
+    if (!shipments || !draft.versionId) return;
+    let live = true;
+    previewPrintOrder({ versionId: draft.versionId, shipments })
+      .then((p) => {
+        if (!live) return;
+        setPreview(p);
+        setProblem(null);
+      })
+      .catch((err) => {
+        if (!live) return;
+        setPreview(null);
+        setProblem(err instanceof PrintOrderError ? err : new PrintOrderError("unknown"));
+      });
+    return () => {
+      live = false;
+    };
+  }, [draft.versionId, shipments, ask]);
+
+  if (!shipments)
+    return (
+      <section className="bo-section">
+        <h2>Where should it go?</h2>
+        <p className="bo-lead">{checked.ok ? "" : checked.message}</p>
+        <Button onClick={() => onAddresses()}>Add the address</Button>
+      </section>
+    );
+
+  const pay = async () => {
+    if (!preview || busy || !draft.versionId) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      const order = placed ?? (await placePrintOrder({ versionId: draft.versionId, shipments, returnTo: `${window.location.origin}/book/thanks` }));
+      if (order.paid) {
+        navigate(`/book/orders/${encodeURIComponent(order.orderId)}?placed=1`);
+        return;
+      }
+      if (!placed && order.totalCents !== preview.totalCents) {
+        // the server's price moved since the total was shown: show the new one, and wait for a second press
+        setPreview({ ...preview, totalCents: order.totalCents, lines: order.lines.length ? order.lines : preview.lines, delivery: order.delivery ?? preview.delivery, coveredByCredits: false });
+        setPlaced(order);
+        setBusy(false);
+        return;
+      }
+      // the page stays busy while the browser goes
+      window.location.assign(order.checkoutUrl!);
+    } catch (err) {
+      setProblem(err instanceof PrintOrderError ? err : new PrintOrderError("unknown"));
+      setBusy(false);
+    }
+  };
+
+  const recipients = shipments.map((s) => `${s.quantity} ${s.quantity === 1 ? "copy" : "copies"} to ${s.address.name}, ${s.address.city}`);
+  const covered = !!preview && preview.totalCents === 0;
+  const arrives = preview ? arrivesWords(preview.delivery) : null;
+
+  return (
+    <section className="bo-section" aria-labelledby="bo-pay-h">
+      <h2 id="bo-pay-h">Your order</h2>
+      {canceled && (
+        <p className="bo-note-line" role="status">
+          Nothing was charged. Your order is here when you’re ready.
+        </p>
+      )}
+      {preview === undefined && !problem && (
+        <div aria-busy="true">
+          <LoadingMark />
+          <p className="bo-help">Working out the total…</p>
+        </div>
+      )}
+      {problem && (
+        <div className="bo-problem">
+          <Problem message={problem.message} onRetry={problem.reason === "network" || problem.reason === "unknown" ? () => setAsk((n) => n + 1) : undefined} />
+          {problem.reason === "address" && (
+            <Button onClick={() => onAddresses(problem.index !== null ? { index: problem.index, field: (problem.code && FIELD_OF_ERROR[problem.code]) || null, message: problem.message } : undefined)}>
+              Change the address
+            </Button>
+          )}
+          {problem.reason === "needs_review" && <Button onClick={onReview}>Look through the book again</Button>}
+        </div>
+      )}
+      {preview && (
+        <div className="bo-summary">
           <dl>
-            {quote.lines.map((l) => (
-              <div key={l.label} className="bo-line">
-                <dt>{l.qty > 1 ? `${l.label} × ${l.qty}` : l.label}</dt>
-                <dd>{formatCents(l.unitCents * l.qty)}</dd>
+            {preview.lines.map((l: OrderLine, i) => (
+              <div key={`${l.kind}-${i}`} className="bo-line" data-kind={l.kind}>
+                <dt>{lineLabel(l)}</dt>
+                <dd>{money(l.amountCents)}</dd>
               </div>
             ))}
-            <div className="bo-line bo-soft">
-              <dt>{addressShort(address) ? `To ${addressShort(address)}` : `To ${to.key === "other" ? "someone" : to.first}, address to come`}</dt>
-            </div>
-            <div className="bo-line bo-soft">
-              <dt>{tidyNote(note) ? "With your note on the first page" : "No note"}</dt>
-            </div>
             <div className="bo-line bo-total">
               <dt>Total</dt>
-              <dd>{credited ? "Paid with your gift" : formatCents(quote.totalCents)}</dd>
+              <dd>{covered ? coveredWords(preview.lines) : money(preview.totalCents)}</dd>
             </div>
           </dl>
-          <p className="bo-help">
-            Shipping to the US and Canada is in the total. {EDITION_WORDS[edition.id].delivery}.
-          </p>
-
-          {problem && <Problem message={problem} onDismiss={() => setProblem(null)} />}
-          <Button block loading={busy} onClick={pay}>
-            {credited ? "Order it, paid with your gift’s hardcover" : `Pay with Stripe · ${formatCents(quote.totalCents)}`}
-          </Button>
-          {laying && (
-            <p className="bo-help bo-center" role="status">
-              {laying}
+          <ul className="bo-recipients">
+            {recipients.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+          {arrives && <p className="bo-arrives">{arrives}</p>}
+          {placed && (
+            <p className="bo-note-line" role="status">
+              The total has changed to {money(placed.totalCents)}. Please check it, then press Pay again.
             </p>
           )}
-          <p className="bo-help bo-center">{credited ? "Your gift’s hardcover pays for this one, so there is no checkout." : "Stripe takes the payment on its own page, then brings you back here."}</p>
+          <Button block onClick={pay} loading={busy}>
+            {covered ? "Place my order" : `Pay ${money(preview.totalCents)}`}
+          </Button>
           <p className="bo-help bo-center">
-            <Link to="/book/orders" className="more">
-              Your orders
-            </Link>
+            {covered
+              ? "Nothing to pay. We wait an hour before printing, in case anything needs changing."
+              : "You’ll pay on a secure payment page, then come straight back here. We wait an hour before printing, in case anything needs changing."}
           </p>
-        </section>
-      </div>
-    </Shell>
+        </div>
+      )}
+    </section>
   );
 }

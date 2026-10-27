@@ -6,29 +6,50 @@ const sb = vi.hoisted(() => {
   const replies: { data: unknown; error: unknown }[] = [];
   const next = () => Promise.resolve(replies.shift() ?? { data: null, error: null });
   const q: Record<string, unknown> = {};
-  for (const m of ["from", "select", "eq"]) q[m] = (...args: unknown[]) => (calls.push({ method: m, args }), q);
+  for (const m of ["from", "select", "eq", "not"]) q[m] = (...args: unknown[]) => (calls.push({ method: m, args }), q);
   q.order = (...args: unknown[]) => (calls.push({ method: "order", args }), next());
   q.maybeSingle = (...args: unknown[]) => (calls.push({ method: "maybeSingle", args }), next());
   return { calls, replies, client: q };
 });
 vi.mock("../lib/supabase", () => ({ getSupabase: () => sb.client }));
 
-import { getOrder, isPaid, listOrders, orderFromRow, orderStatusLine, pollUntilPaid, trackingUrlFor } from "./bookOrders";
+import { getOrder, isPaid, listOrders, listShipments, orderFromRow, pollUntilPaid, safeHttps, shipmentFromRow, trackingUrlFor } from "./bookOrders";
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: "o1",
+  user_id: "u1",
   story_id: "s1",
-  status: "pending",
-  edition: "hardcover",
-  copies: 2,
-  amount_cents: 13800,
+  status: "payment_pending",
+  quantity: 3,
+  subtotal_cents: 23700,
+  shipping_cents: 1800,
+  tax_cents: 0,
+  discount_cents: 0,
+  deposit_credit_cents: 100,
+  total_cents: 25400,
+  amount_cents: 25400,
   currency: "usd",
-  included: false,
-  shipping_name: "Ana Reyes",
-  shipping_address: { line1: "1 Elm St", city: "Austin", country: "US" },
-  gift_note: "For Mum",
   created_at: "2026-10-27T10:00:00Z",
   paid_at: null,
+  delivery_earliest: "2026-11-10",
+  delivery_latest: "2026-11-13",
+  ...over,
+});
+
+const ship = (over: Record<string, unknown> = {}) => ({
+  id: "sh1",
+  order_id: "o1",
+  quantity: 2,
+  name: "Rose Hartley",
+  line1: "1 Elm Street",
+  city: "San Jose",
+  state: "CA",
+  postal_code: "95112",
+  status: "pending",
+  carrier: null,
+  tracking_number: null,
+  tracking_url: null,
+  created_at: "2026-10-27T10:00:00Z",
   ...over,
 });
 
@@ -38,102 +59,106 @@ beforeEach(() => {
 });
 
 describe("orderFromRow", () => {
-  it("reads the phone's columns", () => {
+  it("reads the new columns: copies, the money lines, the delivery days and the stage", () => {
     expect(orderFromRow(row())).toEqual({
       id: "o1",
       storyId: "s1",
-      status: "pending",
-      edition: "hardcover",
-      copies: 2,
-      amountCents: 13800,
+      status: "payment_pending",
+      stage: "Approved",
+      copies: 3,
+      totalCents: 25400,
+      subtotalCents: 23700,
+      shippingCents: 1800,
+      taxCents: 0,
+      discountCents: 0,
+      depositCents: 100,
       currency: "usd",
-      included: false,
-      shippingName: "Ana Reyes",
-      shippingAddress: { line1: "1 Elm St", city: "Austin", country: "US" },
-      note: "For Mum",
       createdAt: "2026-10-27T10:00:00Z",
       paidAt: null,
-      carrier: null,
-      trackingNumber: null,
-      trackingUrl: null,
-      shippedAt: null,
+      deliveryEarliest: "2026-11-10",
+      deliveryLatest: "2026-11-13",
     });
   });
 
-  it("reads a shipped order's carrier and tracking page", () => {
-    const o = orderFromRow(row({ status: "shipped", carrier: "UPS", tracking_number: "1Z999", shipped_at: "2026-11-02T09:00:00Z" }));
-    expect([o.status, o.trackingUrl, o.shippedAt]).toEqual(["shipped", "https://www.ups.com/track?tracknum=1Z999", "2026-11-02T09:00:00Z"]);
-    expect(isPaid(o)).toBe(true);
-    expect(orderStatusLine(o)).toBe("Shipped with UPS. Tracking number 1Z999.");
-    expect(orderStatusLine({ status: "shipped" })).toBe("Shipped. It’s in the post.");
+  it("reads each status as the family's stage, never the printer's word", () => {
+    const stage = (status: string) => orderFromRow(row({ status })).stage;
+    expect(["paid", "submitted_to_provider", "in_production", "submission_failed"].map(stage)).toEqual(["Printing", "Printing", "Printing", "Printing"]);
+    expect(["shipped", "delivered", "refunded", "canceled", "payment_failed", "nonsense"].map(stage)).toEqual(["Shipped", "Delivered", "Refunded", "Canceled", "Needs attention", "Needs attention"]);
   });
 
-  it("links only a known carrier and a plain number", () => {
+  it("reads an old row (copies, amount_cents, no new columns) and anything odd as its default", () => {
+    const old = orderFromRow({ id: "o0", story_id: "s1", status: "fulfilled", copies: 2, amount_cents: 6900, paid_at: "2026-10-01T00:00:00Z" });
+    expect(old).toMatchObject({ stage: "Shipped", copies: 2, totalCents: 6900, subtotalCents: null, depositCents: 0, deliveryEarliest: null });
+    expect(orderFromRow({ id: "o9", quantity: -1, total_cents: "x", delivery_latest: "soon" })).toMatchObject({ copies: 1, totalCents: 0, deliveryLatest: null, stage: "Approved" });
+  });
+});
+
+describe("shipmentFromRow", () => {
+  it("keeps the first name's row and the city, and follows only an https tracking link", () => {
+    expect(shipmentFromRow(ship({ status: "shipped", tracking_url: "https://track.example.test/1Z999" }))).toMatchObject({
+      quantity: 2,
+      name: "Rose Hartley",
+      city: "San Jose",
+      status: "shipped",
+      trackingUrl: "https://track.example.test/1Z999",
+    });
+    expect(shipmentFromRow(ship({ tracking_url: "javascript:alert(1)" })).trackingUrl).toBeNull();
+    expect(shipmentFromRow(ship({ tracking_url: "http://track.example.test/1" })).trackingUrl).toBeNull();
+  });
+
+  it("makes the carrier's own link from a plain number when there is no link", () => {
+    expect(shipmentFromRow(ship({ carrier: "USPS", tracking_number: "9400111" })).trackingUrl).toBe("https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111");
     expect(trackingUrlFor("Pigeon", "123456")).toBeNull();
-    expect(trackingUrlFor("usps", "12 34\"><x")).toBeNull();
-    expect(trackingUrlFor("USPS", "9400100000000000000000")).toMatch(/^https:\/\/tools\.usps\.com\//);
-  });
-
-  it("reads anything it doesn't know as the default, never as a crash", () => {
-    const o = orderFromRow({ id: "o2", status: "lost", edition: "scroll", copies: "x", amount_cents: null, shipping_address: "nope" });
-    expect([o.status, o.edition, o.copies, o.amountCents, o.currency, o.shippingAddress, o.note]).toEqual(["pending", "hardcover", 1, 0, "usd", null, null]);
+    expect(trackingUrlFor("ups", "12 34")).toBeNull();
+    expect(safeHttps("not a url")).toBeNull();
   });
 });
 
-describe("status", () => {
-  it("counts a fulfilled order as paid", () => {
-    expect(isPaid({ status: "paid" })).toBe(true);
-    expect(isPaid({ status: "fulfilled" })).toBe(true);
-    expect(isPaid({ status: "pending" })).toBe(false);
-    expect(isPaid(null)).toBe(false);
+describe("the reads", () => {
+  it("lists only paid orders, newest first, with one plain select", async () => {
+    sb.replies.push({ data: [row({ id: "o2", paid_at: "2026-10-27T11:00:00Z" }), row({ id: "o3", paid_at: null })], error: null });
+    const out = await listOrders();
+    expect(out.map((o) => o.id)).toEqual(["o2"]);
+    expect(sb.calls).toEqual([
+      { method: "from", args: ["book_orders"] },
+      { method: "select", args: ["*"] },
+      { method: "not", args: ["paid_at", "is", null] },
+      { method: "order", args: ["created_at", { ascending: false }] },
+    ]);
   });
-  it("says each state in a short plain line", () => {
-    expect(orderStatusLine({ status: "pending" })).toBe("Waiting for the payment to come through.");
-    expect(orderStatusLine({ status: "paid" })).toBe("Paid. The book is being made.");
-  });
-});
 
-describe("listOrders and getOrder", () => {
-  it("lists newest first, and only one story's when asked", async () => {
-    sb.replies.push({ data: [row(), row({ id: "o0" })], error: null });
-    const orders = await listOrders({ storyId: "s1" });
-    expect(orders.map((o) => o.id)).toEqual(["o1", "o0"]);
-    expect(sb.calls).toContainEqual({ method: "from", args: ["book_orders"] });
+  it("narrows to one story when asked, and says so plainly when it can't read", async () => {
+    sb.replies.push({ data: [], error: null });
+    await listOrders({ storyId: "s1" });
     expect(sb.calls).toContainEqual({ method: "eq", args: ["story_id", "s1"] });
-    expect(sb.calls).toContainEqual({ method: "order", args: ["created_at", { ascending: false }] });
-  });
-
-  it("asks again without the tracking columns when the database doesn't have them yet", async () => {
-    sb.replies.push({ data: null, error: { code: "42703", message: "column book_orders.carrier does not exist" } }, { data: [row()], error: null });
-    expect((await listOrders()).map((o) => o.id)).toEqual(["o1"]);
-    const selects = sb.calls.filter((c) => c.method === "select").map((c) => String(c.args[0]));
-    expect(selects[0]).toContain("tracking_number");
-    expect(selects[1]).not.toContain("tracking_number");
-  });
-
-  it("asks again without gift_note too when that column is missing as well", async () => {
-    const missing = (c: string) => ({ data: null, error: { code: "42703", message: `column book_orders.${c} does not exist` } });
-    sb.replies.push(missing("carrier"), missing("gift_note"), { data: row({ gift_note: undefined, status: "paid" }), error: null });
-    const o = await getOrder("o1");
-    expect(o?.status).toBe("paid");
-    expect(o?.note).toBeNull();
-    const selects = sb.calls.filter((c) => c.method === "select").map((c) => String(c.args[0]));
-    expect(selects).toHaveLength(3);
-    expect(selects[1]).toContain("gift_note");
-    expect(selects[1]).not.toContain("tracking_number");
-    expect(selects[2]).not.toContain("gift_note");
-  });
-
-  it("says so when the list can't be read", async () => {
     sb.replies.push({ data: null, error: { message: "boom" } });
-    await expect(listOrders()).rejects.toThrow("We couldn’t load your orders");
+    await expect(listOrders()).rejects.toThrow("We couldn’t load your orders. Please try again.");
   });
 
   it("gets one order by id, and null when there is none", async () => {
-    sb.replies.push({ data: row({ status: "paid" }), error: null }, { data: null, error: null });
-    expect((await getOrder("o1"))?.status).toBe("paid");
+    sb.replies.push({ data: row(), error: null });
+    await expect(getOrder("o1")).resolves.toMatchObject({ id: "o1" });
     expect(sb.calls).toContainEqual({ method: "eq", args: ["id", "o1"] });
-    expect(await getOrder("o9")).toBeNull();
+    sb.replies.push({ data: null, error: null });
+    await expect(getOrder("nope")).resolves.toBeNull();
+    await expect(getOrder("")).resolves.toBeNull();
+  });
+
+  it("reads the shipments with a second select, never an embedded join", async () => {
+    sb.replies.push({ data: [ship(), ship({ id: "sh2", name: "Ana Reyes", city: "Austin" })], error: null });
+    const out = await listShipments("o1");
+    expect(out.map((s) => s.city)).toEqual(["San Jose", "Austin"]);
+    expect(sb.calls.slice(0, 3)).toEqual([
+      { method: "from", args: ["order_shipments"] },
+      { method: "select", args: ["*"] },
+      { method: "eq", args: ["order_id", "o1"] },
+    ]);
+  });
+
+  it("counts an order as paid once paid_at is set", () => {
+    expect(isPaid(orderFromRow(row({ paid_at: "2026-10-27T11:00:00Z" })))).toBe(true);
+    expect(isPaid(orderFromRow(row()))).toBe(false);
+    expect(isPaid(null)).toBe(false);
   });
 });
 
@@ -143,25 +168,28 @@ describe("pollUntilPaid", () => {
     return { now: () => t, sleep: async (ms: number) => void (t += ms) };
   };
 
-  it("asks until the webhook has marked the order paid", async () => {
-    sb.replies.push({ data: row(), error: null }, { data: null, error: { message: "flaky" } }, { data: row({ status: "paid" }), error: null });
-    const c = clock();
-    const o = await pollUntilPaid("o1", c);
-    expect(o?.status).toBe("paid");
-    expect(c.now()).toBe(4000);
+  it("asks every 2 s until the webhook has marked the order paid, telling the page each read", async () => {
+    sb.replies.push({ data: row(), error: null }, { data: row(), error: null }, { data: row({ status: "paid", paid_at: "2026-10-27T11:00:00Z" }), error: null });
+    const seen: (string | undefined)[] = [];
+    const out = await pollUntilPaid("o1", { ...clock(), onRead: (o) => seen.push(o?.status) });
+    expect(out?.stage).toBe("Printing");
+    expect(seen).toEqual(["payment_pending", "payment_pending", "paid"]);
   });
 
-  it("stops at the timeout with the last row it read", async () => {
-    for (let i = 0; i < 20; i++) sb.replies.push({ data: row(), error: null });
+  it("stops after 30 s with the last row it read", async () => {
+    for (let i = 0; i < 40; i++) sb.replies.push({ data: row(), error: null });
     const c = clock();
-    const o = await pollUntilPaid("o1", { ...c, intervalMs: 2000, timeoutMs: 15000 });
-    expect(o?.status).toBe("pending");
-    expect(c.now()).toBeLessThanOrEqual(15000);
+    const out = await pollUntilPaid("o1", c);
+    expect(out?.paidAt).toBeNull();
+    expect(c.now()).toBeLessThanOrEqual(30000);
+    expect(sb.calls.filter((x) => x.method === "maybeSingle").length).toBe(16);
   });
 
-  it("stops when the page closes", async () => {
-    const ac = new AbortController();
-    ac.abort();
-    expect(await pollUntilPaid("o1", { signal: ac.signal })).toBeNull();
+  it("stops at once for an order that left the flow, and when the page closes", async () => {
+    sb.replies.push({ data: row({ status: "canceled" }), error: null });
+    await expect(pollUntilPaid("o1", clock())).resolves.toMatchObject({ stage: "Canceled" });
+    const stop = new AbortController();
+    stop.abort();
+    await expect(pollUntilPaid("o1", { ...clock(), signal: stop.signal })).resolves.toBeNull();
   });
 });

@@ -451,23 +451,24 @@ test("a server too old to say whether ordering is open counts as closed", async 
   expect(mock.blocked, "requests that left the machine").toEqual([]);
 });
 
-test("once the server says ordering is open, each printed edition has its price and Order, to the ordering page (M5)", async ({ page }) => {
-  const { mock } = await rosesBook(page);
-  orderingClosed(mock, { orderingOpen: true, reason: "open" });
+test("once create-book-order says ordering is open, the editions have one 'Order a printed copy' link and no prices", async ({ page }) => {
+  const { mock, story } = await rosesBook(page);
+  orderingClosed(mock); // create-book-checkout stays closed: it no longer decides print
+  mock.functions["create-book-order"] = (args) => (args.check ? { orderingOpen: true, product: { name: "Square hardcover book, 8¼ × 8¼ inches" }, credits: [], copyCents: null } : { status: 409, body: { error: "not_open" } });
   await page.goto("/book");
   const editions = page.locator("#editions");
-  // /book/order is here (M5, data/book.ts ORDER_PAGE): Order shows only when the server says ordering is open
-  await expect(editions.getByRole("link", { name: "Order the Classic Hardcover" })).toBeVisible({ timeout: 15_000 });
+  const order = editions.getByRole("link", { name: "Order a printed copy" });
+  await expect(order).toBeVisible({ timeout: 15_000 });
+  await expect(order).toHaveAttribute("href", `/book/order?story=${story.id}`);
   await expect(editions.getByText(/Printed editions are coming/)).toHaveCount(0);
-  for (const id of ["softcover", "hardcover", "heirloom", "legacy"]) await expect(editions.locator(`a[href^='/book/order?'][href$='edition=${id}']`)).toHaveCount(1);
-  await expect(editions.locator(".ed-price")).toHaveCount(4);
+  await expect(editions.locator("a[href*='edition=']")).toHaveCount(0);
+  await expect(editions.locator(".ed-price")).toHaveCount(0);
   const text = await editions.innerText();
-  expect(text).toContain("$69");
+  expect(text).not.toMatch(/\$\s?\d/);
   expect(text).not.toMatch(/included with your plan/i);
   const digital = editions.locator(".ed-row").filter({ hasText: "Digital Edition" });
   await expect(digital.getByRole("link")).toHaveCount(0);
   await expect(digital).toContainText("Bought once in the A Story app.");
-  expect(await digital.innerText(), "the Digital Edition priced on the web").not.toMatch(/\$\s?\d/);
   await checkFloor(page, "13-editions-open");
   await editions.scrollIntoViewIfNeeded();
   await shot(page, "13-editions-open");
