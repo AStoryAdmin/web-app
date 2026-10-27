@@ -6,7 +6,7 @@
  */
 import { usePhotoUrl } from "../../lib/photoUrls";
 import QrCode from "../QrCode";
-import { LAYERS, type Page, type Source, type Strip } from "./bookPages";
+import { LAYERS, type Board, type Page, type Source, type Strip } from "./bookPages";
 
 const PRINT_SPOTS: [number, number, number, number, number][] = [
   [10, 10, 48, 60, -2.5],
@@ -67,10 +67,48 @@ function StripBlock({ strip }: { strip: Strip }) {
   );
 }
 
+/**
+ * A material cover, as the printed book draws it (app-core legacyBook coverHtml): Photo wrap is their photograph
+ * across the board with the words at its foot; Photo plate sets one into the linen under the title; Clothbound,
+ * Heirloom and every bare board are the foil-blocked board (Heirloom with its second frame).
+ */
+function BoardCover({ board: b, side, teller }: { board: Board; side: "left" | "right"; teller: string }) {
+  const src = usePhotoUrl(b.photo);
+  const shape = b.photo ? b.style : "bare";
+  const words = (
+    <>
+      <p className="sb-bd-title">{b.title}</p>
+      {shape !== "wrap" && shape !== "tipped" && <span className="sb-bd-rule" aria-hidden="true" />}
+      <p className="sb-bd-sub">{b.sub}</p>
+    </>
+  );
+  return (
+    <section className={`bk-page ${side} cover sb-board sb-bd-${b.style}${b.photo ? "" : " sb-bd-bare"}`} aria-label="Front cover" style={{ ["--bd-foil" as string]: b.foil, ["--bd-soft" as string]: b.soft }}>
+      {shape === "wrap" && <span className="sb-bd-wrap" role="img" aria-label={`${teller}’s photograph`} style={src ? { backgroundImage: `url("${src}")` } : undefined} />}
+      {shape !== "wrap" && shape !== "tipped" && <Linen />}
+      {shape !== "wrap" && <span className="sb-bd-frame" aria-hidden="true" />}
+      {b.style === "heirloom" && shape !== "wrap" && <span className="sb-bd-frame inner" aria-hidden="true" />}
+      <div className={shape === "wrap" ? "sb-bd-foot" : "sb-bd-words"}>
+        {shape !== "tipped" && <Mark w={shape === "wrap" ? 5 : 8} />}
+        {words}
+        {shape === "tipped" && (
+          <span className="sb-bd-plate" role="img" aria-label={`${teller}’s photograph`}>
+            {src && <img src={src} alt="" />}
+          </span>
+        )}
+        {b.span && <p className="sb-bd-span">{b.span}</p>}
+      </div>
+      <span className="sb-bevel" aria-hidden="true" />
+    </section>
+  );
+}
+
 const quoted = (s: string) => (/^[“"]/.test(s.trim()) ? s : `“${s}”`);
 
 export default function BookPage({ page, side, teller }: { page: Page | null; side: "left" | "right"; teller: string }) {
   if (!page || page.kind === "blank") return <div className={`bk-page ${side} blank`} aria-hidden="true" />;
+
+  if (page.kind === "cover" && page.board) return <BoardCover board={page.board} side={side} teller={teller} />;
 
   if (page.kind === "cover") {
     const size = Math.min(6.5, 85 / (0.72 * Math.max(10, page.title.length)));

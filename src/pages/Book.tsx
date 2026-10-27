@@ -3,17 +3,19 @@
  * shows it, sized to the window so the whole spread and its controls are in
  * view at once. On the teal cloth, the title and how far along it is; on the
  * paper, the book's own contents beside it (every chapter, a click away), the
- * cover colours and Print at home; below, the editions as a price list. The
- * book is a web object (docs/PRODUCT-DECISIONS.md §8): nothing here is
- * "12 more".
+ * cover colours, the way into Cover and layout (/book/design) and Print at
+ * home; below, the editions. The spread and the printed book are both read
+ * from the book's design (stories.book_design), so a title, a dedication, a
+ * paper or a memory held back shows here as it will print. The book is a web
+ * object (docs/PRODUCT-DECISIONS.md §8): nothing here is "12 more".
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import Shell, { TellerPick } from "../components/Shell";
 import BookObject from "../components/BookObject";
 import LoadingMark from "../components/delight/LoadingMark";
 import { Button, ButtonLink, Problem } from "../components/ui";
-import { PenIcon, PrintIcon } from "../components/icons";
+import { ChevronRight, PenIcon, PrintIcon } from "../components/icons";
 import BookSpread from "../components/book/BookSpread";
 import CoverSwatches from "../components/book/CoverSwatches";
 import Editions from "../components/book/Editions";
@@ -21,15 +23,14 @@ import WhereNext, { Stop } from "../components/book/WhereNext";
 import { buildBook, type Asked } from "../components/book/bookPages";
 import { loadAskedQuestions } from "../components/book/askedQuestions";
 import { printAtHome } from "../components/book/printBook";
+import { bookGauge } from "../components/book/bookGauge";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { KEEPSAKE_TITLE, makeListenKey, normaliseDesign } from "../app-core/lib/bookDesign.js";
 import { needsListenKey } from "../lib/qrLinks";
 import { listContributions, type Contribution } from "../data/contributions";
 import { track } from "../lib/analytics";
 
-type Progress = { count: number; ratio: number; headline: string; chaptersCovered: number; chaptersTotal: number; state: string };
 type Design = { cover: { color: string }; listenKey: string };
 
 /** An element's top in the page, in CSS px, ignoring transforms (the sheet rises into place as the page arrives). */
@@ -182,8 +183,7 @@ export default function Book() {
   }
   if (!story || !book) return <Navigate to="/start" replace />;
 
-  const progress = bookProgress(story) as Progress;
-  const pct = Math.round(progress.ratio * 100);
+  const gauge = bookGauge(story);
   const empty = book.memories === 0;
   const pages = book.pages.length - 2;
 
@@ -192,7 +192,7 @@ export default function Book() {
     setPrinting(true);
     track("book_pdf_downloaded", { memories: book.memories, photos: book.photos });
     try {
-      await printAtHome(story);
+      await printAtHome(story, { sides: contributions });
     } catch (err) {
       setProblem((err as Error).message || "The book couldn’t be made just now. Please try again.");
     } finally {
@@ -215,12 +215,18 @@ export default function Book() {
     }
   };
 
-  // the cover is the keepers' to choose; somebody reading as family sees the book as it is
-  const swatches = story.readOnly ? null : <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />;
+  // the cover is the keepers' to choose; somebody reading as family sees the book as it is. The colours are the
+  // keepsake's: a Clothbound or Heirloom board has one material, changed in Cover and layout
+  const swatches = story.readOnly || book.coverStyle !== "keepsake" ? null : <CoverSwatches value={design.cover.color} onChange={setCover} busy={coverBusy} />;
+  const designLink = story.readOnly ? null : (
+    <Link className="bk-design-link" to="/book/design">
+      Design the book <ChevronRight width={18} height={18} aria-hidden="true" />
+    </Link>
+  );
   const printButton = (
     <div className="bk-print">
       <Button variant="outline" icon={<PrintIcon />} onClick={print} loading={printing}>
-        Print at home, free
+        Print at home
       </Button>
       <p className="meta">To print, or to keep as a PDF.</p>
     </div>
@@ -246,8 +252,8 @@ export default function Book() {
             </p>
           </div>
           <div className="bkh-edition" data-rise>
-            <p className="bkh-headline">{progress.headline}</p>
-            <div className="bkh-rule" style={{ ["--pct" as string]: `${Math.max(4, pct)}%` }} role="img" aria-label={`${pct}% of the way to a first edition`}>
+            <p className="bkh-headline">{gauge.headline}</p>
+            <div className="bkh-rule" style={{ ["--pct" as string]: `${Math.max(4, gauge.pct)}%` }} role="img" aria-label={gauge.label}>
               <span className="bkh-fill" />
               <span className="bkh-star fleuron" aria-hidden="true" />
             </div>
@@ -278,6 +284,7 @@ export default function Book() {
                 </ButtonLink>
               </div>
               {swatches}
+              {designLink}
             </div>
           </section>
         ) : (
@@ -288,6 +295,7 @@ export default function Book() {
             rail={
               <>
                 {swatches}
+                {designLink}
                 {printButton}
               </>
             }

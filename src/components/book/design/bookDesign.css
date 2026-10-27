@@ -1,0 +1,188 @@
+/* Designing the book (/book/design, pages/BookDesign.tsx). The Book's teal cloth above; on the paper, the book as it
+   will print in a rail that stays in view, beside five short sections: the cover, its words, the dedication, the
+   paper, the chapters and their memories. Choices are cards carrying their specimen (rule 39); the chapters are
+   ruled rows (rule 37). Every target 44px or more, every word a person reads 16px or more; small print (the pick,
+   the counts) 14px in the soft ink. Colours from tokens; the specimens' board and paper colours come in from the
+   printed book (BOOK_PRINT) as custom properties. Motion: the press only, on the house curve, none under reduced
+   motion. */
+
+.bd-hero { display: grid; gap: var(--s-2); }
+.bd-promise { margin: 0; font: italic 400 19px/1.4 var(--book-body); color: var(--on-chocolate); max-width: 60ch; }
+
+.bd-page { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: var(--s-6) var(--s-16); align-items: start; padding-top: var(--s-8); }
+.sheet-page.wide .bd-page { max-width: 1480px; }
+.bd-page > .where-next { grid-column: 1 / -1; }
+
+/* ── The rail: the cover, the count, Save ───────────────────────────── */
+.bd-rail { position: sticky; top: calc(var(--top-h) + var(--s-6)); display: grid; gap: var(--s-4); }
+.bd-rail-cover { width: 100%; max-width: 320px; }
+.bd-rail-count { margin: 0; font: 500 14px/1.4 var(--font-ui); color: var(--ink-soft); }
+.bd-save { display: grid; gap: var(--s-2); }
+.bd-status { margin: 0; font: 400 16px/1.45 var(--book-body); color: var(--ink-soft); min-height: 1.45em; }
+
+/* ── Sections ──────────────────────────────────────────────────────── */
+.bd-main { display: grid; gap: var(--s-12); min-width: 0; }
+.bd-section { display: grid; gap: var(--s-4); min-width: 0; }
+.bd-section h2 { margin: 0; font: 600 var(--t-h2)/1.12 var(--book-display); color: var(--heading); }
+.bd-note { margin: 0; font: 400 17px/1.55 var(--book-body); color: var(--ink); max-width: 62ch; }
+.bd-use { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; font: 600 16px/1.3 var(--font-ui); color: var(--ochre); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: transparent; transition: text-decoration-color var(--dur-ui) var(--ease-out); }
+.bd-use:hover { text-decoration-color: currentColor; }
+.bd-use:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+
+.bd-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-6); }
+.bd-fields .field { margin-bottom: 0; }
+.bd-fields .field > span:first-child { font: 600 14px/1.35 var(--font-ui); color: var(--ink-soft); }
+.bd-fields .input input { font-size: 18px; min-height: 44px; }
+
+.bd-dedication textarea {
+  display: block; width: 100%; min-height: 112px; resize: vertical; border: 1.5px solid var(--field-border); border-radius: var(--r-field);
+  background: var(--card); color: var(--ink); padding: var(--s-3) var(--s-4); font: 400 20px/1.5 var(--book-body); outline: 0;
+  transition: border-color var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out);
+}
+.bd-dedication textarea:hover { border-color: var(--line-strong); }
+.bd-dedication textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.bd-dedication textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+
+.bd-colours { padding-top: var(--s-1); }
+
+/* ── Choice cards ──────────────────────────────────────────────────── */
+.bd-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--s-3); }
+.bd-choice {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: var(--s-4); align-items: center; min-height: 112px;
+  padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--card); cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow var(--dur-ui) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.bd-choice:hover { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.bd-choice:active { transform: scale(0.98); }
+.bd-choice[data-on] { box-shadow: inset 0 0 0 2px var(--heading); }
+.bd-choice:has(input:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
+.bd-choice-specimen { display: grid; place-items: center; }
+.bd-choice-words { display: grid; gap: 2px; min-width: 0; }
+.bd-choice-words b { font: 600 16px/1.3 var(--font-ui); color: var(--heading); }
+.bd-choice-words > span:not(.bd-pick) { font: 400 16px/1.4 var(--book-body); color: var(--ink-soft); }
+.bd-pick { justify-self: start; margin-top: var(--s-1); font: 600 14px/1.3 var(--font-ui); color: var(--kicker-sage); }
+
+/* ── Specimens (book material) ─────────────────────────────────────── */
+.bd-cover {
+  position: relative; display: grid; align-content: center; justify-items: center; gap: 5px; width: 56px; aspect-ratio: 5 / 6.4;
+  padding: 8px; border-radius: 2px 4px 4px 2px; background: var(--bd-board); color: var(--bd-letter);
+  box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.18), 0 6px 10px -6px rgba(20, 18, 15, 0.5); /* book material */
+}
+.bd-cover::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--bd-foil); opacity: 0.55; pointer-events: none; }
+.bd-cover-heirloom::after { content: ""; position: absolute; inset: 8px; border: 1px solid var(--bd-foil); opacity: 0.4; pointer-events: none; }
+.bd-cover-tipped::before { opacity: 0.35; }
+.bd-cover-wrap::before { display: none; }
+.bd-cover-rule { display: block; width: 30%; height: 1px; background: var(--bd-foil); }
+.bd-bar { display: block; height: 3px; border-radius: 2px; background: currentColor; opacity: 0.85; }
+.bd-cover .bd-bar-title { width: 70%; height: 4px; color: var(--bd-foil); }
+.bd-cover .bd-bar-line { width: 50%; opacity: 0.6; }
+
+.bd-cover.bd-cover-lg { width: 100%; padding: 14%; gap: 14px; text-align: center; border-radius: 3px 6px 6px 3px; box-shadow: inset 6px 0 0 rgba(0, 0, 0, 0.18), var(--bka-object-shadow); /* book material */ }
+.bd-cover-lg::before { inset: 5%; }
+.bd-cover-lg.bd-cover-heirloom::after { inset: 7.5%; }
+.bd-cover-lg .bd-cover-title { font: 600 clamp(22px, 2.2vw, 30px)/1.1 var(--book-display); text-transform: uppercase; letter-spacing: 0.06em; color: var(--bd-foil); overflow-wrap: anywhere; }
+.bd-cover-lg .bd-cover-line { font: italic 400 17px/1.35 var(--book-body); }
+.bd-cover-lg .bd-cover-name { font: 600 13px/1.3 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bd-foil); }
+/* the photograph the book prints: across the board (wrap, the words at its foot), or set into it (plate) */
+.bd-cover-has-wrap { align-content: end; overflow: hidden; }
+.bd-cover-wrapphoto { position: absolute; inset: 0; background: var(--bd-board) center/cover no-repeat; }
+.bd-cover-wrapphoto::after { content: ""; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgba(20, 18, 15, 0.72)); /* book material */ }
+.bd-cover-has-wrap > :not(.bd-cover-wrapphoto) { position: relative; color: #f3ebdd; /* book material */ }
+.bd-cover-plate { display: block; width: 62%; aspect-ratio: 4 / 3; overflow: hidden; background: rgba(0, 0, 0, 0.12); box-shadow: 0 0 0 1px var(--bd-foil); }
+.bd-cover-plate img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.bd-paper {
+  display: grid; align-content: start; gap: 6px; width: 56px; aspect-ratio: 5 / 6.4; padding: 9px 8px; border-radius: 1px;
+  background: var(--bd-page); color: var(--bd-ink); box-shadow: inset 0 0 0 1px var(--bd-rule), 0 4px 8px -5px rgba(20, 18, 15, 0.4); /* book material */
+}
+.bd-paper .bd-bar-kicker { width: 40%; height: 2px; color: var(--bd-accent); }
+.bd-paper .bd-bar-head { width: 80%; height: 4px; margin-bottom: 3px; color: var(--bd-heading); }
+.bd-paper .bd-bar-text { width: 100%; height: 2px; opacity: 0.5; }
+.bd-paper .bd-bar-text.short { width: 60%; }
+
+/* ── Chapters and memories ─────────────────────────────────────────── */
+.bd-chapters { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
+.bd-chapter { border-bottom: 1px solid var(--sheet-rule); }
+.bd-chapter-row { display: flex; align-items: center; gap: var(--s-2); }
+.bd-chapter-open {
+  flex: 1; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) 24px; align-items: center; gap: var(--s-4);
+  min-height: 72px; padding: var(--s-3) var(--s-2) var(--s-3) 0; border: 0; background: none; text-align: left; color: inherit; cursor: pointer;
+}
+.bd-chapter-open:focus-visible, .bd-mover:focus-visible, .bd-memory:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+.bd-chapter-num { font: 600 var(--t-h3)/1 var(--book-display); color: var(--kicker-terracotta); min-width: 2ch; }
+.bd-chapter-words { display: grid; gap: 2px; min-width: 0; }
+.bd-chapter-words b { font: 600 20px/1.25 var(--book-display); color: var(--heading); }
+.bd-chapter-words span { font: 500 14px/1.35 var(--font-ui); color: var(--ink-soft); }
+.bd-chapter-chev { font: 400 22px/1 var(--font-ui); color: var(--ink-soft); text-align: center; }
+.bd-chapter-open:hover .bd-chapter-words b { color: var(--accent-deep); }
+
+.bd-movers { display: flex; gap: var(--s-1); flex: none; }
+.bd-mover {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong);
+  background: var(--card); color: var(--ink); font: 500 18px/1 var(--font-ui); cursor: pointer;
+  transition: border-color var(--dur-ui) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.bd-mover:hover:not(:disabled) { border-color: var(--ink-soft); }
+.bd-mover:active:not(:disabled) { transform: scale(0.95); }
+.bd-mover:disabled { color: var(--ink-faint); border-color: var(--line); background: transparent; cursor: not-allowed; }
+
+.bd-memories { list-style: none; margin: 0 0 var(--s-3); padding: 0 0 0 calc(2ch + var(--s-4) + 6px); }
+.bd-memories[hidden] { display: none; }
+.bd-memory {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); min-height: 56px;
+  padding: var(--s-2) 0; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; color: inherit; cursor: pointer;
+}
+.bd-memory:disabled { cursor: not-allowed; }
+.bd-memory-words { display: grid; gap: 2px; min-width: 0; }
+.bd-memory-title { font: 400 18px/1.4 var(--book-body); color: var(--ink-soft); overflow-wrap: anywhere; }
+.bd-memory[data-in] .bd-memory-title { color: var(--ink); }
+.bd-memory-why { font: 500 14px/1.35 var(--font-ui); color: var(--ink-soft); }
+.bd-memory-mark {
+  min-width: 56px; padding: 6px 12px; border-radius: var(--r-pill); text-align: center; font: 600 14px/1.2 var(--font-ui);
+  color: var(--ink-soft); box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.bd-memory[data-in] .bd-memory-mark { background: var(--teal); color: var(--on-chocolate); box-shadow: none; }
+.bd-memory:hover:not(:disabled) .bd-memory-mark { box-shadow: inset 0 0 0 1px var(--ink-soft); }
+.bd-memory[data-in]:hover .bd-memory-mark { box-shadow: none; }
+
+.bd-empty { display: grid; gap: var(--s-4); justify-items: start; }
+
+/* ── Smaller windows: the rail above, the fields one under the other ─ */
+@media (max-width: 900.98px) {
+  .bd-page { grid-template-columns: minmax(0, 1fr); }
+  .bd-rail { position: static; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: var(--s-3) var(--s-5); }
+  .bd-rail-cover { grid-row: span 2; }
+  .bd-cover.bd-cover-lg { padding: 10%; gap: 6px; }
+  .bd-cover-lg .bd-cover-title { font-size: 14px; letter-spacing: 0.04em; }
+  .bd-cover-lg .bd-cover-line, .bd-cover-lg .bd-cover-name { display: none; }
+}
+@media (max-width: 600.98px) {
+  .bd-fields { grid-template-columns: minmax(0, 1fr); }
+  .bd-rail { grid-template-columns: 96px minmax(0, 1fr); }
+  .bd-chapter-num { display: none; }
+  .bd-memories { padding-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-choice, .bd-mover, .bd-use, .bd-dedication textarea { transition: none; }
+  .bd-choice:active, .bd-mover:active:not(:disabled) { transform: none; }
+}
+
+/* ── The dock: Save at the foot of a narrow window while something is unsaved ── */
+.bd-dock { display: none; }
+@media (max-width: 900.98px) {
+  .bd-dock {
+    display: block; position: fixed; left: var(--s-4); right: var(--s-4); bottom: calc(var(--s-4) + env(safe-area-inset-bottom, 0px)); z-index: 19;
+    max-width: 480px; margin: 0 auto; border-radius: var(--r-pill); box-shadow: var(--shadow-float);
+  }
+  .bd-page { padding-bottom: 160px; }
+  .bd-chapter-chev { display: none; }
+  .bd-chapter-open { grid-template-columns: auto minmax(0, 1fr); }
+}
+/* above the phone's tab bar */
+@media (max-width: 760.98px) {
+  .bd-dock { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 600.98px) {
+  .bd-chapter-open { grid-template-columns: minmax(0, 1fr); }
+}

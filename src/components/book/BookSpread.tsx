@@ -25,6 +25,7 @@ import BookPage from "./BookPage";
 import { useTilt } from "../../lib/tilt";
 import { pageText, spreadOfPage, spreadsOf, type Book, type Page } from "./bookPages";
 import { MARK_MASK } from "./markMask";
+import { paperVars } from "./coverColours";
 import { ChevronLeft, ChevronRight, PauseIcon, PlayIcon } from "../icons";
 import { canSpeak, chunksOf } from "../../lib/readAloud";
 import { track } from "../../lib/analytics";
@@ -304,6 +305,8 @@ export default function BookSpread({ book, sweepFrom, rail }: { book: Book; swee
     "--cover-ink": shown.ink,
     "--cover-print": shown.print,
     "--bk-mark": MARK_MASK,
+    // the paper the family chose in Cover and layout, its page and inks (classic keeps the samples' own)
+    ...paperVars(book.paper),
   } as CSSProperties;
 
   // the row of the contents the reader is in: the last one whose spread is at or before this one

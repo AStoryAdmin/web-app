@@ -35,7 +35,8 @@ export default function WhereNext({ rows, label = "Where to next" }: { rows: Nex
                   <span className="sr-only"> (opens astoryapp.com)</span>
                 </a>
               ) : (
-                <Link to={r.to} viewTransition>
+                // the move between pages is lib/pageTransition's, which leaves it out where it would be refused
+                <Link to={r.to}>
                   {inner}
                 </Link>
               )}

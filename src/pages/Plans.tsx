@@ -34,7 +34,7 @@ const PLANS: PlanCol[] = [
     id: "free",
     price: "$0",
     cadence: "no card, no clock",
-    cells: { calls: "One ten-minute conversation", questions: "Three guided questions a day", photos: "Five a week", book: "Print at home, free" },
+    cells: { calls: "One ten-minute conversation", questions: "Three guided questions a day", photos: "Five a week", book: "Print at home" },
   },
   {
     id: "individual",

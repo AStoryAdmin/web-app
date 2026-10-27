@@ -13,18 +13,14 @@ import { smarten } from "../../lib/typography";
 import { buildLegacyHtml } from "../../app-core/lib/legacyBook.js";
 import { bodyHash } from "../../app-core/lib/bookDesign.js";
 import { photoUrl } from "../../lib/photoUrls";
+import { listenBase } from "../../lib/qrLinks";
 import type { Story } from "../../data/stories";
+import type { Contribution } from "../../data/contributions";
 
 const WAITING_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Making the book…</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F3EBDE;color:#4A3327;font:500 20px/1.5 Montserrat,system-ui,sans-serif;text-align:center;padding:24px}
 p{margin:8px 0 0;font-size:16px;color:#6B5546}</style></head>
 <body><div><strong>Making the book…</strong><p>Every photograph is being fetched. The print dialog opens when it is ready.</p></div></body></html>`;
-
-/** Where the printed book's listening codes point (the listen Edge Function). */
-function listenBase(): string {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  return url ? `${url.replace(/\/$/, "")}/functions/v1/listen` : "";
-}
 
 /** The story with every photograph swapped for a URL the print window can load. */
 export async function signStoryPhotos(story: Story): Promise<Story> {
@@ -100,10 +96,18 @@ export function typeset(story: Story): Story {
   };
 }
 
-/** The printable book as HTML, photographs signed, its words typeset. "Kept by" is the story's keepers (S-PL8), never the reader. */
-export async function printableHtml(story: Story): Promise<string> {
+/**
+ * The printable book as HTML, photographs signed, its words typeset. "Kept by" is the story's keepers (S-PL8), never
+ * the reader. Everything the family chose in Cover and layout (stories.book_design: the title, subtitle, dedication,
+ * cover, paper, chapter order, what is held back) is read by app-core from the story itself, as the phone prints it.
+ * `sides` are the story's contributions: app-core prints only the ones the design lets in (bookDesign sidesInBook).
+ * The listening codes point at the site's /l page, as the phone's do (lib/qrLinks), never at a project URL.
+ */
+export async function printableHtml(story: Story, { sides = [] }: { sides?: Contribution[] } = {}): Promise<string> {
   const signed = typeset(await signStoryPhotos(story));
-  return buildLegacyHtml(signed, { now: new Date(), listenBase: listenBase() }) as string;
+  const set = sides.map((c) => ({ ...c, body: paras(c.body) }));
+  // app-core is plain JS: its `sides = []` default reads to TypeScript as never[]
+  return buildLegacyHtml(signed, { now: new Date(), listenBase: listenBase(), sides: set as never[] }) as string;
 }
 
 /**
@@ -111,7 +115,7 @@ export async function printableHtml(story: Story): Promise<string> {
  * window is showing the book; rejects if the browser refused the window
  * (a popup blocker) so the page can say so.
  */
-export async function printAtHome(story: Story): Promise<void> {
+export async function printAtHome(story: Story, opts: { sides?: Contribution[] } = {}): Promise<void> {
   const win = window.open("", "_blank");
   if (!win) throw new Error("The browser stopped the book from opening. Allow pop-ups for A Story and try again.");
   win.document.open();
@@ -120,7 +124,7 @@ export async function printAtHome(story: Story): Promise<void> {
 
   let html: string;
   try {
-    html = await printableHtml(story);
+    html = await printableHtml(story, opts);
   } catch (err) {
     win.close();
     throw err;

@@ -20,10 +20,21 @@
  * summary, the deeper question, the lesson).
  */
 import { bookStructure, attributionFor } from "../../app-core/lib/legacyBook.js";
-import { normaliseDesign, printedChapterName, printedBody, pronounFor, keepsakeWords, keepsakePhotos, hasVoice } from "../../app-core/lib/bookDesign.js";
+import {
+  normaliseDesign,
+  printedChapterName,
+  printedBody,
+  pronounFor,
+  keepsakeWords,
+  keepsakePhotos,
+  hasVoice,
+  sidesInBook,
+  effectiveCoverStyle,
+  coverPhoto,
+} from "../../app-core/lib/bookDesign.js";
 import { memoryDate, ageLabel } from "../../app-core/lib/timeline.js";
 import { FAMILY_CHAPTER } from "../../app-core/data/eras.js";
-import { coverColour, type CoverColour } from "./coverColours";
+import { coverColour, materialColour, materialInks, type CoverColour } from "./coverColours";
 import { archiveLink, listenLink, sampleLink } from "../../lib/qrLinks";
 import { smarten } from "../../lib/typography";
 import type { Memory, Story } from "../../data/stories";
@@ -44,7 +55,7 @@ export const LAYERS = ["Moment", "Feeling", "Meaning", "Lesson"];
 
 export type Page =
   | { kind: "blank"; key: string }
-  | { kind: "cover"; key: string; title: string; line: string; names: string; motto: string; photos: string[]; bw: boolean }
+  | { kind: "cover"; key: string; title: string; line: string; names: string; motto: string; photos: string[]; bw: boolean; board?: Board }
   | { kind: "endpaper"; key: string }
   | { kind: "colophon"; key: string; title: string; lines: string[] }
   | { kind: "title"; key: string; t1: string; t2: string; t3: string; t4: string }
@@ -94,6 +105,13 @@ export type Page =
   | { kind: "final"; key: string; text: string; url: string | null }
   | { kind: "back"; key: string; fam: string; quote: string };
 
+/**
+ * A cover in one of the material styles (Clothbound, Heirloom, Photo plate, Photo wrap), drawn as the printed book's
+ * board (app-core legacyBook coverHtml): the mark, the title in foil, a rule, the line and the years, with the
+ * photograph set in where the style carries one. `photo` is null for a bare board. The keepsake cover has none.
+ */
+export type Board = { style: string; title: string; sub: string; span: string; photo: string | null; foil: string; soft: string };
+
 export type Spread = { left: Page | null; right: Page | null };
 
 export type Book = {
@@ -108,6 +126,10 @@ export type Book = {
   chapters: number;
   pronoun: string;
   cover: CoverColour;
+  /** The cover style chosen in the book's design ("keepsake" unless somebody chose another). */
+  coverStyle: string;
+  /** The paper chosen in the book's design ("classic" unless somebody chose another). */
+  paper: string;
   /** The samples' families are fictional; a real book is not. */
   fictional: boolean;
   pages: Page[];
@@ -119,7 +141,7 @@ type Structure = {
   fullName: string;
   title: string;
   subtitle: string;
-  design: { cover: { title: string; color: string; tone: string }; dedication: string; narration: string };
+  design: { cover: { title: string; color: string; tone: string }; dedication: string; narration: string; paper: string };
   span: string;
   coverSpan: string;
   chapters: Chapter[];
@@ -348,11 +370,16 @@ export function buildBook(
   const w: Words = { ...raw, title: smarten(raw.title), line: smarten(raw.line), tagline: smarten(raw.tagline), backMessage: smarten(raw.backMessage) };
   const her = pronounFor(story, design) as string;
   const possessive = her === "he" ? "his" : her === "she" ? "her" : "their";
-  const cover = coverColour(design.cover.color);
+  const style = effectiveCoverStyle(design) as string;
+  const cover = materialColour(style) || coverColour(design.cover.color);
+  const inks = materialInks(style);
+  const board: Board | undefined = inks
+    ? { style, title: smarten(s.title), sub: smarten(s.subtitle), span: s.coverSpan, photo: (coverPhoto(design) as string | null) || null, ...inks }
+    : undefined;
   const allMemories = s.chapters.flatMap((c) => c.items);
 
   const front: Page[] = [
-    { kind: "cover", key: "cover", title: w.title, line: w.line, names: w.name, motto: w.tagline, photos: keepsakePhotos(design, story) as string[], bw: design.cover.tone !== "colour" },
+    { kind: "cover", key: "cover", title: w.title, line: w.line, names: w.name, motto: w.tagline, photos: keepsakePhotos(design, story) as string[], bw: design.cover.tone !== "colour", ...(board ? { board } : {}) },
     { kind: "colophon", key: "colophon", title: w.title, lines: colophonLines(story, s, design, possessive, recordedBy, allMemories) },
     { kind: "title", key: "title", t1: w.title, t2: `The life of ${s.fullName}`, t3: titleLine(s, design, possessive), t4: story.birthYear ? `born ${story.birthYear}` : s.coverSpan },
   ];
@@ -376,7 +403,7 @@ export function buildBook(
         asked: asked[m.id] ? { ...asked[m.id], q: smarten(asked[m.id].q) } : null,
         photos: Array.isArray(m.photos) ? m.photos.filter(Boolean) : [],
       };
-      body.push(...memoryPages(m.id, head, paragraphsOf(printedBody(design, m) as string).map(smarten), (attributionFor(m) as string | null) || "", sidesFor(contributions, m.id), stripFor(story, m)));
+      body.push(...memoryPages(m.id, head, paragraphsOf(printedBody(design, m) as string).map(smarten), (attributionFor(m) as string | null) || "", sidesFor(sidesInBook(design, m, contributions) as Contribution[], m.id), stripFor(story, m)));
     }
   });
 
@@ -397,6 +424,8 @@ export function buildBook(
     chapters: s.chapters.length,
     pronoun: her,
     cover,
+    coverStyle: style,
+    paper: design.paper,
     fictional: false,
     pages: assemble(front, body, contents, end),
   };
@@ -511,6 +540,8 @@ export function buildSampleBook(book: SampleBook, colour: string = book.coverCol
     chapters: chapters.length,
     pronoun: book.pronoun,
     cover: coverColour(colour),
+    coverStyle: "keepsake",
+    paper: "classic",
     fictional: true,
     pages: assemble(front, body, contents, end),
   };

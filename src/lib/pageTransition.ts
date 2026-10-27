@@ -10,8 +10,8 @@
  * same-origin links before React Router's Link does, and navigates with
  * `viewTransition: true`; anything with a modifier key, a target, a
  * download, `data-no-transition`, or only a #hash goes the ordinary way.
- * Without View Transitions (older browsers) or under reduced motion,
- * links behave exactly as before.
+ * Without View Transitions (older browsers), under reduced motion, or in
+ * a hidden tab, links behave exactly as before.
  *
  * A page's own arrival (lib/arrive) asks `tookTransition()` so it does not
  * slide the sheet a second time when the transition already did.
@@ -46,6 +46,8 @@ export function useTransitionLinks(navigate: NavigateFunction): void {
       // the same page, or a jump within it, is not a page change
       if (url.pathname === window.location.pathname && url.search === window.location.search) return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      // a hidden page refuses a transition, and the refusal would surface as an unhandled rejection
+      if (document.visibilityState !== "visible") return;
       e.preventDefault();
       markTransition();
       navigate(url.pathname + url.search + url.hash, { viewTransition: true });

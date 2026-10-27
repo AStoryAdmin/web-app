@@ -75,6 +75,7 @@ const router = createBrowserRouter([
       { path: "/family", element: lazyPage(() => import("./pages/Family")) },
       { path: "/family/:personId", element: lazyPage(() => import("./pages/Person")) },
       { path: "/book", element: lazyPage(() => import("./pages/Book")) },
+      { path: "/book/design", element: lazyPage(() => import("./pages/BookDesign")) },
       { path: "/plans", element: lazyPage(() => import("./pages/Plans")) },
       { path: "/account", element: lazyPage(() => import("./pages/Account")) },
     ],

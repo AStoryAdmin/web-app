@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildBook, buildSampleBook, pageText, spreadsOf, datelineOf, sourceOf } from "./bookPages";
 import { SAMPLE_BOOKS } from "../../data/sampleBooks";
+import { paperVars } from "./coverColours";
 import { newMemory, newStory } from "../../data/memories";
 
 function story() {
@@ -106,5 +107,68 @@ describe("spreads and words", () => {
     const s = story();
     expect(datelineOf(s, s.memories[0])).toBe("1949 · age 8");
     expect(sourceOf(s, s.memories[0])).toBeNull();
+  });
+});
+
+describe("the book's design, on screen", () => {
+  const side = (id: string, memoryId: string, body: string) =>
+    ({ id, kind: "testimonial", contributorName: "Linh", relationship: "Daughter", title: "", body, photos: [], memoryId, contributorEmail: "", personId: null, personIds: null, via: null, status: "approved", createdAt: "2026-09-05T10:00:00.000Z" });
+  const memoryIds = (b: ReturnType<typeof buildBook>) => [...new Set(b.pages.flatMap((p) => (p.kind === "memory" ? [p.memoryId] : [])))];
+
+  it("leaves out a memory held back, and the chapter it was alone in", () => {
+    const s = story();
+    s.bookDesign = { ...(s.bookDesign as object), excluded: ["m1"] };
+    const b = buildBook(s);
+    expect(memoryIds(b)).not.toContain("m1");
+    expect(b.memories).toBe(1);
+    expect(b.pages.filter((p) => p.kind === "opener").map((p) => (p.kind === "opener" ? p.chapter : ""))).toEqual(["Love & family"]);
+    s.bookDesign = { ...(s.bookDesign as object), excluded: [], heldBack: ["m1"] };
+    expect(memoryIds(buildBook(s))).not.toContain("m1");
+  });
+  it("prints the chapters in the order chosen", () => {
+    const s = story();
+    s.bookDesign = { ...(s.bookDesign as object), chapterOrder: ["Love & family", "Childhood"] };
+    const contents = buildBook(s).pages.find((p) => p.kind === "contents");
+    if (contents?.kind !== "contents") throw new Error("no contents");
+    expect(contents.entries.map((e) => e.name)).toEqual(["Love & family", "Childhood"]);
+  });
+  it("carries the title, subtitle and dedication the family wrote", () => {
+    const s = story();
+    s.bookDesign = { ...(s.bookDesign as object), cover: { color: "forest", title: "Nora's kitchen", subtitle: "Stories from Leeds" }, dedication: "For the grandchildren" };
+    const b = buildBook(s);
+    expect(b.title).toBe("Nora’s kitchen");
+    const cover = b.pages[0];
+    if (cover.kind !== "cover") throw new Error("no cover");
+    expect(cover.title).toBe("Nora’s kitchen");
+    expect(cover.line).toBe("Stories from Leeds");
+    expect(b.pages.find((p) => p.kind === "dedication")).toMatchObject({ text: "For the grandchildren" });
+  });
+  it("draws a material cover in its own board, and the paper chosen", () => {
+    const s = story();
+    s.bookDesign = { ...(s.bookDesign as object), cover: { style: "heirloom", color: "forest", title: "Nora" }, paper: "antique" };
+    const b = buildBook(s);
+    expect(b.coverStyle).toBe("heirloom");
+    expect(b.paper).toBe("antique");
+    expect(b.cover).toMatchObject({ key: "heirloom", board: "#0F4A58" });
+    const cover = b.pages[0];
+    if (cover.kind !== "cover") throw new Error("no cover");
+    expect(cover.board).toMatchObject({ style: "heirloom", title: "Nora", photo: null });
+    expect(paperVars("antique")["--sb-paper"]).toBe("#F1E4CB");
+    expect(paperVars("classic")).toEqual({});
+  });
+  it("keeps the keepsake cover in the colour chosen", () => {
+    const b = buildBook(story());
+    expect(b.coverStyle).toBe("keepsake");
+    expect(b.pages[0].kind === "cover" && b.pages[0].board).toBeFalsy();
+  });
+  it("prints the family's sides the design lets in, never one taken out", () => {
+    const s = story();
+    const sides = [side("c1", "m1", "I remember the bicycle too."), side("c2", "m1", "It was blue.")];
+    s.bookDesign = { ...(s.bookDesign as object), sidesOut: ["c2"] };
+    const page = buildBook(s, { contributions: sides }).pages.find((p) => p.kind === "memory" && p.memoryId === "m1" && p.sides.length);
+    if (page?.kind !== "memory") throw new Error("no sides");
+    expect(page.sides.map((x) => x.body)).toEqual(["I remember the bicycle too."]);
+    s.bookDesign = { ...(s.bookDesign as object), sidesOut: [], familySides: false };
+    expect(buildBook(s, { contributions: sides }).pages.some((p) => p.kind === "memory" && p.sides.length)).toBe(false);
   });
 });
