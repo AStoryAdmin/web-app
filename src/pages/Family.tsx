@@ -14,7 +14,10 @@
  * product’s own words ("not on A Story yet", "invited · waiting for them",
  * "on A Story"), shown under their face in the tree; nobody is listed
  * twice (docs/PRD.md §3.3a), and when somebody is, one line says so and
- * offers the merge.
+ * offers the merge. Two stories about one person, once somebody has asked
+ * to put them together, are answered or undone above the tree
+ * (StoryMerges); who looks after the tree (its admins) sits beside the
+ * keepers; and the tree prints on one sheet from /family/print.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -34,8 +37,8 @@ import { treePeople } from "../components/family/tree/treeModel";
 import type { GhostKind } from "../components/family/tree/treeModel";
 import InviteSheet from "../components/family/InviteSheet";
 import ReviewQueue from "../components/family/ReviewQueue";
-import Keepers from "../components/family/Keepers";
-import Duplicates from "../components/family/Duplicates";
+import Keepers, { TreeAdmins } from "../components/family/Keepers";
+import Duplicates, { StoryMerges } from "../components/family/Duplicates";
 import { Asked, WaitingOnOthers } from "../components/family/Waiting";
 import { useHold } from "../components/family/useHold";
 import HeldLine from "../components/family/HeldLine";
@@ -265,6 +268,8 @@ export default function Family() {
               </ButtonLink>
             </div>
           </section>
+
+          <WhereNext rows={[{ to: "/family/print", title: "Print the tree", line: "The family on one sheet, for the fridge, a frame or the reunion table." }]} />
         </div>
 
         {invite && user && (
@@ -308,6 +313,7 @@ export default function Family() {
         {saveFailure && <Problem message={saveFailure.message} onRetry={() => saveFailure.retry().catch(() => {})} onDismiss={clearSaveFailure} />}
         {error && <Problem message={error} onDismiss={() => setError(null)} />}
         {!preview && <Duplicates people={people} family={family} stories={stories} meId={meId} onChanged={afterWrite} />}
+        {!preview && <StoryMerges onChanged={afterWrite} />}
 
         <div className="fp-grid">
           <Storyteller family={shownFamily} story={shownStory} meId={sample ? null : meId} own={viewOwn} preview={preview} onInvite={() => !preview && setInvite({ anchor: null })} />
@@ -357,6 +363,12 @@ export default function Family() {
                   <Keepers story={story} people={people} senderName={senderName} />
                 </div>
               )}
+
+              {family?.households.length ? (
+                <div className="fp-keep-col">
+                  <TreeAdmins family={family} meId={meId} onChanged={afterWrite} />
+                </div>
+              ) : null}
             </div>
           </section>
         )}
@@ -366,6 +378,7 @@ export default function Family() {
             { to: "/", title: "Today’s question", line: "One question a day, for whoever is telling." },
             { to: "/archive", title: "The archive", line: `Everything ${own ? "you have" : `${story.name} has`} told, by year and by chapter.` },
             { to: "/book", title: "The book", line: "How the family’s memories print, page by page." },
+            ...(preview ? [] : [{ to: "/family/print", title: "Print the tree", line: "The family on one sheet, for the fridge, a frame or the reunion table." }]),
           ]}
         />
       </div>

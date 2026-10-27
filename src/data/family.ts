@@ -305,3 +305,158 @@ export async function resolveSuggestion(id: string, accepted: boolean, userId: s
   if (error) throw error;
   if (!data?.length) throw new Error("Only whoever looks after them can answer this.");
 }
+
+/* ── The tree's admins (household_admins, tree_admins.sql) ─────────────── */
+
+export type TreeAdmins = {
+  householdId: string | null;
+  /** Whoever started the tree: always an admin, and never taken off. */
+  organizerId: string | null;
+  /** The organizer first, then everyone made an admin, each once. */
+  adminIds: string[];
+  iAmAdmin: boolean;
+  /** People in the tree with an account who aren't admins yet: who an admin may choose. */
+  candidates: Person[];
+};
+
+/**
+ * The tree's admins as the phone's TreeKeepers reads them
+ * (FamilyTreeScreen.js): the household this account sits in (else the
+ * first), its organizer and admins, and who else could be made one. Pure.
+ */
+export function treeAdmins(family: Family | null, meId: string | null | undefined): TreeAdmins {
+  const people = (family?.people || []).filter(notPlaceholder);
+  const households = family?.households || [];
+  const me = meId ? people.find((p) => p.userId === meId) : null;
+  const hid = me?.householdId || households[0]?.id || null;
+  const household = households.find((h) => h.id === hid) || households[0] || null;
+  const organizerId = household?.createdBy || null;
+  const adminIds = [...new Set([...(organizerId ? [organizerId] : []), ...(household?.admins || [])])];
+  const seen = new Set<string>();
+  const candidates = people.filter((p) => {
+    if (!p.userId || adminIds.includes(p.userId) || seen.has(p.userId)) return false;
+    if (hid && p.householdId && p.householdId !== hid) return false;
+    seen.add(p.userId);
+    return true;
+  });
+  return { householdId: household?.id || null, organizerId, adminIds, iAmAdmin: !!meId && adminIds.includes(meId), candidates };
+}
+
+/** May this admin take `uid` off? Never the organizer, never the last admin, and only an admin may. */
+export const canRemoveAdmin = (view: TreeAdmins, uid: string): boolean => view.iAmAdmin && uid !== view.organizerId && view.adminIds.length > 1;
+
+/**
+ * Make somebody in the family an admin of its tree, or take it away
+ * (add_tree_admin / remove_tree_admin, as the phone's setTreeAdmin). Only
+ * an admin may; never the last one, never whoever started it.
+ */
+export async function setTreeAdmin(householdId: string | null, userId: string, on: boolean): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!householdId || !userId) return { ok: false, error: "Nobody to choose." };
+  const { data, error } = await supabase().rpc(on ? "add_tree_admin" : "remove_tree_admin", { hid: householdId, uid: userId });
+  if (error) {
+    if (missingFunction(error)) return { ok: false, error: "Admins aren’t switched on for this family yet." };
+    return { ok: false, error: "That didn’t go through. Please try again." };
+  }
+  if (data) return { ok: true };
+  return { ok: false, error: on ? "Only an admin can make another admin." : "The tree keeps at least one admin, and whoever started it stays one." };
+}
+
+/* ── Two stories about one person: answer and undo (same_person_stories.sql) ── */
+
+/** A pair from my_duplicate_stories(): a story this account owns (`mine`) and one that looks like the same person. */
+export type StoryPair = {
+  mine: string;
+  other: string;
+  name: string;
+  lastName: string;
+  otherKeeper: string;
+  mineMemories: number;
+  otherMemories: number;
+  mergeId: string | null;
+  mergeStatus: string | null;
+  proposedByMe: boolean;
+};
+
+export type RecentMerge = { id: string; name: string; doneAt: string };
+
+export const pairKey = (p: Pick<StoryPair, "mine" | "other">) => [p.mine, p.other].sort().join("|");
+
+/** Pairs that wait on somebody: one the other owner asked (to answer), or one this account asked (to wait on). */
+export async function storyPairs(): Promise<StoryPair[]> {
+  const { data, error } = await supabase().rpc("my_duplicate_stories");
+  if (error) {
+    if (!notThere(error)) console.warn("storyPairs:", error.message || error);
+    return [];
+  }
+  return ((data || []) as Row[]).map((r) => ({
+    mine: r.mine as string,
+    other: r.other as string,
+    name: (r.name as string) || "",
+    lastName: (r.last_name as string) || "",
+    otherKeeper: (r.other_keeper as string) || "",
+    mineMemories: Number(r.mine_memories) || 0,
+    otherMemories: Number(r.other_memories) || 0,
+    mergeId: (r.merge_id as string) || null,
+    mergeStatus: (r.merge_status as string) || null,
+    proposedByMe: !!r.proposed_by_me,
+  }));
+}
+
+/** Only the pairs with a merge asked: the other owner’s, to answer, and this account’s own, to wait on. */
+export const askedPairs = (pairs: StoryPair[]): StoryPair[] => pairs.filter((p) => p.mergeStatus === "proposed" && !!p.mergeId);
+
+/** The words for one asked pair (the phone’s mergeCopy, lib/sameStory.js). */
+export function mergeWords(pair: StoryPair): { title: string; body: string; answer: boolean } {
+  const name = pair.name || "them";
+  const other = pair.otherKeeper || "someone in your family";
+  if (pair.proposedByMe) {
+    return {
+      title: `Waiting for ${other}`,
+      body: `You asked to put the two stories about ${name} together. ${pair.otherKeeper ? `${other} will see it the next time ${other} opens A Story.` : "Whoever keeps the other will see it the next time they open A Story."}`,
+      answer: false,
+    };
+  }
+  return {
+    title: `${pair.otherKeeper || "Someone in your family"} asks to put ${name}’s stories together`,
+    body: `You both started a story about ${name}. Together, everyone who keeps either one keeps both, private memories too. Either of you can undo it for 30 days.`,
+    answer: true,
+  };
+}
+
+/** The other owner’s answer (answer_story_merge): "done", "declined" or "gone", or an error. */
+export async function answerStoryMerge(mergeId: string, yes: boolean): Promise<{ ok: true; status: string } | { ok: false; error: string }> {
+  const { data, error } = await supabase().rpc("answer_story_merge", { mid: mergeId, yes });
+  if (error) {
+    if (missingFunction(error)) return { ok: false, error: "Putting stories together isn’t switched on yet." };
+    if (error.code === "42501") return { ok: false, error: "Only the owner of one of these stories can answer." };
+    return { ok: false, error: "That didn’t go through. Please try again." };
+  }
+  return { ok: true, status: String(data || "") };
+}
+
+/** Merges done in the last 30 days, which either owner can still undo. */
+export async function recentMerges(now = Date.now()): Promise<RecentMerge[]> {
+  const since = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase()
+    .from("story_merges")
+    .select("id, done_at, keep:keep_story(name), fold:fold_story(name, owner_id)")
+    .eq("status", "done")
+    .gte("done_at", since)
+    .order("done_at", { ascending: false });
+  if (error) {
+    if (!notThere(error)) console.warn("recentMerges:", error.message || error);
+    return [];
+  }
+  type MergeRow = { id: string; done_at: string; keep?: { name?: string } | null; fold?: { name?: string } | null };
+  return ((data || []) as unknown as MergeRow[]).map((r) => ({ id: r.id, name: r.keep?.name || r.fold?.name || "", doneAt: r.done_at }));
+}
+
+/** Each story goes back to how it was (undo_story_merge). Throws when it can’t, so a held Undo can say so. */
+export async function undoStoryMerge(mergeId: string): Promise<void> {
+  const { data, error } = await supabase().rpc("undo_story_merge", { mid: mergeId });
+  if (error) {
+    if (missingFunction(error)) throw new Error("undoing isn’t switched on yet");
+    throw error;
+  }
+  if (!data) throw new Error("it can’t be undone any more");
+}

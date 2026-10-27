@@ -9,8 +9,9 @@
  * photograph is the left page, a straight print held in view; on a phone
  * it follows the first paragraph. A memory without one has the family's
  * lines in the margin. Under the words: the voice when there is a
- * recording, one hairline row of tools, the family's lines, and the page
- * turn.
+ * recording, one hairline row of tools, "Ask someone to add their side"
+ * (the memory's own link, components/memory/AskTheirSide), the family's
+ * lines, and the page turn.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactElement } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -24,6 +25,7 @@ import FamilyVoices from "../components/archive/FamilyVoices";
 import ToolMenu from "../components/archive/ToolMenu";
 import { MemoryHead, PageTurn, Plate } from "../components/archive/MemoryLead";
 import LedgeNote from "../components/archive/LedgeNote";
+import AskTheirSide from "../components/memory/AskTheirSide";
 import { smarten } from "../lib/typography";
 import { canSpeak } from "../lib/readAloud";
 import { isRunOfLines, orderedPhotos, paragraphsOf, readableParagraphs, realChapter, takesDropCap } from "../components/archive/photos";
@@ -496,6 +498,9 @@ export default function MemoryPage() {
                 />
               </div>
             )}
+
+            {/* one memory's own link, for whoever else was there; a keeper or the storyteller makes it (memory_link_create) */}
+            {!reader && !confirm && memory.status !== "in_progress" && <AskTheirSide key={memory.id} story={story} memory={memory} people={family?.people} me={user} />}
 
             {(plate || !spread) && family_}
             <PageTurn prev={prev} next={next} pos={at >= 0 ? `Memory ${at + 1} of ${byKept.length}` : undefined} />
