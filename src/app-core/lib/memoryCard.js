@@ -6,6 +6,8 @@
 // "1970". Worked out once, here, off nothing but the memory and the story.
 
 import { memoryDate, ageLabel } from "./timeline.js";
+import { beforeLabel } from "./familyFacts.js";
+import { rowCredit } from "./credit.js";
 
 /* "Linh, her daughter" → "Linh". A contributor line is written by whoever
    sent the memory in, so it's free text; the chip only has room for the name
@@ -17,11 +19,16 @@ function contributorName(raw) {
 
 /* The terracotta line under the title: when it happened, and how old they
    were. Undated memories say so rather than showing an empty line — being
-   asked for a date is the point. */
+   asked for a date is the point. Family history from before the
+   storyteller was born says so: "Before Rose · 1938" (MASTER-PLAN §8.2). */
 export function dateLine(story, memory) {
   const { text, year, dated } = memoryDate(memory);
+  const before = story?.birthYear ? beforeLabel(memory, story) : "";
+  if (before) return before;
   if (!dated) return text.trim() || "No date yet";
-  const age = ageLabel(story, year);
+  // A memory the family sent is their own childhood or their own day, not
+  // the storyteller's: "the 1970s", never "the 1970s · age 25".
+  const age = memory?.contributor ? null : ageLabel(story, year);
   return age ? `${text} · ${age}` : text;
 }
 
@@ -48,6 +55,22 @@ export function memoryBadge(memory, story = null) {
   return null;
 }
 
+/* The one quiet line under a print's title (FB-268), the same on Home's
+   Recent and every Archive row: when it was, or who sent it and when; the
+   chapter only when there is no date. "No date yet" is never said on a
+   print: the date is asked for once, on the memory (PHILOSOPHY §3.7).
+     "2011 · age 66" · "From Linh · the 1970s" · "Love & family" */
+export function metaLine(story, memory) {
+  const date = dateLine(story, memory);
+  const when = date === "No date yet" ? "" : date;
+  // Who it is from, with what they are to her, and from where when that is
+  // known (FB-326 item 2, lib/credit): "From Linh, her daughter · the
+  // 1970s", "Told to Jamie · 1979" for her words typed by Jamie.
+  const from = rowCredit(memory);
+  if (from) return [from, when].filter(Boolean).join(" · ");
+  return when || memory?.era || "";
+}
+
 /* Everything a card renders, in one object. */
 /* The card sets the excerpt in quotation marks, so it can't be cut off by
    the text box the way an unquoted line can — "…that was mine. Tomatoes the
@@ -71,6 +94,7 @@ export function cardMeta(story, memory) {
     title: (memory?.title || "").trim() || "Untitled",
     chapter: memory?.era || "",
     date: dateLine(story, memory),
+    line: metaLine(story, memory),
     badge: memoryBadge(memory, story),
     excerpt,
     quote: quoteFor(excerpt),

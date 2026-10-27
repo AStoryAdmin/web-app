@@ -89,9 +89,13 @@ export function lifeSummary({ person, index, mems, dates, isYou = false, storyHi
 
   // How much the family has of them, and from when.
   const list = memoriesOf(mems);
+  // The years of their own life: family history from before they were
+  // born ("Before Rose · 1938") is kept, but never starts the span, so this
+  // says 1951–2011 like the Archive and the Book (lib/familyFacts.js).
+  const bornYear = Number(person.birthYear) || 0;
   const years = list
     .map((m) => Number((String(m.period || "").match(YEAR) || [])[1]))
-    .filter((y) => Number.isFinite(y) && y > 0)
+    .filter((y) => Number.isFinite(y) && y > 0 && (!bornYear || y >= bornYear))
     .sort((a, b) => a - b);
   const span = years.length ? [years[0], years[years.length - 1]] : null;
   // The guesses by name are counted apart, the way the page lists them,
@@ -99,7 +103,8 @@ export function lifeSummary({ person, index, mems, dates, isYou = false, storyHi
   const maybe = (mems?.mentions || []).length;
   const more = `${maybe === 1 ? "one more" : `${maybe} more`} that may be about ${w.obj}`;
   if (!list.length && maybe) {
-    sentences.push(`${maybe === 1 ? "One memory" : `${maybe} memories`} may be about ${w.obj}.`);
+    // What the data knows, not a guess (FB-440): the memory names them.
+    sentences.push(`${first} ${isYou ? "are" : "is"} named in ${maybe === 1 ? "one memory" : `${maybe} memories`}.`);
   } else if (!list.length && storyHidden) {
     // Somebody keeps their story and this account isn't one of them: the
     // memories exist, they just can't be read from here. "Nobody has
@@ -108,8 +113,12 @@ export function lifeSummary({ person, index, mems, dates, isYou = false, storyHi
     // can read the memories marked for the family from Home; joining is
     // for all of them. "Ask to join to read them" told them they could
     // read nothing.
+    // Somebody remembered: one story the family keeps together, with no
+    // joining to ask for (write-for-others-spec §5.2).
     sentences.push(
-      isYou
+      !isYou && person.deathYear && !person.userId
+        ? `The family keeps ${first}’s story together. What you remember goes into it, with your name on it.`
+        : isYou
         ? "Somebody in the family keeps your stories. Ask to join to keep them with them."
         : `The family keeps ${first}'s stories. Read the ones shared with the family from Home, or ask to join for all of them.`
     );
@@ -125,7 +134,19 @@ export function lifeSummary({ person, index, mems, dates, isYou = false, storyHi
       : span[0] === span[1]
         ? ` ${list.length === 1 ? "It is" : "They are"} from ${span[0]}.`
         : ` They reach from ${span[0]} to ${span[1]}.`;
-    sentences.push(`The family has ${n} of ${w.obj} so far${maybe ? `, and ${more}` : ""}.${range}`);
+    // Their own story's count first, the one the Archive and Home say
+    // ("13 memories"), then what the family has of them elsewhere, so the
+    // page never shows a third number for the same story.
+    const own = (mems?.own?.memories || []).filter((m) => m.status !== "in_progress").length;
+    const others = list.length - own;
+    if (own && others) {
+      const whose = isYou ? "Your story" : `${first}'s story`;
+      const ownN = own === 1 ? "one memory" : `${own} memories`;
+      const moreN = others === 1 ? "one more" : `${others} more`;
+      sentences.push(`${whose} has ${ownN} so far, and the family has ${moreN} about ${w.obj}${maybe ? `, and ${more}` : ""}.${range}`);
+    } else {
+      sentences.push(`The family has ${n} of ${w.obj} so far${maybe ? `, and ${more}` : ""}.${range}`);
+    }
   }
 
   return { text: sentences.join(" "), years: span, count: list.length, maybe };

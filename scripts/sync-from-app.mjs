@@ -48,15 +48,28 @@ export const FILES = [
   "lib/bookProgress.js",
   "lib/bookDesign.js",
   "lib/legacyBook.js",
+  "lib/bookPages.js",
   "lib/bookCase.js",
+  "lib/bookSerifFont.js",
   "lib/qr.js",
   "lib/printFonts.js",
   "lib/lifeSummary.js",
+  "lib/familyFacts.js",
+  "lib/familyRoster.js",
+  "data/lessons.js",
   "theme/index.js",
+  "theme/motion.js",
   "theme/logoPaths.js",
   "theme/bookFonts.js",
-  // Questions.
+  // Questions. doors.js is the deck's opening run that dailyQuestion.js
+  // draws from first.
   "lib/dailyQuestion.js",
+  "data/doors.js",
+  // The one rule the phone's Home deals today's question by (the doors, the
+  // arc, the family's question of the day, a follow-up), so the web asks
+  // what the phone asks on the same day.
+  "lib/todayQuestion.js",
+  "lib/followUps.js",
   "lib/nextQuestion.js",
   "lib/sensitivity.js",
   "lib/questionVoice.js",
@@ -64,8 +77,12 @@ export const FILES = [
   "lib/teller.js",
   // Memories and people.
   "lib/memoryCard.js",
+  "lib/credit.js",
   "lib/memoryPeople.js",
   "lib/memorySides.js",
+  "lib/familyTrust.js",
+  "lib/quoteText.js",
+  "lib/firstRunGuide.js",
   "lib/fromFamily.js",
   "lib/treasured.js",
   "lib/personMemories.js",
@@ -88,6 +105,11 @@ export const FILES = [
   "lib/sessionCheck.js",
   // What an analytics event may carry (never words).
   "lib/analyticsEvents.js",
+  // Which server features are switched on. demoMode.js reads ?demo=1 and
+  // ?screenshot=1 from the address bar; lessons.js and serverFeatures.js
+  // need it, and it is false on every ordinary page load.
+  "lib/serverFeatures.js",
+  "lib/demoMode.js",
   // Importing what people already wrote.
   "lib/importers.js",
   "lib/whatsapp.js",

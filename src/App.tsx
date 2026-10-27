@@ -68,6 +68,7 @@ const router = createBrowserRouter([
       { path: "/start", element: <Start /> },
       { path: "/write", element: <Write /> },
       { path: "/talk", element: <Talk /> },
+      { path: "/record", element: lazyPage(() => import("./pages/Record")) },
       { path: "/archive", element: lazyPage(() => import("./pages/Archive")) },
       { path: "/archive/:id", element: lazyPage(() => import("./pages/MemoryPage")) },
       { path: "/family", element: lazyPage(() => import("./pages/Family")) },

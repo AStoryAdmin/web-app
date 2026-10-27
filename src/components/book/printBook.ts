@@ -100,10 +100,10 @@ export function typeset(story: Story): Story {
   };
 }
 
-/** The printable book as HTML, photographs signed, its words typeset. */
-export async function printableHtml(story: Story, recordedBy: string): Promise<string> {
+/** The printable book as HTML, photographs signed, its words typeset. "Kept by" is the story's keepers (S-PL8), never the reader. */
+export async function printableHtml(story: Story): Promise<string> {
   const signed = typeset(await signStoryPhotos(story));
-  return buildLegacyHtml(signed, { recordedBy, now: new Date(), listenBase: listenBase() }) as string;
+  return buildLegacyHtml(signed, { now: new Date(), listenBase: listenBase() }) as string;
 }
 
 /**
@@ -111,7 +111,7 @@ export async function printableHtml(story: Story, recordedBy: string): Promise<s
  * window is showing the book; rejects if the browser refused the window
  * (a popup blocker) so the page can say so.
  */
-export async function printAtHome(story: Story, recordedBy: string): Promise<void> {
+export async function printAtHome(story: Story): Promise<void> {
   const win = window.open("", "_blank");
   if (!win) throw new Error("The browser stopped the book from opening. Allow pop-ups for A Story and try again.");
   win.document.open();
@@ -120,7 +120,7 @@ export async function printAtHome(story: Story, recordedBy: string): Promise<voi
 
   let html: string;
   try {
-    html = await printableHtml(story, recordedBy);
+    html = await printableHtml(story);
   } catch (err) {
     win.close();
     throw err;

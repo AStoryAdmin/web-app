@@ -8,7 +8,8 @@
 //
 // Plain JS with no React Native, so it prints and tests the same.
 
-import { SCRIPT_FONT_BASE64, TITLE_FONT_BASE64 } from "../theme/bookFonts.js";
+import { SCRIPT_FONT_BASE64 } from "../theme/bookFonts.js";
+import { SERIF_FONT_BASE64 } from "./bookSerifFont.js";
 import { LOGO, MARK_PATH, BARS_PATH } from "../theme/logoPaths.js";
 
 const esc = (str) =>
@@ -17,16 +18,6 @@ const esc = (str) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-
-// Where each print sits on the front, from the template: the first is the
-// one in front, the second is behind it at the top right, the third
-// between them at the bottom right. [left, top, width, height, rotation].
-export const PRINT_SPOTS = [
-  [40.5, 33.2, 32.4, 42.6, -0.4],
-  [60.8, 22.0, 32.3, 42.4, 0.5],
-  [59.3, 43.5, 28.8, 43.8, 0.3],
-];
-const Z = [3, 1, 2];
 
 // The spine's width as a share of the cover's, as the template has it. The
 // real width depends on the page count and the printer's paper, and is
@@ -57,38 +48,87 @@ function sprigSvg(color) {
       </svg>`;
 }
 
-// The title fills the cover's width, as "MOMENTS & MEMORIES" does in the
-// template, and steps down for a longer one so it stays on one line.
+/* The title, set as a binder sets one (lane K, s89 round 2, replacing the
+   template's heavy Montserrat Bold capitals, which read as a template): the
+   book's serif, Cormorant Garamond SemiBold, in capitals spaced a tenth of
+   an em, stamped in the board's ink; under it a short foil rule and the
+   line in the serif's small capitals. Same place on the board as the
+   template's, so the prints and the name don't move. A capital with its
+   spacing is about 0.72em; the title fills up to 82cqw and steps down for a
+   longer one so it stays on one line. */
+export const TITLE_TRACK = 0.1;
 export function titleSize(title) {
   const n = Math.max(1, String(title || "").length);
-  // The template's "MOMENTS & MEMORIES" (18 characters) is Montserrat Bold
-  // with a cap height of 4.4% of the cover: 6.3cqw at 0.70em per cap.
-  return Math.min(6.3, (6.3 * 18) / n);
+  return Math.min(6.2, 82 / (0.72 * n));
+}
+// The foil of the rule: gold on the dark boards, an antique gold on the
+// light ones (cream, mustard), where gold leaf would vanish.
+export function foilOf(C) {
+  const lightBoard = /^#?[0-3]/.test(String(C?.ink || ""));
+  return lightBoard ? "#8A6A2C" : "#C9A15A";
 }
 
-export function keepsakeFrontHtml(words, photos, tone) {
-  const prints = photos
-    .slice(0, 3)
-    .map((uri, i) => {
-      const [l, t, w, h, r] = PRINT_SPOTS[i];
-      return `<div class="ks-print" style="left:${l}cqw;top:${t}cqw;width:${w}cqw;height:${h}cqw;transform:rotate(${r}deg);z-index:${Z[i]}"><img src="${esc(uri)}" alt=""></div>`;
-    })
-    .join("\n      ");
-  // Without photographs the front is a plain square, which read as
-  // unfinished: a thin inner frame, the sprig over the name and the mark
-  // at the foot make it a book (BookCover.js draws the same).
-  const bare = photos.length
-    ? ""
+/* The front as a cloth-bound book (judges s89 final; BookCover.js draws the
+   same board, lane B rulings B-2 and B-6): the title stamped in foil,
+   centred over the board's face, a short foil rule and the line; the
+   photographs set into the board through debossed windows, each in a fine
+   foil fillet, her name written under them. The motto prints only when the
+   family wrote their own line (`ownLine`; the default keeps the old call's
+   behaviour). Without a photograph: the frames, the sprig over the name
+   and the mark. */
+
+/* The windows for one, two or three photographs, in cqw of the front:
+   [left, top, width, height], centred on the face right of the hinge
+   (52.25). One: a single window. Two: a pair side by side, as two plates
+   in one board. Three: one large and two small stacked beside it, the
+   bookbinder's triptych (B-6; never a scattered collage). */
+export const KEEPSAKE_WINDOWS = {
+  1: [[29, 27.5, 46.5, 45]],
+  2: [[22.75, 29, 27, 40], [54.75, 29, 27, 40]],
+  3: [[26.75, 27.5, 29, 45], [60.75, 27.5, 17, 20], [60.75, 52.5, 17, 20]],
+};
+// The fillet stands this far out from a window: wider round one window.
+export const filletGap = (n) => (n === 1 ? 1.9 : 1.4);
+// Where her name sits: under the windows' foot.
+export const nameTop = (n) => {
+  const ws = KEEPSAKE_WINDOWS[n] || KEEPSAKE_WINDOWS[1];
+  return Math.max(...ws.map(([, t, , h]) => t + h)) + 4.6;
+};
+export const COVER_PRINTS_MAX = 3;
+/* The photographs the front sets, from keepsakePhotos' list: the family's
+   chosen ones (up to three, in the order they chose them), else only the
+   story's first (the default cover is one window). `noPhoto` is already
+   an empty list. */
+export function coverPrints(design, photos) {
+  const chosen = (design?.cover?.photos || []).length > 0;
+  return (photos || []).slice(0, chosen ? COVER_PRINTS_MAX : 1);
+}
+
+export function keepsakeFrontHtml(words, photos, tone, ownLine = words?.tagline || "") {
+  const n = Math.min(COVER_PRINTS_MAX, photos.length);
+  const line = String(ownLine || "").trim();
+  const g = filletGap(n);
+  const windows = (KEEPSAKE_WINDOWS[n] || [])
+    .map(([l, t, w, h], i) => `<div class="ks-fillet" style="left:${l - g}cqw;top:${t - g}cqw;width:${w + 2 * g}cqw;height:${h + 2 * g}cqw"></div>
+      <div class="ks-window" style="left:${l}cqw;top:${t}cqw;width:${w}cqw;height:${h}cqw"><img src="${esc(photos[i])}" alt=""></div>
+      <div class="ks-window-light" style="left:${l}cqw;top:${t + h}cqw;width:${w}cqw"></div>`)
+    .join("");
+  const inner = n
+    ? `${windows}
+      ${words.name ? `<p class="ks-name" style="top:${nameTop(n)}cqw">${esc(words.name)}</p>` : ""}
+      ${line ? `<p class="ks-own">${esc(line)}</p>` : ""}`
     : `<div class="ks-frame"></div>
       <div class="ks-ornament">${sprigSvg("currentColor")}</div>
-      <div class="ks-foot-mark">${markSvg("currentColor")}</div>`;
-  return `<div class="ks-front${photos.length ? "" : " ks-no-photos"}${tone === "colour" ? "" : " ks-bw"}">
-      ${bare}
-      <h1 class="ks-title" style="font-size:${titleSize(words.title)}cqw">${esc(words.title)}</h1>
-      <p class="ks-line">${esc(words.line)}</p>
+      <div class="ks-foot-mark">${markSvg("currentColor")}</div>
       ${words.name ? `<p class="ks-name">${esc(words.name)}</p>` : ""}
-      ${prints}
-      <p class="ks-tagline">${esc(words.tagline)}</p>
+      ${line ? `<p class="ks-tagline">${esc(line)}</p>` : ""}`;
+  return `<div class="ks-front${n ? "" : " ks-no-photos"}${tone === "colour" ? "" : " ks-bw"}">
+      <div class="ks-head">
+        <h1 class="ks-title" style="font-size:${titleSize(words.title)}cqw">${esc(words.title)}</h1>
+        <div class="ks-title-rule"></div>
+        <p class="ks-line">${esc(words.line)}</p>
+      </div>
+      ${inner}
     </div>`;
 }
 
@@ -107,11 +147,11 @@ export function keepsakeBackHtml(words) {
 
 // The spine's words fit between the sprig and the mark: the middle 62% of
 // the spine's height, which is (1 / SPINE_SHARE) spine-widths tall. A
-// Montserrat Bold capital with its letter-spacing is about 0.84em.
+// serif capital with its letter-spacing is about 0.74em.
 export function spineTextSize(text) {
   const room = (0.62 * 100) / SPINE_SHARE;
   const n = Math.max(1, String(text || "").length);
-  return Math.min(30, room / (0.84 * n));
+  return Math.min(30, room / (0.74 * n));
 }
 
 export function keepsakeSpineHtml(words, C) {
@@ -132,9 +172,9 @@ export function keepsakeCss(C) {
     src: url(data:font/ttf;base64,${SCRIPT_FONT_BASE64}) format("truetype");
   }
   @font-face {
-    font-family: "AStoryTitle";
-    font-weight: 700;
-    src: url(data:font/ttf;base64,${TITLE_FONT_BASE64}) format("truetype");
+    font-family: "AStorySerif";
+    font-weight: 600;
+    src: url(data:font/otf;base64,${SERIF_FONT_BASE64}) format("opentype");
   }
   .ks-front, .ks-back, .ks-spine {
     position: relative;
@@ -147,46 +187,63 @@ export function keepsakeCss(C) {
   .ks-front, .ks-back { aspect-ratio: 1 / 1; }
   .ks-front p, .ks-back p, .ks-front h1 { margin: 0; }
 
+  /* The head, centred over the board's face (right of the hinge). */
+  .ks-head {
+    position: absolute; left: 4.5cqw; right: 0; top: 8.2cqw;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .ks-no-photos .ks-head { top: 9.5cqw; }
   .ks-title {
-    position: absolute; left: 10.3cqw; right: 6cqw; top: 7.4cqw;
-    font-family: "AStoryTitle", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 700; line-height: 1.1;
-    letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap;
-    color: ${C.ink};
+    max-width: 88cqw; text-align: center;
+    font-family: "AStorySerif", Georgia, "Times New Roman", serif;
+    font-weight: 600; line-height: 1.1;
+    letter-spacing: ${TITLE_TRACK}em; padding-left: ${TITLE_TRACK}em; text-transform: uppercase; white-space: nowrap;
+    color: ${foilOf(C)};
+    text-shadow: 0 -0.12cqw 0 rgba(0, 0, 0, 0.35);
   }
+  .ks-title-rule { width: 7cqw; height: 0.22cqw; margin-top: 1.6cqw; background: ${foilOf(C)}; }
   .ks-line {
-    position: absolute; left: 10.6cqw; top: 15.8cqw;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 2.35cqw; letter-spacing: 0.12em; text-transform: uppercase;
-    color: ${C.ink};
+    margin-top: 1.6cqw !important;
+    font-family: "AStorySerif", Georgia, "Times New Roman", serif; font-weight: 600;
+    font-size: 2.2cqw; line-height: 1.18; letter-spacing: 0.18em; padding-left: 0.18em; text-transform: uppercase;
+    color: ${C.ink}; opacity: 0.85;
   }
-  .ks-name {
-    position: absolute; left: 6cqw; right: 42cqw; top: 25.5cqw;
-    font-family: "AStoryScript", cursive; font-size: 7.6cqw; line-height: 1.05;
-    text-align: right; color: ${C.script};
+  /* The window: the board pressed down, the photograph in it; the fillet
+     1.9cqw outside it; the lower edge catching the light. */
+  .ks-window { position: absolute; overflow: hidden; background: ${C.spine}; }
+  .ks-window::after {
+    content: ""; position: absolute; inset: 0;
+    box-shadow: inset 0 1.3cqw 1.3cqw -0.2cqw rgba(0, 0, 0, 0.5), inset 0.8cqw 0 0.8cqw -0.2cqw rgba(0, 0, 0, 0.35), inset 0 0 0 0.2cqw rgba(0, 0, 0, 0.45);
   }
-  .ks-print {
+  .ks-window img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ks-bw .ks-window img { filter: grayscale(1) sepia(0.12) contrast(1.04); }
+  .ks-fillet {
     position: absolute; box-sizing: border-box;
-    background: ${C.print}; padding: 1.7cqw 1.7cqw 3.2cqw;
-    box-shadow: 0 0.3cqw 1.1cqw rgba(0, 0, 0, 0.32);
+    border: 0.28cqw solid ${foilOf(C)}; opacity: 0.9;
   }
-  .ks-print img { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .ks-bw .ks-print img { filter: grayscale(1) sepia(0.12) contrast(1.04); }
-  .ks-tagline {
-    position: absolute; left: 11.5cqw; top: 79.5cqw; width: 50cqw;
-    transform: rotate(-4deg); transform-origin: left center;
-    font-family: "AStoryScript", cursive; font-size: 6.1cqw; line-height: 1.05;
-    color: ${C.script};
+  .ks-window-light { position: absolute; height: 0.25cqw; background: rgba(255, 255, 255, 0.14); }
+  .ks-name {
+    position: absolute; left: 10.5cqw; right: 6cqw;
+    font-family: "AStoryScript", cursive; font-size: 7.4cqw; line-height: 1.05;
+    text-align: center; color: ${C.script};
+  }
+  .ks-own {
+    position: absolute; left: 12.5cqw; right: 8cqw; top: 91cqw;
+    font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 2.6cqw; line-height: 1.2;
+    text-align: center; color: ${C.ink}; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   /* Without photographs the words take the cover: the name large, centred. */
-  .ks-no-photos .ks-name { left: 8cqw; right: 8cqw; top: 47cqw; font-size: 11cqw; text-align: center; }
+  .ks-no-photos .ks-name { left: 8cqw; right: 8cqw; top: 49cqw; font-size: 11cqw; }
   .ks-frame { position: absolute; inset: 4.5cqw; border: 0.25cqw solid ${C.soft}; opacity: 0.55; pointer-events: none; }
   .ks-frame::after { content: ""; position: absolute; inset: 1.2cqw; border: 0.12cqw solid ${C.soft}; opacity: 0.7; }
-  .ks-ornament { position: absolute; left: 44cqw; width: 12cqw; top: 24cqw; color: ${C.soft}; }
+  .ks-ornament { position: absolute; left: 44cqw; width: 12cqw; top: 26cqw; color: ${C.soft}; }
   .ks-ornament svg { display: block; width: 100%; height: auto; }
   .ks-foot-mark { position: absolute; left: 46cqw; width: 8cqw; bottom: 7cqw; color: ${C.soft}; }
   .ks-foot-mark svg { display: block; width: 100%; height: auto; }
-  .ks-no-photos .ks-tagline { left: 8cqw; right: 8cqw; width: auto; text-align: center; transform: none; }
+  .ks-tagline {
+    position: absolute; left: 8cqw; right: 8cqw; top: 71.5cqw; text-align: center;
+    font-family: "AStoryScript", cursive; font-size: 6.1cqw; line-height: 1.05; color: ${C.script};
+  }
 
   .ks-back-in {
     position: absolute; left: 0; right: 0; top: 31cqw;
@@ -214,8 +271,11 @@ export function keepsakeCss(C) {
     position: absolute; top: 19%; bottom: 19%; left: 0; right: 0; margin: 0;
     display: flex; align-items: center; justify-content: center;
     writing-mode: vertical-rl;
-    font-family: "AStoryTitle", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+    /* Every glyph turned with the line, as a spine is set: "mixed" left the
+       curly apostrophe upright ("ROSE - S STORY"). */
+    -webkit-text-orientation: sideways; text-orientation: sideways;
+    font-family: "AStorySerif", Georgia, "Times New Roman", serif; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap;
     color: ${C.soft};
   }
   .ks-spine-mark { position: absolute; bottom: 5%; left: 17%; width: 66%; }

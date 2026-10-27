@@ -8788,25 +8788,58 @@ const ABOUT_FALLBACK = "this person";
 // written to the storyteller ("do you still make it?") and would ask the
 // relative about their own life. `hint` is kept; hints show what a good
 // answer looks like and read the same from either side.
-export function getAboutPrompts(personName, { era, tag, pronoun = null } = {}) {
+/* Living people are alive (HABIT-REVIEW §4 item 8): "What made Dad laugh?"
+   about a 64-year-old father reads as if he had died. For a living
+   person, the relative's questions about their ways (the eras written to
+   the family about the person as they are) are asked in the present:
+   "What makes Dad laugh?", "What has Rose taught you to do?". A question
+   tied to a time ("when you were small", "only later") stays as written,
+   and so do the eras of a life's history (childhood, work), which are
+   past for anybody. The bank keeps one wording; this turns it. */
+const NOW_ERAS = new Set(["From the family", "Anything else"]);
+const ANCHORED = /\b(when you were|as a (child|kid)|growing up|only later|back then|first|last|young|after a|proudest)\b/i;
+const NOW_RULES = [
+  [/^What made \{name\} ([^?]+)\?$/, "What makes {name} $1?"],
+  [/^What did \{name\}'s (\w+) (smell|sound|look|taste|feel) like\?$/, "What does {name}'s $1 $2 like?"],
+  [/^What did \{name\} (cook|make|bake|grow|sing|hum|read|wear|keep|love) ([^?]+)\?$/, "What does {name} $1 $2?"],
+  [/^What did \{name\} teach you([^?]*)\?$/, "What has {name} taught you$1?"],
+  [/^What did \{name\} tell you([^?]*)\?$/, "What has {name} told you$1?"],
+  [/^Which (\w+) did \{name\} pass down to you\?$/, "Which $1 has {name} passed down to you?"],
+  [/^What did you and \{name\} do that was only yours\?$/, "What do you and {name} do that's only yours?"],
+  [/^What's the funniest thing \{name\} ever did\?$/, "What's the funniest thing {name} has ever done?"],
+];
+export function presentAbout(about, era = "") {
+  const text = String(about || "");
+  if (!NOW_ERAS.has(era) || ANCHORED.test(text)) return text;
+  for (const [re, to] of NOW_RULES) if (re.test(text)) return text.replace(re, to);
+  return text;
+}
+
+// `living`: the person is alive (questionVoice's `gone` false), so the
+// questions about their ways are in the present (presentAbout); the
+// past wording rides in `was`, so a memory kept under it still counts.
+export function getAboutPrompts(personName, { era, tag, pronoun = null, living = false } = {}) {
   let pool = RAW_PROMPTS.filter((p) => p.about);
   if (era) pool = pool.filter((p) => p.era === era);
   if (tag) pool = pool.filter((p) => p.tags.includes(tag));
 
-  return pool.map((p) => ({
-    id: p.id,
-    question: fill(p.about, personName, ABOUT_FALLBACK, pronoun),
-    followUp: null,
-    hint: fill(p.hint, personName, ABOUT_FALLBACK, pronoun),
-    topic: p.topic,
-    sensitive: p.sensitive,
-    depth: p.depth,
-    tags: p.tags,
-    era: p.era,
-    about: null,
-    needs: p.needs,
-    was: p.was.map((t) => fill(t, personName, ABOUT_FALLBACK, pronoun)),
-  }));
+  return pool.map((p) => {
+    const now = living ? presentAbout(p.about, p.era) : p.about;
+    return {
+      id: p.id,
+      question: fill(now, personName, ABOUT_FALLBACK, pronoun),
+      followUp: null,
+      hint: fill(p.hint, personName, ABOUT_FALLBACK, pronoun),
+      topic: p.topic,
+      sensitive: p.sensitive,
+      depth: p.depth,
+      tags: p.tags,
+      era: p.era,
+      about: null,
+      needs: p.needs,
+      was: [...(now !== p.about ? [p.about] : []), ...p.was].map((t) => fill(t, personName, ABOUT_FALLBACK, pronoun)),
+    };
+  });
 }
 
 // Every question, unrendered — for counting, exporting and tests.

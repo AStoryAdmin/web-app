@@ -13,15 +13,26 @@ export const DESIGN_VERSION = 1;
 // chooses otherwise: the title in capitals, a date line, the storyteller's
 // name in script, up to three of their photographs set as prints, and a
 // line in script at the foot. It fills itself in from the story, so a book
-// nobody has touched is already finished. The others are for families who
-// want something different. Two need a photograph; without one they fall
-// back to the cloth board, so a design never prints a hole.
+// nobody has touched is already finished. The others are one family (FB-329):
+// the same board with the mark, the title in foil, a short foil rule, the
+// line under it and when she was born, in a different material each
+// (Clothbound's chocolate, Heirloom's teal with its second foil frame, Photo
+// plate's linen, Photo wrap's dark board), with a photograph set into it
+// where the style carries one. Without a photograph (`cover.noPhoto`, or a
+// photo style with none to show) every style prints that bare board, so a
+// design never prints a hole and "No photograph" is a cover of its own.
 export const COVER_STYLES = [
   { key: "keepsake", name: "Keepsake", note: "Our cover: their name, their photos", needsPhoto: false },
-  { key: "cloth", name: "Clothbound", note: "Deep brown cloth, the title in gold foil", needsPhoto: false },
-  { key: "heirloom", name: "Heirloom", note: "Teal cloth with a foil frame and the mark", needsPhoto: false },
+  { key: "cloth", name: "Clothbound", note: "Chocolate cloth, the title in gold foil", needsPhoto: false },
+  { key: "heirloom", name: "Heirloom", note: "Teal cloth with a second foil frame", needsPhoto: false },
   { key: "tipped", name: "Photo plate", note: "A photograph set into a linen board", needsPhoto: true },
   { key: "wrap", name: "Photo wrap", note: "Their photograph across the whole cover", needsPhoto: true },
+];
+// Whether the cover carries their photographs at all (FB-329, the owner:
+// "Should also be an option for no photo").
+export const COVER_PHOTOS = [
+  { key: "photos", name: "Photos" },
+  { key: "none", name: "None" },
 ];
 
 // Paper and ink for the pages inside. The colours themselves are in the
@@ -36,8 +47,14 @@ export const PAPERS = [
 
 // The keepsake cover's colourways, as the template has them. The colours
 // are BOOK_PRINT.covers.keepsake in the theme.
+// Navy by default, as the web prints it and the owner named the family's
+// materials (FB-329: "Keepsake's navy, Clothbound's chocolate, Heirloom's
+// teal"); chocolate, the app's own cloth, is the Clothbound's and stays a
+// choice here.
+export const DEFAULT_KEEPSAKE_COLOR = "navy";
 export const KEEPSAKE_COLORS = [
   { key: "navy", name: "Navy" },
+  { key: "chocolate", name: "Chocolate" },
   { key: "cream", name: "Cream" },
   { key: "forest", name: "Forest" },
   { key: "slate", name: "Slate" },
@@ -137,7 +154,7 @@ export function normaliseDesign(raw) {
   const d = raw && typeof raw === "object" ? raw : {};
   const cover = d.cover && typeof d.cover === "object" ? d.cover : {};
   const style = COVER_STYLES.some((c) => c.key === cover.style) ? cover.style : "keepsake";
-  const color = KEEPSAKE_COLORS.some((c) => c.key === cover.color) ? cover.color : "navy";
+  const color = KEEPSAKE_COLORS.some((c) => c.key === cover.color) ? cover.color : DEFAULT_KEEPSAKE_COLOR;
   // Empty means "choose for me": the story's first photographs, at print time.
   const photos = Array.isArray(cover.photos)
     ? [...new Set(cover.photos.filter((p) => typeof p === "string" && p))].slice(0, COVER_PHOTOS_MAX)
@@ -146,9 +163,17 @@ export function normaliseDesign(raw) {
   const order = Array.isArray(d.chapterOrder)
     ? d.chapterOrder.filter((e, i, a) => ERAS.includes(e) && a.indexOf(e) === i)
     : [];
-  const excluded = Array.isArray(d.excluded)
-    ? [...new Set(d.excluded.filter((id) => typeof id === "string" && id))]
-    : [];
+  const ids = (list) => (Array.isArray(list) ? [...new Set(list.filter((id) => typeof id === "string" && id))] : []);
+  // Left out by a keeper; a Private memory a keeper put in (Private stays
+  // out unless somebody includes it, S-PL8); and the storyteller's own
+  // "Not for the book", which no keeper's switch overrides.
+  const excluded = ids(d.excluded);
+  const included = ids(d.included);
+  const heldBack = ids(d.heldBack);
+  // The family's sides (FB-371, T-16): kept versions print unless the
+  // book is set to her words only, and a keeper can take one side out of
+  // the book while it stays on the memory.
+  const sidesOut = ids(d.sidesOut);
   // Retold text, by memory id, each with the hash of the words it was
   // retold from, so an edited memory is never printed from stale text.
   // The book's own key for its listening codes (see listenUrl).
@@ -170,12 +195,18 @@ export function normaliseDesign(raw) {
       backName: clip(cover.backName, BACK_NAME_MAX).trim(),
       backMessage: clip(cover.backMessage, BACK_MESSAGE_MAX).trim(),
       photo: typeof cover.photo === "string" && cover.photo ? cover.photo : null,
+      // "No photograph": the bare board in the style's material (FB-329).
+      noPhoto: cover.noPhoto === true,
       title: clip(cover.title, TITLE_MAX).trim(),
       subtitle: clip(cover.subtitle, SUBTITLE_MAX).trim(),
     },
     paper,
     chapterOrder: order,
     excluded,
+    included,
+    heldBack,
+    familySides: d.familySides !== false,
+    sidesOut,
     dedication: clip(d.dedication, DEDICATION_MAX).trim(),
     narration: NARRATIONS.some((n) => n.key === d.narration) ? d.narration : "first",
     pronoun: PRONOUNS.some((p) => p.key === d.pronoun) ? d.pronoun : "",
@@ -285,16 +316,33 @@ export function needsRetelling(design, memories) {
   const d = normaliseDesign(design);
   if (d.narration !== "third") return [];
   return (memories || []).filter(
-    (m) => m && !m.contributor && !d.excluded.includes(m.id) && d.retold[m.id]?.h !== bodyHash(m.body)
+    (m) => m && !m.contributor && includesMemory(d, m) && d.retold[m.id]?.h !== bodyHash(m.body)
   );
 }
 
-// The cover style that will actually print: a photo style without a photo
-// is the cloth board.
+// The cover style that will actually print. Every style prints in its own
+// material now, photograph or none (FB-329); it was the cloth board for a
+// photo style with no photo.
 export function effectiveCoverStyle(design) {
+  return normaliseDesign(design).cover.style;
+}
+
+// Whether the cover prints without a photograph: chosen ("No photograph"),
+// or a photo style with no photo to show. The bare board is the family's
+// one drawing (the mark, the title in foil, the rule, the line, when she
+// was born) in the style's material; the keepsake's bare front is its own
+// template's (lib/bookCase.js).
+export function coverBare(design) {
   const d = normaliseDesign(design);
   const style = COVER_STYLES.find((c) => c.key === d.cover.style);
-  return style?.needsPhoto && !d.cover.photo ? "cloth" : d.cover.style;
+  return d.cover.noPhoto || !!(style?.needsPhoto && !d.cover.photo);
+}
+
+// The photograph a photo style sets into the board: none when the cover is
+// bare.
+export function coverPhoto(design) {
+  const d = normaliseDesign(design);
+  return coverBare(d) ? null : d.cover.photo;
 }
 
 // The chapters in the order the book prints them: the ones somebody has
@@ -306,10 +354,107 @@ export function chapterSequence(design) {
   return [...d.chapterOrder, ...base.filter((e) => !d.chapterOrder.includes(e))];
 }
 
-// Whether a memory is in the book.
-export function includesMemory(design, memoryId) {
-  return !normaliseDesign(design).excluded.includes(memoryId);
+/* ── What goes in the book (S-PL8, collab-web-study §5) ───────────────
+   Every kept memory, whoever wrote it, except three kinds:
+     teller    the storyteller said "Not for the book" (design.heldBack, or
+               the memory's own notForBook). Hers to undo; no keeper's
+               switch puts it back.
+     private   a Private memory stays out unless a keeper includes it
+               (design.included): the book is handed round and given.
+     left      a keeper left it out (design.excluded).
+   Drafts never print (bookStructure). */
+const idOf = (m) => (typeof m === "string" ? m : m?.id || "");
+
+export function heldBackByTeller(design, memory) {
+  const id = idOf(memory);
+  return !!(memory && typeof memory === "object" && memory.notForBook) || (!!id && normaliseDesign(design).heldBack.includes(id));
 }
+
+/* { in, why }: why is "" when in, else "teller" | "private" | "left". */
+export function bookState(design, memory) {
+  const d = normaliseDesign(design);
+  const id = idOf(memory);
+  if (heldBackByTeller(d, memory)) return { in: false, why: "teller" };
+  if (memory && typeof memory === "object" && memory.privacy === "private") {
+    return d.included.includes(id) ? { in: true, why: "" } : { in: false, why: "private" };
+  }
+  return d.excluded.includes(id) ? { in: false, why: "left" } : { in: true, why: "" };
+}
+
+// Whether a memory is in the book. Given only an id (no privacy known), a
+// keeper's switch and the storyteller's say are all that count.
+export function includesMemory(design, memory) {
+  return bookState(design, memory).in;
+}
+
+/* The words beside a memory's mark in "What goes in the book". */
+export function bookStateLine(state, tellerName = "") {
+  const her = String(tellerName || "").trim().split(/\s+/)[0];
+  if (state?.why === "teller") return her ? `${her} kept this out` : "The storyteller kept this out";
+  if (state?.why === "private") return "Private: out unless you put it in";
+  if (state?.why === "left") return "Left out";
+  return "";
+}
+
+/* The storyteller's "Not for the book" (from her memory page), and its
+   undo, which only she is offered. */
+export function holdBack(design, memoryId) {
+  const d = normaliseDesign(design);
+  if (!memoryId || d.heldBack.includes(memoryId)) return d;
+  return { ...d, heldBack: [...d.heldBack, memoryId], included: d.included.filter((x) => x !== memoryId) };
+}
+export function letBack(design, memoryId) {
+  const d = normaliseDesign(design);
+  return { ...d, heldBack: d.heldBack.filter((x) => x !== memoryId) };
+}
+
+/* ── The family's sides in the book (FB-371, DECISIONS T-16) ─────────
+   Which of the family's versions print on a memory's page. Only what the
+   keeper said yes to ("Keep both", or trust after the first yes, S-PL5):
+   never one waiting for a yes, one said no to, or one taken off
+   (withdrawn, "Not in my story"). None on a memory that isn't in the book
+   (the storyteller's "Not for the book", Private nobody put in, left out),
+   none when the book is set to her words only, and not one a keeper took
+   out of the book. Oldest first, as the memory page shows them. */
+export function sidesInBook(design, memory, contributions = []) {
+  const d = normaliseDesign(design);
+  const id = idOf(memory);
+  if (!id || !d.familySides || !bookState(d, memory).in) return [];
+  return (contributions || [])
+    .filter(
+      (c) =>
+        c &&
+        c.memoryId === id &&
+        c.status === "approved" &&
+        (c.kind || "testimonial") === "testimonial" &&
+        !c.notForBook &&
+        !d.sidesOut.includes(c.id) &&
+        String(c.body || "").trim()
+    )
+    .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+}
+
+/* A keeper's "Keep Linh's side out of the book" from the reader's More,
+   and its undo. The side stays on the memory either way. */
+export function toggleSide(design, sideId) {
+  const d = normaliseDesign(design);
+  if (!sideId) return d;
+  const out = d.sidesOut.includes(sideId) ? d.sidesOut.filter((x) => x !== sideId) : [...d.sidesOut, sideId];
+  return { ...d, sidesOut: out };
+}
+
+/* How many of a memory's kept versions print in full; the rest are one
+   line ("Also remembered by Sam and Peggy") with a code to read them. */
+export const VERSIONS_IN_FULL = 3;
+
+/* Where a book's "read them in the app" code points: the memory and the
+   book's own key, on our domain (the same shape as listenUrl). */
+export function readUrl(base, memoryId, key) {
+  return listenUrl(base, memoryId, key);
+}
+// The page those codes open, on the site (an owner item: it hands the
+// memory to the app, as /m/ does).
+export const bookReadBase = (site) => `${String(site || "").replace(/\/+$/, "")}/read`;
 
 // Moves one chapter a step up (-1) or down (+1) in the printed order, and
 // returns the new design. The whole sequence is written, so the order
@@ -324,12 +469,20 @@ export function moveChapter(design, era, step) {
   return { ...d, chapterOrder: seq };
 }
 
-export function toggleMemory(design, memoryId) {
+/* A keeper's In/Out on one memory. Given the memory: a Private one is put
+   in or taken back out (included); the storyteller's "Not for the book"
+   can't be switched (the design comes back as it was). Given an id only,
+   the keeper's own left-out list, as it always was. */
+export function toggleMemory(design, memory) {
   const d = normaliseDesign(design);
-  const excluded = d.excluded.includes(memoryId)
-    ? d.excluded.filter((id) => id !== memoryId)
-    : [...d.excluded, memoryId];
-  return { ...d, excluded };
+  const memoryId = idOf(memory);
+  if (!memoryId) return d;
+  const flip = (list) => (list.includes(memoryId) ? list.filter((id) => id !== memoryId) : [...list, memoryId]);
+  if (typeof memory === "object") {
+    if (heldBackByTeller(d, memory)) return d;
+    if (memory.privacy === "private") return { ...d, included: flip(d.included) };
+  }
+  return { ...d, excluded: flip(d.excluded) };
 }
 
 // Photos the cover can use: every photograph in the story's memories, in
@@ -353,7 +506,19 @@ export function coverPhotoChoices(story) {
 // (with signed URLs), so these load.
 export function keepsakePhotos(design, story) {
   const d = normaliseDesign(design);
+  if (d.cover.noPhoto) return [];
   return (d.cover.photos.length ? d.cover.photos : coverPhotoChoices(story)).slice(0, COVER_PHOTOS_MAX);
+}
+
+/* The keepsake's title when the family hasn't written one: the book's own,
+   "Rose’s Story", over her name in script, as a binding carries a title
+   and its author (lane K s89 r2, draft K-11: the template's "Moments &
+   Memories" read as a template, judges r2). The template's phrase stays one
+   tap away in Cover and layout. Without a name, the template's phrase. */
+export function keepsakeTitle(book, story) {
+  const first = String(story?.name || book?.name || book?.fullName || "").trim().split(/\s+/)[0];
+  if (!first) return KEEPSAKE_TITLE;
+  return /s$/i.test(first) ? `${first}’ Story` : `${first}’s Story`;
 }
 
 // The keepsake cover's words, front, spine and back, with every default
@@ -362,11 +527,15 @@ export function keepsakeWords(design, book, story) {
   const d = normaliseDesign(design);
   const year = new Date(book?.printedOn || Date.now()).getFullYear();
   const last = String(story?.lastName || "").trim();
-  const title = d.cover.title || KEEPSAKE_TITLE;
+  const title = d.cover.title || keepsakeTitle(book, story);
   const name = book?.fullName || book?.name || "";
   return {
     title,
-    line: d.cover.subtitle || book?.coverSpan || String(year),
+    // The line under the title: what the family wrote, else when she was
+    // born, as the samples print it ("SAGINAW, MICHIGAN · BORN 1948"). Not
+    // the memories' span: it disagreed with the contents, whose first
+    // chapter ("Before Rose", 1938) starts before it (judges, night r1).
+    line: d.cover.subtitle || (story?.birthYear ? `Born ${story.birthYear}` : book?.coverSpan) || String(year),
     name,
     tagline: d.cover.tagline || KEEPSAKE_TAGLINE,
     spine: [name, title].filter(Boolean).join("  |  "),

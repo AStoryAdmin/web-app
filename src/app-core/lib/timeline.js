@@ -12,6 +12,8 @@
 // pretending.
 
 import { eraForAge, chapterDistance } from "../data/eras.js";
+import { isTreasured } from "./treasured.js";
+import { pronounOf } from "./questionVoice.js";
 
 const MONTHS = [
   "january",
@@ -131,12 +133,21 @@ export function ageAt(story, year) {
   return age;
 }
 
-/* "she was 30" / "at 30" — the line under a year heading. Third person for
-   someone else's story, second for your own. */
-export function ageLabel(story, year) {
+/* "age 30" — the line under a year heading. The year of the birth itself
+   names the person the way the question bank does (FB-174, R-B3): "you"
+   on your own story, "she" or "he" from the tree or the story's own word
+   ("Grandmother"), else the name, and "they" only for nobody named.
+   `people` is the family tree's people, when the caller has them. */
+export function ageLabel(story, year, { people = [] } = {}) {
   const age = ageAt(story, year);
   if (age == null) return null;
-  if (age === 0) return "the year they were born";
+  if (age === 0) {
+    if (story?.relationship === "Myself") return "the year you were born";
+    const pronoun = pronounOf(story, people);
+    if (pronoun) return `the year ${pronoun} was born`;
+    const name = String(story?.name || "").trim().split(/\s+/)[0];
+    return name ? `the year ${name} was born` : "the year they were born";
+  }
   return `age ${age}`;
 }
 
@@ -248,19 +259,69 @@ export function decadeOf(year) {
   return year == null ? null : Math.floor(year / 10) * 10;
 }
 
-/* Memories from this month in earlier years.
+/* Memories from this month in earlier years ("This month, 62 years ago").
    A family album's best trick: the same date coming round again. Only
    memories whose date says a month qualify — "1975" alone isn't "this
    month", and pretending otherwise would put the same entry in front of
-   someone twelve times a year. */
+   someone twelve times a year.
+
+   At least ANNIVERSARY_MIN_YEARS back: last week is not an anniversary, and
+   a memory dated this month this year used to read "happened this month in
+   2026". The oldest first (the biggest gap is the one worth telling); in a
+   tie, a treasured memory, then the newest made. Each hit carries
+   `yearsAgo`. */
+export const ANNIVERSARY_MIN_YEARS = 2;
+
 export function onThisMonth(memories, now = new Date()) {
   const month = now.getMonth() + 1;
+  const thisYear = now.getFullYear();
+  const made = (m) => new Date(m.createdAt || 0).getTime() || 0;
   return (memories || [])
-    .filter((m) => m.status !== "in_progress")
+    .filter((m) => m && m.status !== "in_progress")
     .map((m) => ({ memory: m, date: memoryDate(m) }))
-    .filter(({ date }) => date.dated && date.month === month)
-    .sort((a, b) => b.date.year - a.date.year)
-    .map(({ memory, date }) => ({ memory, year: date.year }));
+    .filter(({ date }) => date.dated && date.month === month && thisYear - date.year >= ANNIVERSARY_MIN_YEARS)
+    .sort(
+      (a, b) =>
+        a.date.year - b.date.year ||
+        Number(isTreasured(b.memory)) - Number(isTreasured(a.memory)) ||
+        made(b.memory) - made(a.memory)
+    )
+    .map(({ memory, date }) => ({ memory, year: date.year, yearsAgo: thisYear - date.year }));
+}
+
+const SMALL_NUMBERS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/* "This month, 62 years ago" / "This month, five years ago": numbers up to
+   ten as words, above ten as digits. */
+export function yearsAgoKicker(yearsAgo) {
+  const n = Math.round(Number(yearsAgo));
+  if (!Number.isFinite(n) || n < 1) return "This month";
+  const said = n <= 10 ? SMALL_NUMBERS[n] : String(n);
+  return `This month, ${said} ${n === 1 ? "year" : "years"} ago`;
+}
+
+/* The words for the anniversary wherever it shows (the Archive's card,
+   Home's slot, the daily reminder): the oldest hit for this story, or
+   null. `excerpt` is the memory's first line. */
+export function anniversaryOf(story, now = new Date()) {
+  const hit = onThisMonth(story?.memories, now)[0];
+  if (!hit) return null;
+  const m = hit.memory;
+  const title = String(m.title || "").trim() || "A memory";
+  const firstLine = String(m.body || "")
+    .split(/\n+/)
+    .map((l) => l.trim())
+    .find(Boolean);
+  return {
+    memory: m,
+    year: hit.year,
+    yearsAgo: hit.yearsAgo,
+    kicker: yearsAgoKicker(hit.yearsAgo),
+    title,
+    excerpt: firstLine || null,
+    reminder: `“${title}” was this month, ${hit.yearsAgo} years ago. Tell it while it's in mind?`,
+    talkQuestion: `Tell me more about “${title}”.`,
+  };
 }
 
 /* Headline numbers for the archive header — the same three-stat rhythm the

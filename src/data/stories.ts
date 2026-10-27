@@ -9,6 +9,7 @@
  */
 import { supabase } from "../lib/supabase";
 import { normaliseEra } from "../app-core/data/eras.js";
+import { cleanLanguage } from "../app-core/data/rows.js";
 
 export type Clip = {
   id: string | number;
@@ -44,6 +45,27 @@ export type Memory = {
   familyCallId: string | null;
   personIds?: string[];
   source?: string;
+  /** How it got here: "written", "recorded", "call" or "link" (lib/credit.js). */
+  via?: string;
+  /** Who typed it when it was told in the storyteller's words ("written down by Jamie"). */
+  writtenDownBy?: string;
+  writtenDownById?: string | null;
+  writtenDownByPersonId?: string | null;
+  /** Who asked the question it answers ("Asked by Jamie"). Set by the server, never written. */
+  askedBy?: string;
+  /** An answer by link whose words are still to come. Set by the server, never written. */
+  wordsPending?: boolean;
+  /** The question it answers, as it was asked (memories.question_text). */
+  questionText?: string;
+  /** The same question, under the name the decks read (dailyQuestion.js answeredBy). */
+  prompt?: string;
+  /**
+   * The bank's id for that question, on a memory kept in this visit. Not a column, on the phone either: after a
+   * reload the question's words (`prompt`) are what mark it answered.
+   */
+  questionId?: string;
+  /** The language its words are in, as a BCP-47 tag ("vi", "en"). */
+  language?: string;
   /** On a story read as family: the sides its keepers kept, as family_story_read() returns them. */
   familySides?: FamilySide[];
   createdAt: string;
@@ -134,6 +156,17 @@ export function rowToMemory(row: Row): Memory {
     familyCallId: row.family_call_id || null,
     ...(Array.isArray(row.person_ids) ? { personIds: row.person_ids as string[] } : {}),
     ...(row.source ? { source: row.source as string } : {}),
+    // The phone's store.js rowToMemory, field for field from here on.
+    ...(row.via ? { via: row.via as string } : {}),
+    ...(row.written_down_by_name
+      ? { writtenDownBy: row.written_down_by_name as string, writtenDownById: row.written_down_by || null, writtenDownByPersonId: row.written_down_by_person_id || null }
+      : {}),
+    ...(row.asked_by_name ? { askedBy: row.asked_by_name as string } : {}),
+    ...(row.words_pending ? { wordsPending: true } : {}),
+    // The question is also the memory's `prompt`, which today's deck reads to leave out what is already
+    // answered: without it the same question came back after every reload.
+    ...(row.question_text ? { questionText: row.question_text as string, prompt: row.question_text as string } : {}),
+    ...(cleanLanguage(row.language) ? { language: cleanLanguage(row.language) as string } : {}),
     createdAt: row.created_at || new Date().toISOString(),
   };
 }

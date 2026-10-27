@@ -99,8 +99,12 @@ export function conversationForTeller(conversation, teller, { storytellerHere = 
   );
 }
 
-/* How a memory a relative told is credited on the card and in the book. */
-export function tellerCredit(teller, { storytellerHere = false } = {}) {
+/* How a memory a relative told is credited on the card and in the book:
+   "Jamie, her granddaughter" when the tree says what they are to the
+   storyteller (`relation`, lib/credit relationTo), else the name alone
+   (FB-326 item 1: a keeper's credit carries their relationship too). */
+export function tellerCredit(teller, { storytellerHere = false, relation = "" } = {}) {
   if (!teller || teller.isStoryteller || storytellerHere || !teller.name) return null;
-  return { contributor: teller.name, authorPersonId: teller.personId || null };
+  const rel = String(relation || "").trim();
+  return { contributor: rel ? `${teller.name}, ${rel}` : teller.name, authorPersonId: teller.personId || null };
 }

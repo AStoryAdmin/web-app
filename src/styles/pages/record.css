@@ -1,0 +1,77 @@
+/* Record (/record): answering a question in your own voice, signed in (pages/Record.tsx).
+   The same two tracks as Talk: the question's index card (.talk-card, book-account.css) on one side, the recorder on
+   the other, in the sheet's hairlines and tones. Interfaces stay still; only the meter's halo breathes with the voice. */
+
+.shell:has(.rec-page) .cloth.compact .hero h1.hero-title { font-family: var(--font-ui); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; }
+.shell:has(.rec-page) .hero-in { max-width: none; padding-left: var(--bka-gutter); padding-right: var(--bka-gutter); }
+@media (max-width: 760.98px) { .shell:has(.rec-page) .cloth.compact .hero h1.hero-title { font-size: 32px; } }
+
+.sheet-page.wide .rec-page, .sheet-page.wide .rec-next { max-width: none; }
+.rec-page { display: grid; grid-template-columns: minmax(0, 760px) minmax(0, 600px); justify-content: center; gap: var(--s-20); align-items: start; padding-top: var(--s-8); padding-bottom: var(--s-12); }
+.rec-page[aria-busy="true"] { min-height: 360px; }
+.rec-page :where(p, label, h2) { text-wrap: pretty; }
+
+/* the recorder: one column of steps, each one replacing the last in the same place */
+.rec-desk { display: grid; gap: var(--s-5); align-content: start; min-width: 0; }
+.rec-status { display: grid; gap: var(--s-5); outline: none; }
+.rec-status:focus-visible { outline: 2px solid var(--ring); outline-offset: 6px; border-radius: 2px; }
+.rec-lead { margin: 0; font: 400 20px/1.55 var(--book-body); color: var(--sheet-ink); max-width: 46ch; }
+.rec-aside { margin: 0; font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); max-width: 52ch; }
+.rec-center { text-align: center; justify-content: center; justify-self: center; }
+
+.rec-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.rec-acts .btn { min-height: 48px; font-size: 16px; }
+.rec-acts .btn[disabled] { opacity: 1; cursor: not-allowed; color: var(--ink-faint); }
+.rec-acts .btn.primary[disabled] { background: var(--support); color: var(--ink-faint); }
+.rec-acts .btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+/* the one big button: Record, I'm done, Keep it */
+.rec-acts .rec-go, .rec-acts .rec-keep { min-height: 56px; padding: 0 var(--s-8); font-size: 17px; }
+.rec-go svg { width: 20px; height: 20px; }
+.rec-square { width: 14px; height: 14px; border-radius: 3px; background: currentColor; }
+.rec-listen { gap: var(--s-2); }
+.rec-listen svg { width: 16px; height: 16px; }
+
+/* the meter: one soft halo that swells with the voice, no clock */
+.rec-meter { position: relative; justify-self: center; width: 132px; height: 132px; display: grid; place-items: center; color: var(--on-chocolate); }
+.rec-meter i { position: absolute; inset: 0; border-radius: 50%; background: var(--accent-100); transition: transform 160ms var(--ease-out); }
+.rec-meter::after { content: ""; position: absolute; inset: 30px; border-radius: 50%; background: var(--accent-deep); }
+.rec-meter svg { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .rec-meter i { transition: none; } }
+
+/* a question asked in place (consent, "Record over this one?"): a step in tone, not a box with a shadow */
+.rec-consent, .rec-confirm { display: grid; gap: var(--s-4); padding: var(--s-8); background: var(--card); border-radius: var(--r-md); }
+.sheet-page .page :is(.rec-consent, .rec-confirm, .rec-kept) h2 { margin: 0; font: 600 30px/1.12 var(--book-display); color: var(--sheet-ink); }
+.rec-consent p, .rec-confirm p { margin: 0; font: 400 18px/1.55 var(--book-body); color: var(--sheet-ink); max-width: 56ch; }
+.rec-consent .rec-aside { font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); }
+.rec-kept { display: grid; gap: var(--s-4); }
+.sheet-page .page .rec-kept h2 { font-size: 44px; line-height: 1.05; }
+
+/* the words as A Story heard them, on the sheet's ruled field */
+.rec-label { font: 600 16px/1.35 var(--font-ui); color: var(--sheet-ink); }
+.rec-words { width: 100%; min-height: 220px; resize: vertical; padding: var(--s-4) var(--s-5); border: 1.5px solid var(--field-border); border-radius: var(--r-field);
+  background: var(--paper-print); color: var(--sheet-ink); font: 400 20px/1.6 var(--book-body); outline: 0; transition: border-color var(--dur-ui) var(--ease-out); }
+.rec-words:focus-visible { border-color: var(--ring); }
+.rec-words[readonly] { color: var(--ink-soft); }
+
+.rec-error { margin: 0; padding: var(--s-3) var(--s-4); border-left: 3px solid var(--danger); background: var(--card); font: 500 16px/1.5 var(--font-ui); color: var(--sheet-ink); }
+
+.rec-next { padding-top: 0; }
+.rec-next .where-next { margin-top: 0; }
+.sheet-page.wide .rec-next { display: grid; grid-template-columns: minmax(0, 760px) minmax(0, 600px); justify-content: center; column-gap: var(--s-20); }
+.rec-next .where-next { grid-column: 1 / -1; min-width: 0; }
+
+@media (max-width: 1100.98px) {
+  .rec-page { grid-template-columns: minmax(0, 1fr); gap: var(--s-10); justify-content: stretch; }
+  .sheet-page.wide .rec-next { display: block; }
+}
+@media (max-width: 760.98px) {
+  .rec-page { padding-top: var(--s-6); gap: var(--s-8); }
+  .rec-page .rec-card { padding: var(--s-8) var(--s-5) var(--s-6); transform: none; }
+  .rec-consent, .rec-confirm { padding: var(--s-6) var(--s-5); }
+  .rec-lead { font-size: 18px; }
+  .rec-acts .btn { flex: 1 1 auto; }
+  .sheet-page .page .rec-kept h2 { font-size: 34px; }
+}
+
+/* Talk (/talk): the two ways in beside the question, and the one line about calls */
+.talk-phone { margin: 0; font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); max-width: 52ch; }

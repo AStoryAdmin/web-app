@@ -12,6 +12,9 @@
 // three questions whichever device you open — because nothing is remembered,
 // only derived.
 
+import { DOORS, doorQuestions } from "../data/doors.js";
+import { CORE_CHAPTERS, FAMILY_CHAPTER, CATCH_ALL_CHAPTER, FAITH_CHAPTER, normaliseEra } from "../data/eras.js";
+
 /* "2026-09-09", in local time — the day should turn over where the person
    is, not in Greenwich. */
 export function dayKey(date = new Date()) {
@@ -83,27 +86,50 @@ export function depthFor(memoryCount = 0) {
 
    Questions already answered are dropped before the walk, so a bank that's
    been half worked through doesn't start serving up blanks. Answers are
-   matched on the memory's title, which is what the question becomes — so a
-   question answered out loud in a call counts here too. */
+   matched on what a memory stores of the question it answered (its
+   `prompt` and `questionId`, H19), and on its title, which is what an
+   older memory's question became (answeredBy, below). */
+
+/* What a story has already answered, read off its memories once (PF-1,
+   DECISIONS H19). A memory kept from a question stores the words it was
+   asked (`prompt`) and, for a question from the bank or the day's pinned
+   one, its id (`questionId`). An older memory has only its title, which
+   is what its question used to become, so the title still counts.
+   → { texts: Set, ids: Set } */
+export function answeredBy(memories = []) {
+  const texts = new Set();
+  const ids = new Set();
+  for (const m of memories || []) {
+    if (!m) continue;
+    const title = String(m.title || "").trim();
+    const prompt = String(m.prompt || "").trim();
+    if (title) texts.add(title);
+    if (prompt) texts.add(prompt);
+    if (m.questionId) ids.add(String(m.questionId));
+  }
+  return { texts, ids };
+}
+
+/* Whether `q` is among them, in either wording: a question asked of a
+   relative carries the storyteller's wording as `alt`, and the other way
+   round (lib/questionVoice.js), so answering it in one voice answers both. */
+export function isAnswered(q, answered) {
+  if (!q || !answered) return false;
+  if (q.id && answered.ids.has(String(q.id))) return true;
+  const text = String(q.question || "").trim();
+  if (text && answered.texts.has(text)) return true;
+  if (q.alt && answered.texts.has(String(q.alt).trim())) return true;
+  // An earlier wording of a reworded row (the bank's `was` column).
+  return (q.was || []).some((t) => answered.texts.has(String(t).trim()));
+}
+
 export function deckForDay(
   prompts,
   memories = [],
   { key = dayKey(), size = 3, maxDepth = 5 } = {}
 ) {
-  const answered = new Set(
-    (memories || []).map((m) => (m?.title || "").trim()).filter(Boolean)
-  );
-  // In either wording: a question asked of a relative carries the
-  // storyteller's wording as `alt`, and the other way round
-  // (lib/questionVoice.js), so answering it in one voice answers both.
-  let pool = shuffled(prompts).filter(
-    (q) =>
-      q?.question &&
-      !answered.has(q.question.trim()) &&
-      !(q.alt && answered.has(q.alt.trim())) &&
-      // An earlier wording of a reworded row (the bank's `was` column).
-      !(q.was || []).some((t) => answered.has(String(t).trim()))
-  );
+  const answered = answeredBy(memories);
+  let pool = shuffled(prompts).filter((q) => q?.question && !isAnswered(q, answered));
 
   // Hold back anything deeper than we've earned. If that empties the pool —
   // a shallow archive that has already answered every warm-up — the ladder
@@ -194,26 +220,36 @@ export const OPENERS = {
    is answered (or none fit this voice), and the caller falls back to
    deckForDay. */
 export function openerDeck(prompts, memories = [], { seed = "", size = 3 } = {}) {
-  const answered = new Set(
-    (memories || []).map((m) => (m?.title || "").trim()).filter(Boolean)
-  );
+  const answered = answeredBy(memories);
   const list = prompts || [];
   const voice = list.some((p) => p?.voice === "about") ? "about" : "storyteller";
   const wanted = new Set(OPENERS[voice]);
   const open = list.filter(
-    (p) =>
-      p?.question &&
-      wanted.has(p.id) &&
-      !p.sensitive &&
-      !answered.has(p.question.trim()) &&
-      !(p.alt && answered.has(p.alt.trim())) &&
-      !(p.was || []).some((t) => answered.has(String(t).trim()))
+    (p) => p?.question && wanted.has(p.id) && !p.sensitive && !isAnswered(p, answered)
   );
   if (!open.length) return null;
   const sorted = [...open].sort(
     (a, b) => hashUnit(`${seed}:${a.id}`) - hashUnit(`${seed}:${b.id}`)
   );
   return Number.isFinite(size) ? sorted.slice(0, size) : sorted;
+}
+
+/* The first days' walk for "Change": one door at a time. The opener the
+   new-story flow promised still leads, and each skip after it steps to the
+   NEXT door — the house, then food, then the parents — rather than
+   reshuffling the same first-week pool (review of 15 Oct). Behind each
+   door, its shallowest unanswered question; a door the opener already
+   belongs to is skipped, and a drained door simply isn't there. Null when
+   nothing is left to offer, and the caller falls back to deckForDay. */
+export function doorDeck(prompts, memories = [], { seed = "", size = 3 } = {}) {
+  const answered = answeredBy(memories);
+  const first = (openerDeck(prompts, memories, { seed, size: 1 }) || [])[0] || null;
+  const steps = DOORS.filter((door) => !first || !door.questions.includes(first.id))
+    .map((door) => doorQuestions(door, prompts, answered.texts).find((q) => !isAnswered(q, answered)))
+    .filter(Boolean);
+  const out = first ? [first, ...steps] : steps;
+  if (!out.length) return null;
+  return Number.isFinite(size) ? out.slice(0, size) : out;
 }
 
 export function firstMemoryQuestion(prompts, seed = "") {
@@ -241,4 +277,156 @@ export function firstMemoryQuestion(prompts, seed = "") {
 export function questionAt(deck, skips = 0) {
   if (!deck || !deck.length) return null;
   return skips < deck.length ? deck[skips] : null;
+}
+
+/* ── The arc (20 Oct) ──────────────────────────────────────────────────
+
+   The old product had a shape the new one lost: a person filled in their
+   own profile first, the life summary, and only then did the questions go
+   deeper, into what they think and what they'd pass on. The new product
+   asks one question a day, on Home, on the call and on the widget, so the
+   shape has to live in which question that is. Three stretches:
+
+     first   the doors (data/doors.js): gentle and concrete, a scene to
+             walk into. Until a story has OPENER_UNTIL memories
+             (todayQuestion.js).
+     life    the broad chapters of a life, the seven in LIFE_CHAPTERS.
+     deeper  once the life summary is filled (todayQuestion.js
+             lifeSummaryFilled): the same chapters, plus what she'd pass
+             on, what it taught her and, offered gently and never first,
+             what she'd do differently ("Looking back"; "Faith & what
+             carried me" where the plan opens it).
+
+   The order comes from what's already kept: the chapter with the fewest
+   memories goes first, ties in the order a life runs, so the deck never
+   asks a chapter twice before the others are begun. "Ask me another"
+   steps to the next chapter, never deeper into the same one. Inside a
+   chapter the walk is the same stable, day-numbered shuffle as
+   deckForDay: the same all day, a different one tomorrow. */
+
+
+// The chapters of a life as it was lived: every core chapter but the one
+// that looks back on it. Seven, the Book's count of a life's chapters.
+export const REFLECTION_CHAPTER = "Looking back";
+export const LIFE_CHAPTERS = CORE_CHAPTERS.filter((c) => c !== REFLECTION_CHAPTER);
+// What "deeper" adds.
+export const DEEPER_CHAPTERS = [REFLECTION_CHAPTER, FAITH_CHAPTER];
+// Tags that only ever arrive in the deeper stretch: nobody's second week
+// asks what they regret.
+export const DEEPER_TAGS = new Set(["regret", "pass-on", "wisdom", "mortality", "secrets", "forgiveness"]);
+export const ARC_PHASES = ["first", "life", "deeper"];
+export const DEEPER_HEAD_START = 2;
+// The sensitive kinds that ask for a secret or a falling-out.
+export const INTRUSIVE = new Set(["private", "rupture"]);
+
+/* Kept memories per chapter. → Map(chapter → count) */
+export function chapterCounts(memories = []) {
+  const counts = new Map();
+  for (const m of memories || []) {
+    if (!m || m.status === "in_progress") continue;
+    const era = normaliseEra(m.era);
+    counts.set(era, (counts.get(era) || 0) + 1);
+  }
+  return counts;
+}
+
+/* The chapters this stretch opens, thinnest first, ties in life order.
+   A relative's own chapter ("From the family") is theirs to answer in
+   every stretch; "Anything else" (songs, recipes, sayings) comes last on
+   a tie, since it is the book's catch-all. */
+export function arcChapters(phase, counts = new Map(), { relative = false } = {}) {
+  const open = [
+    ...(relative ? [FAMILY_CHAPTER] : []),
+    ...LIFE_CHAPTERS,
+    ...(phase === "deeper" ? DEEPER_CHAPTERS : []),
+    CATCH_ALL_CHAPTER,
+  ];
+  const deeper = new Set(phase === "deeper" ? DEEPER_CHAPTERS : []);
+  return open
+    .map((era, i) => {
+      const n = counts.get(era) || 0;
+      // Not begun yet goes first. The catch-all is never "not begun": it
+      // is a bucket, not a part of the life.
+      const begun = n > 0 || era === CATCH_ALL_CHAPTER ? 1 : 0;
+      // Past the life summary, what she'd pass on leans in: counted as if
+      // it held DEEPER_HEAD_START fewer memories than it does.
+      const weight = deeper.has(era) ? n - DEEPER_HEAD_START : n;
+      return { era, i, begun, weight };
+    })
+    .sort((a, b) => a.begun - b.begun || (a.begun ? a.weight - b.weight : 0) || a.i - b.i)
+    .map((x) => x.era);
+}
+
+/* The day's deck along the arc.
+   prompts  — one voice of the bank (questionVoice.js voicePrompts)
+   memories — the story's memories: what's answered, and how full each
+              chapter is
+   phase    — "life" or "deeper" ("first" is the doors' job; given it, this
+              behaves as "life")
+   maxDepth — the ceiling (depthFor); deeper lifts it to 4 at least
+   size     — 3 on Free, Infinity on a paid plan
+   The first question is never sensitive: a question that could open grief
+   is offered after "Ask me another", never as the day's question. */
+export function arcDeck(prompts, memories = [], { key = dayKey(), size = 3, maxDepth = 5, phase = "life", relative = false, preferShared = false } = {}) {
+  const answered = answeredBy(memories);
+  const deeper = phase === "deeper";
+  const ceiling = deeper ? Math.max(maxDepth, 4) : maxDepth;
+  const open = (prompts || []).filter(
+    (q) =>
+      q?.question &&
+      !isAnswered(q, answered) &&
+      (deeper || !(q.tags || []).some((t) => DEEPER_TAGS.has(t)))
+  );
+  if (!open.length) return [];
+
+  const byChapter = new Map();
+  for (const q of open) {
+    const era = normaliseEra(q.era);
+    if (!byChapter.has(era)) byChapter.set(era, []);
+    byChapter.get(era).push(q);
+  }
+  const day = dayNumber(key);
+  // Each chapter's walk for today: within the ceiling (or its shallowest
+  // when the ceiling empties it), shuffled once, turned by the day.
+  const walks = arcChapters(phase, chapterCounts(memories), { relative })
+    .filter((era) => byChapter.has(era))
+    .map((era) => {
+      const all = byChapter.get(era);
+      const within = all.filter((q) => (q.depth || 1) <= ceiling);
+      const floor = Math.min(...all.map((q) => q.depth || 1));
+      const pool = shuffled(within.length ? within : all.filter((q) => (q.depth || 1) <= floor));
+      const turn = (list) => {
+        const start = list.length ? ((day % list.length) + list.length) % list.length : 0;
+        return list.map((_, i) => list[(start + i) % list.length]);
+      };
+      // The family's question of the day has to be one the family can be
+      // asked too: those first, each part turned by the day.
+      const walk = preferShared ? [...turn(pool.filter((q) => q.alt)), ...turn(pool.filter((q) => !q.alt))] : turn(pool);
+      // Nothing intrusive by default: a question marked private or a
+      // falling-out ("What could you never forgive?") comes after every
+      // other question in its chapter, so a three-question day never
+      // reaches it while there is anything gentler to ask.
+      return [...walk.filter((q) => !INTRUSIVE.has(q.sensitive)), ...walk.filter((q) => INTRUSIVE.has(q.sensitive))];
+    });
+  if (!walks.length) return [];
+
+  // Round the chapters: one from each, thinnest first, then round again.
+  const out = [];
+  const total = walks.reduce((n, w) => n + w.length, 0);
+  const want = Math.min(Number.isFinite(size) ? size : total, total);
+  for (let round = 0; out.length < want; round++) {
+    let took = false;
+    for (const w of walks) {
+      if (round < w.length) {
+        out.push(w[round]);
+        took = true;
+        if (out.length >= want) break;
+      }
+    }
+    if (!took) break;
+  }
+  // Never a sensitive question first.
+  const gentle = out.findIndex((q) => !q.sensitive);
+  if (gentle > 0) out.unshift(...out.splice(gentle, 1));
+  return out;
 }

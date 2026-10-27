@@ -192,7 +192,7 @@ export default function Book() {
     setPrinting(true);
     track("book_pdf_downloaded", { memories: book.memories, photos: book.photos });
     try {
-      await printAtHome(story, recordedBy);
+      await printAtHome(story);
     } catch (err) {
       setProblem((err as Error).message || "The book couldn’t be made just now. Please try again.");
     } finally {

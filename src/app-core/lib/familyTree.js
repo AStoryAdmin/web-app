@@ -220,9 +220,11 @@ export function openSlots(index, subjectId) {
 export function linkStateOf(person, youId) {
   if (!person) return { key: "listed", label: "", canInvite: false };
   if (youId && person.id === youId) return { key: "you", label: "you", canInvite: false };
-  if (person.userId) return { key: "joined", label: "Joined", canInvite: false };
+  // The labels are the roster's three state words, the only way a state is
+  // ever said (PHILOSOPHY §5, FB-004); the dead have none.
+  if (person.userId) return { key: "joined", label: "on A Story", canInvite: false };
   if (person.deathYear) return { key: "remembered", label: "", canInvite: false };
-  if (person.invitedAt) return { key: "invited", label: "Invite sent", canInvite: false };
+  if (person.invitedAt) return { key: "invited", label: "invited · waiting for them", canInvite: false };
   return { key: "listed", label: "", canInvite: true };
 }
 
@@ -444,6 +446,118 @@ export function applyRelative(family, plan) {
     if (p) Object.assign(p, u.patch);
   }
   for (const e of plan.edges) family.edges.push(e);
+  return family;
+}
+
+/* Plans connecting two people who are both already in the tree.
+
+   planRelative only ever adds somebody new; nothing could draw a line
+   between two people the family already has. That is exactly the state a
+   join leaves behind: somebody arrives by family code (or their own little
+   tree is folded in, family_join_merge.sql) as a row with no edges, so the
+   database says one family while every drawing shows two. This is the
+   "place them" half: `personId` becomes `kindKey` of `anchorId` — "Sam is
+   David's child" — written as the same parent/spouse edges as everything
+   else.
+
+   Only the direct kinds: parent, child, spouse, sibling, other. A joiner is
+   placed next to whoever they're closest to; every farther word (cousin,
+   aunt) then falls out of the graph as usual.
+
+   A placeholder already holding the slot is the person, waiting for a name
+   (planRelative fills them when adding somebody new); here the placeholder
+   folds into the real row instead (applyConnect → foldPersonInto), so
+   placing a joiner as "Linh's parent" when an unnamed parent holds the
+   shape never makes a third parent.
+
+   Returns { edges, folds, people, already } or { error }:
+     edges   — to add (deduped by applyConnect)
+     folds   — [{ keep, fold }] placeholders becoming the placed person
+     people  — a new shared placeholder parent (siblings with no parents)
+     already — true when the relation is already in the tree  */
+export function planConnect(family, personId, kindKey, anchorId, { label = "", newId } = {}) {
+  const index = buildIndex(family || {});
+  const P = index.people.get(personId);
+  const A = index.people.get(anchorId);
+  if (!P || !A || personId === anchorId || isPlaceholder(P) || isPlaceholder(A)) return { error: "not-found" };
+
+  const plan = { edges: [], folds: [], people: [], already: false };
+  const hasEdge = (from, to, kind) => (family.edges || []).some((e) => e.from === from && e.to === to && e.kind === kind);
+  const parentsOf = (id) => [...(index.parentsOf.get(id) || [])];
+  const realParents = (id) => parentsOf(id).filter((p) => !isPlaceholder(index.people.get(p)));
+  const heldParent = (id) => parentsOf(id).find((p) => isPlaceholder(index.people.get(p)));
+
+  if (kindKey === "parent" || kindKey === "child") {
+    const child = kindKey === "parent" ? anchorId : personId;
+    const parent = kindKey === "parent" ? personId : anchorId;
+    if (hasEdge(parent, child, "parent")) return { ...plan, already: true };
+    const held = heldParent(child);
+    if (held) {
+      plan.folds.push({ keep: parent, fold: held });
+      return plan;
+    }
+    if (realParents(child).length >= 2) return { error: "two-parents" };
+    plan.edges.push({ from: parent, to: child, kind: "parent" });
+    return plan;
+  }
+
+  if (kindKey === "spouse") {
+    if (hasEdge(anchorId, personId, "spouse") || hasEdge(personId, anchorId, "spouse")) return { ...plan, already: true };
+    const held = (index.spousesOf.get(anchorId) || []).find((s) => isPlaceholder(index.people.get(s)));
+    if (held) {
+      plan.folds.push({ keep: personId, fold: held });
+      return plan;
+    }
+    plan.edges.push({ from: anchorId, to: personId, kind: "spouse" });
+    return plan;
+  }
+
+  if (kindKey === "sibling") {
+    const pa = parentsOf(anchorId);
+    const pp = parentsOf(personId);
+    const pr = realParents(personId);
+    const ar = realParents(anchorId);
+    // Both already have real parents and none in common: making them
+    // siblings would quietly give somebody three parents. The person who
+    // knows which parents are the same should connect those instead.
+    if (pr.length && ar.length && !pr.some((p) => ar.includes(p))) return { error: "parents-differ" };
+    let shared = pa.length ? pa : pp;
+    if (!shared.length) {
+      if (!newId) return { error: "no-parents" };
+      const ph = { id: newId(), givenName: "", familyName: "", sex: "", source: PLACEHOLDER };
+      plan.people.push(ph);
+      shared = [ph.id];
+    }
+    for (const pid of shared) {
+      if (!hasEdge(pid, personId, "parent") && !pp.includes(pid)) plan.edges.push({ from: pid, to: personId, kind: "parent" });
+      if (!hasEdge(pid, anchorId, "parent") && !pa.includes(pid)) plan.edges.push({ from: pid, to: anchorId, kind: "parent" });
+    }
+    if (!plan.edges.length && !plan.people.length) return { ...plan, already: true };
+    return plan;
+  }
+
+  if (kindKey === "other") {
+    if ((family.edges || []).some((e) => e.kind === "other" && ((e.from === anchorId && e.to === personId) || (e.from === personId && e.to === anchorId))))
+      return { ...plan, already: true };
+    plan.edges.push({ from: anchorId, to: personId, kind: "other", label: String(label || "").trim() });
+    return plan;
+  }
+
+  return { error: "unknown-kind" };
+}
+
+/* Applies a plan from planConnect to a family, in place. */
+export function applyConnect(family, plan) {
+  if (!plan || plan.error) return family;
+  family.people = family.people || [];
+  family.edges = family.edges || [];
+  for (const p of plan.people || []) family.people.push(p);
+  for (const f of plan.folds || []) foldPersonInto(family, f.keep, f.fold);
+  for (const e of plan.edges || []) {
+    if (e.from === e.to) continue;
+    if (family.edges.some((x) => x.from === e.from && x.to === e.to && x.kind === e.kind)) continue;
+    family.edges.push(e);
+  }
   return family;
 }
 

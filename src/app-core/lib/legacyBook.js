@@ -15,6 +15,7 @@
 //   buildLegacyHtml() the printable HTML, handed to expo-print
 
 import { sortByDate, memoryDate, ageLabel } from "./timeline.js";
+import { isBeforeTeller } from "./familyFacts.js";
 import {
   ERAS,
   CATCH_ALL_CHAPTER,
@@ -25,6 +26,8 @@ import {
   normaliseDesign,
   chapterSequence,
   effectiveCoverStyle,
+  coverBare,
+  coverPhoto,
   DEFAULT_SUBTITLE,
   PAPERS,
   keepsakePhotos,
@@ -34,6 +37,10 @@ import {
   printedChapterName,
   listenUrl,
   hasVoice,
+  includesMemory,
+  sidesInBook,
+  VERSIONS_IN_FULL,
+  readUrl,
 } from "./bookDesign.js";
 import { qrSvg } from "./qr.js";
 import { BOOK_PRINT } from "../theme/index.js";
@@ -43,9 +50,12 @@ import {
   keepsakeSpineHtml,
   keepsakeCss,
   SPINE_SHARE,
+  coverPrints,
 } from "./bookCase.js";
 import { LOGO, MARK_PATH, BARS_PATH } from "../theme/logoPaths.js";
 import { withFullSerif } from "./printFonts.js";
+import { bookLessons, lessonsForStory, quoteShown, sourceLine } from "../data/lessons.js";
+import { printedSides, bookLeaf } from "./bookPages.js";
 
 const SUBTITLE = DEFAULT_SUBTITLE;
 
@@ -85,13 +95,23 @@ export function attributionFor(memory) {
    years it spans, and every memory carrying what the page needs.
    `design` is how somebody has designed the book (lib/bookDesign.js); it
    defaults to the one saved on the story, and a story with none prints as
-   the book always has. */
-export function bookStructure(story, { now = new Date(), design = story?.bookDesign } = {}) {
+   the book always has.
+   `sides` are the story's contributions (data/contributions): each memory
+   carries the versions the keeper said yes to (bookDesign sidesInBook:
+   never pending or taken off, never on a memory out of the book, none when
+   the book is her words only), printed right after hers as "Linh remembers
+   it too" (FB-371, DECISIONS T-16); `people` (the tree) gives their
+   writers' full names and the storyteller's her or his. */
+export function bookStructure(story, { now = new Date(), design = story?.bookDesign, sides = [], people = [], keepers = null, everything = false } = {}) {
   const d = normaliseDesign(design);
-  const left = new Set(d.excluded);
-  const memories = (story?.memories || []).filter(
-    (m) => m && m.status !== "in_progress" && !left.has(m.id)
-  );
+  const teller = (people || []).find((p) => p && story?.id && p.storyId === story.id) || null;
+  // What prints (S-PL8; bookDesign bookState): every kept memory but the
+  // storyteller's "Not for the book", Private ones nobody put in, and the
+  // ones a keeper left out. `everything` is every kept memory, for the
+  // screen that chooses.
+  const memories = (story?.memories || [])
+    .filter((m) => m && m.status !== "in_progress" && (everything || includesMemory(d, m)))
+    .map((m) => withVersions(m, sides?.length ? printedSides(m, sidesInBook(d, m, sides), { people, teller }).map(inBookVoice) : []));
 
   // Chapters have been merged and renamed twice, and data/store.js only
   // rewrites a name on its way out of the database. Anything that reaches
@@ -139,7 +159,12 @@ export function bookStructure(story, { now = new Date(), design = story?.bookDes
     }
   }
 
+  // The years of the storyteller's own life: family history from before
+  // they were born ("Before Rose · 1938") is printed, but never starts the
+  // span (lib/familyFacts.js, MASTER-PLAN §8.2), so Archive, Book and
+  // cover all say 1951–2011.
   const years = filed
+    .filter((m) => !isBeforeTeller(m, story))
     .map((m) => memoryDate(m).year)
     .filter((y) => y != null)
     .sort((a, b) => a - b);
@@ -196,7 +221,103 @@ export function bookStructure(story, { now = new Date(), design = story?.bookDes
     memories: filed.length,
     photos: filed.reduce((n, m) => n + (m.photos?.length || 0), 0),
     printedOn: now,
+    // The colophon's two credits (S-PL8): the story's keepers, owner
+    // first (never whoever has the book open), and everyone whose words
+    // print, most first.
+    keepers: Array.isArray(keepers) ? keepers : bookKeepers({ story, people }),
+    contributors: bookContributors(filed, { people, teller, story }),
   };
+}
+
+/* "A", "A and B", "A, B and C". */
+export function namesLine(names) {
+  const n = (names || []).filter(Boolean);
+  if (n.length <= 1) return n[0] || "";
+  return `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}`;
+}
+
+/* A kept version as the book says it (FB-371, T-16): named, in the book's
+   voice, never the app's ("Linh added to this memory…"), never "they":
+   "Linh remembers it too", then her words, then who she is to the
+   storyteller ("Linh Miller, her daughter"). */
+export function inBookVoice(side) {
+  const who = side.name === "Someone in the family" ? side.name : side.first || side.name || "Someone in the family";
+  return { ...side, heading: `${who} remembers it too` };
+}
+
+/* A memory with its kept versions: the first three in full, oldest first,
+   each credited; past three, the rest as one line, "Also remembered by
+   Sam and Peggy", with a code to read them in the app (S-PL8). */
+function withVersions(m, theirs) {
+  if (!theirs.length) return m;
+  const out = { ...m, sides: theirs.slice(0, VERSIONS_IN_FULL) };
+  const more = theirs.slice(VERSIONS_IN_FULL);
+  if (more.length) {
+    const names = [...new Set(more.map((s) => s.first || s.name))];
+    out.alsoRemembered = { names, line: `Also remembered by ${namesLine(names)}`, versions: more };
+  }
+  return out;
+}
+
+const fullNameOf = (p) => (p ? [p.givenName, p.familyName].filter(Boolean).join(" ").trim() : "");
+
+/* The story's keepers as the colophon names them, owner first: the
+   owner (the story's, else whoever put the storyteller in the tree), then
+   each co-keeper whose invitation was taken up (story_managers, active).
+   Full names from the tree; never the person reading. */
+export function bookKeepers({ story, people = [], managers = [] } = {}) {
+  const list = people || [];
+  const subject = story?.id ? list.find((p) => p && p.storyId === story.id) : null;
+  const ownerId = story?.ownerId || subject?.createdBy || null;
+  const names = [];
+  const add = (n) => {
+    const s = String(n || "").trim();
+    if (s && !names.includes(s)) names.push(s);
+  };
+  const byUser = (id) => (id ? list.find((p) => p && p.userId === id) : null);
+  if (ownerId) add(fullNameOf(byUser(ownerId)) || story?.ownerName);
+  for (const row of managers || []) {
+    if (!row || row.status !== "active" || !row.user_id || row.user_id === ownerId) continue;
+    const person = byUser(row.user_id);
+    add(fullNameOf(person) || row.name || row.display_name || "");
+  }
+  return names;
+}
+
+/* Everyone whose own words print in the book, most words first: the
+   family's own memories ("Linh, her daughter") and their kept versions,
+   in or past the three. Never the storyteller herself. */
+export function bookContributors(memories, { people = [], teller = null, story = null } = {}) {
+  const list = people || [];
+  const tellerName = fullNameOf(teller) || [story?.name, story?.lastName].filter(Boolean).join(" ");
+  const tellerFirst = String(teller?.givenName || story?.name || "").trim().split(/\s+/)[0];
+  const words = new Map();
+  const count = (name, body) => {
+    const n = String(name || "").trim();
+    if (!n || n === tellerName || n === tellerFirst) return;
+    words.set(n, (words.get(n) || 0) + String(body || "").length);
+  };
+  const fromSigned = (signed) => {
+    const first = String(signed || "").split(",")[0].trim();
+    const matches = list.filter((p) => p && p.givenName && p.givenName === first.split(/\s+/)[0]);
+    return matches.length === 1 && first.split(/\s+/).length === 1 ? fullNameOf(matches[0]) : first;
+  };
+  for (const m of memories || []) {
+    if (m?.contributor) count(fromSigned(m.contributor), m.body);
+    for (const s of [...(m?.sides || []), ...(m?.alsoRemembered?.versions || [])]) count(s.name, s.body);
+  }
+  return [...words.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([n]) => n);
+}
+
+/* The colophon's credit lines: "Kept by Jamie Miller." and "With memories
+   from Linh Miller and Sam Miller." Either is left out with nobody to name. */
+export function creditLines(book) {
+  const out = [];
+  const kept = namesLine(book?.keepers || []);
+  if (kept) out.push(`Kept by ${kept}.`);
+  const from = namesLine(book?.contributors || []);
+  if (from) out.push(`With memories from ${from}.`);
+  return out;
 }
 
 function formatPrintDate(date) {
@@ -205,17 +326,6 @@ function formatPrintDate(date) {
     month: "long",
     year: "numeric",
   });
-}
-
-/* Body text as paragraphs rather than one block with <br> in it. A memoir is
-   read in paragraphs, and a page-break lands far better between them. */
-function bodyHtml(body) {
-  const paras = String(body || "")
-    .split(/\n{2,}|\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (!paras.length) return "";
-  return paras.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n            ");
 }
 
 /* Photographs. They are the whole reason a family keeps a book on a shelf,
@@ -249,17 +359,103 @@ function listenHtml(story, memory, design, listenBase, ink) {
             </div>`;
 }
 
-function memoryHtml(story, memory, design, listenBase, ink) {
+/* Body text as paragraphs rather than one block with <br> in it. A memoir is
+   read in paragraphs, and a page-break lands far better between them.
+   Her words with her kept line ruled in the margin and the marks that pair
+   a version with its word (lib/bookPages bookLeaf). The rule is how print
+   shows the marker (hero-spec §0 rule 2): a 2 pt foil rule in the left
+   margin beside every line the kept line touches. Print can't measure
+   lines, so each word of it carries a zero-size mark (.kr) that is set
+   out of the flow, in the margin, on whatever line its word lands on;
+   together they draw the rule over exactly those lines. */
+function ruledHtml(text, last) {
+  const parts = String(text).split(/(\s+)/);
+  const rule = '<span class="kr"></span>';
+  return parts.map((p) => (!p || /^\s+$/.test(p) ? p : `${rule}${escapeHtml(p)}`)).join("") + (last ? rule : "");
+}
+function proseHtml(paragraphs) {
+  return paragraphs
+    .map((runs) => {
+      const lastKept = runs.reduce((at, r, i) => (r.kept && !r.mark ? i : at), -1);
+      const inner = runs
+        .map((r, i) =>
+          r.mark
+            ? `<sup class="mark">${escapeHtml(r.text)}</sup>`
+            : r.kept
+              ? `<span class="kept">${ruledHtml(r.text, i === lastKept)}</span>`
+              : escapeHtml(r.text)
+        )
+        .join("");
+      return `<p${lastKept >= 0 ? ' class="has-kept"' : ""}>${inner}</p>`;
+    })
+    .join("\n            ");
+}
+
+/* A version the keeper kept, printed at reading size right after her
+   words, as the reader sets it (FB-371, T-16): a brass rule in the margin,
+   no slip and no box, so the book reads as one book; its mark and "Linh
+   remembers it too", her words, who she is. Never a footnote. */
+function sideHtml(side) {
+  const words = String(side.body || "")
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p class="side-words">${escapeHtml(p)}</p>`)
+    .join("");
+  return `
+            <aside class="side">
+              <p class="side-head">${side.mark ? `<sup class="mark">${escapeHtml(side.mark)}</sup> ` : ""}${escapeHtml(side.heading)}</p>
+              ${words}
+              <p class="side-by">${escapeHtml(side.byline || side.credit)}</p>
+            </aside>`;
+}
+
+/* Past three versions, the rest as one line with a code to read them in
+   the app (S-PL8); without the book's key, the line alone. */
+function alsoHtml(memory, design, readBase, ink) {
+  const also = memory.alsoRemembered;
+  if (!also) return "";
+  const url = readBase ? readUrl(readBase, memory.id, design.listenKey) : null;
+  return `
+            <div class="also">
+              ${url ? `<div class="listen-code">${qrSvg(url, ink)}</div>` : ""}
+              <p>${escapeHtml(also.line)}.${url ? " Scan to read their memories of it in A Story." : " Their memories of it are in A Story."}</p>
+            </div>`;
+}
+
+/* The sides a page of the reader closes with, each with the mark its word
+   carries in her words (FB-388): the ¹ after "measured" and the ¹ before
+   "Linh remembers it too", as the PDF prints them (memoryHtml). The page's
+   sides are the memory's own; bookLeaf is what pairs them, so a side keeps
+   the mark bookLeaf gave it, and one whose word isn't on the page has
+   none. Matched by id, else by her words. */
+export function pairedSides(memory, design, sides) {
+  if (!sides?.length) return sides || [];
+  const all = memory?.sides || [];
+  const marked = bookLeaf(memory, printedBody(design, memory), all).sides;
+  const same = (a, b) => a === b || (a?.id ? a.id === b?.id : !!a?.body && a.body === b?.body);
+  return sides.map((s) => {
+    const i = all.findIndex((x) => same(x, s));
+    return i >= 0 ? { ...s, mark: marked[i].mark, anchor: marked[i].anchor } : { ...s, mark: "", anchor: "" };
+  });
+}
+
+function memoryHtml(story, memory, design, listenBase, ink, readBase = "") {
   const dateline = datelineFor(story, memory);
   const credit = attributionFor(memory);
   const title = (memory.title || "").trim();
+  const leaf = bookLeaf(memory, printedBody(design, memory), memory.sides || []);
+  // Who asked for it, when the family's daily question brought it (lane V;
+  // the phone's page says the same, BookLeaf AskedBy). First name only.
+  const askedRaw = typeof memory.askedBy === "string" ? memory.askedBy : memory.askedBy?.name || "";
+  const asked = String(askedRaw).trim().split(/\s+/)[0] || "";
 
   return `
           <article class="memory">
             ${title ? `<h3>${escapeHtml(title)}</h3>` : ""}
-            ${dateline ? `<p class="dateline">${escapeHtml(dateline)}</p>` : ""}${photosHtml(memory)}
-            ${bodyHtml(printedBody(design, memory))}
-            ${credit ? `<p class="credit">${escapeHtml(credit)}</p>` : ""}${listenHtml(story, memory, design, listenBase, ink)}
+            ${dateline ? `<p class="dateline">${escapeHtml(dateline)}</p>` : ""}${asked ? `<p class="asked">Asked by ${escapeHtml(asked)}</p>` : ""}${photosHtml(memory)}
+            ${proseHtml(leaf.paragraphs)}
+            ${credit ? `<p class="credit">${escapeHtml(credit)}</p>` : ""}${leaf.sides.map(sideHtml).join("")}${alsoHtml(memory, design, readBase, ink)}${listenHtml(story, memory, design, listenBase, ink)}
           </article>`;
 }
 
@@ -283,12 +479,16 @@ function markSvg(color, sizeMm) {
    printer can load (LegacyBookScreen signs it). */
 function coverHtml(book, style, story) {
   if (style === "keepsake") return keepsakeCoverHtml(book, story);
-  const photo = book.design.cover.photo;
+  // The photograph set into the board, or none: "No photograph", or a photo
+  // style with no photo to show, prints the bare board in the style's own
+  // material (FB-329), never the cloth in its place and never a hole.
+  const photo = coverPhoto(book.design);
+  const bare = coverBare(book.design);
   const title = escapeHtml(book.title);
   const sub = escapeHtml(book.subtitle);
   const span = book.coverSpan ? `<p class="cover-span">${escapeHtml(book.coverSpan)}</p>` : "";
   const c = BOOK_PRINT.covers[style];
-  if (style === "wrap") {
+  if (style === "wrap" && !bare) {
     return `
   <section class="cover cover-wrap" style="background-image: url('${escapeHtml(photo)}')">
     <div class="cover-shade"></div>
@@ -300,7 +500,7 @@ function coverHtml(book, style, story) {
     </div>
   </section>`;
   }
-  if (style === "tipped") {
+  if (style === "tipped" && !bare) {
     return `
   <section class="cover cover-tipped">
     <div class="cover-spine"></div>
@@ -310,9 +510,10 @@ function coverHtml(book, style, story) {
     ${span}
   </section>`;
   }
-  // cloth and heirloom: a foil-blocked board.
+  // Cloth and heirloom, and every style without a photograph: the family's
+  // one foil-blocked board (BookCover.js FoilCover draws the same).
   return `
-  <section class="cover cover-${style}">
+  <section class="cover cover-${style}${bare ? " cover-bare" : ""}">
     <div class="cover-spine"></div>
     <div class="cover-frame"></div>
     ${style === "heirloom" ? '<div class="cover-frame cover-frame-inner"></div>' : ""}
@@ -324,33 +525,191 @@ function coverHtml(book, style, story) {
   </section>`;
 }
 
-/* A Story's own cover, laid out as the design team's template: the title
-   in spaced capitals and the date line at the top, the storyteller's name
-   in script, up to three photographs as prints overlapping down the right,
-   and a line in script at the foot. Every word and photo has a default
-   from the story, so it is finished before anybody touches it. */
+/* A Story's own cover, as the phone draws it (BookCover.js, lane B B-2): the
+   title in foil, the line, one photograph in a debossed window, her name
+   written under it; the family's own line at the foot if they wrote one.
+   Every word and photo has a default from the story, so it is finished
+   before anybody touches it. */
 function keepsakeCoverHtml(book, story) {
   const w = keepsakeWords(book.design, book, story);
-  const photos = keepsakePhotos(book.design, story);
+  const photos = coverPrints(book.design, keepsakePhotos(book.design, story));
   return `
   <section class="ks-page">
-    ${keepsakeFrontHtml(w, photos, book.design.cover.tone)}
+    ${keepsakeFrontHtml(w, photos, book.design.cover.tone, book.design.cover.tagline || "")}
   </section>`;
 }
+
+/* ── Print profiles (L6, 25 Oct) ──────────────────────────────────────
+   A print shop wants an exact page box, margins clear of the trim and the
+   binding, a page count it can bind, and a cover laid flat to the
+   millimetre. With no profile the book is what it always was (the screen,
+   the phone's print dialog, the preview): nothing below runs. With one,
+   the interior is set at the printer's page box with mirrored margins and
+   the cover is one spread: wrap, back, spine, front, wrap.
+
+   Every number here is the printer's, written down on 25 Oct 2026, and is
+   to be checked against the template the printer generates for the exact
+   page count before a real order (docs/book-fulfilment.md, Print specs).
+   Margins are measured from the trim; the page box adds the bleed. */
+export const PRINT_PROFILES = {
+  // Lulu "US Trade" 6 × 9 in, Hardcover Casewrap. Interior with bleed:
+  // 6.25 × 9.25 in. Lulu's safety margin is 0.5 in from the trim; a case
+  // binding swallows more at the gutter, so the inside margin is wider.
+  "lulu-6x9-hardcover": {
+    printer: "Lulu",
+    binding: "casewrap",
+    trimIn: [6, 9],
+    bleedIn: 0.125,
+    marginsIn: { top: 0.75, bottom: 0.8, inside: 0.875, outside: 0.625 },
+    pageMultiple: 2, // assumption: an even count (each leaf has two sides)
+    minPages: 24, // Lulu's casewrap spine table starts at 24 pages
+    maxPages: 800,
+    spine: "lulu-casewrap",
+    // Assumption (Lulu's template is the truth): the board stands 0.125 in
+    // proud of the pages at head, foot and fore-edge, and the printed
+    // cloth wraps 0.75 in round the board's edges.
+    cover: { overhangIn: 0.125, wrapIn: 0.75 },
+  },
+  // The 8 × 8 in square lay-flat Daniel tried at PrestoPhoto (its sample
+  // interior is 594 pt = 8.25 in square: 8 in trim and 0.125 in bleed all
+  // round). The keepsake cover was drawn square, so it sits here as drawn.
+  "square-8x8-layflat": {
+    printer: "PrestoPhoto (or Blurb)",
+    binding: "layflat",
+    trimIn: [8, 8],
+    bleedIn: 0.125,
+    marginsIn: { top: 0.625, bottom: 0.7, inside: 0.75, outside: 0.625 },
+    pageMultiple: 2, // assumption: an even count
+    minPages: 20, // assumption: the usual photo-book minimum
+    maxPages: 200, // assumption
+    spine: "linear",
+    cover: { overhangIn: 0.125, wrapIn: 0.75 },
+  },
+};
+
+// Lulu's Hardcover Casewrap spine table, [last page count, inches]
+// (help.api.lulu.com, "How is spine width calculated?", read 25 Oct 2026).
+// Below 24 pages Lulu won't bind a casewrap.
+export const LULU_CASEWRAP_SPINE_IN = [
+  [84, 0.25], [140, 0.5], [168, 0.625], [194, 0.6875], [222, 0.75], [250, 0.8125],
+  [278, 0.875], [306, 0.9375], [334, 1], [360, 1.0625], [388, 1.125], [416, 1.1875],
+  [444, 1.25], [472, 1.3125], [500, 1.375], [528, 1.4375], [556, 1.5], [582, 1.5625],
+  [610, 1.625], [638, 1.6875], [666, 1.75], [694, 1.8125], [722, 1.875], [750, 1.9375],
+  [778, 2], [799, 2.0625], [800, 2.125],
+];
+
+// For a printer with no table: one constant per page. 1/444 in is Lulu's
+// own figure for its standard paper (paperback formula pages / 444 + 0.06),
+// and its casewrap table climbs at the same rate (0.0625 in per 28 pages).
+// The allowance is the boards and the hinge. Both are assumptions.
+export const PAPER_IN_PER_PAGE = 1 / 444;
+export const BOARD_ALLOWANCE_IN = 0.25;
+
+const round4 = (n) => Math.round(n * 10000) / 10000;
+
+export function printProfile(name) {
+  if (!name) return null;
+  const p = PRINT_PROFILES[name];
+  if (!p) throw new Error(`Unknown print profile "${name}". Known: ${Object.keys(PRINT_PROFILES).join(", ")}`);
+  return p;
+}
+
+const asProfile = (p) => (typeof p === "string" ? printProfile(p) : p);
+
+/* The PDF's page box: the trim plus the bleed on every edge, in inches. */
+export function pageBoxIn(profile) {
+  const p = asProfile(profile);
+  return [round4(p.trimIn[0] + 2 * p.bleedIn), round4(p.trimIn[1] + 2 * p.bleedIn)];
+}
+
+/* Margins from the page box's edges (the bleed added to the margin from
+   the trim), mirrored: on a right-hand page (recto, odd, page 1) the
+   binding is on the left; on a left-hand page (verso) it is on the right. */
+export function pageMarginsIn(profile) {
+  const p = asProfile(profile);
+  const m = p.marginsIn;
+  const b = p.bleedIn;
+  const top = round4(m.top + b);
+  const bottom = round4(m.bottom + b);
+  const inside = round4(m.inside + b);
+  const outside = round4(m.outside + b);
+  return {
+    recto: { top, bottom, left: inside, right: outside },
+    verso: { top, bottom, left: outside, right: inside },
+  };
+}
+
+/* The page count the printer will bind: at least its minimum, rounded up
+   to its multiple. `blanks` is how many empty pages go at the back. */
+export function paddedPageCount(profile, pages) {
+  const p = asProfile(profile);
+  const n = Math.max(0, Math.ceil(pages || 0));
+  const padded = Math.max(p.minPages, Math.ceil(n / p.pageMultiple) * p.pageMultiple);
+  return { pages: padded, blanks: padded - n, tooMany: padded > p.maxPages };
+}
+
+/* The spine's width in inches for a bound page count. */
+export function spineWidthIn(profile, pages) {
+  const p = asProfile(profile);
+  if (p.spine === "lulu-casewrap") {
+    const row = LULU_CASEWRAP_SPINE_IN.find(([upTo]) => pages <= upTo);
+    return row ? row[1] : LULU_CASEWRAP_SPINE_IN[LULU_CASEWRAP_SPINE_IN.length - 1][1];
+  }
+  return round4(pages * PAPER_IN_PER_PAGE + BOARD_ALLOWANCE_IN);
+}
+
+/* The cover laid flat, in inches: wrap | back board | spine | front board
+   | wrap across, wrap | board | wrap down. A board is the trim plus its
+   overhang at the fore-edge (width) and at head and foot (height). */
+export function coverSpreadIn(profile, pages, { spineIn } = {}) {
+  const p = asProfile(profile);
+  const spine = spineIn ?? spineWidthIn(p, pages);
+  const { overhangIn, wrapIn } = p.cover;
+  const faceW = round4(p.trimIn[0] + overhangIn);
+  const faceH = round4(p.trimIn[1] + 2 * overhangIn);
+  return {
+    width: round4(2 * wrapIn + 2 * faceW + spine),
+    height: round4(2 * wrapIn + faceH),
+    spine,
+    faceW,
+    faceH,
+    wrap: wrapIn,
+  };
+}
+
+/* The interior's @page rules for a profile. */
+export function printPageCss(profile) {
+  const [w, h] = pageBoxIn(profile);
+  const { recto, verso } = pageMarginsIn(profile);
+  return `@page { size: ${w}in ${h}in; margin: ${recto.top}in ${recto.right}in ${recto.bottom}in ${recto.left}in; }
+  @page :right { margin-left: ${recto.left}in; margin-right: ${recto.right}in; }
+  @page :left { margin-left: ${verso.left}in; margin-right: ${verso.right}in; }`;
+}
+
+const SCREEN_PAGE_CSS = "@page { margin: 20mm 18mm; }";
+
+// Only with a print profile. An empty page is empty: no "Notes", no
+// lines, nothing of ours (their words, never our debris).
+const PRINT_EXTRA_CSS = `
+  .pad-page { page-break-before: always; break-before: page; height: 1px; }
+`;
 
 /* The outside of the book, as one landscape page for the printer: back,
    spine, front, the way a case is laid flat. The keepsake cover only; the
    other styles are single boards. Square covers, as the template is;
    `coverMm` is the side and `spineMm` the spine, both the printer's to
-   confirm (the spine depends on the page count and their paper). */
+   confirm (the spine depends on the page count and their paper).
+   With `print` (a profile's name) and `pages` (the bound count), the spread
+   is the printer's: see printCoverWrapHtml. */
 export function buildCoverWrapHtml(
   story,
-  { design = story?.bookDesign, now = new Date(), coverMm = 216, spineMm = Math.round(216 * SPINE_SHARE) } = {}
+  { design = story?.bookDesign, now = new Date(), coverMm = 216, spineMm = Math.round(216 * SPINE_SHARE), print = null, pages = 0, spineIn } = {}
 ) {
   const book = bookStructure(story, { now, design });
-  const C = BOOK_PRINT.covers.keepsake[book.design.cover.color] || BOOK_PRINT.covers.keepsake.navy;
+  const C = BOOK_PRINT.covers.keepsake[book.design.cover.color] || BOOK_PRINT.covers.keepsake.chocolate;
   const w = keepsakeWords(book.design, book, story);
-  const photos = keepsakePhotos(book.design, story);
+  const photos = coverPrints(book.design, keepsakePhotos(book.design, story));
+  if (print) return printCoverWrapHtml({ book, C, w, photos, profile: printProfile(print), pages, spineIn });
   return withFullSerif(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -370,7 +729,57 @@ ${keepsakeCss(C)}
   <div class="wrap">
     ${keepsakeBackHtml(w)}
     ${keepsakeSpineHtml(w, C)}
-    ${keepsakeFrontHtml(w, photos, book.design.cover.tone)}
+    ${keepsakeFrontHtml(w, photos, book.design.cover.tone, book.design.cover.tagline || "")}
+  </div>
+</body>
+</html>`);
+}
+
+/* The printer's cover spread. The whole sheet is the board's colour, so the
+   wrap and any slip in the trim show cloth, never white; the spine's
+   colour runs the full height for the same reason. The keepsake's square
+   front and back are centred on each board's face (on a 6 × 9 board a
+   square of the face's width, the board above and below it), and the
+   spine's sprig, words and mark sit on the spine's face. No crop marks:
+   print-on-demand shops want none. */
+function printCoverWrapHtml({ book, C, w, photos, profile, pages, spineIn }) {
+  const s = coverSpreadIn(profile, pages, { spineIn });
+  const side = Math.min(s.faceW, s.faceH);
+  const artTop = round4(s.wrap + (s.faceH - side) / 2);
+  const backLeft = round4(s.wrap + (s.faceW - side) / 2);
+  const spineLeft = round4(s.wrap + s.faceW);
+  const frontLeft = round4(spineLeft + s.spine + (s.faceW - side) / 2);
+  return withFullSerif(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>${escapeHtml(w.title)}: cover, ${escapeHtml(profile.printer)} ${profile.trimIn[0]} × ${profile.trimIn[1]} in, ${pages} pages</title>
+<style>
+  @page { size: ${s.width}in ${s.height}in; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  .wrap {
+    position: relative; overflow: hidden;
+    width: ${s.width}in; height: ${s.height}in;
+    background: ${C.board};
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  /* Two classes deep, so keepsakeCss's position: relative (later, one
+     class) can't pull the boards back into the flow. */
+  .wrap > .spine-cloth, .wrap > .ks-back, .wrap > .ks-spine, .wrap > .ks-front { position: absolute; }
+  .wrap > .spine-cloth { left: ${spineLeft}in; top: 0; width: ${s.spine}in; height: ${s.height}in; background: ${C.spine}; }
+  .wrap > .ks-back { left: ${backLeft}in; top: ${artTop}in; width: ${side}in; height: ${side}in; }
+  .wrap > .ks-spine { left: ${spineLeft}in; top: ${s.wrap}in; width: ${s.spine}in; height: ${s.faceH}in; }
+  .wrap > .ks-front { left: ${frontLeft}in; top: ${artTop}in; width: ${side}in; height: ${side}in; }
+${keepsakeCss(C)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spine-cloth"></div>
+    ${keepsakeBackHtml(w)}
+    ${keepsakeSpineHtml(w, C)}
+    ${keepsakeFrontHtml(w, photos, book.design.cover.tone, book.design.cover.tagline || "")}
   </div>
 </body>
 </html>`);
@@ -382,17 +791,28 @@ ${keepsakeCss(C)}
    `design` defaults to the one saved on the story; see bookStructure. */
 // `listenBase` is where the listening codes point (the listen function, or
 // a redirect on our own domain); without it the book prints no codes.
+// `sides` and `people` print the family's kept versions; see bookStructure.
+// `keepers` names the story's keepers for the title page and colophon
+// (bookKeepers); without it they are worked out from the story and tree.
+// `recordedBy` (whoever is printing) is no longer printed: "Kept by" is
+// the story's keepers, never the reader (S-PL8). `readBase` is where the
+// "Also remembered by" codes point.
 export function buildLegacyHtml(
   story,
-  { recordedBy = "", now = new Date(), design = story?.bookDesign, listenBase = "" } = {}
+  { now = new Date(), design = story?.bookDesign, listenBase = "", readBase = "", sides = [], people = [], keepers = null, print = null, padPages = 0 } = {}
 ) {
-  const book = bookStructure(story, { now, design });
+  const book = bookStructure(story, { now, design, sides, people, keepers });
+  // A print profile (PRINT_PROFILES): the printer's page box and mirrored
+  // margins, no cover page (the case carries the cover), and `padPages`
+  // empty pages at the back to reach a count the printer binds. Without
+  // one, the book is exactly the screen's.
+  const profile = printProfile(print);
   const P = BOOK_PRINT.papers[book.design.paper] || BOOK_PRINT.papers.classic;
   const coverStyle = effectiveCoverStyle(book.design);
   // The keepsake cover comes in colourways; the others have one palette.
   const C =
     coverStyle === "keepsake"
-      ? BOOK_PRINT.covers.keepsake[book.design.cover.color] || BOOK_PRINT.covers.keepsake.navy
+      ? BOOK_PRINT.covers.keepsake[book.design.cover.color] || BOOK_PRINT.covers.keepsake.chocolate
       : BOOK_PRINT.covers[coverStyle];
   const paperName =
     book.design.paper === "classic" ? "" : PAPERS.find((p) => p.key === book.design.paper)?.name || "";
@@ -400,6 +820,50 @@ export function buildLegacyHtml(
   if (!book.chapters.length) {
     return emptyBookHtml(book);
   }
+
+  // "What Rose learned" (lessons-spec §4; the phone's lessonsChapter): her
+  // confirmed lessons from the memories this book prints, by theme, after
+  // her chapters and before the family's. Only with three or more.
+  const printedIds = new Set(book.chapters.flatMap((c) => c.items.map((m) => m.id)));
+  const lessonGroups = bookLessons(lessonsForStory(story), (story?.memories || []).filter((m) => m && printedIds.has(m.id)), { includePrivate: true });
+  const learnedTitle = `What ${book.name || story?.name || "she"} learned`;
+  const learnedToc = lessonGroups.length
+    ? `
+        <li>
+          <span class="toc-chapter">${escapeHtml(learnedTitle)}</span>
+          <span class="toc-dots"></span>
+          <span class="toc-count">${lessonGroups.reduce((n, g) => n + g.lessons.length, 0)}</span>
+        </li>`
+    : "";
+  const learnedHtml = lessonGroups.length
+    ? `
+      <section class="chapter lessons">
+        <header class="chapter-open">
+          <p class="chapter-eyebrow">Chapter</p>
+          <h2>${escapeHtml(learnedTitle)}</h2>
+        </header>
+        ${lessonGroups
+          .map(
+            (g) => `
+        <div class="lesson-theme">
+          <h3>${escapeHtml(g.label)}</h3>
+          ${g.lessons
+            .map(
+              (l) => `<blockquote class="lesson"><p>“${escapeHtml(quoteShown(l, l.memory).replace(/^[“"]|[”"]$/g, ""))}”</p>${sourceLine(l.memory) ? `<p class="lesson-from">— ${escapeHtml(sourceLine(l.memory))}</p>` : ""}</blockquote>`
+            )
+            .join("")}
+        </div>`
+          )
+          .join("")}
+      </section>`
+    : "";
+  const withLearned = (list, isFamily, html) => {
+    // Before the family's chapter, else at the end.
+    const at = list.findIndex(isFamily);
+    if (!html) return list.join("");
+    if (at < 0) return list.join("") + html;
+    return [...list.slice(0, at), html, ...list.slice(at)].join("");
+  };
 
   const contents = book.chapters
     .map(
@@ -409,8 +873,8 @@ export function buildLegacyHtml(
           <span class="toc-dots"></span>
           <span class="toc-count">${c.items.length}</span>
         </li>`
-    )
-    .join("");
+    );
+  const contentsHtml = withLearned(contents, (_, i) => book.chapters[i].era === FAMILY_CHAPTER, learnedToc);
 
   const chapters = book.chapters
     .map((c) => {
@@ -422,14 +886,14 @@ export function buildLegacyHtml(
           <h2>${escapeHtml(printedChapterName(c.era))}</h2>
           ${c.years ? `<p class="chapter-years">${escapeHtml(c.years)}</p>` : ""}
         </header>
-        ${c.items.map((m) => memoryHtml(story, m, book.design, listenBase, P.ink)).join("")}
+        ${c.items.map((m) => memoryHtml(story, m, book.design, listenBase, P.ink, readBase)).join("")}
       </section>`;
-    })
-    .join("");
+    });
+  const chaptersHtml = withLearned(chapters, (_, i) => book.chapters[i].era === FAMILY_CHAPTER, learnedHtml);
 
-  const credit = recordedBy
-    ? `<p class="recorded">Recorded by ${escapeHtml(recordedBy)}</p>`
-    : "";
+  const credits = creditLines(book);
+  const keptBy = book.keepers?.length ? `Kept by ${namesLine(book.keepers)}` : "";
+  const credit = keptBy ? `<p class="recorded">${escapeHtml(keptBy)}</p>` : "";
 
   return withFullSerif(`<!DOCTYPE html>
 <html lang="en">
@@ -442,7 +906,7 @@ export function buildLegacyHtml(
      renders HTML to a PDF, so this uses the serif stack every device has —
      a book that prints in the right font everywhere beats one that prints
      beautifully on the machine it was built on. */
-  @page { margin: 20mm 18mm; }
+  ${profile ? printPageCss(profile) : SCREEN_PAGE_CSS}
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -594,7 +1058,63 @@ export function buildLegacyHtml(
     page-break-after: avoid;
   }
   .memory p { margin-bottom: 10px; text-align: justify; hyphens: auto; }
+  .asked {
+    font-size: 8.5pt; letter-spacing: 0.1em; text-transform: uppercase;
+    color: ${P.faint}; margin: -8px 0 13px;
+  }
+  /* What she learned: her words in italic, where each came from under it. */
+  .lesson-theme { margin-bottom: 18px; page-break-inside: auto; }
+  .lesson-theme h3 { font-size: 15pt; font-weight: normal; color: ${P.heading}; margin-bottom: 8px; page-break-after: avoid; }
+  .lesson { margin: 0 0 12px; padding-bottom: 10px; border-bottom: 0.5pt solid ${P.rule || "#ddd"}; page-break-inside: avoid; }
+  .lesson p { font-style: italic; font-size: 13pt; line-height: 1.5; }
+  .lesson .lesson-from { font-style: normal; font-size: 8.5pt; letter-spacing: 0.06em; color: ${P.faint}; margin-top: 4px; }
   .memory p:last-of-type { margin-bottom: 0; }
+
+  /* Her kept line: a 2 pt foil rule in the left margin beside its lines
+     (see proseHtml). Each .kr sits at its word's line, out of the flow, a
+     full line tall, so neighbouring ones join into one rule. */
+  .memory p.has-kept { position: relative; }
+  .kr {
+    position: absolute;
+    left: -4.5mm;
+    width: 0.7mm;
+    height: 1.72em;
+    margin-top: -0.36em;
+    background: ${P.gold};
+  }
+  /* The mark that pairs a version with its word: terracotta, after the
+     word, as the reader sets it (a foil speck was lost in print). */
+  sup.mark {
+    font-size: 0.8em;
+    line-height: 0;
+    vertical-align: super;
+    margin-left: 0.04em;
+    color: ${P.accent};
+  }
+
+  /* A version the keeper kept (FB-371, T-16): right after her words, on
+     the page's own paper, a fine brass rule in the margin beside it, as
+     the reader sets it. No slip, no box: one book. Her words at the same
+     size as the storyteller's; "Linh remembers it too" in the italic; who
+     she is in the dateline's small capitals. It never splits across a
+     page. */
+  .side {
+    margin: 7mm 0 2mm;
+    padding: 0.6mm 0 0.6mm 5mm;
+    border-left: 0.6pt solid ${P.gold};
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .memory .side p { text-align: left; hyphens: manual; margin-bottom: 0; }
+  .memory .side .side-head { font-style: italic; color: ${P.soft}; margin-bottom: 2.5mm; }
+  .memory .side .side-words + .side-words { margin-top: 2mm; }
+  .memory .side .side-by {
+    margin-top: 3mm;
+    font-size: 8pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${P.soft};
+  }
 
   .credit {
     margin-top: 12px;
@@ -615,6 +1135,12 @@ export function buildLegacyHtml(
   .listen-code { width: 22mm; height: 22mm; flex: none; }
   .listen-code svg { width: 100%; height: 100%; display: block; }
   .listen p { font-size: 9pt; font-style: italic; color: ${P.soft}; margin: 0; }
+  .also {
+    display: flex; align-items: center; gap: 4mm;
+    margin-top: 5mm;
+    page-break-inside: avoid;
+  }
+  .memory .also p { font-size: 9.5pt; font-style: italic; color: ${P.soft}; margin: 0; text-align: left; }
 
   /* ── Photographs ────────────────────────────────────── */
   .plate { page-break-inside: avoid; margin: 16px 0 18px; }
@@ -731,6 +1257,13 @@ export function buildLegacyHtml(
   .cover-wrap .cover-title { color: ${C.text}; }
   .cover-wrap .cover-mark { margin-bottom: 5mm; }
 
+  /* No photograph (FB-329): a photo style prints the family's bare board in
+     its own material, the words centred and in foil as on the cloth. */
+  .cover-bare { justify-content: center; padding: 0 16mm 0 20mm; }
+  .cover-bare .cover-title { color: ${C.foil}; font-size: 27pt; }
+  .cover-bare .cover-sub { margin-top: 0; }
+  .cover-bare .cover-span { margin-top: 5mm; }
+
   /* ── Keepsake cover ─────────────────────────────────── */
   /* The front, square, as the first page: see lib/bookCase.js. */
   .ks-page { page-break-after: always; padding-top: 12mm; }
@@ -760,10 +1293,10 @@ ${coverStyle === "keepsake" ? keepsakeCss(C) : ""}
     color: ${P.span};
     white-space: pre-line;
   }
-</style>
+${profile ? PRINT_EXTRA_CSS : ""}</style>
 </head>
 <body>
-${coverHtml(book, coverStyle, story)}
+${profile ? "" : coverHtml(book, coverStyle, story)}
 
   <section class="title-page">
     <div class="title-rule"></div>
@@ -785,10 +1318,10 @@ ${coverStyle === "keepsake" ? `
 
   <section class="contents">
     <h2>Contents</h2>
-    <ol>${contents}
+    <ol>${contentsHtml}
     </ol>
   </section>
-${chapters}
+${chaptersHtml}
 
   <section class="colophon">
     <div class="rule"></div>
@@ -799,9 +1332,10 @@ ${chapters}
     <p>Printed ${escapeHtml(formatPrintDate(book.printedOn))}${
       paperName ? ` on ${escapeHtml(paperName.toLowerCase())} paper` : ""
     }</p>
+    ${credits.map((l) => `<p>${escapeHtml(l)}</p>`).join("\n    ")}
     <p class="line">Every life holds a story worth preserving.</p>
   </section>
-
+${profile && padPages > 0 ? '  <div class="pad-page"></div>\n'.repeat(padPages) : ""}
 </body>
 </html>`);
 }

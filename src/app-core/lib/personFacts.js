@@ -14,6 +14,7 @@
 // Pure, so it's tested (scripts/test-lib.mjs).
 
 import { fullName, relationshipBetween } from "./familyGraph.js";
+import { cleanSpeech, stripFiller } from "./quoteText.js";
 
 export const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -485,7 +486,226 @@ export function headerActions(ctx = {}) {
   if (ctx.canInvite) add("invite");
   add("addFamily");
   add("tree");
-  if (!ctx.storyId) add("startStory");
-  else if (ctx.keptElsewhere) add("askToJoin");
+  // "Start their story" only when Add a memory isn't already on the band —
+  // with no story yet, Add a memory IS the start (its hint says so), and
+  // two buttons that open the same screen read as two different things to
+  // choose between (the lead, 18 Oct: Henry's band). The explicit "Start
+  // {first}'s own story" row further down the page stays either way.
+  if (!ctx.storyId && !ctx.canAdd) add("startStory");
+  else if (ctx.storyId && ctx.keptElsewhere) add("askToJoin");
   return list.slice(0, 4);
+}
+
+/* ── The reading column (J5 "Mounted", j5-spec §2–§3) ─────────────────────
+   Somebody's page is one column you read down: the kicker and name on the
+   cloth, the portrait, one state line, their words, ONE thing to do and one
+   quiet link, then what they told, how the family remembers them, their
+   people, their life. Everything below is pure, so scripts/tests/profiles.mjs
+   reaches it. Counts come from lib/familyFacts through the page (A10);
+   state words are ROSTER_WORDS exactly; the dead have no state. */
+
+const savedMem = (m) => m && m.status !== "in_progress";
+const newest = (a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+
+/* "12 March 1945", "March 1945", "1945": the book's order (B33's long
+   style without a weekday, for a life's dates). */
+export function lifeDate(d) {
+  if (!d) return "";
+  const m = num(d.month) && d.month <= 12 ? MONTHS[d.month - 1] : "";
+  return [num(d.day) && m ? String(d.day) : "", m, d.year ? String(d.year) : ""].filter(Boolean).join(" ");
+}
+
+/* The kicker on the cloth, in the viewer's own person: "Your grandmother ·
+   born 1945", "Your great-grandfather · 1912 – 1979" (never "1945–Living").
+   The page sets it in the small caps. */
+// FB-324 (S-P1): the living are never introduced by their birth year ("born
+// 1945" read as half an epitaph). Someone remembered keeps their years; the
+// living carry one living word instead, when the caller has one: the
+// storyteller's age ("Your grandmother · 81"), or "On A Story since
+// September" on your own page.
+export function personKicker({ toYou = "", isYou = false, bornYear = null, diedYear = null, living = "" } = {}) {
+  const who = isYou ? "You" : toYou ? `Your ${toYou}` : "In the family";
+  const years = diedYear ? (bornYear ? `${bornYear} – ${diedYear}` : `died ${diedYear}`) : living ? String(living) : "";
+  return [who, years].filter(Boolean).join(" · ");
+}
+
+/* The first whole sentence of a body, never cut mid-word. */
+// A transcript's speaker labels and filler openings never start a quote
+// (FB-511, lib/quoteText): "Storyteller: Um, my father…" → "My father…".
+export function firstSentence(text, max = 220) {
+  const t = clean(stripFiller(cleanSpeech(text)));
+  if (!t) return "";
+  const m = t.match(/^(.+?[.!?…])(\s|$)/);
+  const s = m ? m[1] : t;
+  if (s.length <= max) return s;
+  return `${s.slice(0, max).replace(/\s+\S*$/, "")}…`;
+}
+
+/* The memories, across stories, that say a person is in them (personIds
+   only, never a guess by name), newest first. */
+export function memoriesAbout(personId, stories = []) {
+  const out = [];
+  for (const story of stories || []) {
+    for (const m of story?.memories || []) {
+      if (savedMem(m) && Array.isArray(m.personIds) && m.personIds.includes(personId)) out.push({ story, memory: m });
+    }
+  }
+  return out.sort((a, b) => newest(a.memory, b.memory));
+}
+
+const STATE_WORDS = { joined: "on A Story", invited: "invited · waiting for them", listed: "not on A Story yet" };
+
+/* The one state line under the portrait (j5-spec §2.1, §2.3):
+     { state: "joined" | "invited" | "listed" | null, text }
+   The dead have no state: "In 2 of Rose's memories". */
+export function stateLine({ state = null, ownCount = 0, ownPoss = "their", aboutTeller = 0, tellerFirst = "", aboutFamily = 0, memoriesLine } = {}) {
+  const ml = memoriesLine || ((n) => `${n} ${n === 1 ? "memory" : "memories"}`);
+  if (!state) return { state: null, text: aboutTeller && tellerFirst ? `In ${aboutTeller} of ${tellerFirst}'s memories` : "" };
+  const parts = [STATE_WORDS[state]];
+  if (state !== "invited") {
+    if (ownCount) parts.push(`${ml(ownCount)} in ${ownPoss} story`);
+    else if (aboutFamily && state === "joined") parts.push(`in ${aboutFamily} of the family's memories`);
+  }
+  return { state, text: parts.join(" · ") };
+}
+
+/* The words on their plate (K-J5-1, K-J5-2): a stored kept line wherever
+   one exists (marked, at rest), else a first sentence (unmarked).
+     { sentence, kept, storyId, memoryId, title, voiced, by, kicker } | null
+   own: their story; toldByThem: [{ story, memory }] they sent; about:
+   memoriesAbout() in the storyteller's story, for somebody remembered. */
+export function personWords({ own = null, toldByThem = [], about = [], tellerFirst = "", first = "", pron = null } = {}) {
+  const pick = (list) => {
+    const withLine = list.filter((x) => clean(x.memory.keptLine));
+    const best = (withLine.length ? withLine : list).slice().sort((a, b) => newest(a.memory, b.memory))[0];
+    if (!best) return null;
+    const line = clean(stripFiller(cleanSpeech(best.memory.keptLine)));
+    const sentence = line || firstSentence(best.memory.body);
+    if (!sentence) return null;
+    return { sentence, kept: !!line, storyId: best.story?.id || null, memoryId: best.memory.id, title: best.memory.title || "", voiced: (best.memory.audio || []).length > 0 };
+  };
+  if (own) {
+    const told = (own.memories || []).filter((m) => savedMem(m) && !clean(m.contributor)).map((memory) => ({ story: own, memory }));
+    const w = pick(told);
+    if (w) return { ...w, by: first, kicker: "" };
+  }
+  if (toldByThem.length) {
+    const w = pick(toldByThem);
+    if (w) return { ...w, by: first, kicker: "" };
+  }
+  if (about.length && tellerFirst) {
+    const theirs = about.filter((x) => !clean(x.memory.contributor));
+    const w = pick(theirs.length ? theirs : about);
+    if (w) return { ...w, by: tellerFirst, kicker: `As ${tellerFirst} remembers ${pron?.obj || "them"}` };
+  }
+  return null;
+}
+
+/* The page's one primary, its one quiet link, and the ••• rows
+   (j5-spec §2.2–§2.3; B34; F6 as amended by M-J5-11; FB-010). Each key is
+   the page's to wire. Your own page has no primary (PM-J4-5). */
+export function pageActions(ctx = {}) {
+  const { first = "", pron = { obj: "them" }, state = null, living = false } = ctx;
+  const askTeller = !living && !!ctx.tellerFirst && !!ctx.tellerOnApp && !ctx.viewerIsTeller;
+  if (ctx.isYou) {
+    return { primary: null, quiet: null, menu: [{ key: "edit", label: "Change your details" }, { key: "addFamily", label: "Add someone to your family" }] };
+  }
+  const primary = ctx.canAdd ? { key: "addMemory", label: `Add a memory of ${first}` } : null;
+  let quiet = null;
+  if (state === "joined") quiet = { key: "ask", label: `or ask ${pron.obj} a question →` };
+  else if (state === "invited") quiet = { key: "code", label: `Send ${first} the code again →` };
+  else if (state === "listed" && living) quiet = { key: "code", label: `Send ${first} the code →` };
+  else if (askTeller) quiet = { key: "askTeller", label: `or ask ${ctx.tellerFirst} about ${pron.obj} →` };
+  else if (!living && !ctx.hasPhoto && ctx.editor) quiet = { key: "photo", label: `Add a photograph of ${first} →` };
+
+  const menu = [];
+  if (living) menu.push({ key: "ask", label: `Ask ${first} a question` });
+  else if (askTeller) menu.push({ key: "askTeller", label: `Ask ${ctx.tellerFirst} about ${pron.obj}` });
+  // No "A family call with …": the live family call is retired (R3).
+  if (living && ctx.canRecordTogether) menu.push({ key: "record", label: `Record with ${first}, in the room` });
+  if (state === "invited") menu.push({ key: "code", label: `Send ${first} the code again` });
+  else if (state === "listed" && living) menu.push({ key: "code", label: `Send ${first} the code` });
+  // The keeper sets their face from their prints (J4c, PM-J4-5): directly
+  // above their details.
+  if (ctx.editor) menu.push({ key: "picture", label: ctx.hasPhoto ? `Change ${first}'s picture` : `Add a photograph of ${first}` }, { key: "edit", label: `Change ${first}'s details` });
+  else menu.push({ key: "suggest", label: ctx.keeperFirst ? `Suggest a change to ${ctx.keeperFirst}` : "Suggest a change" });
+  menu.push({ key: "addFamily", label: `Add someone to ${first}'s family` });
+  // Not on the storyteller's own phone (FB-440: Rose, "Join? I'm her
+  // grandmother."): she reads the family from her own story.
+  if (ctx.keptElsewhere && !ctx.viewerIsTeller) menu.push({ key: "askToJoin", label: `Ask to join ${first}'s story` });
+  if (!ctx.keeper) menu.push({ key: "report", label: "Report something on this page", tone: "danger" });
+  return { primary, quiet, menu };
+}
+
+/* "Her people." (j5-spec §2.1): the generation register around a person,
+   in the order a life is read. Each row { id, name, line, isYou, photo }.
+   `stateOf` is lib/familyRoster's rosterState and `words` its ROSTER_WORDS,
+   passed in so this file stays free of the roster. The dead carry their
+   years, never a state. */
+export function herPeople(index, personId, { youId = null, pron = { poss: "their" }, stateOf, words = {} } = {}) {
+  if (!index?.people?.get(personId)) return [];
+  const fam = closeFamily(index, personId);
+  const grand = real(index, [...new Set(fam.children.flatMap((c) => [...(index.childrenOf?.get(c) || [])]))]);
+  const poss = pron.poss;
+  const Poss = poss.charAt(0).toUpperCase() + poss.slice(1);
+  const partnerWord = (ids) => {
+    if (ids.length > 1) return "partners";
+    const p = index.people.get(ids[0]);
+    return p?.sex === "M" ? "husband" : p?.sex === "F" ? "wife" : "partner";
+  };
+  const row = (id) => {
+    const p = index.people.get(id);
+    const name = fullName(p) || "Unnamed";
+    if (id === youId) return { id, name, line: "You", isYou: true, photo: p?.photo || null };
+    const rel = relationshipBetween(index, id, personId)?.label || "";
+    const by = num(p?.birthYear);
+    const dy = num(p?.deathYear);
+    const tail = dy ? (by ? `${by} – ${dy}` : `died ${dy}`) : (stateOf && words[stateOf(p)]) || "";
+    return { id, name, line: [rel ? `${poss} ${rel}` : "", tail].filter(Boolean).join(" · "), isYou: false, photo: p?.photo || null };
+  };
+  return [
+    { key: "parents", title: `${Poss} parents`, ids: fam.parents },
+    { key: "partners", title: `${Poss} ${partnerWord(fam.partners)}`, ids: fam.partners },
+    { key: "siblings", title: `${Poss} brothers and sisters`, ids: fam.siblings },
+    { key: "children", title: `${Poss} children`, ids: fam.children },
+    { key: "grandchildren", title: `${Poss} grandchildren`, ids: grand },
+  ]
+    .filter((g) => g.ids.length)
+    .map((g) => ({ key: g.key, title: g.title, rows: g.ids.map(row) }));
+}
+
+/* "Her life." ledger: ruled lines, only what is known, dates in the
+   book's order ("12 March 1945, Dayton, Ohio"). */
+export function lifeLedger(person, dates) {
+  if (!person) return [];
+  const out = [];
+  if (dates?.born) out.push({ key: "born", label: "Born", value: [lifeDate(dates.born), dates.born.place].filter(Boolean).join(", ") });
+  if (clean(person.grewUp)) out.push({ key: "grewUp", label: "Grew up", value: clean(person.grewUp) });
+  const schools = schoolsOf(person);
+  if (schools.length) out.push({ key: "schools", label: "School", value: schools.map((x) => (x.years ? `${x.name}, ${x.years}` : x.name)).join("; ") });
+  const jobs = jobsOf(person);
+  if (jobs.length) out.push({ key: "work", label: "Work", value: jobsToText(jobs) });
+  else if (clean(person.work)) out.push({ key: "work", label: "Work", value: clean(person.work) });
+  if (clean(person.knownFor)) out.push({ key: "knownFor", label: "Known for", value: clean(person.knownFor) });
+  if (dates?.died) out.push({ key: "died", label: "Died", value: [lifeDate(dates.died), dates.died.place].filter(Boolean).join(", ") });
+  if (clean(person.restingPlace)) out.push({ key: "restingPlace", label: "Rests", value: clean(person.restingPlace) });
+  return out;
+}
+
+/* The sentences of lifeSummary that speak of the memories ("… 14 memories
+   … They reach from 1951 to 2011."), for "Her life." under the story's
+   own intro, so who she was is never said twice. */
+export function memorySentences(summaryText) {
+  const parts = String(summaryText || "").match(/[^.!?]+[.!?]+/g) || [];
+  return parts
+    .map((s) => s.trim())
+    .filter((s) => /memor|reach from|are from|is from/i.test(s))
+    .join(" ");
+}
+
+/* The next person after this one in the register's order (a list of ids). */
+export function nextInFamily(order = [], personId) {
+  const i = order.indexOf(personId);
+  if (i < 0 || order.length < 2) return null;
+  return order[(i + 1) % order.length];
 }

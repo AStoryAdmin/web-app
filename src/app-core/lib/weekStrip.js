@@ -97,6 +97,37 @@ export function dotStrength(entry) {
   return 0.55;
 }
 
+/* Which mark a day wears (S-H5, amended by FB-368): one accent mark per
+   day, so a day is never an accent ring AND a dot.
+
+     today    the one filled disc
+     chosen   a day picked below the strip: its ring in the accent
+     kept     a day something was recorded on: the same even ring as any
+              other day, told by a small dot under it alone (the owner:
+              "remove the red round above, a dot is enough")
+     future   a day still to come: the same even ring, the date quieter
+     plain    a day gone by with nothing on it: the even ring, date in ink
+
+   Today stays the filled mark even once something is kept on it: the
+   "Kept." beat already carries the seal, and the strip is off on it. */
+export function markOf(entry, selectedKey = null) {
+  if (!entry) return "plain";
+  if (entry.today) return "today";
+  if (selectedKey && entry.key === selectedKey) return "chosen";
+  if (entry.count > 0 && !entry.future) return "kept";
+  if (entry.future) return "future";
+  return "plain";
+}
+
+/* Whether a day carries the small dot under its ring (FB-368): a day gone
+   by with something kept on it, picked or not. Never today (its filled
+   disc says enough) and never a day still to come. */
+export function hasKeptDot(entry, selectedKey = null) {
+  const mark = markOf(entry, selectedKey);
+  if (mark === "kept") return true;
+  return mark === "chosen" && entry.count > 0 && !entry.future;
+}
+
 /* "Thursday 10 · 2 memories" — the line shown when a day is picked, and the
    screen-reader label for every day in the row. */
 export function dayLabel(entry) {

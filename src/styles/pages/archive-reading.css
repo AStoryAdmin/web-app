@@ -174,7 +174,9 @@
 .mv-voice .player .play:focus-visible { outline: 2px solid var(--mv-terra); outline-offset: 3px; }
 .mv-voice .player .play:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .mv-voice .mp-player.reader .play[aria-pressed="true"] { background: var(--accent); }
-.mv-voice .player .bars { height: 26px; }
+/* the bars are the slider: a 44px row to press, the drawing 26px inside it */
+.mv-voice .player .bars { height: 44px; padding: 9px 0; box-sizing: border-box; }
+.mv-voice .player .bars:focus-visible { outline: 2px solid var(--mv-terra); outline-offset: 2px; }
 .mv-voice .player .bars i { background: var(--mv-ink); opacity: 0.22; }
 .mv-voice .player .bars i.on { opacity: 0.85; }
 .mv-voice .player time { font: 500 13px/1 var(--font-ui); color: var(--mv-soft); }
@@ -465,6 +467,36 @@
   .arc-task .arc-task-arrow { display: inline; }
 }
 .arc-page .where-next { margin-top: calc(var(--s-16) + 16px); }
+
+/* not yet told (the phone's NotYetToldScreen): after the memories, a heading, one line, then each empty chapter ruled
+   on the paper: its name in terracotta, its question in the serif, one quiet link to answer it and "Ask me another".
+   Every control 44px; no card, no count down to a goal */
+.arc-untold { max-width: 46rem; margin-top: calc(var(--s-16) + 16px); }
+.arc-untold h2 { margin: 0; font-family: var(--font-story); font-weight: 500; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; color: var(--sheet-ink); }
+.arc-untold-line { margin: 8px 0 0; font: 400 16px/1.5 var(--font-ui); color: var(--ink-soft); }
+.arc-untold-list { list-style: none; margin: var(--s-5) 0 0; padding: 0; border-top: 1px solid var(--sheet-rule); }
+.arc-untold-row { padding: 20px 0 12px; border-bottom: 1px solid var(--sheet-rule); }
+.arc-untold-era { margin: 0; font: 600 14px/1.3 var(--font-ui); color: var(--terracotta-ink); }
+.arc-untold-q { margin: 6px 0 0; font-family: var(--font-story); font-size: 21px; line-height: 1.4; color: var(--sheet-ink); text-wrap: pretty; }
+.arc-untold-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; margin-top: 6px; }
+.arc-untold-go, .arc-untold-another, .arc-untold-more { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 2px; border: 0; background: none; font: 600 15px/1.2 var(--font-ui); cursor: pointer; text-decoration: none;
+  transition: color 160ms var(--ease-out), transform 120ms var(--ease-out); }
+.arc-untold-go { color: var(--sheet-ink); }
+.arc-untold-go svg { width: 18px; height: 18px; color: var(--accent); transition: transform 160ms var(--ease-out); }
+.arc-untold-another, .arc-untold-more { font-weight: 500; color: var(--ink-soft); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.24em; }
+.arc-untold-more { margin-top: var(--s-3); }
+@media (hover: hover) and (pointer: fine) {
+  .arc-untold-go:hover svg { transform: translateX(3px); }
+  .arc-untold-another:hover, .arc-untold-more:hover { color: var(--sheet-ink); }
+}
+.arc-untold-go:active, .arc-untold-another:active, .arc-untold-more:active { transform: scale(0.98); }
+.arc-untold-go:focus-visible, .arc-untold-another:focus-visible, .arc-untold-more:focus-visible { outline: 2px solid var(--terracotta-ink); outline-offset: 2px; border-radius: 2px; }
+.arc-untold + .where-next { margin-top: var(--s-12); }
+@media (max-width: 760.98px) {
+  .arc-untold h2 { font-size: 26px; }
+  .arc-untold-q { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) { .arc-untold-go, .arc-untold-go svg, .arc-untold-another, .arc-untold-more { transition: none; } }
 
 @media (prefers-reduced-motion: reduce) { .arc-task, .arc-task .arc-task-arrow { transition: none; } }
 

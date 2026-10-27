@@ -1,35 +1,37 @@
 /**
- * Talk, in v1: the browser cannot ring anyone, so this page says, once and
- * plainly, that the calls happen on the phone for now, and keeps the
- * question: the one asked for (?q=) or today's, set as an index card with
- * the pen beside it, so the person can write it instead without losing it.
- * The live conversation in the browser is v1.5 (docs/PRD.md item 15b); this
- * page becomes it.
+ * Talk, in v1: the browser cannot ring anyone, but it can listen. This page
+ * keeps the question (the one asked for, ?q=, or today's) on an index card
+ * with the pen beside it, and offers the two ways to answer it here:
+ * "Record it here" (/record, the voice kept) and "Write it instead". One
+ * plain line says the calls are in the A Story app on iPhone. The live
+ * conversation in the browser is v1.5 (docs/PRD.md item 15b).
  */
 import { useEffect } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { ButtonLink, Problem } from "../components/ui";
 import LoadingMark from "../components/delight/LoadingMark";
-import { PenIcon } from "../components/icons";
+import { MicIcon, PenIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { todaysDeck, todaysQuestion } from "../lib/today";
+import { findQuestion, todaysQuestion } from "../lib/today";
+import { asksAbout } from "./write/keep";
 import { isPaid } from "../lib/plan";
 import { track } from "../lib/analytics";
 import WhereNext, { Stop } from "../components/book/WhereNext";
+import "../styles/pages/record.css";
 
 /** Three lengths, three sizes (as the writer sets its question): short, middling, long. */
 const qLen = (q: string) => (q.length > 50 ? "long" : q.length > 34 ? "mid" : "short");
 
 export default function Talk() {
   const { user } = useAuth();
-  const { account, activeStory: story, loadError, reload } = useAccount();
+  const { account, activeStory: story, family, loadError, reload } = useAccount();
   const [params] = useSearchParams();
   const qid = params.get("q");
 
   useEffect(() => {
-    if (story) track("talk_wall_shown", { reason: "browser_not_yet" });
+    if (story) track("talk_wall_shown", { reason: "record_here" });
   }, [story]);
 
   if (account === undefined)
@@ -52,23 +54,24 @@ export default function Talk() {
               height at every width (your own story, the usual case) */}
           <section className="talk-words hold-words sk-ruled" aria-hidden="true">
             <h2>
-              On the phone, for now<Stop />
+              Say it out loud<Stop />
             </h2>
-            <p className="talk-lead">A Story talks with you in the A Story app on the phone. Talking here in the browser is coming; until then, the question keeps.</p>
+            <p className="talk-lead">Record your answer here, in your own voice. A Story keeps the recording and writes the words down for you.</p>
             <ol className="talk-steps">
               <li>
-                <b>It rings</b>
-                <span>at the hour you chose in the app.</span>
+                <b>Record</b>
+                <span>as long as you like, in your own words.</span>
               </li>
               <li>
-                <b>It listens</b>
-                <span>while you talk.</span>
+                <b>Listen back</b>
+                <span>and say it again if you want to.</span>
               </li>
               <li>
-                <b>The memory appears here</b>
-                <span>by evening, in your own words.</span>
+                <b>Keep it</b>
+                <span>your voice and your words, in the archive.</span>
               </li>
             </ol>
+            <p className="talk-phone">Calls that ring at an hour you choose are in the A Story app on iPhone.</p>
           </section>
           {/* the heart draws inside the card's outline, where today's question will be set */}
           <span className="bka-sk-block">
@@ -88,11 +91,12 @@ export default function Talk() {
   if (!story) return <Navigate to="/start" replace />;
 
   const unlimited = isPaid(user?.plan ?? "free");
-  const asked = qid ? todaysDeck(story, { unlimited: true }).find((p) => p.id === qid) : null;
-  const question = asked ?? todaysQuestion(story, { unlimited });
+  // looked up as Home, the writer and the recorder look it up, in the voice they ask in
+  const opts = { relative: asksAbout(story, user, family?.people), user, family };
+  const asked = findQuestion(story, qid, opts);
+  const question = asked ?? todaysQuestion(story, { ...opts, unlimited });
   const qText = question?.question ?? "Write about anything at all.";
   const own = story.relationship === "Myself";
-  const who = own ? "you" : story.name;
 
   return (
     <Shell
@@ -109,26 +113,28 @@ export default function Talk() {
     >
       <div className="page talk-page">
         <section className="talk-words" aria-labelledby="talk-h" data-rise>
-          <h2 id="talk-h" data-running="On the phone, for now">
-            On the phone, for now<Stop />
+          <h2 id="talk-h" data-running="Say it out loud">
+            Say it out loud<Stop />
           </h2>
           <p className="talk-lead">
-            A Story talks with {who} in the A Story app on the phone. Talking here in the browser is coming; until then, the question keeps.
+            {own ? "Record your answer here, in your own voice." : `Record what you remember of ${story.name} here, in your own voice.`} A Story keeps the
+            recording and writes the words down for you.
           </p>
           <ol className="talk-steps">
             <li>
-              <b>It rings</b>
-              <span>at the hour you chose in the app.</span>
+              <b>Record</b>
+              <span>as long as you like, in your own words.</span>
             </li>
             <li>
-              <b>It listens</b>
-              <span>while {own ? "you talk" : `${story.name} talks`}.</span>
+              <b>Listen back</b>
+              <span>and say it again if you want to.</span>
             </li>
             <li>
-              <b>The memory appears here</b>
-              <span>by evening, in {own ? "your" : `${story.name}’s`} own words.</span>
+              <b>Keep it</b>
+              <span>{own ? "your voice and your words, in the archive." : `your voice and your words, in ${story.name}’s archive.`}</span>
             </li>
           </ol>
+          <p className="talk-phone">Calls that ring at an hour you choose are in the A Story app on iPhone.</p>
         </section>
 
         <aside className="talk-card" aria-label={asked ? "The question you chose" : "Today’s question"} data-rise>
@@ -138,7 +144,10 @@ export default function Talk() {
             {qText}
           </p>
           <div className="talk-acts">
-            <ButtonLink to={question ? `/write?q=${encodeURIComponent(question.id)}` : "/write"} icon={<PenIcon />}>
+            <ButtonLink to={question ? `/record?q=${encodeURIComponent(question.id)}` : "/record"} icon={<MicIcon />} viewTransition>
+              Record it here
+            </ButtonLink>
+            <ButtonLink variant="outline" to={question ? `/write?q=${encodeURIComponent(question.id)}` : "/write"} icon={<PenIcon />} viewTransition>
               Write it instead
             </ButtonLink>
           </div>

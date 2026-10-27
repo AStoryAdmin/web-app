@@ -19,6 +19,7 @@ import { looksLikeWhatsApp, parseWhatsApp, whatsAppEntries } from "./whatsapp.js
 import { yearFromText } from "./spokenDate.js";
 import { eraForAge, CATCH_ALL_CHAPTER } from "../data/eras.js";
 import { looksLikeX, parseX } from "./socialArchive.js";
+import { serverOffers } from "./serverFeatures.js";
 
 const MONTH_NAMES = [
   "January",
@@ -115,9 +116,12 @@ export const SOURCES = [
     icon: "book",
     diary: true,
     blurb: "The Journal app on iPhone.",
-    how:
-      "Journal → ⋯ → Settings → Export Journal (iOS 18.4 or later) gives a PDF: pick it with \"Already wrote some of it?\" above, " +
-      "and each entry is read as its own memory. On an older iPhone, open an entry → Share → Copy, and paste it below.",
+    // Its export is a PDF, read by the AI server: offered only while that
+    // route is on (lib/serverFeatures.js, FB-012).
+    how: serverOffers("importRead")
+      ? "Journal → ⋯ → Settings → Export Journal (iOS 18.4 or later) gives a PDF: pick it with \"Already wrote some of it?\" above, " +
+        "and each entry is read as its own memory. On an older iPhone, open an entry → Share → Copy, and paste it below."
+      : "Open an entry → Share → Copy, then paste it into a new memory with Write it.",
   },
   {
     key: "daylio",
@@ -660,4 +664,53 @@ export function shapeEntries(raw, options = {}) {
     truncated: raw.length > MAX_ENTRIES,
     duplicates: marked.filter((e) => e.duplicate).length,
   };
+}
+
+/* ── a paste (FB-319, DECISIONS S-E1) ──
+   Words already written on the phone, pasted in one go from Notes, an email
+   or a message. A blank line starts the next memory, and so does a line
+   that opens with a date ("12 March 1975", "1975:", "3/12/75"), because a
+   note kept as a diary rarely leaves a blank line between days. */
+const PASTE_DATE_LINE = new RegExp(
+  [
+    String.raw`^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b`,
+    String.raw`^(?:\d{1,2}(?:st|nd|rd|th)?\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(?:\d{1,2}(?:st|nd|rd|th)?,?\s+)?(?:19|20)\d{2}\b`,
+    String.raw`^(?:19|20)\d{2}\s*[:.,–—-]`,
+  ].join("|"),
+  "i"
+);
+
+export function splitPasted(text) {
+  const blocks = String(text || "")
+    .replace(/\r\n?/g, "\n")
+    .split(/\n\s*\n+/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+  const out = [];
+  for (const block of blocks) {
+    let current = [];
+    for (const line of block.split("\n")) {
+      if (current.length && PASTE_DATE_LINE.test(line.trim())) {
+        out.push(current.join("\n").trim());
+        current = [];
+      }
+      current.push(line);
+    }
+    if (current.length) out.push(current.join("\n").trim());
+  }
+  return out.filter(Boolean);
+}
+
+/* A paste read into the review's entries. A pasted WhatsApp chat or a
+   JSON export still goes through its own reader. */
+export function parsePasted(text, options = {}) {
+  const format = detectFormat(text, {});
+  if (format !== "text") return parseImport(text, {}, options);
+  // The date a block opens with stays in its words (it dates the memory)
+  // but not in its title: "We drove to Vermont", not "12 March 1975 We…".
+  const raw = splitPasted(clean(text)).map((body) => {
+    const rest = body.replace(PASTE_DATE_LINE, "").replace(/^[s:,.–—-]+/, "");
+    return rest && rest !== body ? { body, title: guessTitle(rest) } : { body };
+  });
+  return shapeEntries(raw, { story: options.story, format: "text" });
 }

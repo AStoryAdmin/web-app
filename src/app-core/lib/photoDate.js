@@ -54,3 +54,18 @@ export function photoTakenLabel(asset) {
   if (!month || month < 1 || month > 12) return String(year);
   return `${MONTH_NAMES[month - 1]} ${year}`;
 }
+
+/* Whether a photo's own date is worth offering on the "Roughly when was
+   this?" slip (DECISIONS M-J1-7): only inside her life, and more than a
+   year before today, because a picture taken today of a 1966 album print
+   says October 2026. Offered, never applied. The label as given, or "". */
+export function believablePhotoDate(label, story, now = new Date()) {
+  const year = Number(String(label || "").match(/\d{4}/)?.[0]);
+  if (!year) return "";
+  const birth = Number(String(story?.birthYear || "").match(/\d{4}/)?.[0]);
+  if (birth && year < birth) return "";
+  if (year > now.getFullYear() - 1) return "";
+  const died = Number(String(story?.deathYear || "").match(/\d{4}/)?.[0]);
+  if (died && year > died) return "";
+  return String(label);
+}

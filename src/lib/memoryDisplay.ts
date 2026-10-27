@@ -47,7 +47,8 @@ export function tellerParts(memory: Memory, story: Story): { verb: string; name:
   if (memory.contributor) return { verb: "From", name: memory.contributor.split(",")[0].trim(), rest: "" };
   if (memory.audio?.length) {
     const mins = minutesOf(memory);
-    return { verb: "Told by", name: story.name, rest: ` on a call${mins ? ` · ${mins}` : ""}` };
+    // a call is a call; a recording made on the writer or record page is just said out loud
+    return { verb: "Told by", name: story.name, rest: `${memory.familyCallId ? " on a call" : " out loud"}${mins ? ` · ${mins}` : ""}` };
   }
   if (wasSpoken(memory)) return { verb: "Told by", name: story.name, rest: " in conversation" };
   return { verb: "Written by", name: story.name, rest: "" };

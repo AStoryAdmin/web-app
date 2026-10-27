@@ -34,6 +34,10 @@ export const PERSON_FACTS = [
   ["faith", "faith", "text"],
   ["factSources", "fact_sources", "json"],
   ["sourceLinks", "source_links", "list"],
+  // What they did not have ("never married", "no children", "no faith"),
+  // as { partner: true, … }. Only lib/todayQuestion.js lifeFactsFor reads
+  // it, to hold back questions that would not fit their life.
+  ["lifeNo", "life_no", "json"],
 ];
 export const PERSON_FACT_COLUMNS = PERSON_FACTS.map(([, col]) => col);
 

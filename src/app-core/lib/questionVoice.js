@@ -31,17 +31,32 @@ import { FAMILY_CHAPTER } from "../data/eras.js";
 /* Held back from every deck, in either voice: questions written as last
    words ("What do you want each of them to know you thought of them?",
    "Who do you picture reading this?"), which the house rule against
-   framing anything around an ending rules out. They stay in the bank for
-   the session reworking it (content/questions.csv) to rewrite. */
+   framing anything around an ending rules out. The 20 Oct round rewrote
+   four of them as what she'd pass on, said to the living ("Who in the
+   family do you most want to hear your stories?"), and let them back in;
+   these three still read as last words, so they stay out. */
 export const HELD = new Set([
   "later-think-about-dying",
-  "reader-permission",
-  "reader-proud-of-them",
-  "reader-who-reading",
-  "reader-not-born",
   "faith-blessing-write",
   "reader-forgive-me",
 ]);
+
+/* Which pronoun the bank may use for the storyteller: "she", "he", or null
+   when nobody has said. From the tree first (the person whose story this
+   is), then the story's own relationship word ("Grandmother"). Null means
+   the questions use the name instead, never "they" for a named person
+   (FB-174, data/interview.js fill). */
+const SHE = /^(grandmother|grandma|great-grandmother|mother|mom|mum|aunt|wife|sister|daughter|granddaughter|niece|stepmother)$/i;
+const HE = /^(grandfather|grandpa|great-grandfather|father|dad|uncle|husband|brother|son|grandson|nephew|stepfather)$/i;
+export function pronounOf(story, people = []) {
+  const p = (people || []).find((x) => x && story?.id && x.storyId === story.id);
+  if (p?.sex === "F") return "she";
+  if (p?.sex === "M") return "he";
+  const rel = String(story?.relationship === "Other" ? story?.relationshipOther || "" : story?.relationship || "").trim();
+  if (SHE.test(rel)) return "she";
+  if (HE.test(rel)) return "he";
+  return null;
+}
 
 /* Asked of a relative only once the family tree says the storyteller has
    died: "What do you miss about Rose?" about a grandmother who is alive
@@ -84,13 +99,26 @@ export function storytellerGone(story, people = []) {
   return !!p?.deathYear;
 }
 
-export function voicePrompts(name, { relative = false, era, tag, gone = false, firstWeek = false } = {}) {
-  const fits = (p) => !HELD.has(p.id) && (gone || !ONLY_WHEN_GONE.has(p.id));
-  const all = getPrompts(name).filter(fits);
+/* Whether a row's `needs` (the bank's column: partner, children, faith…)
+   fit this storyteller. `facts` is lifeFactsFor (lib/todayQuestion.js):
+   each need true, false or null for not known. A row is held back when the
+   family says she hasn't got it, and, while she is new (`strict`), until
+   somebody says she has: nobody's first week asks "What are your
+   children's names?" of a woman nobody has said had children. */
+export function needsMet(p, facts, strict = false) {
+  if (!p?.needs?.length || !facts) return true;
+  return p.needs.every((k) => (strict ? facts[k] === true : facts[k] !== false));
+}
+
+export function voicePrompts(name, { relative = false, era, tag, gone = false, witnessable = false, pronoun = null, facts = null, strict = false } = {}) {
+  const fits = (p) => !HELD.has(p.id) && (gone || !ONLY_WHEN_GONE.has(p.id)) && needsMet(p, facts, strict);
+  const all = getPrompts(name, { pronoun }).filter(fits);
   if (relative) {
     const told = new Map(all.map((p) => [p.id, p.question]));
-    let list = getAboutPrompts(name, { era, tag }).filter(fits);
-    if (!list.length) list = getAboutPrompts(name).filter(fits);
+    // A living person's ways are asked about in the present ("What makes
+    // Rose laugh?"); data/interview.js presentAbout.
+    let list = getAboutPrompts(name, { era, tag, pronoun, living: !gone }).filter(fits);
+    if (!list.length) list = getAboutPrompts(name, { pronoun, living: !gone }).filter(fits);
     let out = list.map((p) => {
       const askThem = (p.tags || []).includes(ASK_THEM);
       return {
@@ -101,10 +129,13 @@ export function voicePrompts(name, { relative = false, era, tag, gone = false, f
         voice: "about",
       };
     });
-    // A relative's first week: only what they remember themselves — "From
-    // the family", and the everyday subjects they could have witnessed.
-    // Never a relay (askThem) and never a fact only the storyteller knows.
-    if (firstWeek) {
+    // Only what a relative remembers themselves — "From the family", and
+    // the everyday subjects they could have witnessed. Never a relay
+    // (askThem) and never a fact only the storyteller knows. Home passes
+    // this for a new family's first week; the tree's "add what you
+    // remember" passes it always, because that page is always somebody
+    // writing from their own memory.
+    if (witnessable) {
       out = out.filter(
         (p) =>
           !p.askThem &&
@@ -114,7 +145,7 @@ export function voicePrompts(name, { relative = false, era, tag, gone = false, f
     return out;
   }
   const own = (list) => list.filter((p) => p.era !== FAMILY_CHAPTER && fits(p));
-  let list = own(getPrompts(name, { era, tag }));
+  let list = own(getPrompts(name, { era, tag, pronoun }));
   if (!list.length) list = own(all);
   return list.map((p) => ({ ...p, alt: p.about || null, voice: "storyteller" }));
 }
@@ -124,9 +155,13 @@ export function voicePrompts(name, { relative = false, era, tag, gone = false, f
 export function findPrompt(question, name) {
   const q = String(question || "").trim();
   if (!q) return null;
-  for (const relative of [false, true]) {
-    const hit = voicePrompts(name, { relative }).find((p) => p.question.trim() === q);
-    if (hit) return hit;
+  // Shown with she/he where the tree says, or with the name where it
+  // doesn't (FB-174), so it is looked for in each.
+  for (const pronoun of [null, "she", "he"]) {
+    for (const relative of [false, true]) {
+      const hit = voicePrompts(name, { relative, pronoun }).find((p) => p.question.trim() === q);
+      if (hit) return hit;
+    }
   }
   return null;
 }
@@ -135,11 +170,11 @@ export function findPrompt(question, name) {
    switches to when "Rose is telling me" is tapped. Null when the question
    can only be asked one way (a storyteller-only question has no relative
    wording), so the caller keeps what it has. */
-export function inVoice(prompt, name, { relative = false } = {}) {
+export function inVoice(prompt, name, { relative = false, pronoun = null } = {}) {
   if (!prompt) return null;
   const id = prompt.id || findPrompt(prompt.question, name)?.id;
   if (!id) return null;
-  return voicePrompts(name, { relative }).find((p) => p.id === id) || null;
+  return voicePrompts(name, { relative, pronoun }).find((p) => p.id === id) || null;
 }
 
 /* Has this question been answered, in either voice? `answered` is a Set of

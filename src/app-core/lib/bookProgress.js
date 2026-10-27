@@ -27,16 +27,19 @@ export { CORE_CHAPTERS };
 // one the fallback printed the same sentence the label already said, and the
 // card stuttered: "Nothing from When everything changed yet" twice over. A
 // test now fails if a core chapter is missing its line.
+//
+// Said of a named person, so never "they" (FB-174): each line names the
+// thing, not the person.
 const CHAPTER_PROMPTS = {
-  "Where we come from": "Their parents, and the place the family started",
-  Childhood: "What the house they grew up in was like",
-  "Growing up": "School, friends, and who they were at sixteen",
-  "Love & family": "How they met, and the family that followed",
-  "Work & making a living": "The work they did, and what it cost them",
-  "The world we lived through": "What was happening around them, and what it meant",
-  "When everything changed": "The turns their life took, and the best of it",
-  "Looking back": "What they make of it now, and what they would pass on",
-  "Faith & what carried me": "What they believed, and what held them up",
+  "Where we come from": "The parents, and the place the family started",
+  Childhood: "The house, the street, the kitchen table",
+  "Growing up": "School, friends, and sixteen",
+  "Love & family": "How it began, and the family that followed",
+  "Work & making a living": "The work, and what it cost",
+  "The world we lived through": "What was happening all around, and what it meant",
+  "When everything changed": "The turns a life took, and the best of it",
+  "Looking back": "What it all taught, and what to pass on",
+  "Faith & what carried me": "What was believed, and what held things up",
 };
 
 function savedMemories(story) {
@@ -110,6 +113,15 @@ export function bookProgress(story) {
     chaptersCovered,
     chaptersTotal: CORE_CHAPTERS.length,
     emptyChapters,
+    // The chapter to tell next, the first empty one in the order a life
+    // runs, and the Book's line in its own terms (A11, hero-spec §2):
+    // "13 memories. Nothing yet in When everything changed", the sentence
+    // the Book tab says (bookPages storyLine): the empty chapter said as
+    // empty, never as a "Next chapter" found nowhere (FB-356). No percentage.
+    nextChapter: emptyChapters[0] || null,
+    line: count
+      ? `${count} ${count === 1 ? "memory" : "memories"}${emptyChapters[0] ? `. Nothing yet in ${emptyChapters[0]}` : ""}`
+      : "",
     gaps,
     state,
     headline: {

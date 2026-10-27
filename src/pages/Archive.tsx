@@ -1,7 +1,8 @@
 /**
  * The Archive: everything in one person's story, by year, with a decade
  * rail beside it on a laptop. Search, chapter chips, the book's progress,
- * and the family's contributions waiting for a look. Nothing to configure.
+ * and the family's contributions waiting for a look, then the chapters not yet told. Nothing to configure. It reads
+ * the account again when the tab comes back, so a memory kept on the phone shows without a reload.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
@@ -12,10 +13,14 @@ import { Button, ButtonLink, Problem } from "../components/ui";
 import { ChevronRight, CloseIcon, FamilyIcon, PenIcon, SearchIcon } from "../components/icons";
 import WhereNext, { Stop } from "../components/book/WhereNext";
 import LedgeNote from "../components/archive/LedgeNote";
+import NotYetTold from "../components/archive/NotYetTold";
+import { useRefreshOnReturn } from "../components/archive/refreshOnReturn";
 import { DecadeRail, DecadeRow, type Decade } from "../components/archive/DecadeNav";
 import { InProgressGroup, PrintsFlow, UndatedGroup, YearGroup, type ArchiveView, type YearGroupT } from "../components/archive/ArchiveGroups";
 import { prefersReducedMotion, useArrive, useCrossfade, useInkIn, useRiseOnScroll } from "../components/archive/motion";
 import { useAccount } from "../state/accountContext";
+import { useAuth } from "../state/authContext";
+import { asksAbout } from "./write/keep";
 import { realChapter } from "../components/archive/photos";
 import { countPending } from "../data/contributions";
 import { decadeOf, groupByYear } from "../app-core/lib/timeline.js";
@@ -75,7 +80,8 @@ function lastWall(): string | null {
 }
 
 export default function Archive() {
-  const { account, activeStory: story, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
+  const { account, activeStory: story, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
+  const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const day = params.get("day");
@@ -115,6 +121,9 @@ export default function Archive() {
       live = false;
     };
   }, [storyId, memories.length]);
+
+  // Back to the tab (a memory just kept on the phone, one a relative added): read the account again.
+  useRefreshOnReturn(reload, { enabled: Boolean(storyId) });
 
   // Home's search icon lands here with the field ready to type into.
   useEffect(() => {
@@ -575,6 +584,7 @@ export default function Archive() {
             </section>
           </div>
         )}
+        {!nothingAtAll && !story.readOnly && <NotYetTold story={story} relative={asksAbout(story, user, family?.people)} />}
         {!nothingAtAll && (
           <WhereNext
             rows={[

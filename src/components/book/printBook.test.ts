@@ -22,7 +22,7 @@ function retoldStory() {
 
 describe("Print at home", () => {
   it("keeps a third-person retelling when the memory's words hold an apostrophe, and sets it curled", async () => {
-    const html = await printableHtml(retoldStory(), "June");
+    const html = await printableHtml(retoldStory());
     expect(html).toContain("She said they didn’t have much, but they had each other.");
     expect(html).not.toContain("We didn’t have much");
     expect(html).not.toContain("didn't");

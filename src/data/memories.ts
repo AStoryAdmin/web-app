@@ -19,15 +19,21 @@
  */
 import { supabase } from "../lib/supabase";
 import { uuid } from "../lib/uuid";
-import { memoryToRow, storyToRow } from "../app-core/data/rows.js";
+import { cleanLanguage, memoryToRow, storyToRow } from "../app-core/data/rows.js";
+import { normaliseEra } from "../app-core/data/eras.js";
 import { writeDroppingMissing } from "../app-core/lib/saveErrors.js";
 import { privatePhotoRef } from "../app-core/lib/photoRefs.js";
-import type { Memory, Story } from "./stories";
+import { tellerCredit } from "../app-core/lib/teller.js";
+import { quoteText } from "../app-core/lib/quoteText.js";
+import type { Clip, Memory, Story } from "./stories";
 
 // The app's lists (store.js): newer optional columns that an older database
 // may not have, dropped from a write rather than failing it.
 const OPTIONAL_STORY_COLUMNS = ["book_design", "call_style", "cover_url", "nickname", "directory"];
-const OPTIONAL_MEMORY_COLUMNS = ["person_ids", "family_call_id", "color", "author_person_id", "cover_url", "contributor", "source"];
+const OPTIONAL_MEMORY_COLUMNS = [
+  "person_ids", "family_call_id", "color", "author_person_id", "cover_url", "contributor", "source",
+  "via", "written_down_by", "written_down_by_name", "written_down_by_person_id", "question_text", "language",
+];
 
 type Row = Record<string, unknown>;
 type Write = (rows: Row | Row[]) => PromiseLike<{ error: { code?: string; message?: string } | null }>;
@@ -62,8 +68,67 @@ export function newMemory(input: Partial<Memory> & { title?: string; body?: stri
     familyCallId: input.familyCallId || null,
     ...(input.personIds ? { personIds: input.personIds } : {}),
     ...(input.source ? { source: input.source } : {}),
+    ...(input.via ? { via: input.via } : {}),
+    ...(input.writtenDownBy
+      ? { writtenDownBy: input.writtenDownBy, writtenDownById: input.writtenDownById || null, writtenDownByPersonId: input.writtenDownByPersonId || null }
+      : {}),
+    ...(input.questionText ? { questionText: input.questionText } : {}),
+    ...(input.prompt ? { prompt: input.prompt } : {}),
+    ...(input.questionId ? { questionId: input.questionId } : {}),
+    ...(input.language ? { language: input.language } : {}),
     createdAt: input.createdAt || new Date().toISOString(),
   };
+}
+
+/** Who is telling (app-core teller.js tellerFor): the storyteller, or somebody remembering them. */
+export type Teller = { isStoryteller: boolean; name: string; personId: string | null; storytellerName?: string };
+
+export type NewMemory = Omit<Partial<Memory>, "prompt"> & {
+  /** The question it answers: a prompt from the deck, or just its words. */
+  prompt?: string | { id?: string | null; question?: string } | null;
+  /** Who wrote or said it. A relative is credited by name ("Jamie, her granddaughter"); the storyteller is not. */
+  teller?: Teller | null;
+  /** What the writer is to the storyteller, from the tree (credit.js relationTo), for the credit. */
+  relation?: string;
+  /** The storyteller is in the room telling it, so it is theirs whoever holds the keyboard. */
+  storytellerHere?: boolean;
+  photos?: string[];
+  audio?: Clip[];
+};
+
+/**
+ * A new memory as the phone makes one (store.js createMemory, then
+ * CreateMemoryScreen's save): the family reads it unless "Only me" was
+ * chosen, its card line is the first real sentence, the question it answers
+ * is kept with it in its own words (question_text on the server, `prompt`
+ * for the decks) with the bank's id when it has one, and a relative telling
+ * it is credited (teller.js tellerCredit). Nothing is written; saveMemory
+ * does that, after any photos and clips are uploaded.
+ */
+export function createMemory(input: NewMemory): Memory {
+  const { prompt, teller, relation = "", storytellerHere = false, ...rest } = input;
+  const asked = String(input.questionText || (typeof prompt === "string" ? prompt : prompt?.question) || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const questionId = input.questionId || (typeof prompt === "object" && prompt?.id) || "";
+  const credit = tellerCredit(teller, { storytellerHere, relation }) as { contributor: string; authorPersonId: string | null } | null;
+  const body = input.body || "";
+  const language = cleanLanguage(input.language) as string | null;
+  return newMemory({
+    ...rest,
+    body,
+    era: normaliseEra(input.era) as string,
+    excerpt: input.excerpt || (quoteText(body, { max: 140 }) as string) || body.slice(0, 140),
+    privacy: input.privacy === "private" ? "private" : "shared",
+    status: input.status || "saved",
+    // An explicit credit (a contribution being accepted) wins over the teller's.
+    contributor: input.contributor || credit?.contributor || "",
+    authorPersonId: input.authorPersonId || credit?.authorPersonId || null,
+    questionText: asked || undefined,
+    prompt: asked || undefined,
+    questionId: (asked && questionId) || undefined,
+    language: language || undefined,
+  });
 }
 
 /** Upserts the memory row; photos and clips are written by the two below. */

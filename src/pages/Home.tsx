@@ -14,13 +14,14 @@ import { Avatar, Button, ButtonLink, Problem } from "../components/ui";
 import { MicIcon, PenIcon, SearchIcon } from "../components/icons";
 import { useAuth } from "../state/authContext";
 import { useAccount } from "../state/accountContext";
-import { greeting, noteFor, recordSkip, skipsToday, todaysDeck, todaysQuestion } from "../lib/today";
+import { greeting, loadSharedQuestion, noteFor, openShared, questionWithShared, recordSkip, rememberShown, skipsToday, todaysDeck, type SharedQuestion } from "../lib/today";
 import { isPaid } from "../lib/plan";
 import { dayKey } from "../app-core/lib/dailyQuestion.js";
 import { stripDays } from "../app-core/lib/weekStrip.js";
 import { bookProgress } from "../app-core/lib/bookProgress.js";
 import { track } from "../lib/analytics";
 import { resurface } from "../lib/resurface";
+import { asksAbout } from "./write/keep";
 
 const longDate = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 
@@ -63,11 +64,12 @@ function heldPaid(): boolean {
 
 export default function Home() {
   const { user } = useAuth();
-  const { account, activeStory: story, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
+  const { account, activeStory: story, family, loadError, reload, saveFailure, clearSaveFailure } = useAccount();
   const navigate = useNavigate();
   const [skips, setSkips] = useState(() => (story ? skipsToday(story.id) : 0));
 
-  const relative = !!story && story.relationship !== "Myself" && story.ownerId !== user?.id && false;
+  // a relative is asked about the storyteller, in the voice the phone uses (and the writer looks the question up in)
+  const relative = asksAbout(story, user, family?.people);
   const unlimited = isPaid(user?.plan ?? "free");
   // remembered for the next cold load's skeleton (a per-viewer convenience)
   useEffect(() => {
@@ -78,16 +80,35 @@ export default function Home() {
       /* storage refused: the skeleton holds the free shape */
     }
   }, [account, unlimited]);
-  const deck = useMemo(() => (story ? todaysDeck(story, { relative, unlimited }) : []), [story, relative, unlimited]);
-  const question = useMemo(() => (story ? todaysQuestion(story, { relative, unlimited }) : null), [story, relative, unlimited, skips]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the phone's own deck (doors, the arc, follow-ups) with the account and the tree; the writer and the recorder look
+  // the question up the same way
+  const deck = useMemo(() => (story ? todaysDeck(story, { relative, unlimited, user, family }) : []), [story, relative, unlimited, user, family]);
+  // the question somebody in the family asked for today leads, as on the phone (kept per story, so another story's never shows)
+  const [shared, setShared] = useState<{ storyId: string; q: SharedQuestion | null } | null>(null);
+  const storyId = story?.id;
+  useEffect(() => {
+    if (!story) return;
+    let live = true;
+    loadSharedQuestion(story, { relative }).then((q) => {
+      if (live) setShared({ storyId: story.id, q });
+    });
+    return () => {
+      live = false;
+    };
+    // once per story and voice; whether a kept memory answers it is checked below, without asking the server again
+  }, [storyId, relative]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sharedQ = story && shared?.storyId === story.id ? openShared(shared.q, story) : null;
+  const question = useMemo(() => (story ? questionWithShared(sharedQ, deck, skips) : null), [story, sharedQ, deck, skips]);
   useEffect(() => {
     if (!question) return;
+    // whole, for the writer or the recorder it is answered on (a shared one keeps its dailyId)
+    if (storyId) rememberShown(storyId, question);
     try {
       localStorage.setItem(QUESTION_SEEN, JSON.stringify({ day: dayKey(), q: question.question }));
     } catch {
       /* storage refused: the skeleton holds its sample question */
     }
-  }, [question]);
+  }, [question, storyId]);
 
   // While the account loads: the arrived hero's frame (same Shell key, so the sheet rises once), its greeting already
   // known, the question's place held invisible at its size; the page's own words rise in when they come.
@@ -129,7 +150,7 @@ export default function Home() {
                 </span>
                 <span className="btn quiet">
                   <MicIcon />
-                  Talk it through on a call
+                  Record it
                 </span>
                 {heldLeft > 1 && <span className="btn quiet sm">Ask me another</span>}
               </div>
@@ -163,7 +184,9 @@ export default function Home() {
   const quote = quoted ? { node: <FromTheBook story={story} />, memoryId: quoted.memory.id } : null;
   const fromFamily = byCreated.filter((m) => m.contributor).slice(0, 3);
   const progress = bookProgress(story) as { count: number; remaining: number; ratio: number; headline: string; chaptersCovered: number };
-  const left = Math.max(0, deck.length - skips);
+  // the family's question is one more to walk through; the Free note still counts today's three
+  const left = Math.max(0, deck.length + (sharedQ ? 1 : 0) - skips);
+  const deckLeft = Math.min(left, deck.length);
   const own = story.relationship === "Myself";
 
   const another = () => {
@@ -206,8 +229,8 @@ export default function Home() {
                 <ButtonLink to={`/write?q=${encodeURIComponent(question.id)}`} icon={<PenIcon />}>
                   Write it
                 </ButtonLink>
-                <ButtonLink to={`/talk?q=${encodeURIComponent(question.id)}`} variant="quiet" icon={<MicIcon />}>
-                  Talk it through on a call
+                <ButtonLink to={`/record?q=${encodeURIComponent(question.id)}`} variant="quiet" icon={<MicIcon />}>
+                  Record it
                 </ButtonLink>
                 {left > 1 && (
                   <Button variant="quiet" small onClick={another}>
@@ -217,7 +240,7 @@ export default function Home() {
               </div>
               {!unlimited && (
                 <p className="meta note" data-rise>
-                  {left === 1 ? "The last of today’s three. Three new ones tomorrow." : `${left} of today’s three waiting.`}
+                  {deckLeft <= 1 ? "The last of today’s three. Three new ones tomorrow." : `${deckLeft} of today’s three waiting.`}
                 </p>
               )}
             </>
@@ -308,7 +331,7 @@ export default function Home() {
               <div className="glance-row">
                 <div className="glance-body">
                   <h3>Calls</h3>
-                  <p className="meta">A Story calls on the phone at the hour you choose. Talking here in the browser is coming.</p>
+                  <p className="meta">A Story calls on the phone at the hour you choose. You can also record an answer right here.</p>
                   <Link className="more" to="/talk">
                     How calls work
                   </Link>

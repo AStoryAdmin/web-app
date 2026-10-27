@@ -37,13 +37,10 @@ export function isUntouchedFirstCall(budget) {
   return !!budget?.firstCall && budget.remainingSeconds >= FREE_FIRST_CALL_MINUTES * 60;
 }
 
-/* The line under the Talk button on Home, or null for none: said while the
-   conversation is still unused or part-used, and nothing once it's gone
-   (the blocked screen says the rest when they tap). */
-export function firstCallLabel(budget) {
-  if (!budget?.firstCall || budget.remainingSeconds <= 0) return null;
-  const mins = Math.max(1, Math.floor(budget.remainingSeconds / 60));
-  return budget.remainingSeconds >= FREE_FIRST_CALL_MINUTES * 60
-    ? `Your first conversation is on us: ${FREE_FIRST_CALL_MINUTES} minutes`
-    : `${mins} free ${mins === 1 ? "minute" : "minutes"} left in your first conversation`;
+/* The line under the Talk button on Home for a free account: none. The
+   promise of a free first conversation, and the minutes left in it, are
+   cut until they are a confirmed product fact (DECISIONS A13, D3, E2;
+   FB-007). Kept as a function so Home asks one place. */
+export function firstCallLabel() {
+  return null;
 }

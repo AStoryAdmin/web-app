@@ -10,7 +10,8 @@
  * - tables: select with eq/neq/is/in/order/limit, the stories select with its memories, photos and clips embedded,
  *   maybeSingle/single, insert, upsert, update, delete, head counts;
  * - rpc: per-name handlers; a name with none answers PGRST202, which the app reads as "an older database";
- * - storage and functions: quiet empty answers unless a handler is given.
+ * - storage: uploads are kept and sign to a URL that serves them back; anything else is a 1px PNG or "not found";
+ * - functions and the AI server (/api/*): quiet answers unless a handler is given.
  * There is no row-level security: a test seeds only what the signed-in person may see. A row can be held back
  * until an rpc lets it in (`hideUntil`), which is how an invitation that sign-in accepts is played.
  *
@@ -253,6 +254,31 @@ function matches(row: Row, col: string, expr: string): boolean {
   return negate ? !ok : ok;
 }
 
+/**
+ * The file in an upload: storage-js sends a Blob as multipart form data (a cacheControl field, then the file under
+ * an empty name), anything else as the raw body.
+ */
+function uploaded(raw: Buffer | null, contentType: string): { bytes: Buffer; type: string } {
+  const buf = raw || Buffer.alloc(0);
+  const boundary = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType);
+  if (!/multipart\/form-data/i.test(contentType) || !boundary) return { bytes: buf, type: contentType.split(";")[0] || "application/octet-stream" };
+  const sep = Buffer.from(`--${boundary[1] || boundary[2]}`);
+  let at = buf.indexOf(sep);
+  while (at >= 0) {
+    const next = buf.indexOf(sep, at + sep.length);
+    if (next < 0) break;
+    const part = buf.subarray(at + sep.length + 2, next - 2); // past the CRLF after the boundary, before the one ahead
+    const split = part.indexOf("\r\n\r\n");
+    const head = split >= 0 ? part.subarray(0, split).toString() : "";
+    if (/filename=/i.test(head)) {
+      const type = /content-type:\s*([^\r\n]+)/i.exec(head)?.[1]?.trim() || "application/octet-stream";
+      return { bytes: Buffer.from(part.subarray(split + 4)), type };
+    }
+    at = next;
+  }
+  return { bytes: buf, type: "application/octet-stream" };
+}
+
 function filtersOf(q: URLSearchParams): [string, string][] {
   return [...q.entries()].filter(([k]) => !RESERVED.has(k));
 }
@@ -262,9 +288,13 @@ export class MockSupabase {
   tables: Record<string, Row[]> = {};
   rpcs: Record<string, Handler> = {};
   functions: Record<string, Handler> = {};
+  /** The AI server's routes (/api/<name>, e.g. "transcribe"); a name with none answers 404. */
+  api: Record<string, Handler> = {};
   calls: Call[] = [];
   /** Requests to any host but the app's and the mock's, refused. */
   blocked: string[] = [];
+  /** What went up to storage, by "bucket/path": the file's bytes and its type. */
+  objects = new Map<string, { bytes: Buffer; type: string }>();
   /** Rows kept out of reads until the named rpc runs: table → rpc name → row ids. */
   private held: { table: string; rowId: string; rpc: string }[] = [];
 
@@ -413,19 +443,52 @@ export class MockSupabase {
         const a = await this.call(this.functions[name], (body || {}) as Row, req);
         return json(a?.status ?? 200, a ? a.body ?? {} : {});
       }
-      if (path.startsWith("/storage/v1/")) {
-        if (path.includes("/object/sign/")) {
-          const paths = ((body as Row)?.paths as string[]) || [];
-          if (paths.length) return json(200, paths.map((p) => ({ path: p, signedURL: null, error: "Object not found" })));
-          return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
-        }
-        if (method === "GET") return route.fulfill({ status: 200, headers: CORS, contentType: "image/png", body: PNG_1PX });
-        return json(200, { Key: path, Id: id("f") });
+      // the AI server (VITE_API_URL points here too): /api/transcribe and the rest, per-name handlers
+      // (the base already ends in /api, so the app's calls arrive as /api/api/<name>)
+      if (path.startsWith("/api/")) {
+        const a = await this.call(this.api[path.replace(/^(\/api)+\//, "")],(body && typeof body === "object" ? body : {}) as Row, req);
+        return json(a?.status ?? (a ? 200 : 404), a ? a.body ?? {} : { error: "not in the flow mock" });
       }
+      if (path.startsWith("/storage/v1/")) return this.storage(route, path.slice("/storage/v1/".length), method, body);
       return json(404, { message: "not in the flow mock" });
     } catch (err) {
       return json(500, { message: `flow mock: ${(err as Error).message}` });
     }
+  }
+
+  /* ── Storage ─────────────────────────────────────────────────────────── */
+
+  /**
+   * Uploads are kept (bucket/path → bytes), so a signed URL for one of them plays or shows what went up; an object
+   * nobody uploaded signs as "not found", as a private bucket answers, and a plain GET of anything is a 1px PNG.
+   */
+  private storage(route: Route, rest: string, method: string, body: unknown) {
+    const req = route.request();
+    const json = (status: number, data: unknown) => route.fulfill({ status, headers: CORS, contentType: "application/json", body: JSON.stringify(data) });
+    const signed = (key: string) => `/object/sign/${key}?token=flow-test`;
+    if (rest.startsWith("object/sign/")) {
+      const key = decodeURIComponent(rest.slice("object/sign/".length).split("?")[0]);
+      if (method === "GET") {
+        const o = this.objects.get(key);
+        if (!o) return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
+        return route.fulfill({ status: 200, headers: { ...CORS, "Accept-Ranges": "none" }, contentType: o.type, body: o.bytes });
+      }
+      const paths = ((body as Row)?.paths as string[]) || [];
+      if (paths.length) {
+        const bucket = key.replace(/\/$/, "");
+        return json(200, paths.map((p) => (this.objects.has(`${bucket}/${p}`) ? { path: p, signedURL: signed(`${bucket}/${p}`), error: null } : { path: p, signedURL: null, error: "Object not found" })));
+      }
+      if (this.objects.has(key)) return json(200, { signedURL: signed(key) });
+      return json(400, { statusCode: "404", error: "not_found", message: "Object not found" });
+    }
+    if (method === "GET") return route.fulfill({ status: 200, headers: CORS, contentType: "image/png", body: PNG_1PX });
+    if (rest.startsWith("object/") && (method === "POST" || method === "PUT")) {
+      const key = decodeURIComponent(rest.slice("object/".length).split("?")[0]);
+      const file = uploaded(req.postDataBuffer(), req.headers()["content-type"] || "");
+      this.objects.set(key, file);
+      return json(200, { Key: key, Id: id("f") });
+    }
+    return json(200, { Key: rest, Id: id("f") });
   }
 
   private async call(h: Handler | undefined, args: Row, req: Request): Promise<Answer | null> {

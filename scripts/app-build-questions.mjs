@@ -52,6 +52,30 @@ const COLUMNS = [
 // only the storyteller can answer it ("what do you regret?"), so the app
 // leaves it out when a relative is the one talking.
 const ABOUT_COLUMN = "about";
+
+// Optional. What a question can't be answered without: "Where were you when
+// your first child was born?" needs children. The app holds a row back from
+// a storyteller the family tree says doesn't have it, and from anybody it
+// doesn't know about yet while they are new (lib/questionVoice.js needsMet).
+// Better an inclusive wording than a need; a need where the specific
+// question is the good one.
+const NEEDS_COLUMN = "needs";
+export const NEEDS_KINDS = ["partner", "children", "grandchildren", "siblings", "faith", "work", "school", "moved", "loss"];
+
+// Optional. Earlier wordings of a question, separated by "|". A memory's
+// title is the question it answered, so rewording a row would offer it again
+// to everyone who already told it; these keep counting as answered.
+const WAS_COLUMN = "was";
+
+// Words that only make sense after another question. Every row is dealt on
+// its own, with nothing above it on Home, so "at that age" has no age.
+const DANGLING = [
+  /\bat that age\b/i, /\bthe two of you\b/i, /\binstead\?$/i,
+  /\bthe hardest time\b/i, /\bback then\b/i, /\bthen\?$/i, /\btheir parent\b/i,
+  /\bthe baby\b/i, /\bthe war\b/i,
+];
+// A memory test, not a question: someone with gaps hears "you should know this".
+const MEMORY_TEST = /^(do you (know|remember)|what year\b)/i;
 // How far in a question reaches. This is the difference between a bank and an
 // interview: nobody's first question should be "what do you regret", and
 // nobody eighty memories in still wants "where were you born". A real
@@ -92,6 +116,24 @@ export const SENSITIVE_KINDS = {
 // Rose would have said.
 const FAMILY_VOICE_CHAPTER = "From the family";
 
+// A named person is never "they" (PHILOSOPHY §5; FB-174, "Who did Rose look
+// up to when they were young?"). Wherever a wording names somebody with
+// {name} and needs a pronoun for them, it says {they}, {them} or {their},
+// and the app fills in she/her or he/his from the family tree. When the tree
+// doesn't say, the name itself stands in ("Rose's mother"), never "they". A
+// bare they/them/their in a named wording fails the build. It is still fine
+// in the storyteller's own questions, where it means other people ("what
+// were they like?").
+export const PRONOUN_TOKENS = ["{they}", "{them}", "{their}"];
+const BARE_THEY = /(^|[^{])\b(they|them|their|theirs|themselves|they're|they'd|they've|they'll)\b(?!\})/i;
+const KNOWN_TOKEN = /\{(name|they|them|their)\}/g;
+export function namedWordingProblem(text) {
+  if (BARE_THEY.test(text)) return `"${text}" calls a named person "they": use {they}, {them} or {their}`;
+  const unknown = text.replace(KNOWN_TOKEN, "").match(/\{[^}]*\}/);
+  if (unknown) return `"${text}" has an unknown token ${unknown[0]}`;
+  return null;
+}
+
 export function loadQuestions(csv) {
   const rows = parseCsvRows(csv);
   if (!rows.length) throw new Error("questions.csv is empty");
@@ -110,6 +152,8 @@ export function loadQuestions(csv) {
   const askedAbout = new Map();
   const questions = [];
   const hasAbout = header.includes(ABOUT_COLUMN);
+  const hasNeeds = header.includes(NEEDS_COLUMN);
+  const hasWas = header.includes(WAS_COLUMN);
 
   rows.slice(1).forEach((row, i) => {
     const line = i + 2; // 1-indexed, plus the header
@@ -117,6 +161,8 @@ export function loadQuestions(csv) {
 
     const q = Object.fromEntries(COLUMNS.map((c) => [c, at(row, c)]));
     q.about = hasAbout ? at(row, ABOUT_COLUMN) : "";
+    q.needs = hasNeeds ? at(row, NEEDS_COLUMN) : "";
+    q.was = hasWas ? at(row, WAS_COLUMN) : "";
     const fail = (msg) => problems.push(`line ${line} (${q.id || "no id"}): ${msg}`);
 
     if (!q.id) fail("no id");
@@ -155,6 +201,19 @@ export function loadQuestions(csv) {
     }
     if (!q.follow_up) fail("no follow_up");
     if (!q.hint) fail("no hint");
+    for (const re of DANGLING) {
+      if (re.test(q.question)) fail(`"${q.question.match(re)[0]}" needs another question above it to mean anything`);
+    }
+    if (MEMORY_TEST.test(q.question)) fail("reads as a memory test; ask for the thing itself");
+    for (const [col, text] of [["question", q.question], ["follow_up", q.follow_up], ["hint", q.hint], ["about", q.about]]) {
+      if (text.includes("\u2014")) fail(`em-dash in ${col}`);
+    }
+    const plain = (t) => t.toLowerCase().replace(/[^a-z ]/g, "").trim();
+    if (plain(q.follow_up) === plain(q.question)) fail("follow_up repeats the question");
+    if (plain(q.hint) === plain(q.question)) fail("hint repeats the question");
+    for (const need of q.needs ? q.needs.split(";").map((t) => t.trim()).filter(Boolean) : []) {
+      if (!NEEDS_KINDS.includes(need)) fail(`needs "${need}" isn't one of: ${NEEDS_KINDS.join(", ")}`);
+    }
 
     const isFamilyVoice = q.chapter === FAMILY_VOICE_CHAPTER;
     if (q.question.includes("{name}") && !isFamilyVoice) {
@@ -162,6 +221,10 @@ export function loadQuestions(csv) {
     }
     if (isFamilyVoice && !q.question.includes("{name}")) {
       fail(`"${FAMILY_VOICE_CHAPTER}" questions must name who they're about`);
+    }
+    if (isFamilyVoice && namedWordingProblem(q.question)) fail(namedWordingProblem(q.question));
+    if (!isFamilyVoice && /\{(they|them|their)\}/.test(q.question)) {
+      fail("a pronoun token only belongs beside {name}");
     }
 
     if (q.question.length > MAX_QUESTION_LENGTH) {
@@ -182,6 +245,7 @@ export function loadQuestions(csv) {
         fail(`about is ${q.about.length} chars, over ${MAX_QUESTION_LENGTH}`);
       }
       if (!/[?.]$/.test(q.about)) fail("about should end in a question mark");
+      if (namedWordingProblem(q.about)) fail(`about ${namedWordingProblem(q.about)}`);
       if (!isFamilyVoice && (q.sensitive === "private" || q.sensitive === "rupture")) {
         fail(`marked "${q.sensitive}" — only the storyteller tells that, leave about blank`);
       }
@@ -205,6 +269,8 @@ export function loadQuestions(csv) {
       depth: Number(q.depth),
       tags: q.tags ? q.tags.split(";").map((t) => t.trim()).filter(Boolean) : [],
       about: q.about || null,
+      needs: q.needs ? q.needs.split(";").map((t) => t.trim()).filter(Boolean) : [],
+      was: q.was ? q.was.split("|").map((t) => t.trim()).filter(Boolean) : [],
     });
   });
 
@@ -239,6 +305,8 @@ function render(questions) {
     tags: ${JSON.stringify(q.tags)},
     era: ${JSON.stringify(q.era)},
     about: ${JSON.stringify(q.about)},
+    needs: ${JSON.stringify(q.needs)},
+    was: ${JSON.stringify(q.was)},
   },`
           )
           .join("\n")
@@ -283,10 +351,30 @@ const RAW_PROMPTS = [
 ${body}
 ];
 
+// {name} and the pronoun tokens, filled. \`pronoun\` is "she", "he" or null,
+// from the family tree (lib/questionVoice.js pronounOf). Without one the
+// name stands in for the pronoun, because a named person is never "they"
+// (FB-174): "What has Rose told you about Rose's mother?" is plain and true.
+// With no name at all, the person is unnamed, and they/them is right.
+const PRONOUNS = {
+  she: { they: "she", them: "her", their: "her" },
+  he: { they: "he", them: "him", their: "his" },
+  unnamed: { they: "they", them: "them", their: "their" },
+};
+function fill(text, personName, fallback, pronoun) {
+  const name = personName || fallback;
+  const p = !personName ? PRONOUNS.unnamed : PRONOUNS[pronoun] || { they: name, them: name, their: \`\${name}'s\` };
+  return text
+    .replace(/\\{name\\}/g, name)
+    .replace(/\\{they\\}/g, p.they)
+    .replace(/\\{them\\}/g, p.them)
+    .replace(/\\{their\\}/g, p.their);
+}
+
 // \`personName\` fills the {name} in "From the family" questions. Everywhere
 // else the text is already addressed to the storyteller and passes straight
 // through — there is no longer a voice to get wrong.
-export function getPrompts(personName, { era, tag } = {}) {
+export function getPrompts(personName, { era, tag, pronoun = null } = {}) {
   let pool = RAW_PROMPTS;
   if (era) pool = pool.filter((p) => p.era === era);
   if (tag) pool = pool.filter((p) => p.tags.includes(tag));
@@ -294,15 +382,17 @@ export function getPrompts(personName, { era, tag } = {}) {
 
   return source.map((p) => ({
     id: p.id,
-    question: p.question.replace(/\\{name\\}/g, personName || "them"),
-    followUp: p.followUp,
-    hint: p.hint,
+    question: fill(p.question, personName, "them", pronoun),
+    followUp: fill(p.followUp, personName, "them", pronoun),
+    hint: fill(p.hint, personName, "them", pronoun),
     topic: p.topic,
     sensitive: p.sensitive,
     depth: p.depth,
     tags: p.tags,
     era: p.era,
-    about: p.about ? p.about.replace(/\\{name\\}/g, personName || ABOUT_FALLBACK) : null,
+    about: p.about ? fill(p.about, personName, ABOUT_FALLBACK, pronoun) : null,
+    needs: p.needs,
+    was: p.was.map((t) => fill(t, personName, ABOUT_FALLBACK, pronoun)),
   }));
 }
 
@@ -317,22 +407,24 @@ const ABOUT_FALLBACK = "this person";
 // written to the storyteller ("do you still make it?") and would ask the
 // relative about their own life. \`hint\` is kept; hints show what a good
 // answer looks like and read the same from either side.
-export function getAboutPrompts(personName, { era, tag } = {}) {
+export function getAboutPrompts(personName, { era, tag, pronoun = null } = {}) {
   let pool = RAW_PROMPTS.filter((p) => p.about);
   if (era) pool = pool.filter((p) => p.era === era);
   if (tag) pool = pool.filter((p) => p.tags.includes(tag));
 
   return pool.map((p) => ({
     id: p.id,
-    question: p.about.replace(/\\{name\\}/g, personName || ABOUT_FALLBACK),
+    question: fill(p.about, personName, ABOUT_FALLBACK, pronoun),
     followUp: null,
-    hint: p.hint,
+    hint: fill(p.hint, personName, ABOUT_FALLBACK, pronoun),
     topic: p.topic,
     sensitive: p.sensitive,
     depth: p.depth,
     tags: p.tags,
     era: p.era,
     about: null,
+    needs: p.needs,
+    was: p.was.map((t) => fill(t, personName, ABOUT_FALLBACK, pronoun)),
   }));
 }
 
@@ -373,8 +465,12 @@ if ((process.argv[1] || "").endsWith("build-questions.mjs")) {
     )
     .join("\n");
   const aboutCount = questions.filter((q) => q.about).length;
+  const needsCount = questions.filter((q) => q.needs.length).length;
+  const yesNo = questions.filter((q) => /^(is|was|were|did|do|does|have|has|are|can|could|would)\b/i.test(q.question));
   console.log(
     `${questions.length} questions → src/data/interview.js\n${counts}\n\n${byDepth}\n\n` +
-      `  ${String(aboutCount).padStart(4)}  with a wording for relatives (about)`
+      `  ${String(aboutCount).padStart(4)}  with a wording for relatives (about)\n` +
+      `  ${String(needsCount).padStart(4)}  held back where they don't fit (needs)\n` +
+      `  ${String(yesNo.length).padStart(4)}  open with yes/no${yesNo.length ? ": " + yesNo.map((q) => q.id).join(", ") : ""}`
   );
 }

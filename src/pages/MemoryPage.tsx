@@ -12,7 +12,7 @@
  * recording, one hairline row of tools, the family's lines, and the page
  * turn.
  */
-import { useEffect, useState, useSyncExternalStore, type ReactElement } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactElement } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import { Button, ButtonLink, Problem } from "../components/ui";
@@ -39,7 +39,7 @@ import { dateLine } from "../app-core/lib/memoryCard.js";
 import { memoryDate } from "../app-core/lib/timeline.js";
 import { loadAskedQuestions } from "../components/book/askedQuestions";
 import type { Asked } from "../components/book/bookPages";
-import type { Memory, Story } from "../data/stories";
+import type { Clip, Memory, Story } from "../data/stories";
 
 function findMemory(id: string | undefined, active: Story | null, stories: Story[]): { story: Story; memory: Memory } | null {
   if (!id) return null;
@@ -102,6 +102,15 @@ function useSpread(): boolean {
     () => window.matchMedia(SPREAD).matches,
     () => true,
   );
+}
+
+/** A clip with no storage path is a recording that never finished uploading (memories.ts): it could only fail to load. */
+const playable = (c: Clip) => !!c.path;
+
+/** The recording under the words: the clips that can play, held per memory so the player signs them once. */
+function MemoryVoice({ audio, name, photo }: { audio: Clip[]; name: string; photo?: string | null }) {
+  const clips = useMemo(() => audio.filter(playable), [audio]);
+  return <AudioPlayer clips={clips} name={name} photo={photo} />;
 }
 
 function Missing() {
@@ -201,7 +210,9 @@ export default function MemoryPage() {
   const people = (memory.personIds || [])
     .map((pid) => family?.people.find((p) => p.id === pid))
     .filter((p): p is NonNullable<typeof p> => !!p);
-  const hasVoice = memory.audio?.length > 0;
+  const hasVoice = memory.audio?.some(playable) ?? false;
+  // what the voice was: a family call, or a recording somebody made of themselves (the writer's page, on either)
+  const voiceWas = memory.familyCallId ? "call" : "recording";
   const tidyNow = served ?? (localTidy.length ? localTidy : raw);
   const body = readableParagraphs(spoken && !verbatim ? tidyNow : raw, { punctuate: spoken && !verbatim && !served }).map(smarten);
   const tidied = spoken && tidyNow.join(" ") !== raw.join(" ").replace(/\s*\n\s*/g, " ");
@@ -405,7 +416,7 @@ export default function MemoryPage() {
 
             {tidied && body.length > 0 && (
               <p className="mv-tidy" aria-live="polite">
-                {verbatim ? `Word for word, as it was said` : `Lightly tidied from the ${hasVoice ? "call" : "conversation"}`}{" "}
+                {verbatim ? `Word for word, as it was said` : `Lightly tidied from the ${hasVoice ? voiceWas : "conversation"}`}{" "}
                 <span className="mv-tidy-act">
                   <button type="button" onClick={() => setVerbatim((v) => !v)} aria-pressed={verbatim}>
                     {verbatim ? "Read it tidied" : "Read it word for word"}
@@ -416,7 +427,9 @@ export default function MemoryPage() {
 
             {hasVoice ? (
               <div className="mv-voice">
-                <AudioPlayer clips={memory.audio} name={story.name} photo={tellerPhoto} />
+                {/* the voice is whoever told it: the storyteller, or the relative credited with it ("From Linh");
+                    keyed by memory so Previous and Next start at the beginning, not mid-clip */}
+                <MemoryVoice key={memory.id} audio={memory.audio} name={toldName} photo={memory.contributor ? null : tellerPhoto} />
               </div>
             ) : listen && body.length > 0 ? (
               <div className="mv-voice">

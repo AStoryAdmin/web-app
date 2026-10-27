@@ -594,7 +594,7 @@ function Trusted() {
 
 /* ── Export ──────────────────────────────────────────────────────────── */
 
-function Export({ stories, recordedBy }: { stories: Story[]; recordedBy: string }) {
+function Export({ stories }: { stories: Story[] }) {
   const withPages = stories.filter((s) => s.memories.length > 0);
   const [pick, setPick] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -608,7 +608,7 @@ function Export({ stories, recordedBy }: { stories: Story[]; recordedBy: string 
     try {
       // The print builder carries the book's fonts; only fetched when somebody asks for the file.
       const { printAtHome } = await import("../components/book/printBook");
-      await printAtHome(chosen, recordedBy);
+      await printAtHome(chosen);
       setNote({ ok: "The book opened in a new window. Choose “Save as PDF” there." });
     } catch (err) {
       setNote({ error: (err as Error).message || "The book couldn’t be made just now. Please try again." });
@@ -865,7 +865,6 @@ export default function Account() {
     );
   if (!user) return null; // RequireAuth sends them to sign in
 
-  const recordedBy = `${user.firstName} ${user.lastName}`.trim();
   const bookName = activeStory ? (activeStory.lastName ? `The ${activeStory.lastName} book` : `${activeStory.name}’s book`) : "";
   const leave = async () => {
     setLeaving(true);
@@ -948,7 +947,7 @@ export default function Account() {
           <Storytellers stories={stories} active={activeStory} chooseStory={chooseStory} meId={user.id} />
           <Pair>
             <Walls meId={user.id} />
-            <Export stories={stories} recordedBy={recordedBy} />
+            <Export stories={stories} />
           </Pair>
           <Pair>
             <PlanCard user={user} />

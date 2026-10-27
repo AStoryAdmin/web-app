@@ -14,13 +14,19 @@
  *    photograph, beside the page just kept. Each is kept the moment it is
  *    chosen; nothing else is asked. Then the next question.
  *
+ * A page can also start from a photograph (?photo=1), as the phone's
+ * PhotoMemoryScreen does: the prints go at the head of the page, the title
+ * line is their caption, and the words are optional. The prints upload at
+ * Keep. A new page records the question it answers and, when a relative
+ * writes it, who did (write/keep.ts).
+ *
  * Drafts autosave to this browser, one per question, so moving between
  * today's questions never loses a page. Ctrl/Cmd+Enter keeps it. Focus mode
  * (Esc leaves) keeps only the book. Speak instead of typing where the
  * browser can listen.
  *
  * Walls (Free): the daily questions are counted when a question is CHOSEN,
- * the weekly photos when the picker opens; never at Keep. Writing in your
+ * the weekly photos once they are up (at Keep on a photo-first page). Writing in your
  * own words is never metered.
  */
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -39,7 +45,7 @@ import { nextQuestions, suggestTitle, tidy } from "../data/ai";
 import { ERAS, FAITH_CHAPTER, eraForAge } from "../app-core/data/eras.js";
 import { ageAt, parseYear } from "../app-core/lib/timeline.js";
 import { decadesForLife, formatDecade, suggestYearsForEra } from "../app-core/lib/memoryDateInput.js";
-import { todaysDeck, noteFor, type Prompt } from "../lib/today";
+import { dailyIdOf, findQuestion, markSharedAnswered, todaysDeck, noteFor, type Prompt } from "../lib/today";
 import { aboutPrompt } from "../lib/aboutPrompt";
 import { isPaid } from "../lib/plan";
 import { dailyPromptsLeft, incrementDailyPrompts, weeklyPhotosLeft, incrementWeeklyPhotos, FREE_WEEKLY_PHOTOS } from "../lib/usage";
@@ -49,6 +55,7 @@ import { inkStamp } from "../lib/stamp";
 import { MOVE, OUT } from "../lib/ease";
 import { track } from "../lib/analytics";
 import type { Memory, Story } from "../data/stories";
+import { answered, asksAbout, canKeep, keptTitle, writerCredit } from "./write/keep";
 
 type Draft = { title: string; body: string; era: string; questionId: string | null; memoryId: string };
 
@@ -81,6 +88,8 @@ function startersFor(own: boolean): string[] {
 }
 
 const LINE = 36;
+/** Photographs chosen on a page that starts from one: four, as the phone's picker allows; more go in once it is kept. */
+const MAX_PRINTS = 4;
 const shortDate = (d = new Date()) => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 /** The catch-all chapter is never printed as a chapter's name. */
 const CATCH_ALL = "Anything else";
@@ -218,7 +227,7 @@ function KeptPage({ story, kept, number }: { story: Story; kept: Memory; number:
           </p>
         )}
         <h2 className="w-kept-title">{kept.title}</h2>
-        <p className="w-kept-words">{kept.body}</p>
+        {kept.body && <p className="w-kept-words">{kept.body}</p>}
         <p className="w-kept-sign" aria-hidden="true">
           {own ? "Yours," : "As told by"}
           <span>{story.name}</span>
@@ -246,6 +255,7 @@ function Afterwards({
   question,
   editing,
   photoFirst,
+  relative,
   unlimited,
   email,
   onKept,
@@ -256,10 +266,12 @@ function Afterwards({
   question: Prompt | null;
   editing: boolean;
   photoFirst: boolean;
+  relative: boolean;
   unlimited: boolean;
   email: string;
   onKept: (m: Memory) => void;
 }) {
+  const { user } = useAuth();
   const { saveMemory, family } = useAccount();
   const [period, setPeriod] = useState(kept.period);
   // what the last press did, shown beside the block it was pressed in, with the way to try again
@@ -310,7 +322,7 @@ function Afterwards({
     if (!unlimited) {
       const left = weeklyPhotosLeft(email);
       if (left <= 0) {
-        fail("photo", "Five photographs a week on Free. Plans include unlimited photographs, from $119 a year.");
+        fail("photo", "This week’s five photographs on Free are in. A plan in the A Story app has room for more.");
         return;
       }
       allowed = Math.min(files.length, left);
@@ -366,7 +378,7 @@ function Afterwards({
     </div>
   );
 
-  const deck = todaysDeck(story, { unlimited });
+  const deck = todaysDeck(story, { relative, unlimited, user, family });
   const next = deck.find((p) => p.id !== question?.id) || null;
   const nextRows: NextRow[] = [
     next && !editing
@@ -391,8 +403,9 @@ function Afterwards({
         </label>
       </div>
       {yearsHint && (
-        <p className="w-note">
-          {own ? "You" : story.name} would have been {yearsHint.ages[0]} to {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
+        <p className="w-note w-say">
+          {/* a chapter from birth reads "up to 12", never "0 to 12" */}
+          {own ? "You" : story.name} would have been {yearsHint.ages[0] > 0 ? `${yearsHint.ages[0]} to` : "up to"} {yearsHint.ages[1]}, so {yearsHint.from}–{yearsHint.to}.
         </p>
       )}
       {stateOf("when")}
@@ -409,7 +422,7 @@ function Afterwards({
           ))}
         </div>
       ) : (
-        <p className="w-note">
+        <p className="w-note w-say">
           Nobody is in the family yet. <Link to="/family">Add someone</Link> and they can be named here.
         </p>
       )}
@@ -462,7 +475,7 @@ function Afterwards({
               A few more things, if you like
               <Stop />
             </h2>
-            <p className="w-note">Each is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
+            <p className="w-note w-say">Each is kept the moment you choose it. Skip any of them; the words are already in the book.</p>
           </header>
           <div className="w-choice-grid">{blocks}</div>
         </section>
@@ -550,7 +563,7 @@ export default function Write() {
         <OnlyKeepers story={story} />
       ) : (
         <WriteFrame.Provider value={setKeptAs}>
-          <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}`} story={story} />
+          <Writer key={`${story.id}|${params.get("edit") || ""}|${params.get("q") || ""}|${params.get("about") || ""}|${params.get("with") || ""}|${params.get("photo") || ""}`} story={story} />
         </WriteFrame.Provider>
       )}
     </Shell>
@@ -575,19 +588,23 @@ function Writer({ story }: { story: Story }) {
   const withId = params.get("with");
   const unlimited = isPaid(user?.plan ?? "free");
   const email = user?.email || "";
+  // today's questions in the voice Home asked them in (about the storyteller, for a relative), or Home's question isn't found here
+  const relative = asksAbout(story, user, family?.people);
 
   const editing = useMemo(() => (editId ? story.memories.find((m) => m.id === editId) || null : null), [story, editId]);
+  // a new page that starts from a photograph (?photo=1): the prints go on the page first, the words are optional
+  const photoMode = wantsPhoto && !editing;
   const withPerson = useMemo(() => (withId ? realPeople(family).find((p) => p.id === withId) || null : null), [family, withId]);
   const withName = withPerson ? String(withPerson.givenName || "").trim() : "";
   // the page's question: today's (?q=), else one about the person it is with (?about=), else none
   const pageQ = useMemo<{ prompt: Prompt; about: boolean } | null>(() => {
-    if (qid) {
-      const found = todaysDeck(story, { unlimited: true }).find((p) => p.id === qid);
-      if (found) return { prompt: found, about: false };
-    }
+    // today's, else the bank's in this voice (a question from "Not yet told", or one dealt before something was kept)
+    const found = findQuestion(story, qid, { relative, user, family });
+    if (found) return { prompt: found, about: false };
     const about = aboutId ? aboutPrompt(aboutId, withName) : null;
     return about ? { prompt: about, about: true } : null;
-  }, [story, qid, aboutId, withName]);
+    // the question is settled when the page opens: keeping it changes the deck, and the page must not change under them
+  }, [story.id, qid, aboutId, withName, relative]); // eslint-disable-line react-hooks/exhaustive-deps
   const question = pageQ?.prompt ?? null;
   const aboutQ = Boolean(pageQ?.about);
   // a question about someone keeps its own draft, apart from the same question asked of the storyteller
@@ -617,6 +634,17 @@ function Writer({ story }: { story: Story }) {
   const [pressed, setPressed] = useState(false);
   const [keptNumber, setKeptNumber] = useState<number | null>(null);
   const [draftState, setDraftState] = useState<"" | "saving" | "saved">("");
+  // photo-first: the prints chosen for the page, shown from this browser and uploaded at Keep (as the phone does)
+  const [prints, setPrints] = useState<{ file: File; url: string }[]>([]);
+  const [printNote, setPrintNote] = useState<string | null>(null);
+  const pickRef = useRef<HTMLInputElement>(null);
+  // each print's stored URL once it is up, so a Keep tried again never uploads it twice
+  const uploaded = useRef(new Map<File, string>());
+  const printUrls = useRef<string[]>([]);
+  useEffect(() => {
+    printUrls.current = prints.map((p) => p.url);
+  }, [prints]);
+  useEffect(() => () => printUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const sealRef = useRef<HTMLButtonElement>(null);
@@ -805,6 +833,8 @@ function Writer({ story }: { story: Story }) {
   const era = d.era || "Anything else";
   const words = countWords(d.body);
   const empty = !d.body.trim();
+  // words, or (starting from a photograph) a print on its own
+  const keepable = canKeep(d.body, prints.length);
   const changed = !editing || d.title !== editing.title || d.body !== editing.body || d.era !== editing.era;
   const starters = startersFor(own);
   const number = editing ? Math.max(1, [...story.memories].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).findIndex((m) => m.id === editing.id) + 1) : story.memories.length + 1;
@@ -813,10 +843,10 @@ function Writer({ story }: { story: Story }) {
   // window's height: a blank page offers three of today's; a page that also offers "in your own words" (a question
   // from today, a question about someone, an edit) offers two, so every page's list is three rows at most.
   const deck = useMemo(() => {
-    const three = todaysDeck(story, { unlimited }).slice(0, 3);
+    const three = todaysDeck(story, { relative, unlimited, user, family }).slice(0, 3);
     if (question && !aboutQ) return three.some((p) => p.id === question.id) ? three : [question, ...three.slice(0, 2)];
     return question || editing ? three.slice(0, 2) : three;
-  }, [story, unlimited, question, aboutQ, editing]);
+  }, [story, relative, unlimited, user, family, question, aboutQ, editing]);
   const drafted = useMemo(() => new Set(deck.filter((p) => p.id !== question?.id && questionDraft(story.id, p.id)?.body?.trim()).map((p) => p.id)), [deck, question, story.id]);
 
   const insertStarter = (s: string) => {
@@ -870,32 +900,79 @@ function Writer({ story }: { story: Story }) {
     });
   };
 
+  /* ── Photo-first: the prints on the page ── */
+  const pickPhotos = (files: FileList | null) => {
+    const chosen = Array.from(files || []).filter((f) => /^image\//.test(f.type));
+    if (pickRef.current) pickRef.current.value = "";
+    if (!chosen.length) return;
+    // four to a page, as the phone picks; on Free, what's left of the week's five (counted when the page is kept)
+    const room = Math.min(MAX_PRINTS - prints.length, unlimited ? Infinity : weeklyPhotosLeft(email) - prints.length);
+    if (room <= 0) {
+      setPrintNote(unlimited || prints.length >= MAX_PRINTS ? "Four to a page. More can go in once it’s kept." : "This week’s five photographs on Free are in. A plan in the A Story app has room for more.");
+      return;
+    }
+    const added = chosen.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setPrints((prev) => [...prev, ...added]);
+    setPrintNote(chosen.length > room ? (unlimited || prints.length + room >= MAX_PRINTS ? "Four to a page; the rest can go in once it’s kept." : `That’s ${FREE_WEEKLY_PHOTOS} photographs for this week on Free; the rest didn’t go in.`) : null);
+    setError(null);
+    if (!prints.length) track("photo_memory_started", { photos: added.length, camera: false });
+  };
+  const dropPrint = (url: string) => {
+    URL.revokeObjectURL(url);
+    setPrints((prev) => prev.filter((p) => p.url !== url));
+    setPrintNote(null);
+  };
+
   const save = async () => {
     const body = d.body.trim();
-    if (!body) {
-      setError("Write a line or two first, even a short one.");
+    if (!canKeep(body, prints.length)) {
+      setError(photoMode ? "Choose a photograph, or write a line or two." : "Write a line or two first, even a short one.");
       bodyRef.current?.focus();
       return;
     }
     if (dictation.listening) dictation.stop();
     setBusy("save");
     setError(null);
+    let photos = editing?.photos || [];
+    if (prints.length) {
+      try {
+        const fresh: File[] = [];
+        for (const p of prints) {
+          if (uploaded.current.has(p.file)) continue;
+          uploaded.current.set(p.file, await uploadMemoryPhoto(story.id, d.memoryId, p.file));
+          fresh.push(p.file);
+        }
+        if (!unlimited && fresh.length) incrementWeeklyPhotos(email, fresh.length);
+        photos = [...photos, ...prints.map((p) => uploaded.current.get(p.file) as string)];
+      } catch (err) {
+        setError(`${plainCause(err)} The photograph didn’t go up; nothing is lost. Try again.`);
+        setBusy("");
+        return;
+      }
+    }
     const memory = newMemory({
       ...(editing || {}),
+      // a new page records the question it answers, that it was written, and, when a relative writes it, who did
+      // (as the phone's CreateMemoryScreen saves it)
+      ...(editing ? {} : { ...answered(question, { about: aboutQ }), ...(writerCredit(story, user, family) || {}), via: "written" }),
       id: d.memoryId,
-      title: d.title.trim() || question?.question || body.split(/[.!?\n]/)[0].slice(0, 80),
+      title: keptTitle({ title: d.title, question: question?.question, body, photos: photos.length }),
       body,
       excerpt: body.slice(0, 200),
       era,
       period: editing?.period || "",
-      photos: editing?.photos || [],
-      cover: editing?.cover || null,
+      photos,
+      cover: editing?.cover || photos[0] || null,
       status: "saved",
       createdAt: editing?.createdAt,
       ...(editing?.personIds ? { personIds: editing.personIds } : withId ? { personIds: [withId] } : {}),
     });
     try {
       await saveMemory(memory, story.id);
+      // the family's question for today: the server hears it was answered (the memory is kept either way)
+      const dailyId = editing ? null : dailyIdOf(question);
+      if (dailyId) void markSharedAnswered(dailyId, memory.id);
+      if (photoMode && prints.length) track("photo_memory_finished", { how: body ? "write" : "keep" });
       try {
         localStorage.removeItem(key);
         // a draft for this question written before drafts were kept per question
@@ -967,6 +1044,7 @@ function Writer({ story }: { story: Story }) {
             question={question}
             editing={Boolean(editing) && !keptNumber}
             photoFirst={wantsPhoto}
+            relative={relative}
             unlimited={unlimited}
             email={email}
             onKept={setKept}
@@ -988,11 +1066,11 @@ function Writer({ story }: { story: Story }) {
     : editing
       ? "Change what you like."
       : wantsPhoto
-        ? "Which photograph, and what was happening?"
+        ? "Start with a photograph."
         : own
           ? "What would you like to keep today?"
           : `What would you like to keep of ${story.name}’s?`;
-  const sub = question ? hint : editing ? "" : wantsPhoto ? "A few lines first. The photograph goes in on the next page." : "Anything at all. A kitchen, a road, a song on the radio.";
+  const sub = question ? hint : editing ? "" : wantsPhoto ? "Choose one, give it a line if you like, and keep it. The story behind it can come later." : "Anything at all. A kitchen, a road, a song on the radio.";
   const helpsOff = empty || busy !== "";
   const toolState =
     helped === "tidy"
@@ -1042,7 +1120,7 @@ function Writer({ story }: { story: Story }) {
     </>
   );
   // the pencilled note: the question chosen from the help; else, for a new page, a word that fits how far it has come
-  const note = asked || (editing ? "" : words >= 50 ? "Take all the time you need." : "A few lines is plenty.");
+  const note = asked || (editing ? "" : photoMode && empty ? "A photograph on its own is enough." : words >= 50 ? "Take all the time you need." : "A few lines is plenty.");
   const pencil = note ? (
     <p className={`w-pencil${asked ? " asked" : ""}`} aria-live="polite">
       <span>{note}</span>
@@ -1060,6 +1138,16 @@ function Writer({ story }: { story: Story }) {
               <small>{dictation.listening ? "The words land on the page as you talk." : "Talk, and the words land on the page."}</small>
             </span>
           </button>
+        )}
+        {/* the recorder keeps the voice itself, and works where dictation doesn't (Firefox) */}
+        {!editing && !photoMode && (
+          <Link className="w-tool" to={question && !aboutQ ? `/record?q=${encodeURIComponent(question.id)}` : "/record"}>
+            <MicIcon />
+            <span>
+              <b>Record it instead</b>
+              <small>Your voice is kept, with the words beside it.</small>
+            </span>
+          </Link>
         )}
         <button type="button" className="w-tool" onClick={() => help("tidy")} disabled={helpsOff} title={empty ? "Write a line first" : undefined} aria-busy={busy === "tidy" || undefined}>
           <SparkIcon />
@@ -1085,7 +1173,7 @@ function Writer({ story }: { story: Story }) {
           {dictation.problem}
         </p>
       )}
-      {empty && <p className="w-note w-help-off">Write a line and these can help.</p>}
+      {empty && <p className="w-note w-say w-help-off">Write a line and these can help.</p>}
       <div className="w-help-out" aria-live="polite">
         {spread && !rail && (toolState || asks.length > 0 || undo) && (
           <button
@@ -1131,7 +1219,7 @@ function Writer({ story }: { story: Story }) {
   const keep = (
     <>
       <div className="w-keep-seal">
-        <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "save" || empty} aria-busy={busy === "save" || undefined}>
+        <button ref={sealRef} type="button" className={`seal-button${pressed ? " pressed" : ""}`} onClick={save} disabled={busy === "save" || !keepable} aria-busy={busy === "save" || undefined}>
           <span className="seal" aria-hidden="true">
             <WaxSeal />
           </span>
@@ -1140,7 +1228,7 @@ function Writer({ story }: { story: Story }) {
         {error && (
           <p className="w-keep-error" role="alert">
             <span>{error}</span>
-            {!empty && (
+            {keepable && (
               <button type="button" className="w-retry" onClick={() => void save()}>
                 Try again
               </button>
@@ -1148,7 +1236,7 @@ function Writer({ story }: { story: Story }) {
           </p>
         )}
         <p className={`w-keep-note${pressed ? " spent" : ""}`} aria-hidden={pressed || undefined}>
-          {!empty && (
+          {keepable && (
             <span className="w-kbd-hint">
               {focus && (
                 <>
@@ -1181,7 +1269,7 @@ function Writer({ story }: { story: Story }) {
           <div className="w-center">
             {!spread && questionHead}
             <div className="w-book" ref={bookRef}>
-              <Dog awake={!empty || dictation.listening} />
+              <Dog awake={!empty || prints.length > 0 || dictation.listening} />
               <Corners />
               <div className="w-pages">
                 {spread && (
@@ -1214,11 +1302,35 @@ function Writer({ story }: { story: Story }) {
                   </p>
                   {/* with the cloth put away, the question comes onto the page */}
                   {focus && question && <p className="w-focus-q">{smart(question.question)}</p>}
+                  {/* starting from a photograph: the prints are tucked in at the head of the page, the caption under them */}
+                  {photoMode && (
+                    <div className="w-prints">
+                      <input ref={pickRef} type="file" accept="image/*" multiple hidden onChange={(e) => pickPhotos(e.target.files)} />
+                      {prints.length > 0 && (
+                        <div className="wphotos">
+                          {prints.map((p, i) => (
+                            <Print key={p.url} url={p.url} tilt={[-3, 2, -1, 3][i % 4]} onRemove={busy === "save" ? undefined : () => dropPrint(p.url)} />
+                          ))}
+                        </div>
+                      )}
+                      {prints.length < MAX_PRINTS && (
+                        <button type="button" className={`w-pick${prints.length ? " more" : ""}`} onClick={() => pickRef.current?.click()} disabled={busy === "save"}>
+                          <PhotoIcon />
+                          <span>{prints.length ? "Add another" : "Choose a photograph"}</span>
+                        </button>
+                      )}
+                      {printNote && (
+                        <p className="w-note w-alert" role="alert">
+                          {printNote}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <textarea
                     ref={titleRef}
                     className="wtitle"
                     rows={1}
-                    placeholder="A title, if one comes to mind"
+                    placeholder={photoMode ? "A line about it: who, where, when" : "A title, if one comes to mind"}
                     value={d.title}
                     onChange={(e) => set({ title: e.target.value.split(String.fromCharCode(10)).join(" ") })}
                     aria-label="Title"
@@ -1233,7 +1345,7 @@ function Writer({ story }: { story: Story }) {
                     Dear family,
                   </p>
                   {/* the ways to begin sit on the page itself, under "Dear family," */}
-                  {empty && !dictation.listening && (
+                  {empty && !dictation.listening && !photoMode && (
                     <div className="w-begin-inpage" aria-label="Ways to begin">
                       {starters.map((s) => (
                         <button key={s} type="button" onClick={() => insertStarter(s)}>
@@ -1246,7 +1358,7 @@ function Writer({ story }: { story: Story }) {
                     ref={bodyRef}
                     className="wbody"
                     rows={1}
-                    placeholder={question ? "Start anywhere. A room, a smell, who was there." : "Start anywhere."}
+                    placeholder={photoMode ? "The story behind it, if you like." : question ? "Start anywhere. A room, a smell, who was there." : "Start anywhere."}
                     value={d.body}
                     onChange={(e) => set({ body: e.target.value })}
                     onKeyDown={onKey}

@@ -208,3 +208,33 @@ export function suggestYearsForEra(story, era) {
   if (to <= from) return null;
   return { from, to, ages: span };
 }
+
+/* How old she was across a decade, said to her in her own person on the
+   "Roughly when was this?" slip (j1-spec §2): "you were born in 1945",
+   "you were 5 to 14", "you were 75 to 81" (to this year); to anyone else
+   "Rose was 5 to 14". Replaces "age 5" and "the year they were born" on
+   that slip. null when the story has no birth year, or the decade is
+   wholly before it. */
+export function decadeAgeLine(story, decade, { viewer = "teller", name = "", now = new Date() } = {}) {
+  const birth = Number(String(story?.birthYear || "").match(/\d{4}/)?.[0]);
+  const d = Number(decade);
+  if (!birth || !Number.isFinite(d) || d + 9 < birth) return null;
+  const who = viewer === "teller" ? "you" : String(name || story?.name || "").trim().split(/\s+/)[0] || "they";
+  const were = who === "you" || who === "they" ? "were" : "was";
+  // The figures keep to their words: "5 to 14" never breaks as "5 to" / "14".
+  const nb = (x) => x.replace(/ /g, " ");
+  if (birth >= d && birth <= d + 9) return `${who} ${were} ${nb(`born in ${birth}`)}`;
+  const from = d - birth;
+  const to = Math.min(d + 9, now.getFullYear()) - birth;
+  return from === to ? `${who} ${were} ${from}` : `${who} ${were} ${nb(`${from} to ${to}`)}`;
+}
+
+/* The years of a decade she lived through, to this year: "the 1940s" for
+   a woman born in 1945 offers 1945 to 1949 (fixes home-213, which offered
+   1940 to 1944). */
+export function yearsOfDecadeForLife(story, decade, now = new Date()) {
+  const birth = Number(String(story?.birthYear || "").match(/\d{4}/)?.[0]);
+  const out = [];
+  for (let y = decade; y <= decade + 9 && y <= now.getFullYear(); y += 1) if (!birth || y >= birth) out.push(y);
+  return out;
+}

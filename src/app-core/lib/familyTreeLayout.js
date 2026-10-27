@@ -70,10 +70,14 @@ const byBirth = (index) => (a, b) => {
 };
 
 /* Elbowed lines from one card's bottom to the tops of the cards below it:
-   down to half-way, across, and down to each. */
-function connect(lines, from, tos) {
+   down to half-way, across, and down to each — what the printed tree draws.
+   The screen draws `curves` instead: one soft S from the parent to each
+   child, leaving and arriving straight, like a branch rather than a pipe
+   (the owner, 2026-10-19: "gentle, not square — a family feel"). */
+function connect(lines, curves, from, tos) {
   if (!tos.length) return;
   const midY = from.y + (tos[0].y - from.y) / 2;
+  for (const t of tos) curves.push({ x1: from.x, y1: from.y, x2: t.x, y2: t.y, my: midY });
   lines.push({ x1: from.x, y1: from.y, x2: from.x, y2: midY });
   const xs = [from.x, ...tos.map((t) => t.x)];
   const lo = Math.min(...xs);
@@ -93,9 +97,10 @@ function connect(lines, from, tos) {
    without a partner, and a couple card above a person only when one of
    their parents is actually known — a parent known alone is drawn alone. */
 export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true, rowEnds = ROW_ENDS } = {}) {
-  if (!index?.people?.has(focusId)) return { cards: [], lines: [], width: 0, height: 0, focus: { x: 0, y: 0 } };
+  if (!index?.people?.has(focusId)) return { cards: [], lines: [], curves: [], width: 0, height: 0, focus: { x: 0, y: 0 } };
   const cards = [];
   const lines = [];
+  const curves = [];
 
   /* ── ancestors ─────────────────────────────────────────────────────────
      A couple card sits above every person known, holding their two
@@ -153,11 +158,11 @@ export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true
     const halves = alone ? [cx, cx] : [card.x + PW / 2, card.x + PW + PW / 2];
     if (wf) {
       const up = placeCouple(f, r + 1, start, wf);
-      connect(lines, { x: up.x + cw / 2, y: up.y + CH }, [{ x: halves[0], y: card.y }]);
+      connect(lines, curves, { x: up.x + cw / 2, y: up.y + CH }, [{ x: halves[0], y: card.y }]);
     }
     if (wm) {
       const up = placeCouple(m, r + 1, start + (wf ? wf + GAP : 0), wm);
-      connect(lines, { x: up.x + cw / 2, y: up.y + CH }, [{ x: halves[1], y: card.y }]);
+      connect(lines, curves, { x: up.x + cw / 2, y: up.y + CH }, [{ x: halves[1], y: card.y }]);
     }
     return card;
   };
@@ -278,7 +283,7 @@ export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true
         members: [{ slot: "aunt", anchorId: parent, personId: null }],
       });
       const up = cards.find((c) => c.key === `up:${parent}`);
-      if (up && tops.length) connect(lines, { x: up.x + up.w / 2, y: up.y + CH }, tops);
+      if (up && tops.length) connect(lines, curves, { x: up.x + up.w / 2, y: up.y + CH }, tops);
       return edge;
     };
     const left = side(pf, -1);
@@ -314,13 +319,13 @@ export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true
     const tos = placedRow0
       .filter((c) => c.focus || c.key.startsWith("sib:"))
       .map((c) => ({ x: c.focus ? c.x + PW / 2 : c.x + c.w / 2, y: c.y }));
-    connect(lines, { x: parentsCard.x + parentsCard.w / 2, y: parentsCard.y + CH }, tos);
+    connect(lines, curves, { x: parentsCard.x + parentsCard.w / 2, y: parentsCard.y + CH }, tos);
   }
 
   // Children under the person (or the couple), grandchildren under each child.
   const focusCard = placedRow0[focusIdx];
   if (spouseParentsCard) {
-    connect(lines, { x: spouseParentsCard.x + spouseParentsCard.w / 2, y: spouseParentsCard.y + CH }, [
+    connect(lines, curves, { x: spouseParentsCard.x + spouseParentsCard.w / 2, y: spouseParentsCard.y + CH }, [
       { x: focusCard.x + PW + PW / 2, y: 0 },
     ]);
   }
@@ -343,7 +348,7 @@ export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true
         tops.push({ x: gx + PW / 2, y: 2 * ROW });
         gx += PW + GAP;
       }
-      connect(lines, { x: cx, y: ROW + CH }, tops);
+      connect(lines, curves, { x: cx, y: ROW + CH }, tops);
       if (ends) {
         cards.push({ key: `add:grand:${u.id}`, ghost: true, plus: true, x: gx, y: 2 * ROW, w: PLUS, h: CH, members: [{ slot: "child", anchorId: u.id, personId: null }] });
       }
@@ -353,7 +358,7 @@ export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true
     }
     dx += u.w + GAP;
   }
-  if (childTops.length) connect(lines, focusFrom, childTops);
+  if (childTops.length) connect(lines, curves, focusFrom, childTops);
 
   // Normalise to start at (0, 0), with a margin round the edge.
   const M = LAYOUT_MARGIN;
@@ -367,15 +372,17 @@ export function layoutFamilyTree(index, focusId, { maxUp = MAX_UP, ghosts = true
     c.x += ox;
     c.y += oy;
   }
-  for (const l of lines) {
+  for (const l of [...lines, ...curves]) {
     l.x1 += ox;
     l.x2 += ox;
     l.y1 += oy;
     l.y2 += oy;
   }
+  for (const c of curves) c.my += oy;
   return {
     cards,
     lines,
+    curves,
     width: maxX - minX + 2 * M,
     height: maxY - minY + 2 * M,
     // focusCard is one of `cards`, so it has been moved already.

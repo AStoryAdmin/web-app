@@ -25,9 +25,15 @@ export const EVENTS = [
   "story_created",
   "story_created_first_memory",
   "memory_saved",
+  // A conversation's review card left with "Throw it away" (flow-spec item 3).
+  "call_discarded",
   "question_skipped",
   "person_added",
   "person_invited",
+  // A visitor with no account sent a memory by the family's link, and
+  // tapped "Claim your place in the family" (FB-326 item 4).
+  "contribution_sent",
+  "claim_place_tapped",
   "person_photo_added",
   "family_call_dialled",
   "family_call_answered",
@@ -39,6 +45,8 @@ export const EVENTS = [
   "link_call_sent",
   "whatsapp_imported",
   "pricing_viewed",
+  // The plan sheet every wall opens (components/PlanSheet.js), with its reason.
+  "plan_sheet_viewed",
   "book_ordered",
   // "Tell me when printing opens" on a printed edition, before ordering exists.
   "book_interest",
@@ -74,6 +82,49 @@ export const EVENTS = [
   // archive, and how many became memories. Platform names only.
   "posts_read",
   "posts_imported",
+  // Added 2026-10-22 (FB-319): photos brought in from the camera roll,
+  // and how many were kept. Counts only.
+  "photos_brought_in",
+  "photos_kept",
+  // Added 2026-10-18. Sent for weeks and dropped, because the test that
+  // guards this list never awaited its own failure.
+  "family_question_asked",
+  // The Family tab's ask sheet opened the recorder (owner note #3, 26 Oct; lane Q).
+  "family_question_voice_opened",
+  "family_memory_from_question",
+  "conversation_feedback_note",
+  "about_you_skipped",
+  "about_you_basics_saved",
+  "parent_added",
+  "parent_invite_shared",
+  "tour_opened",
+  "call_invite_shared",
+  // The one offer to be told about asks (lib/pushOffer.js): yes or no.
+  "push_offer",
+  // The weekly family rhythm (weekly-rhythm-spec §4.3, FB-309): a tapped
+  // notification (kind, cold start, minutes old), a kind's setting
+  // changed, and the Sunday letter opened (from the push, Home or a link).
+  "notification_opened",
+  "notification_setting",
+  "letter_opened",
+  // Giving A Story (GiveScreen): whether they had joined, how many questions.
+  "gift_given",
+  // A storyteller's friends (FB-284): a friend link sent, and taken.
+  "friend_invited",
+  "friend_joined",
+  // The guided first run (FB-367, first-run-spec §4 "Analytics";
+  // components/guide/useGuide.js): a step seen (step, role), done (step,
+  // seconds, via), put off; "Start me off" used; carried on from Home;
+  // and the guide's end (done: 0 to 3).
+  "guide_step_shown",
+  "guide_step_done",
+  "guide_later",
+  "guide_starter_used",
+  "guide_resumed",
+  "guide_finished",
+  "gift_revealed",
+  "gift_card_printed",
+  "gift_dated",
 ];
 
 // The short fixed labels allowed through as strings. Anything else that's a
@@ -89,7 +140,9 @@ export function cleanProps(props) {
   let n = 0;
   for (const [k, v] of Object.entries(props || {})) {
     if (n >= MAX_KEYS) break;
-    if (!/^[a-z][a-z0-9_]{0,30}$/.test(k)) continue;
+    // camelCase allowed: the call sites and analytics SQL use it (firstCall,
+    // fromFree, talkShare), and a lower-case-only rule was dropping them.
+    if (!/^[a-z][A-Za-z0-9_]{0,30}$/.test(k)) continue;
     if (typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v))) {
       out[k] = v;
       n++;

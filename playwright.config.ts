@@ -25,7 +25,8 @@ function localChromium(): string | undefined {
   return undefined;
 }
 
-const launchOptions = { executablePath: localChromium() };
+// A fake microphone that needs no permission prompt, for recording an answer (M2).
+const launchOptions = { executablePath: localChromium(), args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] };
 
 export default defineConfig({
   testDir: "e2e",
