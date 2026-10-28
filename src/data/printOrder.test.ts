@@ -164,6 +164,32 @@ describe("placePrintOrder", () => {
   });
 });
 
+describe("Order more copies (P5-R14)", () => {
+  it("previewPrintOrder and placePrintOrder pass reorderOf through, and still no price", async () => {
+    sb.invoke.mockResolvedValue({ data: { preview: true, totalCents: 16999, currency: "usd", lines, delivery: null, coveredByCredits: false }, error: null });
+    await previewPrintOrder({ versionId: "v-1", shipments: [{ quantity: 1, address: rose }], reorderOf: "o-9" });
+    const preview = sb.invoke.mock.calls[0][1].body;
+    expect(preview).toEqual({ preview: true, versionId: "v-1", shipments: [{ quantity: 1, address: rose }], reorderOf: "o-9" });
+    expect(JSON.stringify(preview)).not.toMatch(/cents|price|amount|total/i);
+
+    sb.invoke.mockResolvedValue({ data: { orderId: "o-10", totalCents: 16999, lines, delivery: null, paid: false, checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_2" }, error: null });
+    await placePrintOrder({ versionId: "v-1", shipments: [{ quantity: 1, address: rose }], returnTo: "https://app.astoryapp.com/book/thanks", reorderOf: "o-9" });
+    expect(sb.invoke.mock.calls[1][1].body).toEqual({ versionId: "v-1", shipments: [{ quantity: 1, address: rose }], client: "web", returnTo: "https://app.astoryapp.com/book/thanks", reorderOf: "o-9" });
+  });
+
+  it("leaves reorderOf out of an ordinary order", async () => {
+    sb.invoke.mockResolvedValue({ data: { preview: true, totalCents: 100, currency: "usd", lines, delivery: null, coveredByCredits: false }, error: null });
+    await previewPrintOrder({ versionId: "v-1", shipments: [], reorderOf: null });
+    expect(sb.invoke.mock.calls[0][1].body).not.toHaveProperty("reorderOf");
+  });
+
+  it("reads bad_reorder in plain words", async () => {
+    expect(PRINT_ORDER_MESSAGES.bad_reorder).toBe("We couldn’t find that order to copy. Please start again from your book.");
+    sb.invoke.mockResolvedValue({ data: null, error: httpError(409, { error: "bad_reorder" }) });
+    await expect(previewPrintOrder({ versionId: "v-1", shipments: [], reorderOf: "o-x" })).rejects.toMatchObject({ reason: "bad_reorder", code: "bad_reorder", message: PRINT_ORDER_MESSAGES.bad_reorder });
+  });
+});
+
 describe("reasonOf", () => {
   it("reads a dropped connection as network", async () => {
     await expect(reasonOf({ name: "FunctionsFetchError" })).resolves.toMatchObject({ reason: "network" });

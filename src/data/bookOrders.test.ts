@@ -13,7 +13,7 @@ const sb = vi.hoisted(() => {
 });
 vi.mock("../lib/supabase", () => ({ getSupabase: () => sb.client }));
 
-import { getOrder, isPaid, listOrders, listShipments, orderFromRow, pollUntilPaid, safeHttps, shipmentFromRow, trackingUrlFor } from "./bookOrders";
+import { afterShip, getOrder, holdOpen, holdUntilWords, isPaid, listOrders, listShipments, orderFromRow, pollUntilPaid, safeHttps, shipmentFromRow, trackingUrlFor } from "./bookOrders";
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: "o1",
@@ -77,7 +77,17 @@ describe("orderFromRow", () => {
       paidAt: null,
       deliveryEarliest: "2026-11-10",
       deliveryLatest: "2026-11-13",
+      submitAfter: null,
+      bookVersionId: null,
+      pageCount: null,
+      reorderOf: null,
     });
+  });
+
+  it("reads the hold, the locked version, its page count and the order it copies (Phase 5)", () => {
+    const o = orderFromRow(row({ submit_after: "2026-10-27T11:00:00Z", book_version_id: "v1", page_count_estimate: 48, reorder_of: "o0" }));
+    expect(o).toMatchObject({ submitAfter: "2026-10-27T11:00:00Z", bookVersionId: "v1", pageCount: 48, reorderOf: "o0" });
+    expect(orderFromRow(row({ page_count_estimate: 0 })).pageCount).toBeNull();
   });
 
   it("reads each status as the family's stage, never the printer's word", () => {
@@ -191,5 +201,36 @@ describe("pollUntilPaid", () => {
     const stop = new AbortController();
     stop.abort();
     await expect(pollUntilPaid("o1", { ...clock(), signal: stop.signal })).resolves.toBeNull();
+  });
+});
+
+describe("the hold, and after shipping (Phase 5)", () => {
+  const NOW = Date.parse("2026-10-27T15:00:00Z");
+  const o = (status: string, submitAfter: string | null) => ({ status, submitAfter });
+
+  it("holdOpen: paid with submit_after still ahead, and nothing else", () => {
+    expect(holdOpen(o("paid", "2026-10-27T15:42:00Z"), NOW)).toBe(true);
+    expect(holdOpen(o("paid", "2026-10-27T15:00:00Z"), NOW)).toBe(false);
+    expect(holdOpen(o("paid", "2026-10-27T14:59:00Z"), NOW)).toBe(false);
+    expect(holdOpen(o("paid", null), NOW)).toBe(false);
+    expect(holdOpen(o("paid", "soon"), NOW)).toBe(false);
+    for (const s of ["submitted_to_provider", "in_production", "submission_failed", "refunded", "canceled", "payment_pending"])
+      expect(holdOpen(o(s, "2026-10-27T15:42:00Z"), NOW)).toBe(false);
+    expect(holdOpen(null, NOW)).toBe(false);
+  });
+
+  it("afterShip: shipped, delivered and issue_reported", () => {
+    expect(["shipped", "delivered", "issue_reported"].map((s) => afterShip({ status: s }))).toEqual([true, true, true]);
+    expect(["paid", "in_production", "refunded", "canceled", "fulfilled"].map((s) => afterShip({ status: s }))).toEqual([false, false, false, false, false]);
+    expect(afterShip(undefined)).toBe(false);
+  });
+
+  it("holdUntilWords: the time on the hold line, 3:42 pm", () => {
+    expect(holdUntilWords("2026-10-27T15:42:00Z", "UTC")).toBe("3:42 pm");
+    expect(holdUntilWords("2026-10-27T09:05:00Z", "UTC")).toBe("9:05 am");
+    expect(holdUntilWords("2026-10-27T23:59:00Z", "UTC")).toBe("11:59 pm");
+    expect(holdUntilWords("2026-10-27T15:42:00Z", "UTC")).not.toMatch(new RegExp(`[${String.fromCharCode(0x202f, 0xa0)}]`));
+    expect(holdUntilWords(null)).toBe("");
+    expect(holdUntilWords("later")).toBe("");
   });
 });

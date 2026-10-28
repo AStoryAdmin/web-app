@@ -7,7 +7,8 @@
  *     step, which says "Nothing was charged." and still has the approved book
  *     and the addresses (kept in this tab's sessionStorage).
  * The canceled return needs the order's story, so it reads the order once;
- * without one it goes to the list of orders.
+ * without one it goes to the list of orders. A reorder ("Order more copies")
+ * keeps its reorder= so the family isn't asked to approve the book again.
  */
 import { useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -28,7 +29,7 @@ export default function BookThanks() {
     if (!canceled || !orderId) return;
     let live = true;
     getOrder(orderId)
-      .then((o) => live && setBack(o?.storyId ? `/book/order?${new URLSearchParams({ story: o.storyId, step: "pay", canceled: "1" })}` : "/book/orders"))
+      .then((o) => live && setBack(o?.storyId ? `/book/order?${new URLSearchParams({ story: o.storyId, ...(o.reorderOf ? { reorder: o.reorderOf } : {}), step: "pay", canceled: "1" })}` : "/book/orders"))
       .catch(() => live && setBack("/book/orders"));
     return () => {
       live = false;

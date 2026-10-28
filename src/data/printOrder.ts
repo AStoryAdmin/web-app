@@ -5,13 +5,16 @@
  *
  *   checkPrintOrder({ pageCount })   is ordering open, and what one copy of a
  *                                     book this long costs (copyCents)
- *   previewPrintOrder({ versionId, shipments })
+ *   previewPrintOrder({ versionId, shipments, reorderOf? })
  *                                     the itemised total, read-only: no order,
  *                                     no reservation, no payment page
- *   placePrintOrder({ versionId, shipments, returnTo })
+ *   placePrintOrder({ versionId, shipments, returnTo, reorderOf? })
  *                                     the order itself, made only when Pay is
  *                                     pressed: a Checkout page to go to, or an
  *                                     order already paid by credits
+ *
+ * "Order more copies" (P5-R14) sends reorderOf, the order it copies, on the preview and on the order: the server
+ * checks it is the family's own, on the same locked version, and has shipped (else bad_reorder).
  *
  * The body never carries a price: the server prices from its own catalog, the
  * approved version's page count and the family's credits. Shipments are always
@@ -189,7 +192,7 @@ export const FIELD_OF_ERROR: Record<string, PrintField | "quantity"> = {
 
 /* ── Errors ────────────────────────────────────────────────────────────── */
 
-export type PrintOrderReason = "not_signed_in" | "not_open" | "not_found" | "not_allowed" | "needs_review" | "address" | "unavailable" | "network" | "unknown";
+export type PrintOrderReason = "not_signed_in" | "not_open" | "not_found" | "not_allowed" | "needs_review" | "bad_reorder" | "address" | "unavailable" | "network" | "unknown";
 
 /** A sentence a family can read for each reason, when the server sends none. Never a code, never a printer's name. */
 export const PRINT_ORDER_MESSAGES: Record<PrintOrderReason, string> = {
@@ -198,6 +201,7 @@ export const PRINT_ORDER_MESSAGES: Record<PrintOrderReason, string> = {
   not_found: "We couldn’t find this book. Please go back and open it again.",
   not_allowed: "Only the family looking after this story can order its book.",
   needs_review: "Please look through the book and approve it again.",
+  bad_reorder: "We couldn’t find that order to copy. Please start again from your book.",
   address: "Please check the address.",
   unavailable: "We can’t take book orders just now. Nothing was charged. Please try again later.",
   network: "We couldn’t reach A Story. Please check your connection and try again.",
@@ -214,6 +218,7 @@ const REASONS: Record<string, PrintOrderReason> = {
   not_approved: "needs_review",
   product_changed: "needs_review",
   page_count: "needs_review",
+  bad_reorder: "bad_reorder",
   no_shipments: "address",
   too_many_shipments: "address",
   bad_quantity: "address",
@@ -379,9 +384,9 @@ const shipmentsBody = (shipments: Shipment[]) =>
   }));
 
 /** The itemised total for these addresses, read-only: the server writes nothing and starts no payment. Throws PrintOrderError. */
-export async function previewPrintOrder({ versionId, shipments }: { versionId: string; shipments: Shipment[] }): Promise<PrintPreview> {
+export async function previewPrintOrder({ versionId, shipments, reorderOf }: { versionId: string; shipments: Shipment[]; reorderOf?: string | null }): Promise<PrintPreview> {
   if (!versionId) throw new PrintOrderError("needs_review");
-  const d = await call({ preview: true, versionId, shipments: shipmentsBody(shipments) });
+  const d = await call({ preview: true, versionId, shipments: shipmentsBody(shipments), ...(reorderOf ? { reorderOf } : {}) });
   const totalCents = cents(d.totalCents);
   const lines = readLines(d.lines);
   if (totalCents === null || totalCents < 0 || lines.length === 0) throw new PrintOrderError("unknown");
@@ -393,9 +398,9 @@ export async function previewPrintOrder({ versionId, shipments }: { versionId: s
  * checks against its list), or, when credits cover it all, an order already paid with no page to go to. Throws
  * PrintOrderError.
  */
-export async function placePrintOrder({ versionId, shipments, returnTo }: { versionId: string; shipments: Shipment[]; returnTo: string }): Promise<PlacedOrder> {
+export async function placePrintOrder({ versionId, shipments, returnTo, reorderOf }: { versionId: string; shipments: Shipment[]; returnTo: string; reorderOf?: string | null }): Promise<PlacedOrder> {
   if (!versionId) throw new PrintOrderError("needs_review");
-  const d = await call({ versionId, shipments: shipmentsBody(shipments), client: "web", returnTo });
+  const d = await call({ versionId, shipments: shipmentsBody(shipments), client: "web", returnTo, ...(reorderOf ? { reorderOf } : {}) });
   const orderId = text(d.orderId);
   const totalCents = cents(d.totalCents);
   const paid = d.paid === true;

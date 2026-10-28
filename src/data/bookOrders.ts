@@ -38,6 +38,14 @@ export type BookOrder = {
   paidAt: string | null;
   deliveryEarliest: string | null;
   deliveryLatest: string | null;
+  /** When the hour's hold ends and the book goes to print (P5-R12); the family can cancel until then. */
+  submitAfter: string | null;
+  /** The locked book version it prints, for "Order more copies" (P5-R14). */
+  bookVersionId: string | null;
+  /** The approved version's page count (page_count_estimate). */
+  pageCount: number | null;
+  /** The order this one copies, when it was an "Order more copies". */
+  reorderOf: string | null;
 };
 
 export type OrderShipment = {
@@ -97,6 +105,7 @@ export function orderFromRow(row: Row): BookOrder {
   const status = str(row.status) ?? "approved";
   const copies = int(row.quantity) ?? int(row.copies);
   const total = int(row.total_cents) ?? int(row.amount_cents);
+  const pages = int(row.page_count_estimate);
   return {
     id: String(row.id),
     storyId: String(row.story_id ?? ""),
@@ -114,6 +123,10 @@ export function orderFromRow(row: Row): BookOrder {
     paidAt: str(row.paid_at),
     deliveryEarliest: isoDay(row.delivery_earliest),
     deliveryLatest: isoDay(row.delivery_latest),
+    submitAfter: str(row.submit_after),
+    bookVersionId: str(row.book_version_id),
+    pageCount: pages !== null && pages > 0 ? pages : null,
+    reorderOf: str(row.reorder_of),
   };
 }
 
@@ -140,6 +153,31 @@ export function shipmentFromRow(row: Row): OrderShipment {
 
 /** Whether the order has been paid for, whatever has happened since. */
 export const isPaid = (o: Pick<BookOrder, "paidAt"> | null | undefined): boolean => !!o?.paidAt;
+
+const AFTER_SHIP = ["shipped", "delivered", "issue_reported"];
+
+/**
+ * Inside the hour's hold: paid and not yet gone to print, so the family can still cancel (P5-R12). An order already
+ * sent, printing, or a failed submission being retried is past it. Pure.
+ */
+export function holdOpen(o: Pick<BookOrder, "status" | "submitAfter"> | null | undefined, now: number = Date.now()): boolean {
+  if (!o || o.status !== "paid" || !o.submitAfter) return false;
+  const at = Date.parse(o.submitAfter);
+  return Number.isFinite(at) && at > now;
+}
+
+/** The book has shipped (shipped, delivered, or a problem reported since): report and reorder are open (P5-R13, R14). Pure. */
+export const afterShip = (o: Pick<BookOrder, "status"> | null | undefined): boolean => !!o && AFTER_SHIP.includes(o.status);
+
+/** "3:42 pm", in this computer's own time, for "You can cancel until 3:42 pm." (P5-R16); "" without a time. Pure. */
+export function holdUntilWords(iso: string | null | undefined, timeZone?: string): string {
+  const at = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(at)) return "";
+  return new Date(at)
+    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone })
+    .replace(/\s+/g, " ")
+    .replace(/ ([AP])M$/i, (_, m: string) => ` ${m.toLowerCase()}m`);
+}
 
 /** This person's paid orders, newest first; only one story's with `storyId`. Unpaid ones are left out (P4-R6). */
 export async function listOrders({ storyId }: { storyId?: string } = {}): Promise<BookOrder[]> {

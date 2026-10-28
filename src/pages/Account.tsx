@@ -1003,6 +1003,19 @@ function Delete({ user, stories, afterDelete }: { user: User; stories: Story[]; 
     const { data, error } = await supabase().functions.invoke("delete-account");
     const failed = error || (data && typeof data === "object" && "error" in data && (data as { error?: string }).error);
     if (failed) {
+      // A printed book still on its way (P5-R15): the server's own words, read from the FunctionsHttpError's response.
+      let body: { error?: unknown; words?: unknown } | null = null;
+      try {
+        const ctx = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+        if (ctx && typeof ctx.json === "function") body = (await ctx.json()) as { error?: unknown; words?: unknown } | null;
+      } catch {
+        // Not JSON: the usual sentence.
+      }
+      if (body?.error === "order_in_flight" && typeof body.words === "string" && body.words.trim()) {
+        setNote({ error: body.words.trim() });
+        setBusy(false);
+        return;
+      }
       setNote({ error: `The account wasn’t deleted: ${error?.message || (data as { error?: string })?.error || "please try again."}` });
       setBusy(false);
       return;

@@ -11,22 +11,36 @@
  * payment…" and reads the order every 2 s for up to 30 s
  * (bookOrders.ts pollUntilPaid); after that it says the email will follow.
  *
- * No endpoint of its own: two plain selects under the owner's RLS
- * (book_orders by id, order_shipments by order_id).
+ * Reading needs no endpoint of its own: two plain selects under the owner's
+ * RLS (book_orders by id, order_shipments by order_id).
+ *
+ * Phase 5 (P5-R12, R13, R14, the words in P5-R16), through book-order-help:
+ * - During the hour's hold (paid, submit_after ahead) the order reads Approved,
+ *   "You can cancel until 3:42 pm." and "Cancel this order", which asks first
+ *   in a dialog, then shows the server's words and reads the order again.
+ * - Once it has shipped (shipped, delivered, issue_reported): "Report a problem
+ *   with my book" opens the form here (ReportProblem), and "Order more copies"
+ *   goes to the order flow at Send with the same locked book.
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import Shell from "../components/Shell";
 import LoadingMark from "../components/delight/LoadingMark";
-import { ButtonLink, Problem } from "../components/ui";
+import { Button, ButtonLink, Problem } from "../components/ui";
 import { Stop } from "../components/book/WhereNext";
+import ReportProblem from "../components/book/ReportProblem";
 import { useAccount } from "../state/accountContext";
-import { getOrder, isPaid, listShipments, pollUntilPaid, type BookOrder, type OrderShipment } from "../data/bookOrders";
+import { afterShip, getOrder, holdOpen, holdUntilWords, isPaid, listShipments, pollUntilPaid, type BookOrder, type OrderShipment } from "../data/bookOrders";
+import { OrderHelpError, cancelOrder } from "../data/orderHelp";
 import { arrivesWords, money } from "../data/printOrder";
 import { track } from "../lib/analytics";
 import "../styles/pages/book-order.css";
 
 const TRACKER = ["Approved", "Printing", "Shipped", "Delivered"] as const;
+
+/** The stage sentences Phase 5 adds (P5-R16; the phone's printOrderSteps.js stageSentence). */
+const APPROVED_SENTENCE = "Your order is in. We wait an hour before printing, in case anything needs changing.";
+const ISSUE_SENTENCE = "Thank you for telling us what happened. We’ll write to you by email.";
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name.trim();
 
@@ -53,6 +67,12 @@ export default function BookOrderStatus() {
   const [problem, setProblem] = useState<string | null>(null);
   const [ask, setAsk] = useState(0);
   const counted = useRef(false);
+  // the clock the hold is read against, moved on when the hold ends so the cancel button goes by itself
+  const [now, setNow] = useState(() => Date.now());
+  // the server's last sentence (canceled, reported), kept across the re-read that follows
+  const [notice, setNotice] = useState<string | null>(null);
+  const [reporting, setReporting] = useState(false);
+  const reportButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     document.title = "Your book order · A Story";
@@ -92,6 +112,16 @@ export default function BookOrderStatus() {
     }
     track("book_ordered", { copies: order.copies, addresses: shipments.length || undefined, covered: order.totalCents === 0 });
   }, [order, shipments.length]);
+
+  const inHold = holdOpen(order, now);
+  useEffect(() => {
+    if (!order || !inHold || !order.submitAfter) return;
+    const wait = Date.parse(order.submitAfter) - Date.now() + 500;
+    const t = window.setTimeout(() => setNow(Date.now()), Math.min(Math.max(wait, 1000), 2 ** 31 - 1));
+    return () => window.clearTimeout(t);
+  }, [order, inHold, now]);
+
+  const reread = useCallback(() => setAsk((n) => n + 1), []);
 
   const story = order ? stories.find((s) => s.id === order.storyId) : null;
   const name = story ? firstName(story.name) : "";
@@ -147,15 +177,23 @@ export default function BookOrderStatus() {
     );
   }
 
-  const at = TRACKER.indexOf(order.stage as (typeof TRACKER)[number]);
+  // during the hold it isn't printing yet: Approved (P5-R12)
+  const at = inHold ? 0 : TRACKER.indexOf(order.stage as (typeof TRACKER)[number]);
+  const shipped = afterShip(order);
+  const reorderUrl = `/book/order?${new URLSearchParams({ story: order.storyId, reorder: order.id, step: "send" })}`;
   const lines = receipt(order);
   const arrives = order.stage === "Delivered" ? null : arrivesWords(order.deliveryEarliest && order.deliveryLatest ? { earliest: order.deliveryEarliest, latest: order.deliveryLatest } : null);
-  const title = order.stage === "Delivered" ? `${book} has arrived` : order.stage === "Shipped" ? `${book} is on its way` : order.stage === "Refunded" ? "This order was refunded" : order.stage === "Canceled" ? "This order was canceled" : `${book} is ordered`;
+  const title = order.stage === "Delivered" ? `${book} has arrived` : order.stage === "Shipped" ? `${book} is on its way` : order.stage === "Refunded" ? "This order was refunded" : order.stage === "Canceled" ? "This order was canceled" : order.status === "issue_reported" ? `We’re looking into ${name ? `${name}’s` : "your"} book` : `${book} is ordered`;
 
   return page(
     title,
     <>
       {problem && <Problem message={problem} onRetry={() => setAsk((n) => n + 1)} />}
+      {notice && (
+        <p className="bo-note-line" role="status">
+          {notice}
+        </p>
+      )}
       {at >= 0 ? (
         <ol className="bo-tracker" aria-label="Where your order is">
           {TRACKER.map((s, i) => (
@@ -171,10 +209,21 @@ export default function BookOrderStatus() {
             ? "The money goes back to the card it came from."
             : order.stage === "Canceled"
               ? "Nothing more will be charged for it."
-              : "This order needs our attention. We’ll email you, or reply to your confirmation email and we’ll help."}
+              : order.status === "issue_reported"
+                ? ISSUE_SENTENCE
+                : "This order needs our attention. We’ll email you, or reply to your confirmation email and we’ll help."}
         </p>
       )}
-      {order.stage === "Printing" && <p className="bo-help">We wait an hour before printing. If anything looks wrong, reply to your confirmation email right away.</p>}
+      {inHold && (
+        <CancelHold
+          order={order}
+          onDone={(words) => {
+            setNotice(words);
+            reread();
+          }}
+        />
+      )}
+      {order.stage === "Printing" && !inHold && <p className="bo-help">We wait an hour before printing. If anything looks wrong, reply to your confirmation email right away.</p>}
       {arrives && <p className="bo-arrives">{arrives}</p>}
 
       {shipments.length > 0 && (
@@ -202,6 +251,32 @@ export default function BookOrderStatus() {
         </section>
       )}
 
+      {shipped &&
+        (reporting ? (
+          <ReportProblem
+            orderId={order.id}
+            onSent={(words) => {
+              setReporting(false);
+              setNotice(words);
+              window.scrollTo({ top: 0 });
+              reread();
+            }}
+            onCancel={() => {
+              setReporting(false);
+              requestAnimationFrame(() => reportButton.current?.focus());
+            }}
+          />
+        ) : (
+          <section className="bo-section bo-after" aria-label="After it arrives">
+            <Button ref={reportButton} variant="outline" block onClick={() => setReporting(true)}>
+              Report a problem with my book
+            </Button>
+            <ButtonLink variant="outline" block to={reorderUrl}>
+              Order more copies
+            </ButtonLink>
+          </section>
+        ))}
+
       <section className="bo-section bo-summary" aria-labelledby="bo-paid-h">
         <h2 id="bo-paid-h">What you paid</h2>
         <dl>
@@ -224,5 +299,89 @@ export default function BookOrderStatus() {
         </ButtonLink>
       </p>
     </>,
+  );
+}
+
+/**
+ * The hold line and the cancel (P5-R12, P5-R16): "You can cancel until 3:42 pm.", and "Cancel this order", which
+ * asks first in a dialog (the money back to the card, or the credit back on the account) and then tells the server.
+ * A refusal (too late, the refund didn't go through) is shown in the dialog, in the server's words.
+ */
+function CancelHold({ order, onDone }: { order: BookOrder; onDone: (words: string) => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const charged = order.totalCents > 0;
+
+  useEffect(() => {
+    const d = dialog.current;
+    if (!d) return;
+    if (open && !d.open) {
+      if (typeof d.showModal === "function") d.showModal();
+      else d.setAttribute("open", "");
+    }
+    if (!open && d.open) d.close();
+  }, [open]);
+
+  const close = () => {
+    if (busy) return;
+    setOpen(false);
+    setProblem(null);
+    requestAnimationFrame(() => opener.current?.focus());
+  };
+
+  const yes = async () => {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      const out = await cancelOrder(order.id);
+      setBusy(false);
+      setOpen(false);
+      onDone(out.words);
+    } catch (err) {
+      setBusy(false);
+      setProblem(err instanceof OrderHelpError ? err.message : "Something went wrong on our side. Please try again in a moment.");
+    }
+  };
+
+  return (
+    <div className="bo-hold">
+      <p className="bo-lead">{APPROVED_SENTENCE}</p>
+      <p className="bo-hold-line">You can cancel until {holdUntilWords(order.submitAfter)}.</p>
+      <Button ref={opener} variant="outline" onClick={() => setOpen(true)}>
+        Cancel this order
+      </Button>
+      <dialog
+        ref={dialog}
+        className="bo-dialog"
+        aria-labelledby="bo-cancel-h"
+        aria-describedby="bo-cancel-p"
+        onCancel={(e) => {
+          e.preventDefault();
+          close();
+        }}
+      >
+        <h2 id="bo-cancel-h">Cancel this order?</h2>
+        <p id="bo-cancel-p" className="bo-lead">
+          {charged ? `We’ll refund ${money(order.totalCents)} to your card. This can’t be undone.` : "Your credit goes back on your account. This can’t be undone."}
+        </p>
+        {problem && (
+          <p className="bo-dialog-problem" role="alert">
+            {problem}
+          </p>
+        )}
+        <div className="bo-next">
+          <Button block onClick={close} disabled={busy}>
+            Keep my order
+          </Button>
+          <Button variant="outline" block onClick={yes} loading={busy}>
+            Yes, cancel it
+          </Button>
+        </div>
+      </dialog>
+    </div>
   );
 }

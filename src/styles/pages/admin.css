@@ -1,0 +1,63 @@
+/* The admin view (/admin/orders, /admin/orders/:id): internal, for Daniel. Plain on purpose: one column, a table that
+   scrolls sideways inside its own box on a phone, and the same floor as every page (text 16px and up, targets 44px
+   and up). */
+
+.adm-page { max-width: 960px; }
+.adm-id { display: block; margin: 0 0 var(--s-5); font: 400 16px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink-soft); }
+.adm-lead { font-size: 19px; line-height: 1.5; color: var(--ink); margin: 0 0 var(--s-5); }
+.adm-said { font-size: 17px; line-height: 1.5; margin: 0 0 var(--s-5); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.adm-page p, .adm-page dd, .adm-page dt, .adm-page li, .adm-page td, .adm-page th, .adm-page summary, .adm-page pre { font-size: 16px; line-height: 1.45; }
+.adm-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+
+.adm-section { margin-top: var(--s-10); }
+.adm-section h2 { font-family: var(--book-display); font-weight: 600; font-size: 24px; line-height: 1.2; color: var(--heading); margin: 0 0 var(--s-4); }
+.adm-section h3 { font-size: 19px; font-weight: 600; margin: 0 0 var(--s-2); color: var(--heading); }
+
+/* the controls: 16px words, 44px targets */
+.adm-page .btn, .adm-page .btn.sm { font-size: 16px; min-height: 48px; }
+.adm-page .btn[disabled] { opacity: .45; }
+.adm-field { display: grid; gap: var(--s-2); margin: 0 0 var(--s-4); max-width: 420px; }
+.adm-field > span { font-size: 16px; font-weight: 600; color: var(--ink); }
+.adm-field select, .adm-field textarea { font: inherit; font-size: 17px; color: var(--ink); background: var(--card); border: 1.5px solid var(--field-border); border-radius: var(--r-field); padding: var(--s-2) var(--s-3); }
+.adm-field select { min-height: 48px; appearance: auto; cursor: pointer; }
+.adm-field textarea { min-height: 88px; resize: vertical; width: 100%; box-sizing: border-box; }
+.adm-field select:focus, .adm-field textarea:focus { outline: 0; border-color: var(--accent); }
+.adm-acts { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-4) 0 0; }
+
+/* the list */
+.adm-scroll { overflow-x: auto; margin-top: var(--s-4); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
+.adm-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.adm-table th, .adm-table td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+.adm-table th { font-weight: 600; color: var(--ink-soft); }
+.adm-table td a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-decoration: underline; }
+.adm-table tr[data-status="submission_failed"] td, .adm-table tr[data-status="issue_reported"] td { background: var(--accent-soft); }
+.adm-email { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+
+/* the order */
+.adm-dl, .adm-money { display: grid; gap: var(--s-1); margin: 0 0 var(--s-5); }
+.adm-dl div, .adm-money div { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); }
+.adm-dl dt { min-width: 120px; color: var(--ink-soft); }
+.adm-dl dd, .adm-money dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.adm-money { max-width: 420px; }
+.adm-money div { justify-content: space-between; }
+.adm-total { font-weight: 600; border-top: 1px solid var(--line); padding-top: var(--s-2); }
+
+.adm-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+.adm-cards li { padding: var(--s-4); border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.adm-cards p { margin: 0 0 var(--s-2); overflow-wrap: anywhere; }
+.adm-cards a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-decoration: underline; }
+.adm-warn { color: var(--danger); }
+.adm-issue-text { white-space: pre-wrap; }
+.adm-thumb img { display: block; width: 160px; height: 160px; object-fit: cover; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
+
+.adm-box { padding: var(--s-4); margin: 0 0 var(--s-4); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); }
+.adm-box > p { margin: 0 0 var(--s-4); color: var(--ink); }
+.adm-confirm p { font-weight: 600; margin: 0; }
+
+.adm-log { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.adm-log li { padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
+.adm-log p { margin: 0; overflow-wrap: anywhere; }
+.adm-note { color: var(--ink); font-style: italic; }
+.adm-when { color: var(--ink-soft); }
+.adm-log summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.adm-log pre { margin: 0; padding: var(--s-2); max-width: 100%; overflow-x: auto; background: var(--card); border-radius: var(--r-md); white-space: pre-wrap; overflow-wrap: anywhere; }

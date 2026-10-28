@@ -94,6 +94,9 @@ const router = createBrowserRouter([
       { path: "/plans", element: lazyPage(() => import("./pages/Plans")) },
       { path: "/account", element: lazyPage(() => import("./pages/Account")) },
       { path: "/help", element: lazyPage(() => import("./pages/Help")) },
+      // the admin view of printed-book orders: linked from nowhere, and only staff (asked of the server) see it
+      { path: "/admin/orders", element: lazyPage(() => import("./pages/AdminOrders")) },
+      { path: "/admin/orders/:id", element: lazyPage(() => import("./pages/AdminOrder")) },
     ],
   },
   { path: "*", element: page("This page isn’t here") },

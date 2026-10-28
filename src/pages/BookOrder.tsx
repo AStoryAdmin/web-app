@@ -31,6 +31,15 @@
  * While create-book-order says ordering is closed the page says "Printed
  * books are coming", with no price and no form. Safari can't lay the book
  * out (printPdf.ts), so there it says PRINT_BROWSER_MESSAGE instead.
+ *
+ * "Order more copies" (?reorder=<order id>, P5-R14): the order it copies is
+ * read under the family's own RLS, and its locked book version and page count
+ * are the approved book. There is no Review step and no new approval: the
+ * flow is Send and Pay only, under "More copies of the same book", and
+ * step=review goes to Send. The price of a copy is asked again
+ * (checkPrintOrder with the page count) and the preview and the order carry
+ * reorderOf, which the server checks (else bad_reorder). Back from Send goes
+ * to that order's page. Its draft is kept apart from the ordinary one.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -49,6 +58,7 @@ import { shipChoices } from "../data/book";
 import {
   FIELD_OF_ERROR,
   MAX_ADDRESSES,
+  PRINT_ORDER_MESSAGES,
   MAX_COPIES_PER_ADDRESS,
   PrintOrderError,
   US_STATES,
@@ -74,6 +84,7 @@ import {
   type Shipment,
 } from "../data/printOrder";
 import { listContributions } from "../data/contributions";
+import { afterShip, getOrder, type BookOrder as PaidOrder } from "../data/bookOrders";
 import type { Story } from "../data/stories";
 import "../styles/pages/book-order.css";
 
@@ -93,7 +104,7 @@ type CardProblem = { index: number; field: PrintField | "quantity" | null; messa
 
 /** The addresses kept on this computer, by the pick each belongs to (the phone keeps its own). Older ones carry region and country. */
 const SAVED_KEY = "astory:book-ship-to:v1";
-const draftKey = (storyId: string) => `astory:book-order:${storyId}:v1`;
+const draftKey = (storyId: string, reorderOf?: string | null) => (reorderOf ? `astory:book-order:${storyId}:reorder:${reorderOf}:v1` : `astory:book-order:${storyId}:v1`);
 
 function readSaved(): Record<string, PrintAddress> {
   try {
@@ -119,9 +130,9 @@ function writeSaved(saved: Record<string, PrintAddress>) {
 
 const EMPTY_DRAFT: Draft = { versionId: null, pageCount: null, copyCents: null, cards: [] };
 
-function readDraft(storyId: string): Draft {
+function readDraft(storyId: string, reorderOf?: string | null): Draft {
   try {
-    const d = JSON.parse(sessionStorage.getItem(draftKey(storyId)) || "null") as Partial<Draft> | null;
+    const d = JSON.parse(sessionStorage.getItem(draftKey(storyId, reorderOf)) || "null") as Partial<Draft> | null;
     if (!d || typeof d !== "object") return EMPTY_DRAFT;
     const cards = Array.isArray(d.cards)
       ? d.cards
@@ -145,9 +156,9 @@ function readDraft(storyId: string): Draft {
   }
 }
 
-function writeDraft(storyId: string, d: Draft) {
+function writeDraft(storyId: string, d: Draft, reorderOf?: string | null) {
   try {
-    sessionStorage.setItem(draftKey(storyId), JSON.stringify(d));
+    sessionStorage.setItem(draftKey(storyId, reorderOf), JSON.stringify(d));
   } catch {
     /* a private window: Pay will ask again from step 1 */
   }
@@ -179,10 +190,16 @@ export default function BookOrder() {
     );
   const story = (asked && stories.find((s) => s.id === asked)) || activeStory;
   if (!story) return <Navigate to="/book" replace />;
-  return <OrderFlow key={story.id} story={story} />;
+  const reorder = params.get("reorder") || null;
+  return <OrderFlow key={`${story.id}:${reorder ?? ""}`} story={story} reorder={reorder} />;
 }
 
-function OrderFlow({ story }: { story: Story }) {
+/** The order "Order more copies" copies: the family's own, of this story, shipped, with its locked version (P5-R14). Pure. */
+function reorderable(o: PaidOrder | null | undefined, storyId: string): o is PaidOrder & { bookVersionId: string; pageCount: number } {
+  return !!o && o.storyId === storyId && afterShip(o) && !!o.bookVersionId && !!o.pageCount;
+}
+
+function OrderFlow({ story, reorder }: { story: Story; reorder: string | null }) {
   const [params, setParams] = useSearchParams();
   const name = story.name.trim().split(/\s+/)[0] || story.name;
   const book = `${name}’s book`;
@@ -204,16 +221,49 @@ function OrderFlow({ story }: { story: Story }) {
     };
   }, [ask]);
 
-  const [draft, setDraftState] = useState<Draft>(() => readDraft(story.id));
+  const [draft, setDraftState] = useState<Draft>(() => readDraft(story.id, reorder));
   const setDraft = useCallback(
     (next: Draft | ((d: Draft) => Draft)) =>
       setDraftState((d) => {
         const n = typeof next === "function" ? next(d) : next;
-        writeDraft(story.id, n);
+        writeDraft(story.id, n, reorder);
         return n;
       }),
-    [story.id],
+    [story.id, reorder],
   );
+
+  // "Order more copies": the order it copies, undefined while reading, null when it can't be read
+  const [source, setSource] = useState<PaidOrder | null | undefined>(reorder ? undefined : null);
+  const [sourceAsk, setSourceAsk] = useState(0);
+  useEffect(() => {
+    if (!reorder) return;
+    let live = true;
+    getOrder(reorder)
+      .then((o) => {
+        if (!live) return;
+        setSource(o);
+        // its locked version is the approved book
+        if (reorderable(o, story.id)) setDraft((d) => (d.versionId === o.bookVersionId && d.pageCount === o.pageCount ? d : { ...d, versionId: o.bookVersionId, pageCount: o.pageCount }));
+      })
+      .catch(() => live && setSource(null));
+    return () => {
+      live = false;
+    };
+  }, [reorder, sourceAsk, story.id, setDraft]);
+  const copyOf = reorder && reorderable(source, story.id) ? source : null;
+  // a copy's price is asked again for its page count
+  useEffect(() => {
+    if (!copyOf) return;
+    let live = true;
+    checkPrintOrder({ pageCount: copyOf.pageCount })
+      .then((c) => live && setDraft((d) => ({ ...d, copyCents: c.copyCents })))
+      .catch(() => {
+        /* the Pay step's preview has the real total */
+      });
+    return () => {
+      live = false;
+    };
+  }, [copyOf, setDraft]);
 
   // The pages the family looked through, kept while the flow is open (going back to step 1 shows them again).
   const [prepared, setPrepared] = useState<PreparedBookPdfs | null>(null);
@@ -230,24 +280,45 @@ function OrderFlow({ story }: { story: Story }) {
 
   const asked = params.get("step");
   // Send and Pay need an approved book; without one (a new tab, a link typed in), the flow starts at the review.
-  const step: Step = isStep(asked) && (asked === "review" || draft.versionId) ? asked : "review";
+  // More copies have no review: the book was approved with the first order, so they start at Send.
+  const step: Step = reorder
+    ? asked === "pay" && draft.versionId
+      ? "pay"
+      : "send"
+    : isStep(asked) && (asked === "review" || draft.versionId)
+      ? asked
+      : "review";
   const canceled = params.get("canceled") === "1";
+  const query = useCallback((to: Step): Record<string, string> => (reorder ? { story: story.id, reorder, step: to } : { story: story.id, step: to }), [story.id, reorder]);
   const go = useCallback(
     (to: Step, replace = false) => {
-      setParams({ story: story.id, step: to }, { replace });
+      setParams(query(to), { replace });
       window.scrollTo({ top: 0 });
     },
-    [setParams, story.id],
+    [setParams, query],
   );
-  const stepUrl = (to: Step) => `/book/order?${new URLSearchParams({ story: story.id, step: to })}`;
-  const back = step === "review" ? "/book" : stepUrl(step === "pay" ? "send" : "review");
+  // ?reorder=…&step=review (or no step) is Send, and the address bar says so
+  useEffect(() => {
+    if (reorder && asked !== "send" && asked !== "pay") setParams(query("send"), { replace: true });
+  }, [reorder, asked, setParams, query]);
+  const stepUrl = (to: Step) => `/book/order?${new URLSearchParams(query(to))}`;
+  const back = reorder ? (step === "pay" ? stepUrl("send") : `/book/orders/${encodeURIComponent(reorder)}`) : step === "review" ? "/book" : stepUrl(step === "pay" ? "send" : "review");
+  const steps = reorder ? STEPS.filter((s) => s.id !== "review") : STEPS;
 
   useEffect(() => {
     document.title = `Order ${name}’s book · A Story`;
   }, [name]);
 
-  const at = STEPS.findIndex((s) => s.id === step);
-  const hero = (
+  const at = Math.max(0, steps.findIndex((s) => s.id === step));
+  const hero = reorder ? (
+    <div className="bo-hero">
+      <h1 className="hero-title">
+        More copies of the same book
+        <Stop />
+      </h1>
+      {copyOf && <p className="bo-promise">The book you approved, {copyOf.pageCount} pages. Nothing in it changes.</p>}
+    </div>
+  ) : (
     <div className="bo-hero">
       <h1 className="hero-title">
         A printed copy of {book}
@@ -267,7 +338,7 @@ function OrderFlow({ story }: { story: Story }) {
     </Shell>
   );
 
-  if (check === undefined)
+  if (check === undefined || (reorder && source === undefined))
     return shell(
       <div aria-busy="true">
         <LoadingMark />
@@ -284,10 +355,26 @@ function OrderFlow({ story }: { story: Story }) {
       "bo-closed",
     );
 
+  if (reorder && !copyOf)
+    return shell(
+      <section className="bo-section">
+        <h2>We can’t copy that order</h2>
+        <p className="bo-lead" role="alert">
+          {PRINT_ORDER_MESSAGES.bad_reorder}
+        </p>
+        <p className="bo-acts">
+          <ButtonLink to="/book">Back to the book</ButtonLink>
+          <Button variant="outline" onClick={() => setSourceAsk((n) => n + 1)}>
+            Try again
+          </Button>
+        </p>
+      </section>,
+    );
+
   return shell(
     <>
-      <ol className="bo-steps-bar" aria-label="Ordering, in three steps">
-        {STEPS.map((s, i) => (
+      <ol className={`bo-steps-bar${reorder ? " bo-steps-two" : ""}`} aria-label={reorder ? "Ordering, in two steps" : "Ordering, in three steps"}>
+        {steps.map((s, i) => (
           <li key={s.id} aria-current={i === at ? "step" : undefined} data-done={i < at || undefined}>
             <span aria-hidden="true">{i + 1}</span> {s.name}
           </li>
@@ -315,6 +402,7 @@ function OrderFlow({ story }: { story: Story }) {
         <SendStep
           story={story}
           check={check}
+          copyCents={reorder ? draft.copyCents : null}
           cards={draft.cards}
           problem={sendProblem}
           onDone={(cards) => {
@@ -328,15 +416,20 @@ function OrderFlow({ story }: { story: Story }) {
       {step === "pay" && (
         <PayStep
           draft={draft}
+          reorderOf={reorder}
           canceled={canceled}
           onAddresses={(p) => {
             setSendProblem(p ?? null);
             go("send");
           }}
-          onReview={() => {
-            setDraft((d) => ({ ...d, versionId: null, pageCount: null, copyCents: null }));
-            go("review");
-          }}
+          onReview={
+            reorder
+              ? undefined
+              : () => {
+                  setDraft((d) => ({ ...d, versionId: null, pageCount: null, copyCents: null }));
+                  go("review");
+                }
+          }
         />
       )}
     </>,
@@ -561,6 +654,7 @@ const FIELD_LABELS: Record<Exclude<PrintField, "state">, { label: string; auto: 
 function SendStep({
   story,
   check,
+  copyCents = null,
   cards: kept,
   problem,
   onCards,
@@ -568,6 +662,8 @@ function SendStep({
 }: {
   story: Story;
   check: PrintCheck;
+  /** More copies: one copy's price, shown above the addresses (P5-R14). */
+  copyCents?: number | null;
   cards: Card[];
   problem: CardProblem | null;
   onCards: (c: Card[]) => void;
@@ -642,6 +738,7 @@ function SendStep({
   return (
     <section className="bo-section" aria-labelledby="bo-send-h">
       <h2 id="bo-send-h">Who should receive it</h2>
+      {copyCents !== null && <p className="bo-lead">Each copy: {price(copyCents)}</p>}
       <p className="bo-help">We send printed books to addresses in the United States.</p>
       <div className="bo-cards" ref={list}>
         {cards.map((card, i) => {
@@ -786,7 +883,20 @@ function SendStep({
 
 /* ── Step 3: Pay ────────────────────────────────────────────────────────── */
 
-function PayStep({ draft, canceled, onAddresses, onReview }: { draft: Draft; canceled: boolean; onAddresses: (p?: CardProblem) => void; onReview: () => void }) {
+function PayStep({
+  draft,
+  reorderOf = null,
+  canceled,
+  onAddresses,
+  onReview,
+}: {
+  draft: Draft;
+  reorderOf?: string | null;
+  canceled: boolean;
+  onAddresses: (p?: CardProblem) => void;
+  /** Look through the book again; none for more copies, whose book is already locked. */
+  onReview?: () => void;
+}) {
   const navigate = useNavigate();
   const checked = useMemo(() => validateShipments(draft.cards.map((c) => ({ quantity: c.quantity, address: c.address }))), [draft.cards]);
   const shipments: Shipment[] | null = checked.ok ? checked.shipments : null;
@@ -800,7 +910,7 @@ function PayStep({ draft, canceled, onAddresses, onReview }: { draft: Draft; can
   useEffect(() => {
     if (!shipments || !draft.versionId) return;
     let live = true;
-    previewPrintOrder({ versionId: draft.versionId, shipments })
+    previewPrintOrder({ versionId: draft.versionId, shipments, reorderOf })
       .then((p) => {
         if (!live) return;
         setPreview(p);
@@ -814,7 +924,7 @@ function PayStep({ draft, canceled, onAddresses, onReview }: { draft: Draft; can
     return () => {
       live = false;
     };
-  }, [draft.versionId, shipments, ask]);
+  }, [draft.versionId, shipments, reorderOf, ask]);
 
   if (!shipments)
     return (
@@ -830,7 +940,7 @@ function PayStep({ draft, canceled, onAddresses, onReview }: { draft: Draft; can
     setBusy(true);
     setProblem(null);
     try {
-      const order = placed ?? (await placePrintOrder({ versionId: draft.versionId, shipments, returnTo: `${window.location.origin}/book/thanks` }));
+      const order = placed ?? (await placePrintOrder({ versionId: draft.versionId, shipments, returnTo: `${window.location.origin}/book/thanks`, reorderOf }));
       if (order.paid) {
         navigate(`/book/orders/${encodeURIComponent(order.orderId)}?placed=1`);
         return;
@@ -876,7 +986,8 @@ function PayStep({ draft, canceled, onAddresses, onReview }: { draft: Draft; can
               Change the address
             </Button>
           )}
-          {problem.reason === "needs_review" && <Button onClick={onReview}>Look through the book again</Button>}
+          {problem.reason === "needs_review" && onReview && <Button onClick={onReview}>Look through the book again</Button>}
+          {(problem.reason === "bad_reorder" || (problem.reason === "needs_review" && !onReview)) && <ButtonLink to="/book">Back to the book</ButtonLink>}
         </div>
       )}
       {preview && (
