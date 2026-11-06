@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["2YV65CKF3D.com.astory.app"],
+        "components": [
+          { "/": "/join/*", "comment": "A family code: opens A Story with it filled in" },
+          { "/": "/m/*", "comment": "The link to one memory (T19): opens that memory in A Story; the web page plays it for anyone without the app" }
+        ]
+      }
+    ]
+  }
+}

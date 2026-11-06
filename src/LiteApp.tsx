@@ -1,7 +1,7 @@
 /**
  * The light door: pages a person opens from a message on any phone, with no account. They load without the
  * signed-in app (no auth, no supabase-js session, no gsap), so an old Android tablet on a slow line opens
- * /a/:token quickly. Any other path reached from here reloads into the full app.
+ * /a/:token or /m/:token quickly. Any other path reached from here reloads into the full app.
  */
 import { lazy, Suspense, useEffect, type ComponentType } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -31,6 +31,8 @@ function ToFullApp() {
 
 const router = createBrowserRouter([
   { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
+  // the link to one memory (T19): opens once, with its voice, for someone without the app
+  { path: "/m/:token", element: lazyPage(() => import("./pages/memory-link/MemoryLinkPage")) },
   { path: "/gift", element: lazyPage(() => import("./pages/gift/Gift")) },
   { path: "/gift/thanks", element: lazyPage(() => import("./pages/gift/GiftThanks")) },
   { path: "*", element: <ToFullApp /> },

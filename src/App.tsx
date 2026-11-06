@@ -58,6 +58,8 @@ const router = createBrowserRouter([
   { path: "/c/:slug", element: lazyPage(() => import("./pages/Contribute")) },
   { path: "/p/:slug", element: lazyPage(() => import("./pages/Wall")) },
   { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
+  // the link to one memory (T19), normally served by LiteApp; here too so an in-app link lands somewhere
+  { path: "/m/:token", element: lazyPage(() => import("./pages/memory-link/MemoryLinkPage")) },
   { path: "/gift", element: lazyPage(() => import("./pages/gift/Gift")) },
   { path: "/gift/thanks", element: lazyPage(() => import("./pages/gift/GiftThanks")) },
   // no code in the address (the account's "Have a code?"): the page asks for the one on the card
