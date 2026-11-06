@@ -33,6 +33,8 @@ const router = createBrowserRouter([
   { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
   // the link to one memory (T19): opens once, with its voice, for someone without the app
   { path: "/m/:token", element: lazyPage(() => import("./pages/memory-link/MemoryLinkPage")) },
+  // the printed book's codes (T18): a chapter, or one memory, for whoever scanned the book
+  { path: "/read", element: lazyPage(() => import("./pages/read/ReadPage")) },
   { path: "/gift", element: lazyPage(() => import("./pages/gift/Gift")) },
   { path: "/gift/thanks", element: lazyPage(() => import("./pages/gift/GiftThanks")) },
   { path: "*", element: <ToFullApp /> },

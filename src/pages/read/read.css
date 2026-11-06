@@ -1,0 +1,30 @@
+/* The printed book's reading page (/read), on the memory link's bench (answer.css, memoryLink.css): the cloth
+   names the chapter, the cream sheet carries each memory as the book prints it. Sized for a phone held over
+   an open book: body 21px and up, every target 64px and up. */
+
+.rd-mark { font: 600 13px/1 var(--ans-ui); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
+.rd-chapter {
+  margin: 0;
+  font: 600 clamp(30px, 8.4vw, 44px)/1.12 "Cormorant Garamond", var(--ans-serif);
+  color: var(--on-chocolate);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.rd-list { display: flex; flex-direction: column; gap: 44px; outline: none; }
+.rd-memory { display: flex; flex-direction: column; gap: 22px; }
+.rd-memory + .rd-memory { padding-top: 40px; border-top: 1px solid rgba(74, 51, 39, 0.14); } /* book material: a rule between memories */
+.rd-title {
+  margin: 0;
+  font: 500 clamp(26px, 7vw, 36px)/1.22 var(--ans-serif);
+  color: var(--ans-ink);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.rd-hear { min-height: 72px; }
+
+/* the family's kept sides: set in from the margin, the name under the words */
+.rd-sides { display: flex; flex-direction: column; gap: 18px; }
+.rd-side { margin: 0; padding: 0 0 0 18px; border-left: 3px solid var(--foil, #c9a15a); display: flex; flex-direction: column; gap: 0.8em; }
+.rd-side p { margin: 0; font: 400 21px/1.5 var(--ans-serif); color: var(--ans-ink); text-wrap: pretty; overflow-wrap: anywhere; }
+.rd-side footer { font: 500 17px/1.3 var(--ans-ui); color: var(--ink-soft); }

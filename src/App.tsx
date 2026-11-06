@@ -60,6 +60,8 @@ const router = createBrowserRouter([
   { path: "/a/:token", element: lazyPage(() => import("./pages/answer/AnswerPage")) },
   // the link to one memory (T19), normally served by LiteApp; here too so an in-app link lands somewhere
   { path: "/m/:token", element: lazyPage(() => import("./pages/memory-link/MemoryLinkPage")) },
+  // the printed book's codes (T18), normally served by LiteApp; here too so an in-app link lands somewhere
+  { path: "/read", element: lazyPage(() => import("./pages/read/ReadPage")) },
   { path: "/gift", element: lazyPage(() => import("./pages/gift/Gift")) },
   { path: "/gift/thanks", element: lazyPage(() => import("./pages/gift/GiftThanks")) },
   // no code in the address (the account's "Have a code?"): the page asks for the one on the card

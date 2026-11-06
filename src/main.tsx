@@ -5,10 +5,10 @@ import { startPageFit } from "./lib/zoom";
 
 startPageFit();
 
-// The elder's answer link, the link to one memory and the gift pages load without the signed-in app
+// The elder's answer link, the link to one memory, the printed book's codes and the gift pages load without the signed-in app
 // (src/LiteApp.tsx); everything else loads the full app. Kept inline (not imported from LiteApp) so the choice
 // costs no extra request.
-const lite = /^\/(a\/[^/]+\/?|m\/[^/]+\/?|gift\/?|gift\/thanks\/?)$/.test(window.location.pathname);
+const lite = /^\/(a\/[^/]+\/?|m\/[^/]+\/?|read\/?|gift\/?|gift\/thanks\/?)$/.test(window.location.pathname);
 const load: Promise<{ default: ComponentType }> = lite ? import("./LiteApp") : import("./FullApp");
 const root = createRoot(document.getElementById("root")!);
 
