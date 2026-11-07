@@ -28,7 +28,7 @@ const PauseIcon = () => (
 );
 
 /** Their voice behind one button; autoplay is blocked everywhere, so a tap is the only way in. */
-function HearIt({ src, who }: { src: string; who: string }) {
+function HearIt({ src, who, sample = false }: { src: string; who: string; sample?: boolean }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [broken, setBroken] = useState(false);
@@ -45,6 +45,7 @@ function HearIt({ src, who }: { src: string; who: string }) {
         {playing ? <PauseIcon /> : <PlayIcon />}
         <span>{playing ? "Pause" : label}</span>
       </button>
+      {sample && <p className="ans-note rd-sample-note">A sample. The voice is synthetic.</p>}
       {broken && <p className="ans-note ans-center ans-warn">The recording could not be played. Try again in a moment.</p>}
       <audio
         ref={audio}
@@ -68,8 +69,9 @@ const paragraphsOf = (text: string) =>
     .map((p) => p.trim())
     .filter(Boolean);
 
-function MemoryBlock({ m, bookKey, single }: { m: ReadMemory; bookKey: string; single: boolean }) {
-  const voice = m.hasVoice ? listenSrc(m.id, bookKey) : "";
+function MemoryBlock({ m, bookKey, single, sample }: { m: ReadMemory; bookKey: string; single: boolean; sample: boolean }) {
+  // a sample plays its bundled clip; a real book, the listen function with the book's key
+  const voice = !m.hasVoice ? "" : sample ? m.voiceSrc || "" : listenSrc(m.id, bookKey);
   const Title = single ? "h1" : "h2";
   return (
     <article className="rd-memory">
@@ -78,7 +80,7 @@ function MemoryBlock({ m, bookKey, single }: { m: ReadMemory; bookKey: string; s
         {m.period && <p className="ml-when">{m.period}</p>}
       </div>
       {m.photoUrl && <img className="ml-photo" src={m.photoUrl} alt={m.title ? `Photograph: ${m.title}` : "Photograph"} loading="lazy" />}
-      {voice && <HearIt src={voice} who={m.tellerName} />}
+      {voice && <HearIt src={voice} who={m.tellerName} sample={sample} />}
       {m.body && (
         <div className="ml-words">
           {paragraphsOf(m.body).map((p, i) => (
@@ -154,7 +156,8 @@ export default function ReadPage() {
     statusRef.current?.focus({ preventScroll: true });
   }, [s.phase]);
 
-  const bookKey = q.kind === "invalid" ? "" : q.key;
+  const bookKey = q.kind === "chapter" || q.kind === "memory" ? q.key : "";
+  const sample = q.kind === "sample";
 
   // ── one message, nothing to read ──
   if (s.phase === "loading" || s.phase === "loadError" || isEnd(s.phase)) {
@@ -207,10 +210,11 @@ export default function ReadPage() {
   // ── the chapter, or the one memory ──
   const single = q.kind === "memory";
   return (
-    <main className="ans ml rd is-shown">
+    <main className={`ans ml rd is-shown${sample ? " is-sample" : ""}`}>
       <header className="ans-cloth">
         <p className="ans-asked rd-mark">A Story</p>
-        {q.kind === "chapter" ? (
+        {sample && <p className="rd-sample">Sample book</p>}
+        {q.kind === "chapter" || q.kind === "sample" ? (
           <h1 className="rd-chapter">{headline(q, s.memories)}</h1>
         ) : (
           <p className="ans-asked">{headline(q, s.memories)}</p>
@@ -219,11 +223,11 @@ export default function ReadPage() {
       <section className="ans-sheet">
         <div className="rd-list" role="status" aria-live="polite" tabIndex={-1} ref={statusRef}>
           {s.memories.map((m) => (
-            <MemoryBlock key={m.id} m={m} bookKey={bookKey} single={single} />
+            <MemoryBlock key={m.id} m={m} bookKey={bookKey} single={single} sample={sample} />
           ))}
         </div>
         <a className="ml-keep" href="/welcome">
-          Keep this in A Story
+          {sample ? "Keep your family’s memories in A Story" : "Keep this in A Story"}
         </a>
       </section>
     </main>

@@ -61,4 +61,14 @@ describe("read page machine", () => {
     expect(pageTitle(memoryQ, [memory])).toBe("The Sunday pot roast · A Story");
     expect(pageTitle(memoryQ, [])).toBe("A Story");
   });
+
+  it("a sample's chapter is named by its file and titled as a sample", () => {
+    const sampleQ: ReadQuery = { kind: "sample", book: "carolyn", slug: "love-family" };
+    const m = { ...memory, era: "Love & family", tellerName: "Carolyn" };
+    expect(startState(sampleQ).phase).toBe("loading");
+    expect(headline(sampleQ, [m])).toBe("Love & family, from Carolyn’s book");
+    expect(headline(sampleQ, [])).toBe("From the book");
+    expect(pageTitle(sampleQ, [m])).toBe("Love & family · Sample book · A Story");
+    expect(pageTitle(sampleQ, [])).toBe("A Story");
+  });
 });

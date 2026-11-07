@@ -47,12 +47,18 @@ export const isEnd = (p: Phase) => p === "notFound" || p === "notReady";
 export function headline(q: ReadQuery, memories: ReadMemory[]): string {
   const teller = (memories[0]?.tellerName || "").trim();
   if (q.kind === "chapter") return teller ? `${q.chapter.name}, from ${teller}’s book` : q.chapter.name;
+  // a sample's chapter is named by its file, and every memory carries it
+  if (q.kind === "sample") {
+    const name = (memories[0]?.era || "").trim() || "From the book";
+    return teller ? `${name}, from ${teller}’s book` : name;
+  }
   return teller ? `From ${teller}’s book` : "From the book";
 }
 
 /** The title the browser shows. */
 export function pageTitle(q: ReadQuery, memories: ReadMemory[]): string {
   if (q.kind === "chapter") return `${q.chapter.name} · A Story`;
+  if (q.kind === "sample") return memories[0]?.era ? `${memories[0].era} · Sample book · A Story` : "A Story";
   const t = memories[0]?.title;
   return t ? `${t} · A Story` : "A Story";
 }

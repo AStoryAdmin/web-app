@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chapterSlug, classifyLoad, inChapter, listenSrc, loadBook, parseReadQuery, parseRow, resolveChapter, rpcBody } from "./bookRead";
+import { chapterSlug, classifyLoad, classifySample, inChapter, listenSrc, loadBook, parseReadQuery, parseRow, parseSampleMemory, resolveChapter, rpcBody, sampleUrl } from "./bookRead";
 
 const S = "MAAAAAAAAAAAAAAAAAAAAQ"; // a story's short id (22 base64url characters)
 const M1 = "QAAAAAAAAAAAAAAAAAAAEQ";
@@ -122,5 +122,92 @@ describe("book_read's answer", () => {
     expect(listenSrc("bad", KEY, "https://t.supabase.co")).toBe("");
     expect(listenSrc(M1, "", "https://t.supabase.co")).toBe("");
     expect(listenSrc(M1, KEY, "")).toBe("");
+  });
+});
+
+describe("a sample book's code (the site's fictional families)", () => {
+  const file = {
+    book: "carolyn",
+    teller: "Carolyn",
+    chapters: [
+      {
+        slug: "love-family",
+        name: "Love & family",
+        memories: [
+          {
+            id: "m3",
+            title: "The wedding, in the rain",
+            period: "June 1982 · aged 22",
+            body: "It rained. Oh, it rained.\n\nVows are words.",
+            photo: "https://astoryapp.com/mission/30-1200.webp",
+            audio: "/read-samples/audio/carolyn-m3.mp3",
+            sides: [{ name: "Rick Bennett, her husband", body: "It wasn’t the whole dinner." }],
+          },
+          { id: "m5", title: "Tunnel Park", period: "Summer 1986", body: "The beach one.", photo: "/read-samples/img/beach.jpg", audio: "https://evil.example/x.mp3", sides: [] },
+        ],
+      },
+    ],
+  };
+
+  it("reads ?sample=<book>&c=<slug> with no key, and refuses a slug chapterSlug would not print", () => {
+    expect(parseReadQuery("?sample=carolyn&c=love-family")).toEqual({ kind: "sample", book: "carolyn", slug: "love-family" });
+    expect(parseReadQuery("sample=tom&c=the-world-we-lived-through").kind).toBe("sample");
+    expect(parseReadQuery("?sample=carolyn&c=Love%20%26%20family")).toEqual({ kind: "invalid" });
+    expect(parseReadQuery("?sample=carolyn")).toEqual({ kind: "invalid" });
+    expect(parseReadQuery("?sample=../etc&c=childhood")).toEqual({ kind: "invalid" });
+    expect(parseReadQuery("?sample=&c=childhood")).toEqual({ kind: "invalid" });
+    // a real code is read as before, and a real code never turns into a sample
+    expect(parseReadQuery(`?s=${S}&c=childhood&k=${KEY}`).kind).toBe("chapter");
+  });
+
+  it("keeps the slugs the book prints: every chapter name slugs the same as the phone app's", () => {
+    for (const [name, slug] of [
+      ["Where we come from", "where-we-come-from"],
+      ["Work & making a living", "work-making-a-living"],
+      ["The world we lived through", "the-world-we-lived-through"],
+    ])
+      expect(parseReadQuery(`?sample=raymond&c=${chapterSlug(name)}`)).toEqual({ kind: "sample", book: "raymond", slug });
+  });
+
+  it("shows one chapter of the file in the book's order, its words whole, its clip and photo only from its own files", () => {
+    const r = classifySample(200, file, "love-family");
+    expect(r.kind).toBe("shown");
+    if (r.kind !== "shown") return;
+    expect(r.memories.map((m) => m.title)).toEqual(["The wedding, in the rain", "Tunnel Park"]);
+    expect(r.memories[0]).toMatchObject({
+      era: "Love & family",
+      period: "June 1982 · aged 22",
+      body: "It rained. Oh, it rained.\n\nVows are words.",
+      photoUrl: "https://astoryapp.com/mission/30-1200.webp",
+      hasVoice: true,
+      voiceSrc: "/read-samples/audio/carolyn-m3.mp3",
+      tellerName: "Carolyn",
+      sides: [{ name: "Rick Bennett, her husband", body: "It wasn’t the whole dinner." }],
+    });
+    expect(r.memories[1]).toMatchObject({ photoUrl: "/read-samples/img/beach.jpg", hasVoice: false });
+    expect(r.memories[1].voiceSrc).toBeUndefined();
+    expect(classifySample(200, file, "childhood")).toEqual({ kind: "notFound" });
+    expect(classifySample(200, "<!doctype html>", "love-family")).toEqual({ kind: "notFound" });
+    expect(classifySample(404, null, "love-family")).toEqual({ kind: "notFound" });
+    expect(classifySample(503, null, "love-family")).toEqual({ kind: "error", reason: "server" });
+    expect(parseSampleMemory({ id: "", title: "x" }, "C", "T")).toBeNull();
+  });
+
+  it("loads the bundled file, never Supabase", async () => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    const doFetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify(file), { status: 200 });
+    }) as unknown as typeof fetch;
+    const r = await loadBook(parseReadQuery("?sample=carolyn&c=love-family"), { sampleBase: "/", endpoint: "https://t.supabase.co/rest/v1/rpc/book_read", fetch: doFetch });
+    expect(r.kind).toBe("shown");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("/read-samples/carolyn.json");
+    expect(calls[0].init.method).toBe("GET");
+    expect(sampleUrl("tom", "/app/")).toBe("/app/read-samples/tom.json");
+    const offline = (async () => {
+      throw new TypeError("Failed to fetch");
+    }) as unknown as typeof fetch;
+    expect(await loadBook(parseReadQuery("?sample=carolyn&c=love-family"), { fetch: offline })).toEqual({ kind: "error", reason: "network" });
   });
 });

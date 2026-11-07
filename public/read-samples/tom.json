@@ -1,0 +1,191 @@
+{
+ "book": "tom",
+ "teller": "Tom",
+ "full": "Thomas Kessler",
+ "title": "What I Carried Home",
+ "sample": "A sample book. Tom and his family are fictional. The voice is synthetic.",
+ "voice": "en-US-AndrewNeural",
+ "chapters": [
+  {
+   "slug": "where-we-come-from",
+   "name": "Where we come from",
+   "memories": [
+    {
+     "id": "m1",
+     "title": "The letter on the kitchen table",
+     "period": "Saginaw, Michigan, April 1967 · aged 19",
+     "body": "We lived two blocks from the foundry where my dad worked, on a street where every house put a flag out on the Fourth of July. I was nineteen, pumping gas and taking one class at the community college, which was not enough to keep me out.\n\nThe letter came on a Tuesday in April. My mother put it in the bread drawer and didn’t say a word until supper the next day. My father had been on Okinawa. He read it, folded it, and said two words to me: come home. That was the whole conversation.\n\nIt took me a long time to understand those two words. He knew. He’d been to war, he knew what it would ask of me, and he couldn’t say any of it. So he gave me the only order that mattered. I came home. It took me forty years to understand that he hadn’t, not all the way. Neither had I.\n\nI found out about the bread drawer years later. My mother told Diane, not me. One day. That’s how long she could stand to have it in the house and not say.\n\nI say it to every one of the grandkids when they leave for school. Come home. They know what I mean by now.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m1.mp3",
+     "clipText": "We lived two blocks from the foundry where my dad worked, on a street where every house put a flag out on the Fourth of July. I was nineteen, pumping gas and taking one class at the community college, which was not enough to keep me out. The letter came on a Tuesday in April.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "growing-up",
+   "name": "Growing up",
+   "memories": [
+    {
+     "id": "m2",
+     "title": "The ’57 Chevy on Genesee Avenue",
+     "period": "Saginaw, 1965 to 1967 · aged 17",
+     "body": "I bought the Chevy at seventeen with gas-station money. A ’57, two-tone, turquoise and white, and it burned oil the whole time I had it. Friday nights everybody drove Genesee Avenue, up to the river and back, up to the river and back. You weren’t going anywhere. That was the point.\n\nMy father didn’t say much about it. He checked the tires. That was how he said things.\n\nWhen I left for the Army he kept it. He started it every Sunday the whole year I was gone, and let it run till it was warm. He never told me that. Mrs. Nowak next door told me. I sold it the spring after I came back. I couldn’t sit in it. Everything in it was from before.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m2.mp3",
+     "clipText": "I bought the Chevy at seventeen with gas-station money. A ’57, two-tone, turquoise and white, and it burned oil the whole time I had it. Friday nights everybody drove Genesee Avenue, up to the river and back, up to the river and back. You weren’t going anywhere. That was the point. My father didn’t say much about it. He checked the tires. That was how he said things.",
+     "sides": []
+    },
+    {
+     "id": "m3",
+     "title": "The church picnic",
+     "period": "St. Joseph’s, Saginaw, July 1967 · aged 19",
+     "body": "I met Diane at the St. Joseph’s picnic, the July before I left. She was pouring lemonade and I went back three times. The third time she said, you don’t even like lemonade, and I said no. That was the whole courtship. One afternoon.\n\nI had the letter already. I told her the date. She said, write me the address when you have one. I didn’t think she meant it. Girls said things like that in 1967.\n\nI got her address from her sister, and she got mine from the Army, I guess, because her first letter was waiting when I got to the company. It beat me there. I met her once and she beat me to Vietnam.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m3.mp3",
+     "clipText": "I met Diane at the St. Joseph’s picnic, the July before I left. She was pouring lemonade and I went back three times. The third time she said, you don’t even like lemonade, and I said no. That was the whole courtship. One afternoon. I had the letter already. I told her the date. She said, write me the address when you have one. I didn’t think she meant it.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "the-world-we-lived-through",
+   "name": "The world we lived through",
+   "memories": [
+    {
+     "id": "m4",
+     "title": "Doc",
+     "period": "Central Highlands, Vietnam, February 1968 · aged 20",
+     "body": "They trained me for ten weeks to be a medic, and in February 1968 they put me on a plane. I landed ten days after Tết started. By the end of my first week everybody in the company called me Doc. Nobody used my name for a year.\n\nThe first man I treated was older than me by a month. I remember his boots, not his face. You learned fast what you could fix and what you couldn’t. Some days the job was just to stay. Hold a hand. Talk about Michigan. Lie a little about how bad it was.\n\nSome men you could save. Some you couldn’t, and they knew it, and you knew it. What they wanted was not to be alone. So you stayed. Sometimes the bird took the ones who could make it, and you stayed with the one who couldn’t.\n\nI carried an aid bag, dressings, morphine, two canteens, a .45 I hoped I’d never draw, my mother’s rosary in the left breast pocket, and a picture of a girl I’d met once. I carried the rosary and the picture home. I’ve believed in staying every day since, over there and in thirty-six years of emergency rooms. Nobody should be alone at the end.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m4.mp3",
+     "clipText": "They trained me for ten weeks to be a medic, and in February 1968 they put me on a plane. I landed ten days after Tết started. By the end of my first week everybody in the company called me Doc. Nobody used my name for a year. The first man I treated was older than me by a month. I remember his boots, not his face.",
+     "sides": []
+    },
+    {
+     "id": "m5",
+     "title": "The ones I couldn’t save",
+     "period": "Vietnam, May 1968, and the fifty years after",
+     "body": "Danny Alvarez. From Corpus Christi. We went through training together and ended up in the same company by dumb luck. He laughed louder than anyone I ever met. He had a girl at home too, and we’d read each other’s letters out loud, the parts you could read.\n\nMay 1968. It was a Monday, the sixth. I know because I’d crossed off the fifth that morning. I got to him. I did everything right, and it wasn’t enough. I stayed with him. I’ve already told you why.\n\nI wrote his mother that week. I never heard back. I don’t blame her.\n\nWhen I came home I didn’t talk about him. Not to Diane, not to my kids, not to anybody, for almost fifty years. I thought if I kept it in a box, it couldn’t get out and hurt anybody. It hurt everybody. It just did it quietly.\n\nMike and Laura grew up with a father who went somewhere at the supper table. They were quiet around me and I let them be. Diane knew there was a name. She waited forty-seven years for it and never once asked.\n\nIt started coming out on the bus back from the Wall, with Mike, and then at the VFW. Hannah got the rest. She said, Grandpa, if you don’t tell it, it dies with you. She was right. Silence protects you for a while. Then it costs the people who love you.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m5.mp3",
+     "clipText": "Danny Alvarez. From Corpus Christi. We went through training together and ended up in the same company by dumb luck. He laughed louder than anyone I ever met. He had a girl at home too, and we’d read each other’s letters out loud, the parts you could read. May 1968. It was a Monday, the sixth. I know because I’d crossed off the fifth that morning. I got to him.",
+     "sides": []
+    },
+    {
+     "id": "m6",
+     "title": "Mail call",
+     "period": "Vietnam, 1968 · aged 20",
+     "body": "Mail came when it came. Sometimes nothing for two weeks and then a bundle with a rubber band around it, and you’d sort them by the postmark so you read them in order. Diane wrote every week. Every single week, for a year, to a boy she’d met once at a picnic.\n\nShe wrote about nothing. That was the thing. The weather on Genesee Avenue. Her sister’s wedding. What the nuns said. A dog that got into the church basement. I read them until the folds wore through. The guys would ask, what’s Diane say, and I’d read them the dog.\n\nI kept a calendar inside my helmet and crossed off every day. Her letters were how I knew the days were real.\n\nI wrote back forty-one times. I counted later, from her shoebox. I wrote about nothing too. The food. Socks. Tell my mother I’m eating. I never wrote one word about Danny. The letter after he died is about pie. That was the point. You didn’t send that home. You carried it.\n\nShe kept every one. Forty-one letters in a Buster Brown shoebox under the bed, in order, with the rubber bands. When Hannah photographed them for this she had to wear the white gloves, Diane said. For letters about socks.\n\nI knew her hand before I knew her face, really. I’d seen her face one afternoon. I’d seen her handwriting fifty-two times. You can know somebody that way. I’d argue you know them better.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m6.mp3",
+     "clipText": "Mail came when it came. Sometimes nothing for two weeks and then a bundle with a rubber band around it, and you’d sort them by the postmark so you read them in order. Diane wrote every week. Every single week, for a year, to a boy she’d met once at a picnic. She wrote about nothing. That was the thing. The weather on Genesee Avenue. Her sister’s wedding.",
+     "sides": [
+      {
+       "name": "Diane Kessler, his wife",
+       "body": "Forty-three. Two came back marked undeliverable because I had the unit wrong, and I sent them again. He counts forty-one because that’s what’s in the box. And it was not nothing. I wrote about the dog because the dog was what I had. You write a boy what you have."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "when-everything-changed",
+   "name": "When everything changed",
+   "memories": [
+    {
+     "id": "m7",
+     "title": "The wrong clothes",
+     "period": "Detroit Metropolitan Airport, February 1969 · aged 21",
+     "body": "I landed in California in my uniform, and by the time I got to Detroit I was in jeans and a sweatshirt. I changed in a restroom. Nobody told me to. I’d seen how people looked at the guys in uniform, and I’d had enough of being looked at for one year.\n\nMy mother cried at the gate. My father shook my hand and held on a long time. Then we drove home and had pot roast, and nobody asked me a single question about where I’d been. I think they were afraid of the answers. So was I.\n\nOne question. From anybody. What was it like, Tommy? I might not have answered. But I’d have known the door was open. Everybody was polite, and polite is a closed door.\n\nDiane asked. Not that night. About a week later, on her mother’s porch, she said, you can tell me or not tell me, but I’m not going to pretend you were at camp. I didn’t tell her much. I told her I was glad to be cold.\n\nWhen I was a nurse, I always asked. You ask, and then you shut up and listen. People will tell you where it hurts if you give them the room.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m7.mp3",
+     "clipText": "I landed in California in my uniform, and by the time I got to Detroit I was in jeans and a sweatshirt. I changed in a restroom. Nobody told me to. I’d seen how people looked at the guys in uniform, and I’d had enough of being looked at for one year. My mother cried at the gate. My father shook my hand and held on a long time.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "love-family",
+   "name": "Love & family",
+   "memories": [
+    {
+     "id": "m8",
+     "title": "Marrying the handwriting",
+     "period": "St. Joseph’s, Saginaw, June 1971 · aged 23",
+     "body": "We got married at St. Joseph’s in June of ’71, the same parish as the picnic. Four years from lemonade to the altar, and I was gone for one of them and quiet for two. She waited through all three.\n\nPeople ask what I saw in her and I tell them the truth. I married the handwriting. Fifty-two letters, and not one of them asked me to be anybody but who I was. When I came home and couldn’t talk, she didn’t need me to. She already had me on paper.\n\nHer father gave me the one piece of advice I got. He said, she’ll write you a note when she’s mad. Read it twice. He was right. There’s one on the refrigerator now from 1994.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m8.mp3",
+     "clipText": "We got married at St. Joseph’s in June of ’71, the same parish as the picnic. Four years from lemonade to the altar, and I was gone for one of them and quiet for two. She waited through all three. People ask what I saw in her and I tell them the truth. I married the handwriting.",
+     "sides": []
+    },
+    {
+     "id": "m9",
+     "title": "The Wall",
+     "period": "Washington, D.C., October 2016 · aged 68",
+     "body": "I refused for thirty years. Mike would bring it up and I’d change the subject. Then one morning at breakfast Diane told me I was going to Washington on the Honor Flight out of mid-Michigan in October, and Mike was going as my guardian, and it was done. I found out later who filled out the form. Hannah says she just filled it out. Diane still says, she signed his name, Mike, like it’s evidence.\n\nI sat in the car at the airport for twenty minutes. Mike didn’t say anything. He gets that from my father.\n\nThe Wall starts low. You walk down into it, and the names get taller than you. I found Danny in about a minute. I’d had the panel number on a piece of paper in my wallet since 1998 and never gone.\n\nDiane and Hannah drove down and met us there. Hannah did the rubbing. My hands were shaking. It was cold. They’ll tell you it was seventy degrees, and it was cold.\n\nOn the bus back I talked. Forty-seven years, and I talked the whole way. Mike just listened. I’d never given him anything to listen to before.\n\nHannah kept the rubbing. I check on it every time I go over.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m9.mp3",
+     "clipText": "I refused for thirty years. Mike would bring it up and I’d change the subject. Then one morning at breakfast Diane told me I was going to Washington on the Honor Flight out of mid-Michigan in October, and Mike was going as my guardian, and it was done. I found out later who filled out the form. Hannah says she just filled it out.",
+     "sides": [
+      {
+       "name": "Mike Kessler, his son",
+       "body": "He talked the whole way. Not about the Wall. About Danny’s laugh, and a dog in a church basement, and a sergeant who said he was the only medic who ducked. Two and a half hours to the airport and he didn’t stop. I’d waited my whole life for that bus ride. I didn’t say a word. I didn’t want to break it."
+      },
+      {
+       "name": "Hannah Kessler, his granddaughter",
+       "body": "I filled out the form. That’s all. I was twelve, and Grandma did the hard part, which was telling him at breakfast. I signed his name, neatly, which is why Dad says I signed him up. The rubbing is framed in my room. He looks at it every time he visits."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "work-making-a-living",
+   "name": "Work & making a living",
+   "memories": [
+    {
+     "id": "m10",
+     "title": "Night shift",
+     "period": "Saginaw, 1972 to 2008 · aged 24 to 60",
+     "body": "The GI Bill paid for school, and the only thing I knew how to do was what I’d done over there. So I went to nursing school. There were two men in my class of thirty-eight. The other one quit by Christmas.\n\nI worked emergency for thirty-six years, mostly nights, because nights were quiet until they weren’t, and I was good when they weren’t. Wrecks on I-75, kids with fevers, farmers with their hands caught in something. I never panicked once. I’d used up my panic in 1968.\n\nThe nurses ran that hospital. Anybody who tells you different wasn’t there at three in the morning. I learned more from them than from any sergeant.\n\nPeople ask if the war made me a better nurse. A calmer one. And I needed somewhere to put it. Every person I helped in that ER was a small payment on what I couldn’t do for Danny. Maybe that’s not healthy. But it was useful, and useful kept me going.\n\nNights, you miss things. Mike’s games. Laura’s plays. I was home for breakfast, asleep by the time they left for school, and gone when they came home. Diane did the days.\n\nWhen I retired in 2008 the night shift framed my first pay stub and my last one. That’s the whole career, on one wall.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m10.mp3",
+     "clipText": "The GI Bill paid for school, and the only thing I knew how to do was what I’d done over there. So I went to nursing school. There were two men in my class of thirty-eight. The other one quit by Christmas. I worked emergency for thirty-six years, mostly nights, because nights were quiet until they weren’t, and I was good when they weren’t.",
+     "sides": [
+      {
+       "name": "Laura Kessler, his daughter",
+       "body": "I started on his floor in 1999, nights, because that’s where the opening was. The first week a charge nurse said, you’re Doc’s girl, and handed me the worst room. That was the whole welcome. He never once told me what to do at work. He’d just ask, did you stay with them. That’s the only question he ever asked me about a shift."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "looking-back",
+   "name": "Looking back",
+   "memories": [
+    {
+     "id": "m11",
+     "title": "Telling it",
+     "period": "Saginaw, 2020 to 2026 · aged 72 to 78",
+     "body": "Hannah asked me in 2020, for a history project, and I told her no. I told her it wasn’t a story for a kid. She said, then when? I didn’t have an answer.\n\nIn 2025 she asked again. My friends from that year are mostly gone. If I don’t say it, the only version left is the one in the textbooks, and the textbooks don’t know Danny laughed louder than anyone. So I said yes.\n\nI was wrong to wait. Silence felt like strength. It was just silence. Tell it while you can, to whoever will listen.\n\nMike and Laura have heard most of this now. Mike cried, which I’ve seen twice in his life. Laura says she learned her job at my dinner table without knowing it. I don’t know what to do with that. I’m glad, and I’m sorry.\n\nAnd Hannah. She asked twice.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m11.mp3",
+     "clipText": "Hannah asked me in 2020, for a history project, and I told her no. I told her it wasn’t a story for a kid. She said, then when? I didn’t have an answer. In 2025 she asked again. My friends from that year are mostly gone.",
+     "sides": []
+    },
+    {
+     "id": "m12",
+     "title": "Memorial Day",
+     "period": "Saginaw VFW, Memorial Day 2017, and every year since · aged 69",
+     "body": "The first Memorial Day after the Wall, I went to the VFW for the reading of the names. They read the county boys, and then the commander asks if anybody has a name from somewhere else. I’d driven past that post for forty years. I’d never been in.\n\nI stood up and said, Daniel Alvarez, Corpus Christi, Texas, May 6, 1968. My voice held. Diane’s hand didn’t. Nobody said anything, which is the right thing to say. Then they read the next one.\n\nI’ve done it every year since. Hannah comes. The year the post was closed I said it in the driveway. A name has to be said out loud once a year, or it’s only on a wall.",
+     "photo": null,
+     "audio": "/read-samples/audio/tom-m12.mp3",
+     "clipText": "The first Memorial Day after the Wall, I went to the VFW for the reading of the names. They read the county boys, and then the commander asks if anybody has a name from somewhere else. I’d driven past that post for forty years. I’d never been in. I stood up and said, Daniel Alvarez, Corpus Christi, Texas, May 6, 1968. My voice held. Diane’s hand didn’t.",
+     "sides": []
+    }
+   ]
+  }
+ ]
+}

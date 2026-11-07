@@ -25,6 +25,15 @@
  * decade is not a column on the server, so a decade's code asks for the whole
  * book and groups it here with the same memoryDate the book printed with.
  *
+ * The sample books on astoryapp.com/samples print codes too (plan 2026-11-07 D3). Their families are fictional,
+ * so there is no story row and no key; a sample's code opens a static file bundled with this app instead:
+ *
+ *   /read?sample=<book id>&c=<chapter slug>     public/read-samples/<book id>.json, written by the site's
+ *                                                scripts/samples-to-read.mjs from the sample book's own data
+ *
+ * Nothing is asked of Supabase for a sample. Its "Hear it" plays a clip bundled beside the file, a synthetic
+ * voice, and the page says so.
+ *
  * Pure apart from `fetch`, which the tests pass in.
  */
 import { ERAS, CATCH_ALL_CHAPTER, FAMILY_CHAPTER } from "../app-core/data/eras.js";
@@ -81,12 +90,22 @@ export function resolveChapter(slug: string): Chapter | null {
 export type ReadQuery =
   | { kind: "chapter"; story: string; chapter: Chapter; key: string }
   | { kind: "memory"; memory: string; key: string }
+  /** a sample book's chapter: the site's fictional families, read from a bundled file (see the top) */
+  | { kind: "sample"; book: string; slug: string }
   /** a code this page cannot read: missing or malformed parts, or a chapter no book has */
   | { kind: "invalid" };
+
+const SAMPLE_BOOK = /^[a-z][a-z0-9-]{0,39}$/;
 
 /** The query string of a code as what the page should ask for. */
 export function parseReadQuery(search: string): ReadQuery {
   const q = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  if (q.has("sample")) {
+    const book = String(q.get("sample") || "").trim();
+    const slug = String(q.get("c") || "").trim();
+    // the slug exactly as chapterSlug prints it, nothing looser
+    return SAMPLE_BOOK.test(book) && slug && chapterSlug(slug) === slug ? { kind: "sample", book, slug } : { kind: "invalid" };
+  }
   const key = cleanKey(q.get("k"));
   if (!key) return { kind: "invalid" };
   const memory = cleanId(q.get("m"));
@@ -112,6 +131,8 @@ export type ReadMemory = {
   tellerName: string;
   /** the family's kept sides, as the book prints them */
   sides: Side[];
+  /** a sample's bundled clip (a real book's voice plays through the listen function: listenSrc) */
+  voiceSrc?: string;
 };
 
 export type LoadResult =
@@ -124,6 +145,8 @@ export type LoadResult =
   | { kind: "error"; reason: "network" | "server" };
 
 export type ReadOptions = {
+  /** where the sample files are served from: the app's own base ("/") */
+  sampleBase?: string;
   endpoint?: string;
   anonKey?: string;
   fetch?: typeof fetch;
@@ -216,14 +239,83 @@ async function readJson(res: Response): Promise<unknown> {
   }
 }
 
+/** A sample's file: public/read-samples/<book>.json under the app's base. */
+export function sampleUrl(book: string, sampleBase: string = import.meta.env.BASE_URL || "/"): string {
+  return `${base(sampleBase)}/read-samples/${encodeURIComponent(book)}.json`;
+}
+
+/** A sample's own files only: a path under /read-samples/, or (a photograph) an image already live on the site. */
+function samplePath(v: unknown, live = false): string | null {
+  const s = str(v);
+  if (/^\/read-samples\/[A-Za-z0-9._/-]+$/.test(s) && !s.includes("..")) return s;
+  if (live && /^https:\/\/astoryapp\.com\/[A-Za-z0-9._/-]+$/.test(s) && !s.includes("..")) return s;
+  return null;
+}
+
+/** One memory of a sample file as the page uses it, or null when it is not one. */
+export function parseSampleMemory(row: unknown, chapterName: string, teller: string): ReadMemory | null {
+  if (!row || typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+  const id = str(r.id);
+  const title = str(r.title);
+  const body = str(r.body);
+  if (!id || (!title && !body)) return null;
+  const voiceSrc = samplePath(r.audio);
+  const sides = Array.isArray(r.sides)
+    ? (r.sides as unknown[])
+        .map((s) => (s && typeof s === "object" ? { name: str((s as Record<string, unknown>).name), body: str((s as Record<string, unknown>).body) } : null))
+        .filter((s): s is Side => Boolean(s && s.body))
+    : [];
+  return {
+    id,
+    title,
+    body,
+    era: chapterName,
+    period: str(r.period),
+    photoUrl: samplePath(r.photo, true),
+    hasVoice: Boolean(voiceSrc),
+    tellerName: teller,
+    sides,
+    ...(voiceSrc ? { voiceSrc } : {}),
+  };
+}
+
+/** A sample file's answer for one chapter slug, its memories in the book's own order. Exported for the tests. */
+export function classifySample(status: number, body: unknown, slug: string): LoadResult {
+  if (status >= 500 || status === 429) return { kind: "error", reason: "server" };
+  if (status >= 400 || !body || typeof body !== "object") return { kind: "notFound" };
+  const b = body as Record<string, unknown>;
+  const chapters = Array.isArray(b.chapters) ? (b.chapters as unknown[]) : [];
+  const ch = chapters.find((c) => c && typeof c === "object" && str((c as Record<string, unknown>).slug) === slug) as Record<string, unknown> | undefined;
+  if (!ch) return { kind: "notFound" };
+  const name = str(ch.name);
+  const teller = str(b.teller);
+  const memories = (Array.isArray(ch.memories) ? (ch.memories as unknown[]) : [])
+    .map((m) => parseSampleMemory(m, name, teller))
+    .filter((m): m is ReadMemory => m !== null);
+  return name && memories.length ? { kind: "shown", memories } : { kind: "notFound" };
+}
+
+async function loadSample(q: Extract<ReadQuery, { kind: "sample" }>, opts: ReadOptions): Promise<LoadResult> {
+  const doFetch = opts.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
+  try {
+    const res = await doFetch(sampleUrl(q.book, opts.sampleBase), { method: "GET", headers: { Accept: "application/json" } });
+    // a file that is not there can come back as the app's index.html: not JSON, so not a book
+    return classifySample(res.status, await readJson(res), q.slug);
+  } catch {
+    return { kind: "error", reason: "network" };
+  }
+}
+
 /** The body book_read is called with for a code. A decade asks for the whole book (see the top). */
-export function rpcBody(q: Exclude<ReadQuery, { kind: "invalid" }>): Record<string, string | null> {
+export function rpcBody(q: Exclude<ReadQuery, { kind: "invalid" } | { kind: "sample" }>): Record<string, string | null> {
   if (q.kind === "memory") return { p_story_short: null, p_key: q.key, p_chapter: null, p_memory_short: q.memory };
   return { p_story_short: q.story, p_key: q.key, p_chapter: q.chapter.kind === "era" ? q.chapter.era : null, p_memory_short: null };
 }
 
 export async function loadBook(q: ReadQuery, opts: ReadOptions = {}): Promise<LoadResult> {
   if (q.kind === "invalid") return { kind: "notFound" };
+  if (q.kind === "sample") return loadSample(q, opts);
   const { endpoint, key, doFetch } = resolve(opts);
   if (!endpoint) return { kind: "error", reason: "server" };
   const headers: Record<string, string> = { "Content-Type": "application/json" };

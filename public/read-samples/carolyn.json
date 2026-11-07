@@ -1,0 +1,196 @@
+{
+ "book": "carolyn",
+ "teller": "Carolyn",
+ "full": "Carolyn Bennett",
+ "title": "Moments & Memories",
+ "sample": "A sample book. Carolyn and her family are fictional. The voice is synthetic.",
+ "voice": "en-US-JennyNeural",
+ "chapters": [
+  {
+   "slug": "where-we-come-from",
+   "name": "Where we come from",
+   "memories": [
+    {
+     "id": "m1",
+     "title": "Bread and the lake",
+     "period": "1966 · aged 6",
+     "body": "Yeast and the lake. That’s the honest answer. Mom baked bread every Saturday whether we needed it or not, and our house sat four blocks from Lake Macatawa, close enough that when the wind came off the water it went right through the screen door.\n\nI was the middle of three, wedged between Tom, who was always in trouble, and Anne, who never was, because Tom used it all up. We didn’t have much, but we had that kitchen table. Dad at the end by the radio. Mom never sat, honestly. She’d lean on the counter. I had the chair by the window because I was the one who did homework.\n\nEverything important in my life got decided at a kitchen table. I just didn’t know it yet. Because nobody could leave. You sat down, you ate, you talked. When Tom got in trouble, it was settled there. When I told them I was marrying Rick, that was there too. You can’t walk away from a table in the middle of dinner. That’s the whole point of it.\n\nThat table is in Dylan’s kitchen now. I couldn’t let anyone throw it out. The family still eats dinner at it, and the phones go in the bread box. That one is my rule.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m1.mp3",
+     "clipText": "Yeast and the lake. That’s the honest answer. Mom baked bread every Saturday whether we needed it or not, and our house sat four blocks from Lake Macatawa, close enough that when the wind came off the water it went right through the screen door. I was the middle of three, wedged between Tom, who was always in trouble, and Anne, who never was, because Tom used it all up.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "childhood",
+   "name": "Childhood",
+   "memories": [
+    {
+     "id": "m2",
+     "title": "Tulip Time, 1968",
+     "period": "May 1968 · aged 8",
+     "body": "Tell Ellie it was Tulip Time, 1968. I was eight. First year dancing. You know the wooden shoes? Klompen. They’re heavy and they do not bend.\n\nMom sewed my costume at the kitchen table for three weeks: the white cap, the striped apron, all of it. I practiced in the driveway in my wooden shoes until the neighbors begged.\n\nHalfway down Eighth Street my left klomp just flew. Rolled right under the bank’s float. And I thought, well, I’m not stopping. So I danced the whole rest of it in one shoe and one sock, and Dad laughed so hard he had to sit down on the curb. Mom pretended to be mortified, but she told that story every Christmas until she died.\n\nI think I knew that if I stopped, I’d remember it as the day I failed. If I kept going, it would just be a story. Eight years old and I worked that out on Eighth Street. I’ve used it ever since: the first week at the bakery, the winter Mom was sick. You finish the parade.\n\nEllie danced it in 2024, in her great-grandmother’s apron. Both shoes stayed on. I was almost disappointed.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m2.mp3",
+     "clipText": "Tell Ellie it was Tulip Time, 1968. I was eight. First year dancing. You know the wooden shoes? Klompen. They’re heavy and they do not bend. Mom sewed my costume at the kitchen table for three weeks: the white cap, the striped apron, all of it. I practiced in the driveway in my wooden shoes until the neighbors begged. Halfway down Eighth Street my left klomp just flew.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "the-world-we-lived-through",
+   "name": "The world we lived through",
+   "memories": [
+    {
+     "id": "m8",
+     "title": "The moon on Grandpa’s set",
+     "period": "July 20, 1969 · aged 9",
+     "body": "The moon. Grandpa’s front room. I was nine.\n\nGrandpa Walsh had the only set on our street that got Channel 8 without tinfoil on the antenna, so everybody came. Oh, it was packed. The kids sat on the rug and the grown-ups stood along the wall with their arms crossed, like they were in church.\n\nWhen the man stepped down, nobody said a word. Then I looked up and Grandpa was crying, just quietly, with his hand over his mouth. I’d never seen a grown man cry. I understood it was because of something good, and I didn’t know that was allowed.\n\nI cry at every school concert now. Ellie has stopped being embarrassed. I tell her to blame Grandpa Walsh.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m8.mp3",
+     "clipText": "The moon. Grandpa’s front room. I was nine. Grandpa Walsh had the only set on our street that got Channel 8 without tinfoil on the antenna, so everybody came. Oh, it was packed. The kids sat on the rug and the grown-ups stood along the wall with their arms crossed, like they were in church. When the man stepped down, nobody said a word.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "love-family",
+   "name": "Love & family",
+   "memories": [
+    {
+     "id": "m3",
+     "title": "The wedding, in the rain",
+     "period": "June 1982 · aged 22",
+     "body": "It rained. Oh, it rained. From six in the morning until nine at night. Every aunt I had said rain on your wedding day is good luck, and I wanted to throw something at all of them.\n\nThe tent leaked right over the head table. And Rick, without saying a word, just picked up an umbrella and held it over me for the whole dinner. Ate with his left hand. He was a terrible left-handed eater. That’s when I knew I’d picked right.\n\nMom made the cake herself, three tiers of lemon. It was the only thing that stayed dry. When the rain finally stopped we danced in the church parking lot, in the puddles, with the car radios turned all the way up.\n\nVows are words. Anybody can say them in a dry church. The umbrella was what he did when nobody asked and it cost him something. He was soaked. His dinner was cold. I’ve watched for that my whole life, in friends, in the boys Dylan brought home. Who holds the umbrella when it’s inconvenient.\n\nI told Dylan that the morning she married Mark. Mark has heard about the umbrella more times than he can count. It’s still in the hall closet, the white one. Ask about it.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m3.mp3",
+     "clipText": "It rained. Oh, it rained. From six in the morning until nine at night. Every aunt I had said rain on your wedding day is good luck, and I wanted to throw something at all of them. The tent leaked right over the head table. And Rick, without saying a word, just picked up an umbrella and held it over me for the whole dinner. Ate with his left hand.",
+     "sides": [
+      {
+       "name": "Rick Bennett, her husband",
+       "body": "It wasn’t the whole dinner. It was the soup and the chicken, and then her aunts moved us under the awning for the cake. And I was fine left-handed. I grew up with a brother who sat on my right. But she tells it her way, and I’ve had forty-four years to notice that her way is the one people like."
+      }
+     ]
+    },
+    {
+     "id": "m5",
+     "title": "Tunnel Park",
+     "period": "Summer 1986 · aged 26",
+     "body": "The beach one. Tunnel Park, 1986. Anne took it. I’m holding Dylan and I look like I haven’t slept in a year, which I hadn’t.\n\nWe spent every summer weekend out there. Egg salad sandwiches, those terrible orange sodas Dylan loved, and we’d stay until the lifeguard went home.\n\nShe was two and sure she could walk into Lake Michigan and keep going. I chased her down the sand with my sandals in one hand. The second I caught her, Anne said ‘Carolyn!’ and I turned around.\n\nWhen I look at it now I see the happiest I have ever been. I didn’t know it then. I was tired. I was always thinking about the next thing. Happiness doesn’t announce itself. It just looks like a normal Saturday. I wish somebody had tapped me on the shoulder and said, Carolyn, this is it. Pay attention.",
+     "photo": "/read-samples/img/beach.jpg",
+     "audio": "/read-samples/audio/carolyn-m5.mp3",
+     "clipText": "The beach one. Tunnel Park, 1986. Anne took it. I’m holding Dylan and I look like I haven’t slept in a year, which I hadn’t. We spent every summer weekend out there. Egg salad sandwiches, those terrible orange sodas Dylan loved, and we’d stay until the lifeguard went home. She was two and sure she could walk into Lake Michigan and keep going.",
+     "sides": []
+    },
+    {
+     "id": "m4",
+     "title": "The easel",
+     "period": "Summer 1987 · aged 27",
+     "body": "Dylan arrived on a Tuesday in March of 1984, three weeks early and furious about it. Rick drove us home from Holland Hospital at about eleven miles an hour. People were honking. He didn’t care.\n\nI kissed that cheek ten thousand times, and every one felt like the first.\n\nThe summer she turned three, Rick built her an easel from scrap he brought home from the plant. She painted on it every single day: mostly herself, partly the dog, occasionally the paper. I kept every painting in a box under our bed. I still have the box.\n\nBecause a mother forgets. You think you’ll always remember who they were at three, and then they’re thirteen and you can’t picture it. The paintings were proof. She was a loud, messy, happy little girl who painted the dog purple. I didn’t want anyone to forget that. Including her.\n\nDylan keeps a box for Ellie and one for Sam now, under the same kind of bed.",
+     "photo": "/read-samples/img/kiss.jpg",
+     "audio": "/read-samples/audio/carolyn-m4.mp3",
+     "clipText": "Dylan arrived on a Tuesday in March of 1984, three weeks early and furious about it. Rick drove us home from Holland Hospital at about eleven miles an hour. People were honking. He didn’t care. I kissed that cheek ten thousand times, and every one felt like the first. The summer she turned three, Rick built her an easel from scrap he brought home from the plant.",
+     "sides": []
+    },
+    {
+     "id": "m11",
+     "title": "Were you ever really scared?",
+     "period": "March 1989 · aged 28",
+     "body": "Yes, honey. March 1989. Your mom had pneumonia and they kept her at Holland Hospital for six nights. I slept in the chair. Grandpa brought me clothes and a thermos of coffee every morning.\n\nI learned that being scared and being brave happen at the same time. You don’t get to wait for one to finish. And Ellie, she was fine. She’s your mother. She still hates hospitals.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m11.mp3",
+     "clipText": "Yes, honey. March 1989. Your mom had pneumonia and they kept her at Holland Hospital for six nights. I slept in the chair. Grandpa brought me clothes and a thermos of coffee every morning. I learned that being scared and being brave happen at the same time. You don’t get to wait for one to finish. And Ellie, she was fine. She’s your mother. She still hates hospitals.",
+     "sides": []
+    },
+    {
+     "id": "m10",
+     "title": "The Thanksgiving the oven died",
+     "period": "November 1996 · aged 36",
+     "body": "1996. The oven died at eleven in the morning with a twenty-two-pound turkey in it. Dylan says twenty. Rick says eighteen. It was twenty-two. I bought it.\n\nPanic, for about a minute. Then I thought, well, I own two big ovens. So we cut it into pieces and cooked it in the bakery ovens. Rick drove it across town in a laundry basket, and he will tell you it was snowing. It was not snowing.\n\nThat was the first day the bakery felt like it was really ours.\n\nWe’ve done it in pieces every Thanksgiving since. Ellie thought that was just a recipe. It is now, honey.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m10.mp3",
+     "clipText": "1996. The oven died at eleven in the morning with a twenty-two-pound turkey in it. Dylan says twenty. Rick says eighteen. It was twenty-two. I bought it. Panic, for about a minute. Then I thought, well, I own two big ovens. So we cut it into pieces and cooked it in the bakery ovens.",
+     "sides": [
+      {
+       "name": "Rick Bennett, her husband",
+       "body": "It was eighteen pounds. I know because I carried it, in the basket, and I’d carried fifty-pound sacks of flour into that bakery for two years by then. And it was flurrying. Not snowing. Flurrying. There’s a difference, and I was the one outside."
+      },
+      {
+       "name": "Dylan Ellison, her daughter",
+       "body": "What I remember is that nobody yelled. Fourteen people coming, no oven, and my parents just looked at each other and started carving a raw turkey. I didn’t know that was unusual until I was older and saw other families’ kitchens."
+      },
+      {
+       "name": "Ellie Ellison, her granddaughter",
+       "body": "I thought the turkey in pieces was a recipe. Like, that’s just how you make a turkey. Grandma told me at the table that it was because the oven broke when Mom was my age. So that’s a recipe now, I guess."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "work-making-a-living",
+   "name": "Work & making a living",
+   "memories": [
+    {
+     "id": "m6",
+     "title": "Ruth’s Table",
+     "period": "September 1994 · aged 34",
+     "body": "Honestly? I was tired of making someone else’s bread. I’d worked the counter at other places since I was seventeen. And Mom’s recipes were better. That’s not pride, that’s just true.\n\nI was thirty-four and scared to death. We put the house up to borrow the money. Rick didn’t blink. He painted the sign himself, on our garage floor. It said Ruth’s Table and the R was a little crooked. We kept that sign for twenty-five years. I named it for Mom because every recipe I had came from her kitchen.\n\nThe first day we sold out of bread by ten. The second day we sold four loaves. The first day is a party and the second day is the truth. Everybody comes once to see what you are. You have to earn the second visit. So I learned every customer’s name and how they liked their bread sliced. By the end of that first year the four-loaf days were gone.\n\nI got up at four in the morning for twenty-five years, and I would do every one of them again. The last day at the counter was June of 2019. The R came home with me. It’s on the kitchen wall. The rest of the sign I let go.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m6.mp3",
+     "clipText": "Honestly? I was tired of making someone else’s bread. I’d worked the counter at other places since I was seventeen. And Mom’s recipes were better. That’s not pride, that’s just true. I was thirty-four and scared to death. We put the house up to borrow the money. Rick didn’t blink. He painted the sign himself, on our garage floor. It said Ruth’s Table and the R was a little crooked.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "when-everything-changed",
+   "name": "When everything changed",
+   "memories": [
+    {
+     "id": "m7",
+     "title": "Mom’s last loaf",
+     "period": "February 2017 · aged 56",
+     "body": "That winter I took Mom a loaf every morning before we opened. Rye, if it was warm; she could manage rye. One morning in January she didn’t eat any. She held it in her lap like a cat. I cried in the van after and I didn’t tell Rick.\n\nBy February she slept most of the day. I baked her lemon cake anyway, so the house would smell right. She died the next morning, early. Anne called me at the shop. I didn’t write any of it down. I didn’t want to remember it, and now I’m glad somebody asked.\n\nA week later I found her recipe cards in a coffee can above the stove. Forty years of her handwriting, flour still in the corners. I knew right away I’d bake every one of them.\n\nSo I give the missing her a job. Every Saturday I take out the next card and bake whatever is on it, in order. I’ve been through all 340 once. I’m on card 125 the second time around. Some of them are terrible. Mom made a lot of gelatin salads. For two hours the house smells like her, and I talk to her out loud, and that’s enough.\n\nEllie bakes with me every other Saturday. The can goes to her. I’ve written it on the lid.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m7.mp3",
+     "clipText": "That winter I took Mom a loaf every morning before we opened. Rye, if it was warm; she could manage rye. One morning in January she didn’t eat any. She held it in her lap like a cat. I cried in the van after and I didn’t tell Rick. By February she slept most of the day. I baked her lemon cake anyway, so the house would smell right.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "faith-what-carried-me",
+   "name": "Faith & what carried me",
+   "memories": [
+    {
+     "id": "m9",
+     "title": "The year I stopped going",
+     "period": "2017 – 2018 · aged 56 to 57",
+     "body": "I’d like to say church. It wasn’t. I stopped going for a while. I was angry, and I didn’t want to sit there being angry in a nice dress.\n\nWhat carried me was the Saturdays. The cards. My hands knew what to do even when I didn’t. I suppose that was a kind of praying. Pastor Jim said so, anyway, when I went back. Easter, 2018. I brought a lemon cake for coffee hour. That felt like the right way to walk in.\n\nI had fifty-six years of her. And I never once asked about her mother. My grandmother, Ida. I know her name and that she came from Friesland. Everything else went with Mom.\n\nI would have asked what she was afraid of. Whether she liked her life. You think there’s time.\n\nDylan asks me one question every Sunday now, and I answer all of it, even the parts I’d rather not. Ellie and Sam will know more about me than I ever knew about Ida. That much I can do something about.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m9.mp3",
+     "clipText": "I’d like to say church. It wasn’t. I stopped going for a while. I was angry, and I didn’t want to sit there being angry in a nice dress. What carried me was the Saturdays. The cards. My hands knew what to do even when I didn’t. I suppose that was a kind of praying. Pastor Jim said so, anyway, when I went back. Easter, 2018.",
+     "sides": []
+    }
+   ]
+  },
+  {
+   "slug": "looking-back",
+   "name": "Looking back",
+   "memories": [
+    {
+     "id": "m12",
+     "title": "A good day, now",
+     "period": "March 2026 · aged 65",
+     "body": "Coffee, the crossword, one call from Dylan, and bread in the oven. That’s a good day. I don’t need much more than that anymore.\n\nI think about the Saturdays at Tunnel Park, the four-loaf days, Mom leaning on the counter. You don’t get told which ones are the ones.\n\nEllie’s coming at ten. I should go find the next card.",
+     "photo": null,
+     "audio": "/read-samples/audio/carolyn-m12.mp3",
+     "clipText": "Coffee, the crossword, one call from Dylan, and bread in the oven. That’s a good day. I don’t need much more than that anymore. I think about the Saturdays at Tunnel Park, the four-loaf days, Mom leaning on the counter. You don’t get told which ones are the ones. Ellie’s coming at ten. I should go find the next card.",
+     "sides": []
+    }
+   ]
+  }
+ ]
+}

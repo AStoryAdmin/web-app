@@ -23,6 +23,10 @@
 }
 .rd-hear { min-height: 72px; }
 
+/* a sample book (the site's fictional families): said once on the cloth, quietly, and once under each voice */
+.rd-sample { margin: 0; font: 500 15px/1.3 var(--ans-ui); color: var(--on-chocolate); opacity: 0.78; }
+.rd-sample-note { font: 400 17px/1.4 var(--ans-ui); color: var(--ink-soft); }
+
 /* the family's kept sides: set in from the margin, the name under the words */
 .rd-sides { display: flex; flex-direction: column; gap: 18px; }
 .rd-side { margin: 0; padding: 0 0 0 18px; border-left: 3px solid var(--foil, #c9a15a); display: flex; flex-direction: column; gap: 0.8em; }
