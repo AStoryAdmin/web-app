@@ -869,6 +869,15 @@ html:has(.wall-bench, .start) { background-color: var(--chocolate); scrollbar-co
 @media (max-width: 1100.98px) { .wall-notes { grid-template-columns: minmax(0, 1fr); } }
 .wall-note p { font: italic 400 19px/1.5 var(--book-body); color: var(--sheet-ink); }
 .wall-note footer { margin-top: var(--s-3); font: 600 13px/1.35 var(--font-ui); color: var(--kicker-grey); }
+/* their pages elsewhere: one quiet line after what the family added, a small-caps label and the words in the book's
+   serif; no brand colour, no marks (DECISIONS A4) */
+.wall-elsewhere { display: grid; gap: var(--s-2); padding-top: var(--s-5); border-top: 1px solid var(--sheet-rule); max-width: 70ch; }
+.wall-empty ~ .wall-elsewhere { grid-column: 1 / -1; justify-self: center; text-align: center; }
+.wall-elsewhere-label { margin: 0; font: 600 11px/1.4 var(--font-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker-grey); }
+.wall-elsewhere-links { margin: 0; font: 400 18px/1.6 var(--book-body); color: var(--sheet-ink); overflow-wrap: anywhere; }
+.wall-elsewhere-links a { color: inherit; text-decoration: underline; text-decoration-color: var(--sheet-rule); text-decoration-thickness: 1px; text-underline-offset: 0.2em; transition: text-decoration-color 200ms var(--ease-out); }
+.wall-elsewhere-links a:hover, .wall-elsewhere-links a:focus-visible { text-decoration-color: currentColor; }
+.wall-elsewhere-dot { color: var(--kicker-grey); }
 /* nothing shared yet: the dog, one sentence, the time, one action */
 .wall-empty { grid-column: 1 / -1; display: grid; gap: var(--s-4); justify-items: center; text-align: center; padding: var(--s-12) 0; }
 /* asleep, chin on his paws, the paws resting on a foil ledge the width of the house ledge note's (the image's own bottom border) */
