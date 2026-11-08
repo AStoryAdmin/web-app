@@ -124,3 +124,26 @@ describe("Wall: Elsewhere", () => {
     expect(row()).toBeNull();
   });
 });
+
+describe("Wall: photographs a browser can't open", () => {
+  it("leaves out a photo saved as the phone's own file path, and keeps the web ones", async () => {
+    const st = story();
+    st.photo_url = "file:///var/mobile/Containers/Data/Application/X/portrait.jpg" as never;
+    st.memories[0].photos = [
+      "file:///var/mobile/Containers/Data/Application/X/Library/Caches/ImagePicker/a.jpg",
+      "https://example.supabase.co/storage/v1/object/sign/memory-photos/a.jpg?token=t",
+    ] as never;
+    await show(st);
+    const srcs = Array.from(host.querySelectorAll("img")).map((i) => i.getAttribute("src") ?? "");
+    expect(srcs.some((x) => x.startsWith("file:"))).toBe(false);
+    expect(srcs).toContain("https://example.supabase.co/storage/v1/object/sign/memory-photos/a.jpg?token=t");
+  });
+
+  it("shows the words alone when every photo is a phone file path", async () => {
+    const st = story();
+    st.memories[0].photos = ["file:///var/mobile/a.jpg"] as never;
+    await show(st);
+    expect(Array.from(host.querySelectorAll("img")).filter((i) => (i.getAttribute("src") ?? "").includes("var/mobile")).length).toBe(0);
+    expect(host.textContent).toContain("We opened at five.");
+  });
+});

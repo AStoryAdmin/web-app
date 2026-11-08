@@ -67,7 +67,25 @@ function chaptersOf(story: WallStory): Chapter[] {
  * with every photograph's address already signed (six hours), so somebody with no account sees the prints. A 404
  * means the story isn't shared. If the function can't be reached, the page falls back to the RPC (words only).
  */
+/**
+ * Only photographs a visitor's browser can open. An early phone build saved some photos as the phone's own file path
+ * (file:///var/mobile/...) and never uploaded them; those showed as broken frames, so the leaf keeps its words alone.
+ */
+const isWeb = (u: unknown): u is string => typeof u === "string" && /^https?:\/\/[^/]/i.test(u.trim());
+function viewable(s: WallStory | null): WallStory | null {
+  if (!s) return s;
+  return {
+    ...s,
+    photo_url: isWeb(s.photo_url) ? s.photo_url : null,
+    memories: (s.memories ?? []).map((m) => ({ ...m, photos: (m.photos ?? []).filter(isWeb) })),
+  };
+}
+
 async function loadWall(slug: string): Promise<WallStory | null> {
+  return viewable(await fetchWall(slug));
+}
+
+async function fetchWall(slug: string): Promise<WallStory | null> {
   if (!slug) return null;
   try {
     const { data, error } = await supabase().functions.invoke(`public-story?slug=${encodeURIComponent(slug)}`, { method: "GET" });
