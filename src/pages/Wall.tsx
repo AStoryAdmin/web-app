@@ -13,7 +13,7 @@
  * bookStructure and printedChapterName), so the wall and the Book never
  * disagree. What the family added closes the page as notecards.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Lockup } from "../components/Brand";
 import { useLight } from "../components/delight/Light";
@@ -26,10 +26,23 @@ import { smarten } from "../lib/typography";
 import WhereNext, { Stop } from "../components/book/WhereNext";
 import { bookStructure } from "../app-core/lib/legacyBook.js";
 import { printedChapterName } from "../app-core/lib/bookDesign.js";
+import { elsewhereLinks } from "../app-core/lib/personSources.js";
 
 type WallMemory = { id: string; title: string; body: string; era: string; period: string; created_at: string; photos: string[] };
 type Testimonial = { id: string; contributor_name: string; relationship: string; body: string; created_at: string };
-type WallStory = { name: string; last_name: string; photo_url: string | null; intro: string; relationship: string; memories: WallMemory[]; testimonials: Testimonial[] };
+/** One of their pages elsewhere, as get_public_story gives it: only links, never who in the family added it. */
+type ElsewhereLink = { kind: string; title: string | null; url: string };
+type WallStory = {
+  name: string;
+  last_name: string;
+  photo_url: string | null;
+  intro: string;
+  relationship: string;
+  memories: WallMemory[];
+  testimonials: Testimonial[];
+  elsewhere?: ElsewhereLink[];
+};
+type Shown = { key: string; word: string; url: string };
 type Chapter = { name: string; items: WallMemory[] };
 
 const paragraphs = (t: string) =>
@@ -234,6 +247,36 @@ function Leaf({ m }: { m: WallMemory }) {
   );
 }
 
+/**
+ * Their pages elsewhere, said in the phone's words ("Instagram", "The 2011 newsletter", from app-core elsewhereLinks):
+ * one quiet line on the paper after what the family added, before Where next. Never on the cloth. Nothing when there
+ * are none.
+ */
+function Elsewhere({ links }: { links: Shown[] }) {
+  if (!links.length) return null;
+  return (
+    <section className="wall-elsewhere" aria-labelledby="wall-elsewhere-h">
+      <p id="wall-elsewhere-h" className="wall-elsewhere-label">
+        Elsewhere
+      </p>
+      <p className="wall-elsewhere-links">
+        {links.map((l, i) => (
+          <Fragment key={l.key}>
+            {i > 0 && (
+              <span className="wall-elsewhere-dot" aria-hidden="true">
+                {" · "}
+              </span>
+            )}
+            <a href={l.url} target="_blank" rel="noopener noreferrer">
+              {smarten(l.word)}
+            </a>
+          </Fragment>
+        ))}
+      </p>
+    </section>
+  );
+}
+
 /** The cloth and its one sheet, for the pages that are not the story itself (loading, not shared). */
 function Bench({ children }: { children: React.ReactNode }) {
   const ground = useRef<HTMLDivElement>(null);
@@ -367,6 +410,7 @@ export default function Wall() {
   }, [slug]);
 
   const chapters = useMemo(() => (story ? chaptersOf(story) : []), [story]);
+  const elsewhere = useMemo(() => (story ? (elsewhereLinks({ sourceLinks: story.elsewhere ?? [] }) as Shown[]) : []), [story]);
 
   // One authored arrival: the name rises line by line, the sheet settles (lib/arrive). The leaves below are never
   // held back for it: they move on the scroll's own timeline (CSS), so nothing waits on an observer.
@@ -447,17 +491,20 @@ export default function Wall() {
       <main className="sheet-page wall-sheet">
         <div className="page wall-page">
           {count === 0 && family === 0 ? (
-            <section className="wall-empty">
-              <img className="wall-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
-              <h2>
-                Nothing is shared here yet
-                <Stop />
-              </h2>
-              <p>When {story.name} shares a memory, it appears on this page the moment it is kept. Starting a book of your own takes about two minutes.</p>
-              <Link className="btn outline" to="/welcome">
-                Keep your own story
-              </Link>
-            </section>
+            <>
+              <section className="wall-empty">
+                <img className="wall-empty-dog" src="/dog/sleep-paper.webp" alt="" aria-hidden="true" width={781} height={622} />
+                <h2>
+                  Nothing is shared here yet
+                  <Stop />
+                </h2>
+                <p>When {story.name} shares a memory, it appears on this page the moment it is kept. Starting a book of your own takes about two minutes.</p>
+                <Link className="btn outline" to="/welcome">
+                  Keep your own story
+                </Link>
+              </section>
+              <Elsewhere links={elsewhere} />
+            </>
           ) : (
             <>
               <nav className="wall-contents" aria-label="Chapters">
@@ -524,6 +571,7 @@ export default function Wall() {
                     </div>
                   </section>
                 )}
+                <Elsewhere links={elsewhere} />
               </div>
             </>
           )}
